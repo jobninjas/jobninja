@@ -4,109 +4,66 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardHeader, CardContent, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
-import { TrendingUp, Target, Users, Clock, LogOut, Settings, CreditCard } from 'lucide-react';
-
-// Mock applications data - TODO: Replace with real API call
-const mockApplications = [
-  {
-    id: 1,
-    company: 'Acme Corp',
-    role: 'Senior Software Engineer',
-    status: 'submitted',
-    applicationLink: 'https://acme.com/careers/12345',
-    date: '2025-01-23'
-  },
-  {
-    id: 2,
-    company: 'TechStart Inc',
-    role: 'Full Stack Developer',
-    status: 'prepared',
-    applicationLink: 'https://techstart.com/jobs/67890',
-    date: '2025-01-24'
-  },
-  {
-    id: 3,
-    company: 'CloudScale',
-    role: 'Backend Engineer',
-    status: 'found',
-    applicationLink: 'https://cloudscale.com/careers',
-    date: '2025-01-24'
-  },
-  {
-    id: 4,
-    company: 'DataFlow Systems',
-    role: 'Software Engineer',
-    status: 'interview',
-    applicationLink: 'https://dataflow.com/jobs',
-    date: '2025-01-20'
-  },
-  {
-    id: 5,
-    company: 'AI Innovations',
-    role: 'Machine Learning Engineer',
-    status: 'submitted',
-    applicationLink: 'https://aiinnovations.com',
-    date: '2025-01-22'
-  }
-];
-
-// Base KPI values that auto-increment every 10 minutes
-const BASE_KPI_VALUES = {
-  applicationsThisWeek: 124,
-  totalJobsApplied: 1064,
-  interviews: 3,
-  hoursSaved: 224
-};
-
-// Get auto-incremented KPI values
-const getAutoIncrementedKPIs = () => {
-  const STORAGE_KEY = 'nova_squad_kpi_timestamp';
-  const VERSION_KEY = 'nova_squad_kpi_version';
-  const CURRENT_VERSION = '2'; // Increment this to reset counters
-  const INCREMENT_INTERVAL = 10 * 60 * 1000; // 10 minutes in milliseconds
-  
-  // Check if version changed, reset timestamp if so
-  const storedVersion = localStorage.getItem(VERSION_KEY);
-  if (storedVersion !== CURRENT_VERSION) {
-    localStorage.setItem(VERSION_KEY, CURRENT_VERSION);
-    localStorage.setItem(STORAGE_KEY, Date.now().toString());
-  }
-  
-  // Get or set initial timestamp
-  let initialTimestamp = localStorage.getItem(STORAGE_KEY);
-  if (!initialTimestamp) {
-    initialTimestamp = Date.now();
-    localStorage.setItem(STORAGE_KEY, initialTimestamp);
-  } else {
-    initialTimestamp = parseInt(initialTimestamp);
-  }
-  
-  // Calculate elapsed time and increments
-  const elapsed = Date.now() - initialTimestamp;
-  const incrementCount = Math.floor(elapsed / INCREMENT_INTERVAL);
-  
-  return {
-    applicationsThisWeek: BASE_KPI_VALUES.applicationsThisWeek + incrementCount,
-    totalJobsApplied: BASE_KPI_VALUES.totalJobsApplied + incrementCount,
-    interviews: BASE_KPI_VALUES.interviews,
-    hoursSaved: BASE_KPI_VALUES.hoursSaved
-  };
-};
+import { TrendingUp, Target, Users, Clock, LogOut, Settings, CreditCard, Loader2 } from 'lucide-react';
 
 const Dashboard = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('pipeline');
-  const [kpis, setKpis] = useState(getAutoIncrementedKPIs());
+  const [applications, setApplications] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [kpis, setKpis] = useState({
+    applicationsThisWeek: 0,
+    totalJobsApplied: 0,
+    interviews: 0,
+    hoursSaved: 0
+  });
   
-  // Update KPIs every minute to show real-time increments
+  // Fetch applications from Google Sheets via backend
   useEffect(() => {
-    const interval = setInterval(() => {
-      setKpis(getAutoIncrementedKPIs());
-    }, 60000); // Update every 1 minute
+    const fetchApplications = async () => {
+      if (!user?.email) return;
+      
+      try {
+        setIsLoading(true);
+        const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8000';
+        
+        const response = await fetch(`${BACKEND_URL}/api/applications/${encodeURIComponent(user.email)}`);
+        
+        if (response.ok) {
+          const data = await response.json();
+          
+          // Transform applications to match component format
+          const formattedApps = data.applications.map((app, index) => ({
+            id: index + 1,
+            company: app.company_name,
+            role: app.job_title,
+            status: app.status,
+            applicationLink: app.application_link,
+            date: app.submitted_date
+          }));
+          
+          setApplications(formattedApps);
+          setKpis({
+            applicationsThisWeek: data.stats.this_week || 0,
+            totalJobsApplied: data.stats.total || 0,
+            interviews: data.stats.interviews || 0,
+            hoursSaved: Math.round(data.stats.hours_saved || 0)
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching applications:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
     
+    fetchApplications();
+    
+    // Refresh data every 2 minutes
+    const interval = setInterval(fetchApplications, 120000);
     return () => clearInterval(interval);
-  }, []);
+  }, [user?.email]);
 
   const handleLogout = () => {
     logout();
@@ -278,24 +235,40 @@ const Dashboard = () => {
                         </tr>
                       </thead>
                       <tbody>
-                        {mockApplications.map((app) => (
-                          <tr key={app.id} className="border-b hover:bg-gray-50">
-                            <td className="py-3 px-4 font-medium">{app.company}</td>
-                            <td className="py-3 px-4">{app.role}</td>
-                            <td className="py-3 px-4">{getStatusBadge(app.status)}</td>
-                            <td className="py-3 px-4 text-sm text-gray-600">{app.date}</td>
-                            <td className="py-3 px-4">
-                              <a
-                                href={app.applicationLink}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-primary hover:underline text-sm"
-                              >
-                                View
-                              </a>
+                        {isLoading ? (
+                          <tr>
+                            <td colSpan="5" className="py-8 text-center">
+                              <Loader2 className="w-6 h-6 animate-spin mx-auto text-primary" />
+                              <p className="text-sm text-gray-500 mt-2">Loading applications...</p>
                             </td>
                           </tr>
-                        ))}
+                        ) : applications.length === 0 ? (
+                          <tr>
+                            <td colSpan="5" className="py-8 text-center">
+                              <p className="text-gray-500">No applications yet.</p>
+                              <p className="text-sm text-gray-400 mt-1">Our team is working on finding jobs for you!</p>
+                            </td>
+                          </tr>
+                        ) : (
+                          applications.map((app) => (
+                            <tr key={app.id} className="border-b hover:bg-gray-50">
+                              <td className="py-3 px-4 font-medium">{app.company}</td>
+                              <td className="py-3 px-4">{app.role}</td>
+                              <td className="py-3 px-4">{getStatusBadge(app.status)}</td>
+                              <td className="py-3 px-4 text-sm text-gray-600">{app.date}</td>
+                              <td className="py-3 px-4">
+                                <a
+                                  href={app.applicationLink}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-primary hover:underline text-sm"
+                                >
+                                  View
+                                </a>
+                              </td>
+                            </tr>
+                          ))
+                        )}
                       </tbody>
                     </table>
                   </div>

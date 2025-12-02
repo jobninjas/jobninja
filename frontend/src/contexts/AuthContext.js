@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
-// TODO: Replace this mock auth with real provider (Clerk/Firebase/Auth0)
-// This is a simple localStorage-based auth for UI development only
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
 const AuthContext = createContext();
 
@@ -28,49 +27,56 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   }, []);
 
-  // Mock login function
+  // Login function - calls backend API
   const login = async (email, password) => {
-    // TODO: Replace with real auth provider call
-    // For now, accept any email/password and create mock user
-    
-    const mockUser = {
-      id: 'user_' + Date.now(),
-      email: email,
-      name: email.split('@')[0],
-      role: 'customer', // customer | employee | admin
-      plan: 'Pro',
-      createdAt: new Date().toISOString()
-    };
-
-    const mockToken = 'mock_token_' + Date.now();
-    
-    localStorage.setItem('auth_token', mockToken);
-    localStorage.setItem('user_data', JSON.stringify(mockUser));
-    setUser(mockUser);
-    
-    return { success: true, user: mockUser };
+    try {
+      const response = await fetch(`${API_URL}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.detail || 'Login failed');
+      }
+      
+      localStorage.setItem('auth_token', data.token);
+      localStorage.setItem('user_data', JSON.stringify(data.user));
+      setUser(data.user);
+      
+      return { success: true, user: data.user };
+    } catch (error) {
+      console.error('Login error:', error);
+      throw error;
+    }
   };
 
-  // Mock signup function
+  // Signup function - calls backend API and sends welcome email
   const signup = async (email, password, name) => {
-    // TODO: Replace with real auth provider call
-    
-    const mockUser = {
-      id: 'user_' + Date.now(),
-      email: email,
-      name: name || email.split('@')[0],
-      role: 'customer',
-      plan: null, // No plan until they subscribe
-      createdAt: new Date().toISOString()
-    };
-
-    const mockToken = 'mock_token_' + Date.now();
-    
-    localStorage.setItem('auth_token', mockToken);
-    localStorage.setItem('user_data', JSON.stringify(mockUser));
-    setUser(mockUser);
-    
-    return { success: true, user: mockUser };
+    try {
+      const response = await fetch(`${API_URL}/api/auth/signup`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, name })
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.detail || 'Signup failed');
+      }
+      
+      localStorage.setItem('auth_token', data.token);
+      localStorage.setItem('user_data', JSON.stringify(data.user));
+      setUser(data.user);
+      
+      return { success: true, user: data.user };
+    } catch (error) {
+      console.error('Signup error:', error);
+      throw error;
+    }
   };
 
   // Logout function

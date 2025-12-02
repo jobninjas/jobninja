@@ -2,6 +2,11 @@ import stripe
 import os
 from fastapi import HTTPException
 from typing import Optional
+from dotenv import load_dotenv
+from pathlib import Path
+
+# Load .env file
+load_dotenv(Path(__file__).parent / '.env')
 
 # Initialize Stripe
 stripe_secret_key = os.environ.get('STRIPE_SECRET_KEY')
@@ -10,12 +15,13 @@ if stripe_secret_key and not stripe_secret_key.startswith('sk_test_your'):
 else:
     stripe.api_key = None  # Demo mode - no real Stripe calls
 
-# Price mapping - maps internal plan IDs to Stripe Price IDs
-PRICE_IDS = {
-    '1': os.environ.get('STRIPE_PRICE_STARTER'),  # Starter plan
-    '2': os.environ.get('STRIPE_PRICE_PRO'),      # Pro plan
-    '3': os.environ.get('STRIPE_PRICE_URGENT'),   # Urgent plan
-}
+def get_price_ids():
+    """Get price IDs from environment (called at runtime)"""
+    return {
+        '1': os.environ.get('STRIPE_PRICE_STARTER'),
+        '2': os.environ.get('STRIPE_PRICE_PRO'),
+        '3': os.environ.get('STRIPE_PRICE_URGENT'),
+    }
 
 def create_checkout_session(
     plan_id: str,
@@ -41,8 +47,9 @@ def create_checkout_session(
             detail="Stripe is not configured. Please add STRIPE_SECRET_KEY to backend/.env file. See /app/STRIPE_SETUP_GUIDE.md for instructions."
         )
     
-    price_id = PRICE_IDS.get(str(plan_id))
-    if not price_id or price_id.startswith('price_') and 'id_here' in price_id:
+    price_ids = get_price_ids()
+    price_id = price_ids.get(str(plan_id))
+    if not price_id:
         raise HTTPException(
             status_code=400, 
             detail=f"Stripe Price ID not configured for plan {plan_id}. Please add STRIPE_PRICE_STARTER, STRIPE_PRICE_PRO, and STRIPE_PRICE_URGENT to backend/.env file. See /app/STRIPE_SETUP_GUIDE.md"
@@ -63,12 +70,6 @@ def create_checkout_session(
             mode='subscription',
             success_url=success_url,
             cancel_url=cancel_url,
-            # Enable payment method options
-            payment_method_options={
-                'card': {
-                    'setup_future_usage': 'off_session',
-                }
-            },
             # Metadata for tracking
             metadata={
                 'user_id': user_id,

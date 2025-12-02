@@ -9,20 +9,24 @@ import { Textarea } from './ui/textarea';
 import { Label } from './ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Check, X, TrendingUp, Users, Clock, Target, Search, FileText, Send, ChevronRight } from 'lucide-react';
+import BookCallModal from './BookCallModal';
 import {
   heroStats,
   targetUsers,
   howItWorksSteps,
   comparisonData,
   pricingPlans,
-  metricsData,
   faqData,
-  aboutContent
+  aboutContent,
+  whyDifferent,
+  servicesOffered,
+  whyChooseUs,
+  testimonials
 } from '../mock';
 
 const LandingPage = () => {
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const [animatedStats, setAnimatedStats] = useState({
     jobsThisWeek: 0,
     totalJobsApplied: 0,
@@ -39,6 +43,7 @@ const LandingPage = () => {
   });
 
   const [formSubmitted, setFormSubmitted] = useState(false);
+  const [isBookCallModalOpen, setIsBookCallModalOpen] = useState(false);
 
   // Animate numbers on load
   useEffect(() => {
@@ -113,6 +118,15 @@ const LandingPage = () => {
     }
   };
 
+  // Handle plan selection - redirect to signup/dashboard
+  const handlePlanSelect = (planId) => {
+    if (isAuthenticated) {
+      navigate('/dashboard');
+    } else {
+      navigate('/signup');
+    }
+  };
+
   return (
     <div className="landing-page">
       {/* Navigation Header */}
@@ -123,7 +137,7 @@ const LandingPage = () => {
         </button>
         <nav className="nav-links">
           <a href="#how-it-works" className="nav-link">How It Works</a>
-          <button onClick={() => navigate('/pricing')} className="nav-link">Pricing</button>
+          <a href="#pricing" className="nav-link">Pricing</a>
           <a href="#faq" className="nav-link">FAQ</a>
           <a href="#contact" className="nav-link">Contact</a>
         </nav>
@@ -151,47 +165,158 @@ const LandingPage = () => {
       <section className="hero-section">
         <div className="hero-container">
           <div className="hero-content">
-            <h1 className="hero-title">We apply to 20–40 applications for you, every day.</h1>
+            <div className="hero-badge">🥷 Trusted by 500+ Job Seekers</div>
+            <h1 className="hero-title">
+              Your Personal <span className="hero-highlight">Job Ninja</span> — Fast, Accurate, Human.
+            </h1>
             <p className="hero-subtitle">
-              Human job application specialists who do the applying for you, so you can focus on learning, networking, and interviews.
+              Get your own dedicated Ninja — a real human specialist who applies to jobs for you with speed and precision. We use AI to tailor applications, but your Ninja makes every decision and submits every application.
             </p>
+            <p className="hero-tagline">Your Ninja. Your Job Search. Your Success.</p>
             <div className="hero-cta">
               <Button className="btn-primary btn-large" onClick={() => navigate(isAuthenticated ? '/dashboard' : '/signup')}>
-                {isAuthenticated ? 'Go to Dashboard' : 'Get Started'}
+                {isAuthenticated ? 'Go to Dashboard' : 'Get Started Now'}
               </Button>
-              <Button variant="secondary" className="btn-secondary btn-large">Book a 15-min call</Button>
+              <Button variant="secondary" className="btn-secondary btn-large" onClick={() => setIsBookCallModalOpen(true)}>
+                Book Free Consultation
+              </Button>
+            </div>
+            <div className="hero-trust-badges">
+              <div className="trust-item">
+                <span className="trust-number">92%</span>
+                <span className="trust-label">Success Rate</span>
+              </div>
+              <div className="trust-item">
+                <span className="trust-number">2,850+</span>
+                <span className="trust-label">Jobs Applied</span>
+              </div>
+              <div className="trust-item">
+                <span className="trust-number">485+</span>
+                <span className="trust-label">Hours Saved</span>
+              </div>
             </div>
           </div>
           <div className="hero-dashboard">
             <Card className="dashboard-card">
               <div className="dashboard-header">
-                <h3>Our Dashboard</h3>
+                <h3>Live Dashboard</h3>
                 <span className="dashboard-badge">Live</span>
               </div>
               <div className="dashboard-stats">
                 <div className="stat-item">
                   <TrendingUp className="stat-icon" />
                   <div className="stat-content">
-                    <p className="stat-label">Jobs applied this week</p>
+                    <p className="stat-label">Applied this week</p>
                     <p className="stat-value">{animatedStats.jobsThisWeek}</p>
                   </div>
                 </div>
                 <div className="stat-item">
                   <Target className="stat-icon" />
                   <div className="stat-content">
-                    <p className="stat-label">Total jobs applied</p>
-                    <p className="stat-value">{animatedStats.totalJobsApplied}</p>
+                    <p className="stat-label">Total applications</p>
+                    <p className="stat-value">{animatedStats.totalJobsApplied.toLocaleString()}</p>
                   </div>
                 </div>
                 <div className="stat-item">
                   <Clock className="stat-icon" />
                   <div className="stat-content">
-                    <p className="stat-label">Estimated hours saved</p>
+                    <p className="stat-label">Hours saved</p>
                     <p className="stat-value">{animatedStats.hoursSaved}h</p>
                   </div>
                 </div>
               </div>
             </Card>
+          </div>
+        </div>
+      </section>
+
+      {/* Why Different Section */}
+      <section className="section why-different">
+        <div className="container">
+          <h2 className="section-title">Why <span className="highlight">Ninjas</span> Are Different</h2>
+          <p className="section-subtitle">Real humans with AI superpowers — not bots pretending to be human</p>
+          <div className="why-different-grid">
+            {whyDifferent.map(item => (
+              <Card key={item.id} className="why-card">
+                <h3 className="why-card-title">{item.title}</h3>
+                <p className="why-card-description">{item.description}</p>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Services Section */}
+      <section className="section services-section">
+        <div className="container">
+          <div className="services-content">
+            <div className="services-text">
+              <h2 className="section-title">Your <span className="highlight">Ninja</span> Handles Everything</h2>
+              <p className="services-description">
+                Your dedicated Job Ninja handles the entire application process — using AI for speed and precision, but making every decision personally. You focus on interviews, your Ninja handles the grind.
+              </p>
+              <ul className="services-list">
+                {servicesOffered.map((service, index) => (
+                  <li key={index} className="service-item">
+                    <Check className="service-check" />
+                    <span>{service}</span>
+                  </li>
+                ))}
+              </ul>
+              <Button className="btn-primary" onClick={() => navigate('/signup')}>
+                Start Your Journey
+              </Button>
+            </div>
+            <div className="services-image">
+              <div className="services-card">
+                <div className="services-card-header">What You Get</div>
+                <div className="services-card-stat">
+                  <span className="stat-big">400-600</span>
+                  <span className="stat-desc">Applications per month</span>
+                </div>
+                <div className="services-card-stat">
+                  <span className="stat-big">Daily</span>
+                  <span className="stat-desc">Progress updates</span>
+                </div>
+                <div className="services-card-stat">
+                  <span className="stat-big">24/7</span>
+                  <span className="stat-desc">Dashboard access</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials Section */}
+      <section className="section testimonials-section">
+        <div className="container">
+          <h2 className="section-title">What People Are Saying <span className="highlight">About Us</span></h2>
+          <div className="testimonials-grid">
+            {testimonials.map(testimonial => (
+              <Card key={testimonial.id} className="testimonial-card">
+                <div className="testimonial-before-after">
+                  <div className="before">
+                    <span className="label">Before:</span>
+                    <span className="value">{testimonial.before}</span>
+                  </div>
+                  <div className="after">
+                    <span className="label">After:</span>
+                    <span className="value">{testimonial.after}</span>
+                  </div>
+                </div>
+                <p className="testimonial-quote">"{testimonial.quote}"</p>
+                <div className="testimonial-author">
+                  <div className="author-info">
+                    <span className="author-name">{testimonial.name}</span>
+                    <span className="author-role">{testimonial.role}</span>
+                  </div>
+                  <div className="rating">
+                    {'★'.repeat(testimonial.rating)}
+                  </div>
+                </div>
+              </Card>
+            ))}
           </div>
         </div>
       </section>
@@ -262,22 +387,47 @@ const LandingPage = () => {
       {/* Pricing Section */}
       <section id="pricing" className="section pricing">
         <div className="container">
-          <h2 className="section-title">Plans & Pricing</h2>
-          <p className="section-subtitle">Transparent pricing based on your needs</p>
+          <div className="pricing-sale-header">
+            <span className="sale-tag">🔥 STARTER OFFER - 60% OFF</span>
+            <h2 className="section-title">Choose Your Plan</h2>
+            <p className="section-subtitle">Limited time offer for new members. Lock in these prices today!</p>
+          </div>
           <div className="pricing-grid">
             {pricingPlans.map(plan => (
               <Card key={plan.id} className={`pricing-card ${plan.featured ? 'featured' : ''}`}>
-                {plan.featured && <div className="featured-badge">Most Popular</div>}
+                {/* Badge */}
+                <div className={`plan-badge ${plan.featured ? 'featured' : ''}`}>
+                  {plan.badge}
+                </div>
+                
+                {/* Discount Badge */}
+                <div className="discount-badge">{plan.discount}</div>
+                
                 <div className="plan-header">
                   <h3 className="plan-name">{plan.name}</h3>
-                  <div className="plan-applications">
-                    <span className="applications-number">{plan.applications}</span>
-                    <span className="applications-period">{plan.period}</span>
+                  
+                  {/* Applications - Highlighted */}
+                  <div className="plan-applications-highlight">
+                    <span className="applications-number-big">{plan.applications}</span>
+                    <span className="applications-period-text">{plan.period}</span>
                   </div>
-                  <div className="plan-price">
-                    <span className="price">{plan.price}</span>
-                    <span className="price-subtext">{plan.priceSubtext}</span>
+                  
+                  {/* Price with strikethrough */}
+                  <div className="plan-price-sale">
+                    <span className="original-price">{plan.originalPrice}</span>
+                    <div className="sale-price-row">
+                      <span className="sale-price">{plan.price}</span>
+                      <span className="price-subtext">{plan.priceSubtext}</span>
+                    </div>
+                    <div className="savings-amount">{plan.savings}</div>
                   </div>
+                  
+                  {/* Urgency */}
+                  <div className="spots-urgency">
+                    <span className="spots-dot"></span>
+                    <span>Only {plan.spotsLeft} spots left!</span>
+                  </div>
+                  
                   <p className="plan-best-for">{plan.bestFor}</p>
                 </div>
                 <ul className="plan-features">
@@ -288,8 +438,11 @@ const LandingPage = () => {
                     </li>
                   ))}
                 </ul>
-                <Button className={plan.featured ? 'btn-primary w-full' : 'btn-secondary w-full'}>
-                  Choose {plan.name}
+                <Button 
+                  className={plan.featured ? 'btn-primary w-full pulse-btn' : 'btn-secondary w-full'}
+                  onClick={() => handlePlanSelect(plan.id)}
+                >
+                  Get Started Now
                 </Button>
               </Card>
             ))}
@@ -297,20 +450,6 @@ const LandingPage = () => {
           <p className="pricing-disclaimer">
             We don't guarantee a job offer, but we eliminate the repetitive grind so you can focus on interviews and skill-building.
           </p>
-        </div>
-      </section>
-
-      {/* Metrics Section */}
-      <section className="section metrics">
-        <div className="container">
-          <div className="metrics-grid">
-            {metricsData.map(metric => (
-              <div key={metric.id} className="metric-item">
-                <p className="metric-number">{metric.number}</p>
-                <p className="metric-label">{metric.label}</p>
-              </div>
-            ))}
-          </div>
         </div>
       </section>
 
@@ -455,6 +594,12 @@ const LandingPage = () => {
           </div>
         </div>
       </footer>
+
+      {/* Book Call Modal */}
+      <BookCallModal 
+        isOpen={isBookCallModalOpen} 
+        onClose={() => setIsBookCallModalOpen(false)} 
+      />
     </div>
   );
 };

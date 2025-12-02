@@ -45,9 +45,9 @@ You need to create 3 subscription products matching your pricing page:
 1. Go to **Products → Add product**
 2. Fill in:
    - **Name**: Nova Ninjas - Starter
-   - **Description**: Up to 20 applications per day
+   - **Description**: 400 applications per month
    - **Pricing model**: Recurring
-   - **Price**: $299 USD
+   - **Price**: $399 USD
    - **Billing period**: Monthly
 3. Click **Save product**
 4. **Copy the Price ID** (starts with `price_...`) - you'll need this!
@@ -56,9 +56,9 @@ You need to create 3 subscription products matching your pricing page:
 1. Click **Add product** again
 2. Fill in:
    - **Name**: Nova Ninjas - Pro
-   - **Description**: Up to 50 applications per day
+   - **Description**: 500 applications per month
    - **Pricing model**: Recurring
-   - **Price**: $399 USD
+   - **Price**: $499 USD
    - **Billing period**: Monthly
 3. Click **Save product**
 4. **Copy the Price ID**
@@ -67,9 +67,9 @@ You need to create 3 subscription products matching your pricing page:
 1. Click **Add product** again
 2. Fill in:
    - **Name**: Nova Ninjas - Urgent
-   - **Description**: Up to 75 applications per day
+   - **Description**: 600 applications per month
    - **Pricing model**: Recurring
-   - **Price**: $499 USD
+   - **Price**: $599 USD
    - **Billing period**: Monthly
 3. Click **Save product**
 4. **Copy the Price ID**

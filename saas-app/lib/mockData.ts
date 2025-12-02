@@ -22,10 +22,10 @@ export const mockPlans = [
   {
     id: "plan_starter",
     name: "Starter",
-    priceMonthly: 299,
-    appsPerDay: 20,
+    priceMonthly: 399,
+    appsPerMonth: 400,
     features: [
-      "20 applications per day",
+      "400 applications per month",
       "Job search & shortlisting",
       "Application tracking",
       "Email support",
@@ -34,13 +34,13 @@ export const mockPlans = [
   {
     id: "plan_pro",
     name: "Pro",
-    priceMonthly: 599,
-    appsPerDay: 50,
+    priceMonthly: 499,
+    appsPerMonth: 500,
     features: [
-      "50 applications per day",
+      "500 applications per month",
       "Priority job search",
       "Real-time tracking",
-      "Daily updates",
+      "Weekly updates",
       "Strategy calls",
     ],
     featured: true,
@@ -48,10 +48,10 @@ export const mockPlans = [
   {
     id: "plan_urgent",
     name: "Urgent",
-    priceMonthly: 899,
-    appsPerDay: 75,
+    priceMonthly: 599,
+    appsPerMonth: 600,
     features: [
-      "75 applications per day",
+      "600 applications per month",
       "Dedicated specialist",
       "24/7 support",
       "Interview prep",

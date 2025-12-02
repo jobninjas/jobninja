@@ -34,12 +34,12 @@ Last Updated: November 2025
 
 ### Key Value Proposition
 - **Human specialists** (not bots) apply to jobs
-- **20-40 applications per day** based on subscription tier
+- **400-600 applications per month** based on subscription tier
 - **Target audience**: Recently laid-off professionals, visa holders, career changers
 - **Focus**: Free up time for networking, skill-building, and interview preparation
 
 ### Business Model
-- **Subscription-based pricing**: $299-$499/month
+- **Subscription-based pricing**: $399-$599/month
 - **Payment processing**: Stripe (supports cards, Apple Pay, Google Pay, Cash App)
 - **Target market**: US-based job seekers
 
@@ -364,9 +364,9 @@ Content-Type: application/json
 2. **Stay in Test Mode** for development
 3. **Get API Keys**: Developers → API Keys
 4. **Create Products**: 
-   - Starter: $299/month
-   - Pro: $399/month
-   - Urgent: $499/month
+   - Starter: $399/month (400 applications)
+   - Pro: $499/month (500 applications)
+   - Urgent: $599/month (600 applications)
 5. **Add Keys to .env**: Copy secret key and price IDs
 6. **Restart Backend**: `sudo supervisorctl restart backend`
 
