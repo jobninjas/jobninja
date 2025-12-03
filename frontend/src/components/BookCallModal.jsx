@@ -52,6 +52,7 @@ const BookCallModal = ({ isOpen, onClose }) => {
     }
 
     setIsSubmitting(true);
+    
     setError('');
 
     try {
