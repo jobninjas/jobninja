@@ -181,20 +181,6 @@ const LandingPage = () => {
                 Book Free Consultation
               </Button>
             </div>
-            <div className="hero-trust-badges">
-              <div className="trust-item">
-                <span className="trust-number">92%</span>
-                <span className="trust-label">Success Rate</span>
-              </div>
-              <div className="trust-item">
-                <span className="trust-number">2,850+</span>
-                <span className="trust-label">Jobs Applied</span>
-              </div>
-              <div className="trust-item">
-                <span className="trust-number">485+</span>
-                <span className="trust-label">Hours Saved</span>
-              </div>
-            </div>
           </div>
           <div className="hero-dashboard">
             <Card className="dashboard-card">
@@ -560,6 +546,30 @@ const LandingPage = () => {
               </form>
             )}
           </Card>
+        </div>
+      </section>
+
+      {/* Stats Bar */}
+      <section className="stats-bar">
+        <div className="container">
+          <div className="stats-bar-content">
+            <div className="stat-box">
+              <span className="stat-number">92%</span>
+              <span className="stat-text">Success Rate</span>
+            </div>
+            <div className="stat-box">
+              <span className="stat-number">2,850+</span>
+              <span className="stat-text">Jobs Applied</span>
+            </div>
+            <div className="stat-box">
+              <span className="stat-number">485+</span>
+              <span className="stat-text">Hours Saved</span>
+            </div>
+            <div className="stat-box">
+              <span className="stat-number">500+</span>
+              <span className="stat-text">Happy Clients</span>
+            </div>
+          </div>
         </div>
       </section>
 
