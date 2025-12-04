@@ -150,7 +150,7 @@ async def send_waitlist_email(name: str, email: str):
     Send a confirmation email to users who join the waitlist.
     """
     try:
-        smtp_host = os.environ.get('SMTP_HOST', 'smtp.gmail.com')
+        smtp_host = os.environ.get('SMTP_HOST', 'smtp.zoho.com')
         smtp_port = int(os.environ.get('SMTP_PORT', 587))
         smtp_user = os.environ.get('SMTP_USER')
         smtp_password = os.environ.get('SMTP_PASSWORD')
@@ -262,7 +262,7 @@ async def send_booking_email(name: str, email: str):
     Send a confirmation email to users who book a call.
     """
     try:
-        smtp_host = os.environ.get('SMTP_HOST', 'smtp.gmail.com')
+        smtp_host = os.environ.get('SMTP_HOST', 'smtp.zoho.com')
         smtp_port = int(os.environ.get('SMTP_PORT', 587))
         smtp_user = os.environ.get('SMTP_USER')
         smtp_password = os.environ.get('SMTP_PASSWORD')
@@ -374,7 +374,7 @@ async def send_welcome_email(name: str, email: str):
     Send a welcome email to new users who sign up.
     """
     try:
-        smtp_host = os.environ.get('SMTP_HOST', 'smtp.gmail.com')
+        smtp_host = os.environ.get('SMTP_HOST', 'smtp.zoho.com')
         smtp_port = int(os.environ.get('SMTP_PORT', 587))
         smtp_user = os.environ.get('SMTP_USER')
         smtp_password = os.environ.get('SMTP_PASSWORD')
