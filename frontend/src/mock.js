@@ -50,7 +50,7 @@ export const whyChooseUs = [
 export const testimonials = [
   {
     id: 1,
-    name: "Michael R.",
+    name: "Rahul M.",
     role: "Software Engineer",
     before: "Unemployed for 4 months",
     after: "Senior Developer at Fortune 500",
@@ -59,7 +59,7 @@ export const testimonials = [
   },
   {
     id: 2,
-    name: "Sarah K.",
+    name: "Priya K.",
     role: "Product Manager",
     before: "Stuck in underpaying role",
     after: "40% salary increase",
@@ -68,7 +68,7 @@ export const testimonials = [
   },
   {
     id: 3,
-    name: "David L.",
+    name: "Arjun S.",
     role: "Data Analyst",
     before: "H1B visa holder, 60 days to find job",
     after: "Secured role in 5 weeks",
