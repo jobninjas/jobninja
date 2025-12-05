@@ -59,6 +59,10 @@ const Dashboard = () => {
     indeedEmail: '',
     indeedPassword: '',
     
+    // Gmail for applications
+    gmailEmail: '',
+    gmailPassword: '',
+    
     // Resume & Documents
     resumeFile: null,
     resumeFileName: '',
@@ -700,6 +704,46 @@ const Dashboard = () => {
                               type={showPassword ? "text" : "password"}
                               value={profile.linkedinPassword} 
                               onChange={(e) => handleProfileChange('linkedinPassword', e.target.value)}
+                              placeholder="••••••••"
+                            />
+                            <button 
+                              type="button"
+                              className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500"
+                              onClick={() => setShowPassword(!showPassword)}
+                            >
+                              {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Gmail for Job Applications */}
+                    <div className="p-4 border rounded-lg bg-red-50">
+                      <div className="flex items-center gap-2 mb-4">
+                        <Mail className="w-5 h-5 text-red-500" />
+                        <h4 className="font-medium">Gmail (For Job Applications)</h4>
+                        <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded">Required</span>
+                      </div>
+                      <p className="text-sm text-gray-600 mb-4">
+                        Create a new Gmail account specifically for job applications. Your Ninja will use this to apply on your behalf.
+                      </p>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <Label>Gmail Email</Label>
+                          <Input 
+                            value={profile.gmailEmail} 
+                            onChange={(e) => handleProfileChange('gmailEmail', e.target.value)}
+                            placeholder="yourjobsearch@gmail.com"
+                          />
+                        </div>
+                        <div>
+                          <Label>Gmail Password</Label>
+                          <div className="relative">
+                            <Input 
+                              type={showPassword ? "text" : "password"}
+                              value={profile.gmailPassword} 
+                              onChange={(e) => handleProfileChange('gmailPassword', e.target.value)}
                               placeholder="••••••••"
                             />
                             <button 

@@ -568,6 +568,10 @@ async def save_profile(request: Request):
         "indeedEmail": form_data.get('indeedEmail', ''),
         "indeedPassword": form_data.get('indeedPassword', ''),
         
+        # Gmail for job applications
+        "gmailEmail": form_data.get('gmailEmail', ''),
+        "gmailPassword": form_data.get('gmailPassword', ''),
+        
         # Skills & Background
         "skills": form_data.get('skills', ''),
         "education": form_data.get('education', ''),
