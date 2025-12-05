@@ -249,7 +249,7 @@ const LandingPage = () => {
                   </li>
                 ))}
               </ul>
-              <Button className="btn-primary" onClick={() => navigate('/signup')}>
+              <Button className="btn-primary" onClick={() => navigate(isAuthenticated ? '/dashboard' : '/signup')}>
                 Start Your Journey
               </Button>
             </div>
