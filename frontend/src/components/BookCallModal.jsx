@@ -56,9 +56,9 @@ const BookCallModal = ({ isOpen, onClose }) => {
     setError('');
 
     try {
-      const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8000';
+      const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
       
-      const response = await fetch(`${BACKEND_URL}/api/book-call`, {
+      const response = await fetch(`${API_URL}/api/book-call`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

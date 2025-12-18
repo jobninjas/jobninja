@@ -89,9 +89,9 @@ const Dashboard = () => {
       
       try {
         setIsLoading(true);
-        const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8000';
+        const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
         
-        const response = await fetch(`${BACKEND_URL}/api/applications/${encodeURIComponent(user.email)}`);
+        const response = await fetch(`${API_URL}/api/applications/${encodeURIComponent(user.email)}`);
         
         if (response.ok) {
           const data = await response.json();
@@ -134,8 +134,8 @@ const Dashboard = () => {
       if (!user?.email) return;
       
       try {
-        const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8000';
-        const response = await fetch(`${BACKEND_URL}/api/profile/${encodeURIComponent(user.email)}`);
+        const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+        const response = await fetch(`${API_URL}/api/profile/${encodeURIComponent(user.email)}`);
         
         if (response.ok) {
           const data = await response.json();
@@ -176,7 +176,7 @@ const Dashboard = () => {
     setSaveMessage('');
     
     try {
-      const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8000';
+      const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
       
       // Create form data for file upload
       const formData = new FormData();
@@ -191,7 +191,7 @@ const Dashboard = () => {
       });
       formData.append('email', user?.email);
       
-      const response = await fetch(`${BACKEND_URL}/api/profile`, {
+      const response = await fetch(`${API_URL}/api/profile`, {
         method: 'POST',
         body: formData
       });
@@ -214,8 +214,8 @@ const Dashboard = () => {
     if (window.confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
       if (window.confirm('This will permanently delete all your data. Type "DELETE" to confirm.')) {
         try {
-          const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8000';
-          const response = await fetch(`${BACKEND_URL}/api/user/${encodeURIComponent(user?.email)}`, {
+          const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+          const response = await fetch(`${API_URL}/api/user/${encodeURIComponent(user?.email)}`, {
             method: 'DELETE'
           });
           
