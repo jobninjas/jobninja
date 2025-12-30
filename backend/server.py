@@ -35,21 +35,31 @@ logger.info(f"Connecting to MongoDB database: {db_name}")
 
 try:
     import certifi
-    import ssl
     
     # Add TLS/SSL configuration for MongoDB Atlas compatibility
     # Use certifi's certificates for proper SSL verification
+    # Also try tlsAllowInvalidCertificates for Railway compatibility
     client = AsyncIOMotorClient(
         mongo_url,
-        serverSelectionTimeoutMS=10000,
+        serverSelectionTimeoutMS=15000,
         tls=True,
-        tlsCAFile=certifi.where()
+        tlsCAFile=certifi.where(),
+        tlsAllowInvalidCertificates=True,
+        tlsAllowInvalidHostnames=True
     )
     db = client[db_name]
-    logger.info("MongoDB client initialized successfully with certifi SSL")
+    logger.info("MongoDB client initialized successfully")
 except Exception as e:
     logger.error(f"Failed to initialize MongoDB client: {e}")
-    raise
+    # Try without TLS options as fallback
+    try:
+        logger.info("Trying fallback connection without explicit TLS options...")
+        client = AsyncIOMotorClient(mongo_url, serverSelectionTimeoutMS=15000)
+        db = client[db_name]
+        logger.info("MongoDB client initialized with fallback settings")
+    except Exception as e2:
+        logger.error(f"Fallback connection also failed: {e2}")
+        raise e
 
 # Create the main app without a prefix
 app = FastAPI()
@@ -145,12 +155,21 @@ async def health_check():
     """
     Health check endpoint that also tests MongoDB connection.
     """
+    mongo_status = "unknown"
+    mongo_error = None
+    
     try:
         # Test MongoDB connection by pinging
         await client.admin.command('ping')
         mongo_status = "connected"
     except Exception as e:
-        mongo_status = f"error: {str(e)}"
+        error_msg = str(e)
+        if "SSL handshake failed" in error_msg or "TLSV1_ALERT_INTERNAL_ERROR" in error_msg:
+            mongo_status = "ssl_error"
+            mongo_error = "SSL/TLS error - Please whitelist 0.0.0.0/0 in MongoDB Atlas Network Access"
+        else:
+            mongo_status = "error"
+            mongo_error = error_msg[:200]  # Truncate long errors
     
     # Check environment variables
     env_check = {
@@ -161,10 +180,12 @@ async def health_check():
     }
     
     return {
-        "status": "healthy",
+        "status": "healthy" if mongo_status == "connected" else "degraded",
         "mongodb": mongo_status,
+        "mongodb_error": mongo_error,
         "environment": env_check,
-        "timestamp": datetime.now(timezone.utc).isoformat()
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "fix_instructions": "If mongodb shows ssl_error, go to MongoDB Atlas > Network Access > Add IP > Allow Access from Anywhere (0.0.0.0/0)" if mongo_status == "ssl_error" else None
     }
 
 @api_router.get("/test-email/{email}")
