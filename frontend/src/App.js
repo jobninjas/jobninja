@@ -13,6 +13,17 @@ import Admin from "./components/Admin";
 import ProtectedRoute from "./components/ProtectedRoute";
 import PaymentSuccess from "./components/PaymentSuccess";
 import PaymentCanceled from "./components/PaymentCanceled";
+// AI Ninja and Human Ninja components
+import AINinja from "./components/AINinja";
+import JobDetail from "./components/JobDetail";
+import AIApply from "./components/AIApply";
+import HumanNinja from "./components/HumanNinja";
+// New components
+import Jobs from "./components/Jobs";
+import MyResumes from "./components/MyResumes";
+import InterviewPrep from "./components/InterviewPrep";
+import "./components/Jobs.css";
+import "./components/InterviewPrep.css";
 
 function App() {
   return (
@@ -27,6 +38,30 @@ function App() {
             <Route path="/pricing" element={<Pricing />} />
             <Route path="/payment/success" element={<PaymentSuccess />} />
             <Route path="/payment/canceled" element={<PaymentCanceled />} />
+            
+            {/* AI Ninja Routes */}
+            <Route path="/ai-ninja" element={<AINinja />} />
+            <Route path="/ai-ninja/jobs/:id" element={<JobDetail />} />
+            <Route path="/ai-ninja/apply/:id" element={<AIApply />} />
+            
+            {/* Human Ninja Route */}
+            <Route path="/human-ninja" element={<HumanNinja />} />
+            
+            {/* Jobs Route */}
+            <Route path="/jobs" element={<Jobs />} />
+            
+            {/* Interview Prep Route */}
+            <Route path="/interview-prep" element={<InterviewPrep />} />
+            
+            {/* My Resumes - Protected */}
+            <Route
+              path="/resumes"
+              element={
+                <ProtectedRoute allowedRoles={['customer']}>
+                  <MyResumes />
+                </ProtectedRoute>
+              }
+            />
             
             {/* Protected Routes - Customer */}
             <Route

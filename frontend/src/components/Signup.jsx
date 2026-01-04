@@ -5,6 +5,10 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Card, CardHeader, CardContent, CardTitle, CardDescription } from './ui/card';
+import { Menu } from 'lucide-react';
+import SideMenu from './SideMenu';
+import './SideMenu.css';
+import { BRAND } from '../config/branding';
 
 const Signup = () => {
   const navigate = useNavigate();
@@ -17,6 +21,7 @@ const Signup = () => {
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [sideMenuOpen, setSideMenuOpen] = useState(false);
 
   const handleChange = (e) => {
     setFormData({
@@ -54,18 +59,30 @@ const Signup = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 relative">
+      {/* Side Menu */}
+      <SideMenu isOpen={sideMenuOpen} onClose={() => setSideMenuOpen(false)} />
+      
+      {/* Hamburger Button */}
+      <button 
+        onClick={() => setSideMenuOpen(true)} 
+        className="fixed top-4 left-4 p-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 z-10"
+        aria-label="Open menu"
+      >
+        <Menu className="w-5 h-5 text-gray-600" />
+      </button>
+      
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
           <div className="flex justify-center mb-4">
             <Link to="/" className="flex items-center gap-2">
-              <img src="/logo.png" alt="Nova Ninjas" className="h-8" />
-              <span className="text-2xl font-bold text-primary">Nova Ninjas</span>
+              <img src={BRAND.logoPath} alt={BRAND.logoAlt} className="h-8" />
+              <span className="text-2xl font-bold text-primary">{BRAND.name}</span>
             </Link>
           </div>
           <CardTitle className="text-2xl text-center">Create an account</CardTitle>
           <CardDescription className="text-center">
-            Start your journey with human-powered job applications
+            {BRAND.tagline}
           </CardDescription>
         </CardHeader>
         <CardContent>

@@ -9,21 +9,26 @@ import { Label } from './ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Textarea } from './ui/textarea';
 import { API_URL } from '../config/api';
+import { BRAND, APPLICATION_STATUS_LABELS } from '../config/branding';
+import SideMenu from './SideMenu';
+import './SideMenu.css';
 import { 
   TrendingUp, Target, Users, Clock, LogOut, Settings, CreditCard, Loader2,
   User, Upload, Briefcase, Linkedin, Mail, Shield, Trash2, Save, CheckCircle,
-  AlertCircle, Eye, EyeOff
+  AlertCircle, Eye, EyeOff, FileText, ExternalLink, Download, Bot, UserCheck,
+  ClipboardList, Menu
 } from 'lucide-react';
 
 const Dashboard = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('pipeline');
+  const [activeTab, setActiveTab] = useState('tracker');
   const [applications, setApplications] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [sideMenuOpen, setSideMenuOpen] = useState(false);
   const [kpis, setKpis] = useState({
     applicationsThisWeek: 0,
     totalJobsApplied: 0,
@@ -241,21 +246,38 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Side Menu */}
+      <SideMenu isOpen={sideMenuOpen} onClose={() => setSideMenuOpen(false)} />
+      
       {/* Top Navigation */}
       <nav className="bg-white border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center gap-8">
+              {/* Hamburger Menu */}
+              <button 
+                onClick={() => setSideMenuOpen(true)} 
+                className="p-2 rounded-lg border border-gray-200 hover:bg-gray-50"
+                aria-label="Open menu"
+              >
+                <Menu className="w-5 h-5 text-gray-600" />
+              </button>
               <button onClick={() => navigate('/')} className="flex items-center gap-2">
-                <img src="/logo.png" alt="Nova Ninjas" className="h-8" />
-                <span className="text-xl font-bold text-primary">Nova Ninjas</span>
+                <img src={BRAND.logoPath} alt={BRAND.logoAlt} className="h-8" />
+                <span className="text-xl font-bold text-primary">{BRAND.name}</span>
               </button>
               <div className="hidden md:flex items-center gap-4">
-                <span className="text-sm text-gray-600">Welcome, {user?.name}</span>
-                <Badge>{user?.plan || 'No Plan'}</Badge>
+                <button onClick={() => navigate('/ai-ninja')} className="text-sm text-gray-600 hover:text-primary flex items-center gap-1">
+                  <Bot className="w-4 h-4" /> AI Ninja
+                </button>
+                <button onClick={() => navigate('/human-ninja')} className="text-sm text-gray-600 hover:text-primary flex items-center gap-1">
+                  <UserCheck className="w-4 h-4" /> Human Ninja
+                </button>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-4">
+              <span className="text-sm text-gray-600">Welcome, {user?.name}</span>
+              <Badge>{user?.plan || 'Free'}</Badge>
               <Button variant="ghost" size="sm" onClick={() => setActiveTab('profile')}>
                 <User className="w-4 h-4" />
               </Button>
@@ -331,6 +353,17 @@ const Dashboard = () => {
               <CardContent className="p-4">
                 <nav className="space-y-1">
                   <button
+                    onClick={() => setActiveTab('tracker')}
+                    className={`w-full text-left px-3 py-2 rounded-md text-sm font-medium flex items-center gap-2 ${
+                      activeTab === 'tracker'
+                        ? 'bg-primary text-white'
+                        : 'text-gray-700 hover:bg-gray-100'
+                    }`}
+                  >
+                    <ClipboardList className="w-4 h-4" />
+                    Application Tracker
+                  </button>
+                  <button
                     onClick={() => setActiveTab('pipeline')}
                     className={`w-full text-left px-3 py-2 rounded-md text-sm font-medium flex items-center gap-2 ${
                       activeTab === 'pipeline'
@@ -339,7 +372,7 @@ const Dashboard = () => {
                     }`}
                   >
                     <Target className="w-4 h-4" />
-                    Pipeline
+                    Human Ninja Pipeline
                   </button>
                   <button
                     onClick={() => setActiveTab('profile')}
@@ -392,6 +425,136 @@ const Dashboard = () => {
 
           {/* Main Content */}
           <div className="flex-1">
+            {/* Application Tracker Tab */}
+            {activeTab === 'tracker' && (
+              <div className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <ClipboardList className="w-5 h-5" />
+                      Application Tracker
+                    </CardTitle>
+                    <p className="text-sm text-gray-600 mt-1">
+                      Every time you use AI Ninja or Human Ninja to prepare an application, we log it here so you can see your entire job search in one place.
+                    </p>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="border-b">
+                            <th className="text-left py-3 px-4 font-medium text-sm text-gray-600">Date</th>
+                            <th className="text-left py-3 px-4 font-medium text-sm text-gray-600">Company</th>
+                            <th className="text-left py-3 px-4 font-medium text-sm text-gray-600">Role</th>
+                            <th className="text-left py-3 px-4 font-medium text-sm text-gray-600">Location</th>
+                            <th className="text-left py-3 px-4 font-medium text-sm text-gray-600">Type</th>
+                            <th className="text-left py-3 px-4 font-medium text-sm text-gray-600">Tags</th>
+                            <th className="text-left py-3 px-4 font-medium text-sm text-gray-600">Email Used</th>
+                            <th className="text-left py-3 px-4 font-medium text-sm text-gray-600">Resume</th>
+                            <th className="text-left py-3 px-4 font-medium text-sm text-gray-600">Cover Letter</th>
+                            <th className="text-left py-3 px-4 font-medium text-sm text-gray-600">Link</th>
+                            <th className="text-left py-3 px-4 font-medium text-sm text-gray-600">Status</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {isLoading ? (
+                            <tr>
+                              <td colSpan="11" className="py-8 text-center">
+                                <Loader2 className="w-6 h-6 animate-spin mx-auto text-primary" />
+                                <p className="text-sm text-gray-500 mt-2">Loading applications...</p>
+                              </td>
+                            </tr>
+                          ) : applications.length === 0 ? (
+                            <tr>
+                              <td colSpan="11" className="py-8 text-center">
+                                <ClipboardList className="w-12 h-12 mx-auto text-gray-300 mb-4" />
+                                <p className="text-gray-500 font-medium">No applications yet</p>
+                                <p className="text-sm text-gray-400 mt-1 mb-4">
+                                  Start using AI Ninja or Human Ninja to track your applications here.
+                                </p>
+                                <div className="flex justify-center gap-2">
+                                  <Button variant="outline" onClick={() => navigate('/ai-ninja')}>
+                                    <Bot className="w-4 h-4 mr-2" /> Try AI Ninja
+                                  </Button>
+                                  <Button onClick={() => navigate('/human-ninja')}>
+                                    <UserCheck className="w-4 h-4 mr-2" /> Learn About Human Ninja
+                                  </Button>
+                                </div>
+                              </td>
+                            </tr>
+                          ) : (
+                            applications.map((app) => (
+                              <tr key={app.id} className="border-b hover:bg-gray-50">
+                                <td className="py-3 px-4 text-sm text-gray-600">{app.date || '-'}</td>
+                                <td className="py-3 px-4 font-medium">{app.company}</td>
+                                <td className="py-3 px-4">{app.role}</td>
+                                <td className="py-3 px-4 text-sm">{app.location || '-'}</td>
+                                <td className="py-3 px-4 text-sm">
+                                  <Badge variant="outline">{app.type || 'Unknown'}</Badge>
+                                </td>
+                                <td className="py-3 px-4">
+                                  <div className="flex gap-1 flex-wrap">
+                                    {app.tags?.map((tag, i) => (
+                                      <Badge key={i} variant="secondary" className="text-xs">{tag}</Badge>
+                                    ))}
+                                  </div>
+                                </td>
+                                <td className="py-3 px-4 text-sm text-gray-600">{app.emailUsed || '-'}</td>
+                                <td className="py-3 px-4">
+                                  {app.resumeId ? (
+                                    <Button variant="ghost" size="sm">
+                                      <FileText className="w-4 h-4" />
+                                    </Button>
+                                  ) : '-'}
+                                </td>
+                                <td className="py-3 px-4">
+                                  {app.coverLetterId ? (
+                                    <Button variant="ghost" size="sm">
+                                      <FileText className="w-4 h-4" />
+                                    </Button>
+                                  ) : '-'}
+                                </td>
+                                <td className="py-3 px-4">
+                                  {app.applicationLink ? (
+                                    <a
+                                      href={app.applicationLink}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-primary hover:underline"
+                                    >
+                                      <ExternalLink className="w-4 h-4" />
+                                    </a>
+                                  ) : '-'}
+                                </td>
+                                <td className="py-3 px-4">
+                                  <Select 
+                                    value={app.status} 
+                                    onValueChange={(value) => {
+                                      // TODO: Update status via API
+                                      console.log('Update status:', app.id, value);
+                                    }}
+                                  >
+                                    <SelectTrigger className="w-28 h-8 text-xs">
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {Object.entries(APPLICATION_STATUS_LABELS).map(([key, label]) => (
+                                        <SelectItem key={key} value={key}>{label}</SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+
             {activeTab === 'pipeline' && (
               <Card>
                 <CardHeader>

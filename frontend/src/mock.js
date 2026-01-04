@@ -1,4 +1,5 @@
-// Mock data for Nova Ninjas landing page
+// Mock data for Job Ninjas landing page
+import { BRAND } from './config/branding';
 
 export const heroStats = {
   jobsThisWeek: 347,
@@ -54,7 +55,7 @@ export const testimonials = [
     role: "Software Engineer",
     before: "Unemployed for 4 months",
     after: "Senior Developer at Fortune 500",
-    quote: "Nova Ninjas transformed my job search. I was spending 4 hours daily applying to jobs with no results. Within 6 weeks of using their service, I had 5 interviews and 2 offers.",
+    quote: "Job Ninjas transformed my job search. I was spending 4 hours daily applying to jobs with no results. Within 6 weeks of using their service, I had 5 interviews and 2 offers.",
     rating: 5
   },
   {
@@ -72,7 +73,7 @@ export const testimonials = [
     role: "Data Analyst",
     before: "H1B visa holder, 60 days to find job",
     after: "Secured role in 5 weeks",
-    quote: "With my visa timeline, I couldn't afford to waste time. Nova Ninjas understood the urgency and delivered. I'm now working at a company that sponsored my visa.",
+    quote: "With my visa timeline, I couldn't afford to waste time. Job Ninjas understood the urgency and delivered. I'm now working at a company that sponsored my visa.",
     rating: 5
   }
 ];
@@ -121,104 +122,39 @@ export const howItWorksSteps = [
 export const comparisonData = [
   {
     feature: "Humans read & understand job descriptions",
-    novaJobCrew: true,
+    jobNinjas: true,
     aiBots: false
   },
   {
     feature: "No spammy mass-apply bots",
-    novaJobCrew: true,
+    jobNinjas: true,
     aiBots: false
   },
   {
     feature: "AI-enhanced tailoring, human decisions",
-    novaJobCrew: true,
+    jobNinjas: true,
     aiBots: false
   },
   {
     feature: "Real human accountability & support",
-    novaJobCrew: true,
+    jobNinjas: true,
     aiBots: false
   },
   {
     feature: "Human judgment on every submission",
-    novaJobCrew: true,
+    jobNinjas: true,
     aiBots: false
   }
 ];
 
-export const pricingPlans = [
-  {
-    id: 1,
-    name: "Starter",
-    applications: "400",
-    period: "applications/month",
-    originalPrice: "$999",
-    price: "$399",
-    priceSubtext: "/month",
-    discount: "60% OFF",
-    savings: "Save $600",
-    spotsLeft: 8,
-    badge: "STARTER OFFER",
-    bestFor: "New grads or early career professionals",
-    features: [
-      "400 Ninja-powered applications/month",
-      "Your dedicated Job Ninja",
-      "Real-time Ninja activity dashboard",
-      "Weekly progress reports",
-      "Email support",
-      "Application history & analytics"
-    ]
-  },
-  {
-    id: 2,
-    name: "Pro",
-    applications: "500",
-    period: "applications/month",
-    originalPrice: "$1,249",
-    price: "$499",
-    priceSubtext: "/month",
-    discount: "60% OFF",
-    savings: "Save $750",
-    spotsLeft: 5,
-    badge: "MOST POPULAR",
-    bestFor: "Mid-career professionals seeking rapid results",
-    featured: true,
-    features: [
-      "500 Ninja-powered applications/month",
-      "Senior dedicated Job Ninja",
-      "Real-time Ninja activity dashboard",
-      "Weekly strategy calls with your Ninja",
-      "LinkedIn profile optimization",
-      "Interview prep resources",
-      "Priority Ninja response time"
-    ]
-  },
-  {
-    id: 3,
-    name: "Urgent",
-    applications: "600",
-    period: "applications/month",
-    originalPrice: "$1,499",
-    price: "$599",
-    priceSubtext: "/month",
-    discount: "60% OFF",
-    savings: "Save $900",
-    spotsLeft: 3,
-    badge: "BEST VALUE",
-    bestFor: "Visa holders or urgent timelines — 24/7 service",
-    features: [
-      "600 Ninja-powered applications/month",
-      "🔥 24-hour non-stop application service",
-      "Elite dedicated Job Ninja",
-      "Real-time tracking & instant alerts",
-      "Daily Ninja progress reports",
-      "24/7 priority Ninja support",
-      "Interview coaching sessions",
-      "Salary negotiation guidance",
-      "Custom Ninja strategy for your timeline"
-    ]
-  }
-];
+// Legacy pricing plans removed - use PRICING from branding.js instead
+// Current pricing:
+// - AI Ninja Free: $0, 5 applications
+// - AI Ninja Pro: $29.99/month, 200 applications/month
+// - Human Ninja Starter: $50 for 25 applications
+// - Human Ninja Growth: $199 for 100 applications  
+// - Human Ninja Scale: $399 for 250 applications
+export const pricingPlans = [];
 
 export const metricsData = [
   {
@@ -277,6 +213,178 @@ export const faqData = [
 ];
 
 export const aboutContent = {
-  title: "Why we started Nova Ninjas",
-  story: "We started Nova Ninjas because we saw too many talented people stuck in the exhausting cycle of job applications. That's why we created Job Ninjas — dedicated human specialists who become your personal application warriors. Each Ninja uses AI to work faster and smarter, analyzing job descriptions and tailoring your applications with precision. But unlike bots, your Ninja makes every decision and submits every application personally. We never mass-apply or spam recruiters. Your Ninja protects your reputation while maximizing your opportunities. By handling the high-volume application grind, your Ninja frees you to do what actually gets you hired: building relationships and crushing interviews."
+  title: `Why we started ${BRAND.name}`,
+  story: `We started ${BRAND.name} because we saw too many talented people stuck in the exhausting cycle of job applications. That's why we created Job Ninjas — dedicated human specialists who become your personal application warriors. Each Ninja uses AI to work faster and smarter, analyzing job descriptions and tailoring your applications with precision. But unlike bots, your Ninja makes every decision and submits every application personally. We never mass-apply or spam recruiters. Your Ninja protects your reputation while maximizing your opportunities. By handling the high-volume application grind, your Ninja frees you to do what actually gets you hired: building relationships and crushing interviews.`
 };
+
+// ============================================
+// SAMPLE JOB DATA FOR AI NINJA
+// ============================================
+
+export const sampleJobs = [
+  {
+    id: '1',
+    title: 'Senior Software Engineer',
+    company: 'TechCorp Inc.',
+    location: 'San Francisco, CA',
+    salaryRange: '$150,000 - $200,000',
+    visaTags: ['H-1B', 'STEM OPT'],
+    type: 'remote',
+    highPay: true,
+    sourceUrl: 'https://example.com/job/1',
+    categoryTags: ['High-paying', 'Visa sponsorship'],
+    description: 'We are looking for a Senior Software Engineer to join our growing team. You will work on cutting-edge technologies and help build scalable systems.',
+    fullDescription: `About the Role:
+We are seeking a talented Senior Software Engineer to join our engineering team. You will be responsible for designing, developing, and maintaining high-quality software solutions.
+
+Requirements:
+- 5+ years of experience in software development
+- Proficiency in Python, JavaScript, or similar languages
+- Experience with cloud platforms (AWS, GCP, Azure)
+- Strong problem-solving skills
+
+Benefits:
+- Competitive salary with equity
+- Full health, dental, and vision coverage
+- Flexible work arrangements
+- H-1B visa sponsorship available`,
+    postedDate: '2025-12-28'
+  },
+  {
+    id: '2',
+    title: 'Product Manager',
+    company: 'InnovateTech',
+    location: 'New York, NY',
+    salaryRange: '$130,000 - $170,000',
+    visaTags: ['OPT', 'STEM OPT', 'H-1B'],
+    type: 'hybrid',
+    highPay: true,
+    sourceUrl: 'https://example.com/job/2',
+    categoryTags: ['High-paying', 'Visa sponsorship'],
+    description: 'Join our product team to drive innovation and lead product development from concept to launch.',
+    fullDescription: `About InnovateTech:
+We're a fast-growing startup revolutionizing the fintech space. Our Product Manager will own the entire product lifecycle.
+
+What You'll Do:
+- Define product vision and roadmap
+- Work closely with engineering and design teams
+- Conduct user research and gather feedback
+- Drive product launches and iterations
+
+What We're Looking For:
+- 3+ years of product management experience
+- Strong analytical and communication skills
+- Experience with agile methodologies
+- MBA preferred but not required
+
+We sponsor all visa types!`,
+    postedDate: '2025-12-27'
+  },
+  {
+    id: '3',
+    title: 'Data Scientist',
+    company: 'DataFlow Analytics',
+    location: 'Austin, TX',
+    salaryRange: '$120,000 - $160,000',
+    visaTags: ['STEM OPT', 'H-1B'],
+    type: 'remote',
+    highPay: true,
+    sourceUrl: 'https://example.com/job/3',
+    categoryTags: ['High-paying', 'Visa sponsorship', 'Remote'],
+    description: 'Build machine learning models and derive insights from complex datasets to drive business decisions.',
+    fullDescription: `Role Overview:
+As a Data Scientist at DataFlow Analytics, you'll work with large-scale datasets to build predictive models and extract actionable insights.
+
+Responsibilities:
+- Develop and deploy ML models
+- Analyze complex datasets
+- Collaborate with stakeholders to understand business needs
+- Present findings to leadership
+
+Requirements:
+- MS or PhD in Computer Science, Statistics, or related field
+- 2+ years of industry experience
+- Proficiency in Python, SQL, and ML frameworks
+- Experience with deep learning is a plus
+
+100% remote position with visa sponsorship available.`,
+    postedDate: '2025-12-26'
+  },
+  {
+    id: '4',
+    title: 'Frontend Developer',
+    company: 'WebSolutions Co.',
+    location: 'Seattle, WA',
+    salaryRange: '$100,000 - $140,000',
+    visaTags: ['OPT'],
+    type: 'onsite',
+    highPay: false,
+    sourceUrl: 'https://example.com/job/4',
+    categoryTags: ['Visa sponsorship'],
+    description: 'Create beautiful, responsive web applications using modern frontend technologies.',
+    fullDescription: `About the Position:
+WebSolutions Co. is looking for a skilled Frontend Developer to join our creative team.
+
+What You'll Work On:
+- Build responsive web applications
+- Collaborate with UX designers
+- Optimize performance and accessibility
+- Contribute to our component library
+
+Tech Stack:
+- React, TypeScript
+- Next.js, Tailwind CSS
+- Testing with Jest and Playwright
+
+We welcome OPT candidates!`,
+    postedDate: '2025-12-25'
+  },
+  {
+    id: '5',
+    title: 'DevOps Engineer',
+    company: 'CloudScale Systems',
+    location: 'Denver, CO',
+    salaryRange: '$140,000 - $180,000',
+    visaTags: ['H-1B', 'Green Card'],
+    type: 'remote',
+    highPay: true,
+    sourceUrl: 'https://example.com/job/5',
+    categoryTags: ['High-paying', 'Visa sponsorship', 'Remote'],
+    description: 'Design and maintain cloud infrastructure, CI/CD pipelines, and ensure system reliability.',
+    fullDescription: `CloudScale Systems is seeking a DevOps Engineer to help us scale our infrastructure.
+
+Key Responsibilities:
+- Design and implement CI/CD pipelines
+- Manage Kubernetes clusters
+- Monitor system performance and reliability
+- Automate infrastructure provisioning
+
+Requirements:
+- 4+ years of DevOps/SRE experience
+- Strong knowledge of AWS or GCP
+- Experience with Terraform, Docker, Kubernetes
+- Scripting skills (Python, Bash)
+
+Remote work + H-1B and Green Card sponsorship available.`,
+    postedDate: '2025-12-24'
+  }
+];
+
+// AI Ninja FAQ
+export const aiNinjaFAQ = [
+  {
+    id: 1,
+    question: "Do you log into company portals and apply for me?",
+    answer: "No. AI Ninja generates tailored resumes, cover letters, and suggested answers for each job. You stay in control of your accounts and final submission. If you want fully done-for-you applying, that's what Human Ninja is for."
+  },
+  {
+    id: 2,
+    question: "Will this get my resume blacklisted?",
+    answer: "Our goal is the opposite. We don't spam dozens of roles in the same company with the same profile. We focus on targeted roles and one smart application per company per month when we operate on your behalf."
+  },
+  {
+    id: 3,
+    question: "Can you guarantee me a job or visa?",
+    answer: "No. We don't make fake guarantees. We guarantee a serious, structured application process. Your interviews, performance, and the market still matter."
+  }
+];

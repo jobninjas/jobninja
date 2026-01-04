@@ -1394,6 +1394,238 @@ async def get_all_bookings():
         }
     }
 
+
+# ============ AI NINJA ENDPOINTS ============
+
+class ApplicationCreate(BaseModel):
+    """Application model for AI Ninja and Human Ninja applications."""
+    userId: str
+    jobId: Optional[str] = None
+    jobTitle: str
+    company: str
+    location: Optional[str] = None
+    workType: Optional[str] = None  # remote, hybrid, onsite
+    tags: Optional[List[str]] = []
+    emailUsed: Optional[str] = None
+    jobDescription: Optional[str] = None
+    yearsOfExperience: Optional[str] = None
+    primarySkills: Optional[str] = None
+    visaStatus: Optional[str] = None
+    targetSalary: Optional[str] = None
+    preferredWorkType: Optional[str] = None
+
+class Application(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    userId: str
+    jobId: Optional[str] = None
+    jobTitle: str
+    company: str
+    location: Optional[str] = None
+    workType: Optional[str] = None
+    tags: List[str] = []
+    emailUsed: Optional[str] = None
+    resumeId: Optional[str] = None
+    coverLetterId: Optional[str] = None
+    applicationLink: Optional[str] = None
+    status: str = "applied"  # applied, interview, rejected, offer, on_hold
+    createdAt: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updatedAt: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class AIApplyResponse(BaseModel):
+    applicationId: str
+    tailoredResume: str
+    tailoredCoverLetter: str
+    suggestedAnswers: List[dict]
+
+@api_router.post("/ai-ninja/apply")
+async def ai_ninja_apply(request: Request):
+    """
+    AI Ninja apply endpoint - generates tailored resume, cover letter, and Q&A.
+    Accepts multipart form data with resume file.
+    """
+    try:
+        form = await request.form()
+        
+        userId = form.get('userId', 'guest')
+        jobId = form.get('jobId', '')
+        jobTitle = form.get('jobTitle', '')
+        company = form.get('company', '')
+        jobDescription = form.get('jobDescription', '')
+        yearsOfExperience = form.get('yearsOfExperience', '')
+        primarySkills = form.get('primarySkills', '')
+        visaStatus = form.get('visaStatus', '')
+        targetSalary = form.get('targetSalary', '')
+        preferredWorkType = form.get('preferredWorkType', '')
+        
+        # Get resume file if uploaded
+        resumeFile = form.get('resume')
+        resumeText = ""
+        if resumeFile:
+            # In production, parse the resume file content
+            # For now, we'll use placeholder text
+            resumeText = f"[Resume content from {resumeFile.filename}]"
+        
+        # Generate application ID
+        applicationId = str(uuid.uuid4())
+        
+        # TODO: In production, call LLM API (OpenAI, Claude, etc.) to generate tailored content
+        # For now, return stub data that's tailored to the input
+        
+        tailoredResume = f"""# Professional Resume
+
+## Summary
+Experienced {primarySkills or 'professional'} with {yearsOfExperience or '3+'} years of experience, 
+seeking to contribute to {company} as a {jobTitle}.
+
+## Key Qualifications
+- {primarySkills or 'Technical expertise relevant to this role'}
+- Proven track record of delivering results
+- Strong communication and collaboration skills
+- Adaptable and quick learner
+
+## Professional Experience
+[Your experience tailored for {company}]
+
+## Why I'm a Great Fit for {company}
+- Strong alignment with the role requirements
+- Relevant industry experience
+- Passionate about the company's mission
+
+---
+*This resume has been tailored by Job Ninjas AI Ninja for the {jobTitle} position at {company}.*
+"""
+        
+        tailoredCoverLetter = f"""Dear Hiring Manager,
+
+I am excited to apply for the {jobTitle} position at {company}. With {yearsOfExperience or 'several'} years of experience in {primarySkills or 'this field'}, I am confident in my ability to contribute meaningfully to your team.
+
+{jobDescription[:500] if jobDescription else 'I have reviewed the job requirements carefully and believe my background aligns well with what you are seeking.'}
+
+My background includes extensive experience that directly relates to your requirements. I am particularly drawn to {company}'s commitment to innovation and excellence in the industry.
+
+{f'Regarding work authorization: I am currently on {visaStatus} status and am authorized to work in the United States.' if visaStatus else ''}
+
+{f'My target compensation range is {targetSalary}, though I am open to discussing this as part of a complete package.' if targetSalary else ''}
+
+I would welcome the opportunity to discuss how my skills and experience can benefit your team. Thank you for considering my application.
+
+Best regards,
+[Your Name]
+
+---
+*This cover letter has been tailored by Job Ninjas AI Ninja for the {jobTitle} position at {company}.*
+"""
+        
+        suggestedAnswers = [
+            {
+                "question": "Why are you interested in this role?",
+                "answer": f"I'm drawn to the {jobTitle} role at {company} because it perfectly aligns with my {primarySkills or 'professional'} background and career goals. The opportunity to work on innovative solutions while contributing to a dynamic team is exactly what I'm looking for."
+            },
+            {
+                "question": "Why do you want to work at this company?",
+                "answer": f"{company} stands out for its reputation for innovation and commitment to employee growth. The company's focus on impactful work and collaborative culture makes it an ideal environment where I can contribute meaningfully while continuing to develop my skills."
+            },
+            {
+                "question": "What is your work authorization status?",
+                "answer": f"I am currently on {visaStatus} status and am authorized to work in the United States." if visaStatus else "I am authorized to work in the United States without requiring sponsorship."
+            },
+            {
+                "question": "What are your salary expectations?",
+                "answer": f"Based on my research and experience level, I'm targeting a salary in the range of {targetSalary}. However, I'm open to discussing compensation as part of a complete package." if targetSalary else "I'm open to discussing compensation based on the full scope of the role and benefits package."
+            }
+        ]
+        
+        # Save application to database
+        application = Application(
+            id=applicationId,
+            userId=userId,
+            jobId=jobId,
+            jobTitle=jobTitle,
+            company=company,
+            workType=preferredWorkType,
+            status="applied"
+        )
+        
+        doc = application.model_dump()
+        doc['createdAt'] = doc['createdAt'].isoformat()
+        doc['updatedAt'] = doc['updatedAt'].isoformat()
+        
+        await db.applications.insert_one(doc)
+        
+        logger.info(f"AI Ninja application created: {applicationId} for {jobTitle} at {company}")
+        
+        return {
+            "applicationId": applicationId,
+            "tailoredResume": tailoredResume,
+            "tailoredCoverLetter": tailoredCoverLetter,
+            "suggestedAnswers": suggestedAnswers
+        }
+        
+    except Exception as e:
+        logger.error(f"Error in AI Ninja apply: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/applications/{user_id}")
+async def get_user_applications(user_id: str):
+    """
+    Get all applications for a user (both AI Ninja and Human Ninja).
+    """
+    try:
+        applications = await db.applications.find(
+            {"userId": user_id},
+            {"_id": 0}
+        ).sort("createdAt", -1).to_list(1000)
+        
+        # Convert datetime strings
+        for app in applications:
+            if isinstance(app.get('createdAt'), str):
+                app['createdAt'] = datetime.fromisoformat(app['createdAt'])
+            if isinstance(app.get('updatedAt'), str):
+                app['updatedAt'] = datetime.fromisoformat(app['updatedAt'])
+        
+        return {
+            "applications": applications,
+            "total": len(applications)
+        }
+    except Exception as e:
+        logger.error(f"Error fetching applications: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.patch("/applications/{application_id}/status")
+async def update_application_status(application_id: str, status: str):
+    """
+    Update application status.
+    """
+    valid_statuses = ['applied', 'interview', 'rejected', 'offer', 'on_hold']
+    if status not in valid_statuses:
+        raise HTTPException(status_code=400, detail=f"Invalid status. Must be one of: {valid_statuses}")
+    
+    result = await db.applications.update_one(
+        {"id": application_id},
+        {"$set": {"status": status, "updatedAt": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Application not found")
+    
+    return {"success": True, "status": status}
+
+@api_router.get("/jobs")
+async def get_jobs():
+    """
+    Get all jobs from the job board.
+    """
+    try:
+        jobs = await db.jobs.find({}, {"_id": 0}).sort("postedDate", -1).to_list(100)
+        return {"jobs": jobs, "total": len(jobs)}
+    except Exception as e:
+        logger.error(f"Error fetching jobs: {str(e)}")
+        # Return empty list if no jobs collection exists yet
+        return {"jobs": [], "total": 0}
+
+
 # Include the router in the main app
 app.include_router(api_router)
 

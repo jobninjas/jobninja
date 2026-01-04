@@ -1,0 +1,409 @@
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import { Button } from './ui/button';
+import { Card } from './ui/card';
+import { Badge } from './ui/badge';
+import { Input } from './ui/input';
+import { Label } from './ui/label';
+import { Textarea } from './ui/textarea';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
+import { 
+  Bot, 
+  UserCheck, 
+  Briefcase, 
+  MapPin, 
+  DollarSign, 
+  Globe, 
+  Home, 
+  Building2,
+  ChevronRight,
+  Sparkles,
+  FileText,
+  MessageSquare,
+  Check,
+  Menu,
+  ExternalLink,
+  X
+} from 'lucide-react';
+import { BRAND, PRODUCTS } from '../config/branding';
+import { sampleJobs, aiNinjaFAQ } from '../mock';
+import SideMenu from './SideMenu';
+import './SideMenu.css';
+
+const AINinja = () => {
+  const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
+  const [activeFilter, setActiveFilter] = useState('all');
+  const [sideMenuOpen, setSideMenuOpen] = useState(false);
+  const [showExternalJDModal, setShowExternalJDModal] = useState(false);
+  const [externalJobTitle, setExternalJobTitle] = useState('');
+  const [externalCompany, setExternalCompany] = useState('');
+  const [externalJobDescription, setExternalJobDescription] = useState('');
+
+  const handleExternalJDSubmit = () => {
+    if (!externalJobTitle || !externalJobDescription) {
+      alert('Please provide a job title and job description');
+      return;
+    }
+    navigate('/ai-ninja/apply/external', {
+      state: {
+        isExternal: true,
+        jobTitle: externalJobTitle,
+        company: externalCompany || 'External Company',
+        description: externalJobDescription
+      }
+    });
+  };
+
+  // Filter jobs based on active filter
+  const filteredJobs = sampleJobs.filter(job => {
+    switch (activeFilter) {
+      case 'high-paying':
+        return job.highPay;
+      case 'visa-friendly':
+        return job.visaTags && job.visaTags.length > 0;
+      case 'remote':
+        return job.type === 'remote';
+      default:
+        return true;
+    }
+  });
+
+  const filters = [
+    { id: 'all', label: 'All Jobs', count: sampleJobs.length },
+    { id: 'high-paying', label: 'High-paying', count: sampleJobs.filter(j => j.highPay).length },
+    { id: 'visa-friendly', label: 'Visa-friendly', count: sampleJobs.filter(j => j.visaTags?.length > 0).length },
+    { id: 'remote', label: 'Remote', count: sampleJobs.filter(j => j.type === 'remote').length },
+  ];
+
+  const getWorkTypeIcon = (type) => {
+    switch (type) {
+      case 'remote':
+        return <Home className="w-3 h-3" />;
+      case 'hybrid':
+        return <Building2 className="w-3 h-3" />;
+      case 'onsite':
+        return <Briefcase className="w-3 h-3" />;
+      default:
+        return <Briefcase className="w-3 h-3" />;
+    }
+  };
+
+  return (
+    <div className="ai-ninja-page">
+      {/* Side Menu */}
+      <SideMenu isOpen={sideMenuOpen} onClose={() => setSideMenuOpen(false)} />
+
+      {/* Navigation Header */}
+      <header className="nav-header">
+        <div className="nav-left">
+          <button className="hamburger-btn" onClick={() => setSideMenuOpen(true)}>
+            <Menu className="w-5 h-5" />
+          </button>
+          <button onClick={() => navigate('/')} className="nav-logo">
+            <img src={BRAND.logoPath} alt={BRAND.logoAlt} className="logo-image" />
+            <span className="logo-text">{BRAND.name}</span>
+          </button>
+        </div>
+        <nav className="nav-links">
+          <button onClick={() => navigate('/ai-ninja')} className="nav-link nav-link-active">
+            <Bot className="w-4 h-4" /> AI Ninja
+          </button>
+          <button onClick={() => navigate('/human-ninja')} className="nav-link">
+            <UserCheck className="w-4 h-4" /> Human Ninja
+          </button>
+          <button onClick={() => navigate('/pricing')} className="nav-link">Pricing</button>
+        </nav>
+        <div className="nav-actions">
+          {isAuthenticated ? (
+            <Button variant="secondary" className="btn-secondary" onClick={() => navigate('/dashboard')}>
+              Dashboard
+            </Button>
+          ) : (
+            <>
+              <Button variant="secondary" className="btn-secondary" onClick={() => navigate('/login')}>
+                Login
+              </Button>
+              <Button className="btn-primary" onClick={() => navigate('/signup')}>
+                Get Started
+              </Button>
+            </>
+          )}
+        </div>
+      </header>
+
+      {/* Hero Section */}
+      <section className="ai-ninja-hero">
+        <div className="container">
+          <div className="hero-badge-premium">
+            <Bot className="w-5 h-5" />
+            <span>AI Ninja – Self-Serve</span>
+          </div>
+          <h1 className="ai-ninja-title">
+            Apply smarter, <span className="text-gradient">not slower.</span>
+          </h1>
+          <p className="ai-ninja-subtitle">
+            Browse visa-friendly, high-paying roles and use AI Ninja to tailor your resume and cover letter for each job in minutes.
+          </p>
+          <p className="ai-ninja-description">
+            {BRAND.name} AI Ninja helps you skip the copy–paste chaos. Open a job, click "Apply with AI Ninja", 
+            upload your base resume, and get a tailored resume, cover letter, and suggested answers for common 
+            application questions. You stay in control of final submission – we just give you everything you need, fast.
+          </p>
+
+          {/* What you get */}
+          <div className="ai-ninja-features">
+            <div className="feature-item">
+              <FileText className="w-5 h-5 text-primary" />
+              <span>Tailored Resume</span>
+            </div>
+            <div className="feature-item">
+              <MessageSquare className="w-5 h-5 text-primary" />
+              <span>Custom Cover Letter</span>
+            </div>
+            <div className="feature-item">
+              <Sparkles className="w-5 h-5 text-primary" />
+              <span>Suggested Q&A Answers</span>
+            </div>
+          </div>
+
+          {/* External JD CTA */}
+          <div className="external-jd-cta" style={{ marginTop: '2rem' }}>
+            <Button variant="outline" onClick={() => setShowExternalJDModal(true)}>
+              <ExternalLink className="w-4 h-4 mr-2" />
+              Have a job from another site? Paste the job description
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* Job Board Section */}
+      <section className="job-board-section">
+        <div className="container">
+          <h2 className="section-title">Browse Open Positions</h2>
+          
+          {/* Filters */}
+          <div className="job-filters">
+            {filters.map(filter => (
+              <button
+                key={filter.id}
+                className={`filter-btn ${activeFilter === filter.id ? 'active' : ''}`}
+                onClick={() => setActiveFilter(filter.id)}
+              >
+                {filter.label}
+                <span className="filter-count">{filter.count}</span>
+              </button>
+            ))}
+          </div>
+
+          {/* Job List */}
+          <div className="job-list">
+            {filteredJobs.map(job => (
+              <Card key={job.id} className="job-card">
+                <div className="job-card-main">
+                  <div className="job-info">
+                    <h3 className="job-title">{job.title}</h3>
+                    <p className="job-company">{job.company}</p>
+                    <div className="job-meta">
+                      <span className="job-location">
+                        <MapPin className="w-4 h-4" />
+                        {job.location}
+                      </span>
+                      <span className="job-salary">
+                        <DollarSign className="w-4 h-4" />
+                        {job.salaryRange}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="job-tags">
+                    <Badge variant="outline" className="work-type-badge">
+                      {getWorkTypeIcon(job.type)}
+                      {job.type.charAt(0).toUpperCase() + job.type.slice(1)}
+                    </Badge>
+                    {job.highPay && (
+                      <Badge className="tag-high-pay">
+                        <DollarSign className="w-3 h-3" /> High-paying
+                      </Badge>
+                    )}
+                    {job.visaTags && job.visaTags.length > 0 && (
+                      <Badge className="tag-visa">
+                        <Globe className="w-3 h-3" /> Visa-friendly
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+                <p className="job-description">{job.description}</p>
+                <div className="job-card-actions">
+                  <Button 
+                    className="btn-primary"
+                    onClick={() => navigate(`/ai-ninja/jobs/${job.id}`)}
+                  >
+                    View Job <ChevronRight className="w-4 h-4" />
+                  </Button>
+                </div>
+              </Card>
+            ))}
+          </div>
+
+          {filteredJobs.length === 0 && (
+            <div className="no-jobs">
+              <p>No jobs match your current filters. Try adjusting your selection.</p>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* Comparison Block */}
+      <section className="comparison-section">
+        <div className="container">
+          <h2 className="section-title">AI Ninja vs Human Ninja</h2>
+          <div className="comparison-grid">
+            <Card className="comparison-card ai-card">
+              <div className="comparison-header">
+                <Bot className="w-8 h-8" />
+                <h3>AI Ninja (SaaS)</h3>
+              </div>
+              <ul className="comparison-list">
+                <li><Check className="w-4 h-4" /> You browse jobs on {BRAND.name}</li>
+                <li><Check className="w-4 h-4" /> AI tailors your resume, cover letter and Q&A</li>
+                <li><Check className="w-4 h-4" /> You submit the applications yourself</li>
+                <li><Check className="w-4 h-4" /> Best for people who want speed and control</li>
+              </ul>
+              <Button className="btn-primary w-full" onClick={() => navigate('/pricing')}>
+                Start with AI Ninja
+              </Button>
+            </Card>
+
+            <Card className="comparison-card human-card">
+              <div className="comparison-header">
+                <UserCheck className="w-8 h-8" />
+                <h3>Human Ninja (Service)</h3>
+              </div>
+              <ul className="comparison-list">
+                <li><Check className="w-4 h-4" /> Our team finds and prioritizes roles</li>
+                <li><Check className="w-4 h-4" /> Uses AI + human judgment for your applications</li>
+                <li><Check className="w-4 h-4" /> We apply for you and keep everything tracked</li>
+                <li><Check className="w-4 h-4" /> Best for people with no time or high visa/family pressure</li>
+              </ul>
+              <Button variant="secondary" className="btn-secondary w-full" onClick={() => navigate('/human-ninja')}>
+                Learn About Human Ninja
+              </Button>
+            </Card>
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ Section */}
+      <section className="faq-section">
+        <div className="container">
+          <h2 className="section-title">AI Ninja FAQ</h2>
+          <Accordion type="single" collapsible className="faq-accordion">
+            {aiNinjaFAQ.map(faq => (
+              <AccordionItem key={faq.id} value={`item-${faq.id}`}>
+                <AccordionTrigger className="faq-question">{faq.question}</AccordionTrigger>
+                <AccordionContent className="faq-answer">{faq.answer}</AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="footer">
+        <div className="container">
+          <div className="footer-content">
+            <div className="footer-brand">
+              <button onClick={() => navigate('/')} className="footer-logo-container">
+                <img src={BRAND.logoPath} alt={BRAND.logoAlt} className="footer-logo-image" />
+                <h3 className="footer-logo">{BRAND.name}</h3>
+              </button>
+              <p className="footer-tagline">{BRAND.tagline}</p>
+            </div>
+            <div className="footer-links">
+              <div className="footer-column">
+                <h4 className="footer-heading">Products</h4>
+                <button onClick={() => navigate('/ai-ninja')} className="footer-link">AI Ninja</button>
+                <button onClick={() => navigate('/human-ninja')} className="footer-link">Human Ninja</button>
+                <button onClick={() => navigate('/pricing')} className="footer-link">Pricing</button>
+              </div>
+              <div className="footer-column">
+                <h4 className="footer-heading">Account</h4>
+                <button onClick={() => navigate('/login')} className="footer-link">Login</button>
+                <button onClick={() => navigate('/signup')} className="footer-link">Sign Up</button>
+                <button onClick={() => navigate('/dashboard')} className="footer-link">Dashboard</button>
+              </div>
+            </div>
+          </div>
+          <div className="footer-bottom">
+            <p>{BRAND.copyright}</p>
+          </div>
+        </div>
+      </footer>
+
+      {/* External JD Modal */}
+      {showExternalJDModal && (
+        <div className="modal-overlay" onClick={() => setShowExternalJDModal(false)}>
+          <Card className="external-jd-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2><FileText className="w-5 h-5" /> Apply with External Job Description</h2>
+              <button className="modal-close" onClick={() => setShowExternalJDModal(false)}>
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="modal-content">
+              <p className="modal-description">
+                Found a job on LinkedIn, Indeed, or another site? Paste the job description here 
+                and use AI Ninja to generate tailored application materials.
+              </p>
+              
+              <div className="form-group">
+                <Label>Job Title *</Label>
+                <Input
+                  placeholder="e.g., Senior Software Engineer"
+                  value={externalJobTitle}
+                  onChange={(e) => setExternalJobTitle(e.target.value)}
+                />
+              </div>
+              
+              <div className="form-group">
+                <Label>Company Name (optional)</Label>
+                <Input
+                  placeholder="e.g., Google"
+                  value={externalCompany}
+                  onChange={(e) => setExternalCompany(e.target.value)}
+                />
+              </div>
+              
+              <div className="form-group">
+                <Label>Job Description *</Label>
+                <Textarea
+                  placeholder="Paste the full job description here..."
+                  value={externalJobDescription}
+                  onChange={(e) => setExternalJobDescription(e.target.value)}
+                  rows={10}
+                />
+              </div>
+            </div>
+            <div className="modal-footer">
+              <Button variant="outline" onClick={() => setShowExternalJDModal(false)}>
+                Cancel
+              </Button>
+              <Button 
+                className="btn-primary"
+                onClick={handleExternalJDSubmit}
+                disabled={!externalJobTitle || !externalJobDescription}
+              >
+                <Bot className="w-4 h-4 mr-2" /> Continue with AI Ninja
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default AINinja;
+
+
