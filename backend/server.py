@@ -1689,13 +1689,17 @@ async def get_jobs(
         cursor = db.jobs.find(query).sort("createdAt", -1).skip(skip).limit(limit)
         jobs = await cursor.to_list(length=limit)
         
-        # Convert ObjectId to string
+        # Convert ObjectId to string and ensure id field exists
         for job in jobs:
-            job["id"] = str(job.pop("_id"))
+            if "_id" in job:
+                job["id"] = str(job.pop("_id"))
+            elif "externalId" in job and "id" not in job:
+                job["id"] = job["externalId"]
         
         return {
             "success": True,
             "jobs": jobs,
+            "total": total,
             "pagination": {
                 "page": page,
                 "limit": limit,
