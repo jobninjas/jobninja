@@ -113,7 +113,7 @@ const Checkout = () => {
         body: JSON.stringify({
           plan_id: planId,
           user_email: user?.email || 'test@example.com',
-          currency: 'INR'
+          currency: 'USD'
         })
       });
 
@@ -328,7 +328,7 @@ const Checkout = () => {
                 <div className="bg-gray-50 rounded-lg p-4">
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-gray-600">{selectedPlan.name}</span>
-                    <span className="font-semibold">{selectedPlan.priceDisplay}</span>
+                    <span className="font-semibold">{selectedPlan.priceDisplay}{selectedPlan.period}</span>
                   </div>
                   {selectedPlan.period && (
                     <div className="flex justify-between items-center text-sm text-gray-500">
@@ -340,12 +340,9 @@ const Checkout = () => {
                   <div className="flex justify-between items-center">
                     <span className="font-semibold text-gray-900">Total</span>
                     <span className="text-2xl font-bold text-green-600">
-                      {selectedPlan.price === 0 ? 'Free' : `₹${(selectedPlan.price * 83).toLocaleString()}`}
+                      {selectedPlan.price === 0 ? 'Free' : selectedPlan.priceDisplay}
                     </span>
                   </div>
-                  <p className="text-xs text-gray-500 mt-1 text-right">
-                    ≈ {selectedPlan.priceDisplay} USD
-                  </p>
                 </div>
 
                 {/* Pay Button */}
