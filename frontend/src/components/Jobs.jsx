@@ -299,61 +299,86 @@ const Jobs = () => {
       {/* Job List Section */}
       <section className="job-list-section">
         <div className="container">
-          <div className="job-list">
-            {filteredJobs.map(job => (
-              <Card key={job.id} className="job-card">
-                <div className="job-card-main">
-                  <div className="job-info">
-                    <h3 className="job-title">{job.title}</h3>
-                    <p className="job-company">{job.company}</p>
-                    <div className="job-meta">
-                      <span className="job-location">
-                        <MapPin className="w-4 h-4" />
-                        {job.location}
-                      </span>
-                      <span className="job-salary">
-                        <DollarSign className="w-4 h-4" />
-                        {job.salaryRange}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="job-tags">
-                    <Badge variant="outline" className="work-type-badge">
-                      {getWorkTypeIcon(job.type)}
-                      {job.type.charAt(0).toUpperCase() + job.type.slice(1)}
-                    </Badge>
-                    {job.highPay && (
-                      <Badge className="tag-high-pay">
-                        <DollarSign className="w-3 h-3" /> High-paying
-                      </Badge>
-                    )}
-                    {job.visaTags && job.visaTags.length > 0 && (
-                      <Badge className="tag-visa">
-                        <Globe className="w-3 h-3" /> {job.visaTags[0]}
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-                <p className="job-description">{job.description}</p>
-                <div className="job-card-actions">
-                  <Button 
-                    className="btn-primary"
-                    onClick={() => navigate(`/ai-ninja/jobs/${job.id}`)}
-                  >
-                    View Job <ChevronRight className="w-4 h-4" />
-                  </Button>
-                </div>
-              </Card>
-            ))}
-          </div>
-
-          {filteredJobs.length === 0 && (
-            <div className="no-jobs-found">
-              <Filter className="w-12 h-12" />
-              <h3>No jobs found</h3>
-              <p>Try adjusting your filters or search terms.</p>
-              <Button variant="outline" onClick={clearFilters}>Clear all filters</Button>
+          {/* Loading State */}
+          {isLoading && (
+            <div className="loading-state">
+              <Loader2 className="w-12 h-12 animate-spin" />
+              <p>Loading jobs...</p>
             </div>
+          )}
+
+          {/* Error State */}
+          {error && !isLoading && (
+            <div className="error-state">
+              <div className="error-icon">⚠️</div>
+              <h3>Unable to load jobs</h3>
+              <p>{error}</p>
+              <Button onClick={fetchJobs} className="btn-primary">
+                <RefreshCw className="w-4 h-4 mr-2" /> Try Again
+              </Button>
+            </div>
+          )}
+
+          {/* Job List */}
+          {!isLoading && !error && (
+            <>
+              <div className="job-list">
+                {filteredJobs.map(job => (
+                  <Card key={job.id} className="job-card">
+                    <div className="job-card-main">
+                      <div className="job-info">
+                        <h3 className="job-title">{job.title}</h3>
+                        <p className="job-company">{job.company}</p>
+                        <div className="job-meta">
+                          <span className="job-location">
+                            <MapPin className="w-4 h-4" />
+                            {job.location}
+                          </span>
+                          <span className="job-salary">
+                            <DollarSign className="w-4 h-4" />
+                            {job.salaryRange}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="job-tags">
+                        <Badge variant="outline" className="work-type-badge">
+                          {getWorkTypeIcon(job.type)}
+                          {job.type.charAt(0).toUpperCase() + job.type.slice(1)}
+                        </Badge>
+                        {job.highPay && (
+                          <Badge className="tag-high-pay">
+                            <DollarSign className="w-3 h-3" /> High-paying
+                          </Badge>
+                        )}
+                        {job.visaTags && job.visaTags.length > 0 && (
+                          <Badge className="tag-visa">
+                            <Globe className="w-3 h-3" /> {job.visaTags[0]}
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                    <p className="job-description">{job.description}</p>
+                    <div className="job-card-actions">
+                      <Button 
+                        className="btn-primary"
+                        onClick={() => navigate(`/ai-ninja/jobs/${job.id}`)}
+                      >
+                        View Job <ChevronRight className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+
+              {filteredJobs.length === 0 && (
+                <div className="no-jobs-found">
+                  <Filter className="w-12 h-12" />
+                  <h3>No jobs found</h3>
+                  <p>Try adjusting your filters or search terms.</p>
+                  <Button variant="outline" onClick={clearFilters}>Clear all filters</Button>
+                </div>
+              )}
+            </>
           )}
         </div>
       </section>

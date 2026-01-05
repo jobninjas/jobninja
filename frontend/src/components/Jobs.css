@@ -112,6 +112,50 @@
   padding: 2rem;
 }
 
+/* Loading State */
+.loading-state {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: var(--text-secondary);
+}
+
+.loading-state svg {
+  margin: 0 auto 1rem;
+  color: var(--primary);
+}
+
+.loading-state p {
+  font-size: 1rem;
+  color: var(--text-muted);
+}
+
+/* Error State */
+.error-state {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: var(--text-muted);
+  background: rgba(239, 68, 68, 0.05);
+  border-radius: 12px;
+  border: 1px dashed rgba(239, 68, 68, 0.2);
+}
+
+.error-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.error-state h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+}
+
+.error-state p {
+  margin-bottom: 1.5rem;
+  color: #dc2626;
+}
+
 .no-jobs-found {
   text-align: center;
   padding: 4rem 2rem;
