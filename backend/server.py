@@ -436,7 +436,7 @@ async def send_welcome_email(name: str, email: str):
             </ol>
             
             <center>
-                <a href="https://novaninjas.com/dashboard" class="cta-button">Go to Dashboard →</a>
+                <a href="https://jobninjas.org/dashboard" class="cta-button">Go to Dashboard →</a>
             </center>
             
             <p>If you have any questions, just reply to this email - we're here to help.</p>
@@ -459,7 +459,7 @@ async def send_admin_booking_notification(booking):
     """
     Send notification to admin when someone books a call.
     """
-    admin_email = os.environ.get('ADMIN_EMAIL', 'veereddy@novaninjas.com')
+    admin_email = os.environ.get('ADMIN_EMAIL', 'hello@jobninjas.org')
     
     html_content = f"""
 <!DOCTYPE html>
