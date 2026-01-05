@@ -127,12 +127,33 @@ const Jobs = () => {
     fetchJobStats();
   }, []);
 
-  // Filter jobs locally for location (API doesn't support location filter yet)
+  // Filter jobs locally
   const filteredJobs = jobs.filter(job => {
-    // Location filter (local)
+    // Keyword search filter
+    if (searchKeyword) {
+      const keyword = searchKeyword.toLowerCase();
+      const matchesKeyword = 
+        job.title?.toLowerCase().includes(keyword) ||
+        job.company?.toLowerCase().includes(keyword) ||
+        job.description?.toLowerCase().includes(keyword);
+      if (!matchesKeyword) return false;
+    }
+    
+    // Location filter
     if (locationFilter && !job.location?.toLowerCase().includes(locationFilter.toLowerCase())) {
       return false;
     }
+    
+    // Visa sponsorship filter
+    if (sponsorshipFilter === 'visa-friendly') {
+      if (!job.visaTags || job.visaTags.length === 0) return false;
+    }
+    
+    // Work type filter
+    if (workTypeFilter && workTypeFilter !== 'all') {
+      if (job.type !== workTypeFilter) return false;
+    }
+    
     return true;
   });
 

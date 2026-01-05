@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from './ui/button';
@@ -35,8 +35,7 @@ import {
   CheckCircle
 } from 'lucide-react';
 import { BRAND, VISA_TYPES, WORK_TYPES } from '../config/branding';
-import { sampleJobs } from '../mock';
-import API_URL from '../config/api';
+import { API_URL } from '../config/api';
 import SideMenu from './SideMenu';
 import './SideMenu.css';
 
@@ -46,25 +45,70 @@ const AIApply = () => {
   const location = useLocation();
   const { isAuthenticated, user } = useAuth();
   const [sideMenuOpen, setSideMenuOpen] = useState(false);
+  const [job, setJob] = useState(null);
+  const [isLoadingJob, setIsLoadingJob] = useState(true);
+  const [jobError, setJobError] = useState(null);
 
   // Check for external job data passed via navigation state
   const externalJobData = location.state;
   const isExternalJob = id === 'external' && externalJobData?.isExternal;
 
-  // Get job either from internal jobs or external data
-  const internalJob = sampleJobs.find(j => j.id === id);
-  const job = isExternalJob ? {
-    id: 'external',
-    title: externalJobData.jobTitle,
-    company: externalJobData.company,
-    location: 'Not specified',
-    salaryRange: 'Not specified',
-    description: externalJobData.description,
-    fullDescription: externalJobData.description,
-    visaTags: [],
-    highPay: false,
-    sourceUrl: ''
-  } : internalJob;
+  // Fetch job from API if not external
+  useEffect(() => {
+    const fetchJob = async () => {
+      if (isExternalJob) {
+        setJob({
+          id: 'external',
+          title: externalJobData.jobTitle,
+          company: externalJobData.company,
+          location: 'Not specified',
+          salaryRange: 'Not specified',
+          description: externalJobData.description,
+          fullDescription: externalJobData.description,
+          visaTags: [],
+          highPay: false,
+          sourceUrl: ''
+        });
+        setIsLoadingJob(false);
+        return;
+      }
+
+      try {
+        const response = await fetch(`${API_URL}/api/jobs/${id}`);
+        if (!response.ok) {
+          throw new Error('Job not found');
+        }
+        const data = await response.json();
+        const jobData = data.job || data;
+        if (jobData) {
+          setJob({
+            id: jobData.id || jobData._id || jobData.externalId,
+            title: jobData.title,
+            company: jobData.company,
+            location: jobData.location,
+            salaryRange: jobData.salaryRange || 'Competitive',
+            description: jobData.description,
+            fullDescription: jobData.description,
+            type: jobData.type || 'onsite',
+            visaTags: jobData.visaTags || [],
+            highPay: jobData.highPay || false,
+            sourceUrl: jobData.sourceUrl
+          });
+        } else {
+          setJobError('Job not found');
+        }
+      } catch (err) {
+        console.error('Error fetching job:', err);
+        setJobError('Job not found');
+      } finally {
+        setIsLoadingJob(false);
+      }
+    };
+
+    if (id) {
+      fetchJob();
+    }
+  }, [id, isExternalJob, externalJobData]);
 
   const [step, setStep] = useState('form'); // 'form', 'loading', 'results'
   const [formData, setFormData] = useState({
@@ -104,7 +148,26 @@ const AIApply = () => {
     );
   }
 
-  if (!job) {
+  // Loading state
+  if (isLoadingJob) {
+    return (
+      <div className="ai-apply-page">
+        <header className="nav-header">
+          <button onClick={() => navigate('/')} className="nav-logo">
+            <img src={BRAND.logoPath} alt={BRAND.logoAlt} className="logo-image" />
+            <span className="logo-text">{BRAND.name}</span>
+          </button>
+        </header>
+        <div className="container" style={{ padding: '4rem 2rem', textAlign: 'center' }}>
+          <Loader2 className="w-12 h-12 animate-spin mx-auto mb-4" style={{ color: 'var(--primary)' }} />
+          <p>Loading job details...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Job not found
+  if (jobError || !job) {
     return (
       <div className="ai-apply-page">
         <header className="nav-header">
