@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, Request, Header, HTTPException
+from fastapi import FastAPI, APIRouter, Request, Header, HTTPException, Query
 from fastapi.responses import JSONResponse
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
@@ -14,6 +14,7 @@ from datetime import datetime, timezone
 import aiohttp
 from models import CheckoutRequest, SubscriptionData, WebhookEvent
 from payment_service import create_checkout_session, verify_webhook_signature, create_customer_portal_session
+from job_fetcher import fetch_all_job_categories, update_jobs_in_database, scheduled_job_fetch
 
 
 ROOT_DIR = Path(__file__).parent
@@ -1636,6 +1637,166 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# ============================================
+# JOB BOARD API ENDPOINTS
+# ============================================
+
+@app.get("/api/jobs")
+async def get_jobs(
+    page: int = Query(1, ge=1),
+    limit: int = Query(20, ge=1, le=100),
+    search: Optional[str] = Query(None),
+    type: Optional[str] = Query(None),  # remote, hybrid, onsite
+    visa: Optional[bool] = Query(None),  # visa-sponsoring jobs
+    high_pay: Optional[bool] = Query(None),  # high-paying jobs
+):
+    """
+    Get paginated job listings with filters
+    """
+    try:
+        # Build query
+        query = {"isActive": True}
+        
+        if search:
+            query["$or"] = [
+                {"title": {"$regex": search, "$options": "i"}},
+                {"company": {"$regex": search, "$options": "i"}},
+                {"description": {"$regex": search, "$options": "i"}}
+            ]
+        
+        if type:
+            query["type"] = type
+        
+        if visa:
+            query["visaTags"] = {"$in": ["visa-sponsoring"]}
+        
+        if high_pay:
+            query["highPay"] = True
+        
+        # Get total count
+        total = await db.jobs.count_documents(query)
+        
+        # Get paginated results
+        skip = (page - 1) * limit
+        cursor = db.jobs.find(query).sort("createdAt", -1).skip(skip).limit(limit)
+        jobs = await cursor.to_list(length=limit)
+        
+        # Convert ObjectId to string
+        for job in jobs:
+            job["id"] = str(job.pop("_id"))
+        
+        return {
+            "success": True,
+            "jobs": jobs,
+            "pagination": {
+                "page": page,
+                "limit": limit,
+                "total": total,
+                "pages": (total + limit - 1) // limit
+            }
+        }
+        
+    except Exception as e:
+        logger.error(f"Error fetching jobs: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch jobs")
+
+
+@app.get("/api/jobs/{job_id}")
+async def get_job_by_id(job_id: str):
+    """
+    Get a single job by ID
+    """
+    try:
+        from bson import ObjectId
+        
+        job = await db.jobs.find_one({"_id": ObjectId(job_id)})
+        
+        if not job:
+            raise HTTPException(status_code=404, detail="Job not found")
+        
+        job["id"] = str(job.pop("_id"))
+        
+        return {"success": True, "job": job}
+        
+    except Exception as e:
+        logger.error(f"Error fetching job: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch job")
+
+
+@app.get("/api/jobs/stats/summary")
+async def get_jobs_stats():
+    """
+    Get job board statistics
+    """
+    try:
+        total_jobs = await db.jobs.count_documents({"isActive": True})
+        visa_jobs = await db.jobs.count_documents({"isActive": True, "visaTags": {"$in": ["visa-sponsoring"]}})
+        remote_jobs = await db.jobs.count_documents({"isActive": True, "type": "remote"})
+        high_pay_jobs = await db.jobs.count_documents({"isActive": True, "highPay": True})
+        
+        return {
+            "success": True,
+            "stats": {
+                "totalJobs": total_jobs,
+                "visaJobs": visa_jobs,
+                "remoteJobs": remote_jobs,
+                "highPayJobs": high_pay_jobs
+            }
+        }
+        
+    except Exception as e:
+        logger.error(f"Error fetching job stats: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch job stats")
+
+
+@app.post("/api/jobs/refresh")
+async def refresh_jobs():
+    """
+    Manually trigger job refresh (admin only - add auth later)
+    """
+    try:
+        count = await scheduled_job_fetch(db)
+        return {
+            "success": True,
+            "message": f"Refreshed {count} jobs",
+            "count": count
+        }
+    except Exception as e:
+        logger.error(f"Error refreshing jobs: {e}")
+        raise HTTPException(status_code=500, detail="Failed to refresh jobs")
+
+
+# ============================================
+# SCHEDULER SETUP
+# ============================================
+
+# Background task to fetch jobs periodically
+async def job_fetch_background_task():
+    """Background task that runs every 24 hours to fetch new jobs"""
+    while True:
+        try:
+            logger.info("🔄 Running scheduled job fetch...")
+            await scheduled_job_fetch(db)
+        except Exception as e:
+            logger.error(f"Background job fetch error: {e}")
+        
+        # Wait 24 hours before next fetch
+        await asyncio.sleep(24 * 60 * 60)  # 24 hours in seconds
+
+
+@app.on_event("startup")
+async def startup_event():
+    """Initialize background tasks on startup"""
+    logger.info("🚀 Starting Job Ninjas backend...")
+    
+    # Start the background job fetcher
+    asyncio.create_task(job_fetch_background_task())
+    logger.info("📅 Job fetch scheduler started (runs every 24 hours)")
+    
+    # Optionally fetch jobs immediately on startup (comment out if not needed)
+    # asyncio.create_task(scheduled_job_fetch(db))
+
 
 @app.on_event("shutdown")
 async def shutdown_db_client():

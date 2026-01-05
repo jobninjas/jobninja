@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from './ui/button';
@@ -23,10 +23,13 @@ import {
   Filter,
   FileText,
   ExternalLink,
-  X
+  X,
+  Loader2,
+  RefreshCw
 } from 'lucide-react';
 import { BRAND } from '../config/branding';
 import { sampleJobs } from '../mock';
+import { API_URL } from '../config/api';
 import SideMenu from './SideMenu';
 import './SideMenu.css';
 
@@ -35,6 +38,12 @@ const Jobs = () => {
   const { isAuthenticated } = useAuth();
   const [sideMenuOpen, setSideMenuOpen] = useState(false);
   const [showExternalJDModal, setShowExternalJDModal] = useState(false);
+  
+  // Jobs data state
+  const [jobs, setJobs] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [jobStats, setJobStats] = useState({ totalJobs: 0, visaJobs: 0, remoteJobs: 0, highPayJobs: 0 });
+  const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, pages: 0 });
   
   // Filter states
   const [searchKeyword, setSearchKeyword] = useState('');
@@ -47,37 +56,70 @@ const Jobs = () => {
   const [externalCompany, setExternalCompany] = useState('');
   const [externalJobDescription, setExternalJobDescription] = useState('');
 
-  // Filter jobs based on all criteria
-  const filteredJobs = sampleJobs.filter(job => {
-    // Keyword search
-    if (searchKeyword) {
-      const keyword = searchKeyword.toLowerCase();
-      const matchesKeyword = 
-        job.title.toLowerCase().includes(keyword) ||
-        job.company.toLowerCase().includes(keyword) ||
-        job.description.toLowerCase().includes(keyword) ||
-        job.categoryTags?.some(tag => tag.toLowerCase().includes(keyword));
-      if (!matchesKeyword) return false;
+  // Fetch jobs from API
+  const fetchJobs = async () => {
+    setIsLoading(true);
+    try {
+      const params = new URLSearchParams();
+      params.append('page', pagination.page);
+      params.append('limit', pagination.limit);
+      
+      if (searchKeyword) params.append('search', searchKeyword);
+      if (workTypeFilter !== 'all') params.append('type', workTypeFilter);
+      if (sponsorshipFilter === 'visa-friendly') params.append('visa', 'true');
+      
+      const response = await fetch(`${API_URL}/api/jobs?${params.toString()}`);
+      const data = await response.json();
+      
+      if (data.success && data.jobs.length > 0) {
+        setJobs(data.jobs);
+        setPagination(data.pagination);
+      } else {
+        // Fallback to sample jobs if no real jobs available
+        setJobs(sampleJobs);
+      }
+    } catch (error) {
+      console.error('Error fetching jobs:', error);
+      // Fallback to sample jobs on error
+      setJobs(sampleJobs);
+    } finally {
+      setIsLoading(false);
     }
+  };
 
-    // Location filter
-    if (locationFilter && !job.location.toLowerCase().includes(locationFilter.toLowerCase())) {
+  // Fetch job stats
+  const fetchJobStats = async () => {
+    try {
+      const response = await fetch(`${API_URL}/api/jobs/stats/summary`);
+      const data = await response.json();
+      if (data.success) {
+        setJobStats(data.stats);
+      }
+    } catch (error) {
+      console.error('Error fetching job stats:', error);
+    }
+  };
+
+  // Initial fetch
+  useEffect(() => {
+    fetchJobs();
+    fetchJobStats();
+  }, []);
+
+  // Refetch when filters change
+  useEffect(() => {
+    const debounceTimer = setTimeout(() => {
+      fetchJobs();
+    }, 300);
+    return () => clearTimeout(debounceTimer);
+  }, [searchKeyword, workTypeFilter, sponsorshipFilter, pagination.page]);
+
+  // Filter jobs locally for location (API doesn't support location filter yet)
+  const filteredJobs = jobs.filter(job => {
+    // Location filter (local)
+    if (locationFilter && !job.location?.toLowerCase().includes(locationFilter.toLowerCase())) {
       return false;
     }
-
-    // Sponsorship filter
-    if (sponsorshipFilter === 'visa-friendly' && (!job.visaTags || job.visaTags.length === 0)) {
-      return false;
-    }
-    if (sponsorshipFilter === 'no-sponsorship' && job.visaTags && job.visaTags.length > 0) {
-      return false;
-    }
-
-    // Work type filter
-    if (workTypeFilter !== 'all' && job.type !== workTypeFilter) {
-      return false;
-    }
-
     return true;
   });
 
