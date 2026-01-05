@@ -106,14 +106,14 @@ const Checkout = () => {
         return;
       }
 
-      // Create order on backend
+      // Create order on backend (use INR for Razorpay test mode)
       const response = await fetch(`${API_URL}/api/razorpay/create-order`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           plan_id: planId,
           user_email: user?.email || 'test@example.com',
-          currency: 'USD'
+          currency: 'INR'
         })
       });
 
