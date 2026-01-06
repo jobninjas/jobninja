@@ -36,7 +36,7 @@ import './SideMenu.css';
 
 const LandingPage = () => {
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, loading } = useAuth();
   const [isBookCallModalOpen, setIsBookCallModalOpen] = useState(false);
   const [sideMenuOpen, setSideMenuOpen] = useState(false);
   const [activeWord, setActiveWord] = useState(0);
@@ -198,7 +198,13 @@ const LandingPage = () => {
           <button onClick={() => navigate('/pricing')} className="nav-link-modern">Pricing</button>
         </nav>
         <div className="nav-actions">
-          {!isAuthenticated && (
+          {loading ? (
+            <div style={{ width: '200px' }} /> /* Placeholder while loading */
+          ) : isAuthenticated ? (
+            <Button className="btn-primary-modern" onClick={() => navigate('/dashboard')}>
+              Dashboard
+            </Button>
+          ) : (
             <>
               <Button variant="ghost" className="btn-ghost" onClick={() => navigate('/login')}>
                 Log in

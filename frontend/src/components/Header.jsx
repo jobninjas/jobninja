@@ -13,7 +13,7 @@ import { BRAND } from '../config/branding';
 const Header = ({ onMenuClick }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, loading } = useAuth();
 
   // Check if current path matches
   const isActive = (path) => location.pathname === path;
@@ -56,7 +56,9 @@ const Header = ({ onMenuClick }) => {
         </button>
       </nav>
       <div className="nav-actions">
-        {isAuthenticated ? (
+        {loading ? (
+          <div style={{ width: '150px' }} /> /* Placeholder while loading */
+        ) : isAuthenticated ? (
           <Button variant="secondary" className="btn-secondary" onClick={() => navigate('/dashboard')}>
             Dashboard
           </Button>

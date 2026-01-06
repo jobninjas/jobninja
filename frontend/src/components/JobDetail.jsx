@@ -30,7 +30,7 @@ import { API_URL } from '../config/api';
 const JobDetail = () => {
   const navigate = useNavigate();
   const { id } = useParams();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, loading: authLoading } = useAuth();
   const [sideMenuOpen, setSideMenuOpen] = useState(false);
   const [job, setJob] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -160,7 +160,9 @@ const JobDetail = () => {
           <button onClick={() => navigate('/pricing')} className="nav-link">Pricing</button>
         </nav>
         <div className="nav-actions">
-          {isAuthenticated ? (
+          {authLoading ? (
+            <div style={{ width: '150px' }} />
+          ) : isAuthenticated ? (
             <Button variant="secondary" className="btn-secondary" onClick={() => navigate('/dashboard')}>
               Dashboard
             </Button>

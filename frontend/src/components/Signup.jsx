@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from './ui/button';
@@ -12,7 +12,7 @@ import { BRAND } from '../config/branding';
 
 const Signup = () => {
   const navigate = useNavigate();
-  const { signup } = useAuth();
+  const { signup, isAuthenticated, loading: authLoading } = useAuth();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -20,8 +20,15 @@ const Signup = () => {
     confirmPassword: ''
   });
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [sideMenuOpen, setSideMenuOpen] = useState(false);
+  
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (!authLoading && isAuthenticated) {
+      navigate('/dashboard');
+    }
+  }, [isAuthenticated, authLoading, navigate]);
 
   const handleChange = (e) => {
     setFormData({
@@ -44,17 +51,17 @@ const Signup = () => {
       return;
     }
 
-    setLoading(true);
+    setSubmitting(true);
 
     try {
       const result = await signup(formData.email, formData.password, formData.name);
       if (result.success) {
-        navigate('/pricing'); // Redirect to pricing to choose a plan
+        navigate('/dashboard'); // Redirect to dashboard after signup
       }
     } catch (err) {
       setError('Signup failed. Please try again.');
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   };
 
@@ -145,8 +152,8 @@ const Signup = () => {
               />
             </div>
 
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? 'Creating account...' : 'Create Account'}
+            <Button type="submit" className="w-full" disabled={submitting}>
+              {submitting ? 'Creating account...' : 'Create Account'}
             </Button>
           </form>
 
