@@ -198,13 +198,6 @@ const AINinja = () => {
             </div>
           </div>
 
-          {/* External JD CTA */}
-          <div className="external-jd-cta" style={{ marginTop: '2rem' }}>
-            <Button variant="outline" onClick={() => setShowExternalJDModal(true)}>
-              <ExternalLink className="w-4 h-4 mr-2" />
-              Have a job from another site? Paste the job description
-            </Button>
-          </div>
         </div>
       </section>
 
