@@ -23,8 +23,10 @@ import Jobs from "./components/Jobs";
 import MyResumes from "./components/MyResumes";
 import InterviewPrep from "./components/InterviewPrep";
 import Checkout from "./components/Checkout";
+import ResumeScanner from "./components/ResumeScanner";
 import "./components/Jobs.css";
 import "./components/InterviewPrep.css";
+import "./components/ResumeScanner.css";
 
 function App() {
   return (
@@ -54,6 +56,9 @@ function App() {
             
             {/* Interview Prep Route */}
             <Route path="/interview-prep" element={<InterviewPrep />} />
+            
+            {/* Resume Scanner Route */}
+            <Route path="/scanner" element={<ResumeScanner />} />
             
             {/* My Resumes - Protected */}
             <Route

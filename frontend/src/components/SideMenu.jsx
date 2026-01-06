@@ -12,7 +12,8 @@ import {
   CreditCard, 
   User, 
   LogOut,
-  FileText
+  FileText,
+  ScanLine
 } from 'lucide-react';
 import { BRAND } from '../config/branding';
 
@@ -34,6 +35,7 @@ const SideMenu = ({ isOpen, onClose }) => {
 
   const menuItems = [
     { icon: Home, label: 'Home', path: '/' },
+    { icon: ScanLine, label: 'Resume Scanner', path: '/scanner', highlight: true },
     { icon: Briefcase, label: 'Jobs / Job Search', path: '/jobs' },
     { icon: Bot, label: 'AI Ninja', path: '/ai-ninja' },
     { icon: UserCheck, label: 'Human Ninja', path: '/human-ninja' },

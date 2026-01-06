@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, Request, Header, HTTPException, Query
+from fastapi import FastAPI, APIRouter, Request, Header, HTTPException, Query, File, Form, UploadFile
 from fastapi.responses import JSONResponse
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
@@ -1925,6 +1925,222 @@ async def job_fetch_background_task():
         # Wait 24 hours before next fetch
         await asyncio.sleep(24 * 60 * 60)  # 24 hours in seconds
 
+
+# ============================================
+# RESUME SCANNER API ENDPOINTS
+# ============================================
+
+from resume_parser import parse_resume, validate_resume_file
+from resume_analyzer import analyze_resume, extract_resume_data, generate_optimized_resume
+
+@app.post("/api/scan/analyze")
+async def scan_resume(
+    resume: UploadFile = File(...),
+    job_description: str = Form(...)
+):
+    """
+    Analyze a resume against a job description
+    Returns match score and detailed analysis
+    """
+    try:
+        # Validate file
+        file_content = await resume.read()
+        validation_error = validate_resume_file(resume.filename, len(file_content))
+        if validation_error:
+            raise HTTPException(status_code=400, detail=validation_error)
+        
+        # Parse resume
+        resume_text = await parse_resume(file_content, resume.filename)
+        if not resume_text.strip():
+            raise HTTPException(
+                status_code=400, 
+                detail="Could not extract text from resume. Please ensure it's not an image-based PDF."
+            )
+        
+        # Analyze with Gemini
+        analysis = await analyze_resume(resume_text, job_description)
+        
+        if "error" in analysis:
+            raise HTTPException(status_code=500, detail=analysis["error"])
+        
+        return {
+            "success": True,
+            "analysis": analysis,
+            "resumeTextLength": len(resume_text)
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Resume scan error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/scan/parse")
+async def parse_resume_endpoint(
+    resume: UploadFile = File(...)
+):
+    """
+    Parse a resume and extract structured data
+    """
+    try:
+        # Validate file
+        file_content = await resume.read()
+        validation_error = validate_resume_file(resume.filename, len(file_content))
+        if validation_error:
+            raise HTTPException(status_code=400, detail=validation_error)
+        
+        # Parse resume text
+        resume_text = await parse_resume(file_content, resume.filename)
+        if not resume_text.strip():
+            raise HTTPException(
+                status_code=400, 
+                detail="Could not extract text from resume"
+            )
+        
+        # Extract structured data with Gemini
+        parsed_data = await extract_resume_data(resume_text)
+        
+        return {
+            "success": True,
+            "data": parsed_data,
+            "rawText": resume_text[:2000]  # Return first 2000 chars for preview
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Resume parse error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/scan/optimize")
+async def optimize_resume_endpoint(
+    resume: UploadFile = File(...),
+    job_description: str = Form(...)
+):
+    """
+    Get suggestions to optimize resume for a specific job
+    """
+    try:
+        # Validate file
+        file_content = await resume.read()
+        validation_error = validate_resume_file(resume.filename, len(file_content))
+        if validation_error:
+            raise HTTPException(status_code=400, detail=validation_error)
+        
+        # Parse resume
+        resume_text = await parse_resume(file_content, resume.filename)
+        if not resume_text.strip():
+            raise HTTPException(
+                status_code=400, 
+                detail="Could not extract text from resume"
+            )
+        
+        # Generate optimizations with Gemini
+        optimizations = await generate_optimized_resume(resume_text, job_description)
+        
+        return {
+            "success": True,
+            "optimizations": optimizations
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Resume optimize error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+class ScanSaveRequest(BaseModel):
+    user_email: str
+    job_title: str
+    company: str
+    job_description: str
+    analysis: dict
+
+
+@app.post("/api/scan/save")
+async def save_scan(request: ScanSaveRequest):
+    """
+    Save a scan to user's history
+    """
+    try:
+        scan_doc = {
+            "userEmail": request.user_email,
+            "jobTitle": request.job_title,
+            "company": request.company,
+            "jobDescription": request.job_description[:5000],  # Limit size
+            "analysis": request.analysis,
+            "matchScore": request.analysis.get("matchScore", 0),
+            "createdAt": datetime.now(timezone.utc).isoformat()
+        }
+        
+        result = await db.scans.insert_one(scan_doc)
+        
+        return {
+            "success": True,
+            "scanId": str(result.inserted_id)
+        }
+        
+    except Exception as e:
+        logger.error(f"Save scan error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/scans/{user_email}")
+async def get_user_scans(user_email: str, limit: int = 20):
+    """
+    Get user's scan history
+    """
+    try:
+        scans = await db.scans.find(
+            {"userEmail": user_email}
+        ).sort("createdAt", -1).limit(limit).to_list(length=limit)
+        
+        for scan in scans:
+            scan["id"] = str(scan.pop("_id"))
+        
+        return {
+            "success": True,
+            "scans": scans
+        }
+        
+    except Exception as e:
+        logger.error(f"Get scans error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/scan/{scan_id}")
+async def get_scan_by_id(scan_id: str):
+    """
+    Get a specific scan by ID
+    """
+    try:
+        from bson import ObjectId
+        
+        scan = await db.scans.find_one({"_id": ObjectId(scan_id)})
+        
+        if not scan:
+            raise HTTPException(status_code=404, detail="Scan not found")
+        
+        scan["id"] = str(scan.pop("_id"))
+        
+        return {
+            "success": True,
+            "scan": scan
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Get scan error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================
+# APP STARTUP & SHUTDOWN
+# ============================================
 
 @app.on_event("startup")
 async def startup_event():
