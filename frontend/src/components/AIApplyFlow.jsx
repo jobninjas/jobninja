@@ -131,8 +131,43 @@ const AIApplyFlow = () => {
   };
 
   const handleStartGeneration = async () => {
-    if (!resumeText || !jobData.description) {
-      alert('Please select a resume and ensure job description is available');
+    // If we have a file but no text, try to parse it again
+    let textToUse = resumeText;
+    
+    if (!textToUse && resumeFile) {
+      // Try parsing the resume again
+      const formData = new FormData();
+      formData.append('resume', resumeFile);
+      
+      try {
+        const parseResponse = await fetch(`${API_URL}/api/scan/parse`, {
+          method: 'POST',
+          body: formData
+        });
+        
+        if (parseResponse.ok) {
+          const parseData = await parseResponse.json();
+          textToUse = parseData.text || parseData.resumeText || '';
+          setResumeText(textToUse);
+        }
+      } catch (e) {
+        console.error('Re-parse failed:', e);
+      }
+      
+      // If still no text, use fallback
+      if (!textToUse) {
+        textToUse = `[Resume uploaded: ${resumeFile.name}]`;
+        setResumeText(textToUse);
+      }
+    }
+    
+    if (!textToUse && !resumeFile && !selectedResume) {
+      alert('Please upload a resume first');
+      return;
+    }
+    
+    if (!jobData.description) {
+      alert('Job description is missing');
       return;
     }
     
@@ -142,18 +177,36 @@ const AIApplyFlow = () => {
     try {
       // Step 1: Analyze resume
       setGenerationProgress('Analyzing your resume against the job description...');
+      
+      // Create form data for analysis (backend expects file upload)
+      const analyzeFormData = new FormData();
+      if (resumeFile) {
+        analyzeFormData.append('resume', resumeFile);
+      } else if (selectedResume) {
+        // Create a text file from saved resume text
+        const blob = new Blob([textToUse], { type: 'text/plain' });
+        analyzeFormData.append('resume', blob, 'resume.txt');
+      } else {
+        const blob = new Blob([textToUse], { type: 'text/plain' });
+        analyzeFormData.append('resume', blob, 'resume.txt');
+      }
+      analyzeFormData.append('job_description', jobData.description);
+      
       const analyzeResponse = await fetch(`${API_URL}/api/scan/analyze`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          resume_text: resumeText,
-          job_description: jobData.description
-        })
+        body: analyzeFormData
       });
       
-      if (!analyzeResponse.ok) throw new Error('Analysis failed');
-      const analysis = await analyzeResponse.json();
+      if (!analyzeResponse.ok) {
+        const errorData = await analyzeResponse.json().catch(() => ({}));
+        throw new Error(errorData.detail || 'Analysis failed');
+      }
+      const analysisData = await analyzeResponse.json();
+      const analysis = analysisData.analysis || analysisData;
       setAnalysisResult(analysis);
+      
+      // Use resume text from analysis if available (properly parsed from file)
+      const parsedResumeText = analysisData.resumeText || textToUse;
       
       // Step 2: Generate optimized resume
       setGenerationProgress('Creating your tailored resume...');
@@ -161,7 +214,7 @@ const AIApplyFlow = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          resume_text: resumeText,
+          resume_text: parsedResumeText,
           job_description: jobData.description,
           analysis: analysis
         })
@@ -178,7 +231,7 @@ const AIApplyFlow = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          resume_text: resumeText,
+          resume_text: parsedResumeText,
           job_description: jobData.description,
           job_title: jobData.jobTitle || 'the position',
           company: jobData.company || 'the company'
