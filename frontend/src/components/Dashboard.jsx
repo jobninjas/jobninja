@@ -475,17 +475,9 @@ const Dashboard = () => {
                               <td colSpan="7" className="py-8 text-center">
                                 <ClipboardList className="w-12 h-12 mx-auto text-gray-300 mb-4" />
                                 <p className="text-gray-500 font-medium">No applications yet</p>
-                                <p className="text-sm text-gray-400 mt-1 mb-4">
-                                  Start using AI Ninja to track your applications here.
+                                <p className="text-sm text-gray-400 mt-1">
+                                  Your applications will appear here once you start applying.
                                 </p>
-                                <div className="flex justify-center gap-2">
-                                  <Button variant="outline" onClick={() => navigate('/ai-ninja')}>
-                                    <Bot className="w-4 h-4 mr-2" /> Try AI Ninja
-                                  </Button>
-                                  <Button onClick={() => navigate('/human-ninja')}>
-                                    <UserCheck className="w-4 h-4 mr-2" /> Learn About Human Ninja
-                                  </Button>
-                                </div>
                               </td>
                             </tr>
                           ) : (
