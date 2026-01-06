@@ -31,6 +31,7 @@ import { BRAND, PRODUCTS } from '../config/branding';
 import { aiNinjaFAQ } from '../mock';
 import { API_URL } from '../config/api';
 import SideMenu from './SideMenu';
+import Header from './Header';
 import './SideMenu.css';
 
 const AINinja = () => {
@@ -150,42 +151,7 @@ const AINinja = () => {
       <SideMenu isOpen={sideMenuOpen} onClose={() => setSideMenuOpen(false)} />
 
       {/* Navigation Header */}
-      <header className="nav-header">
-        <div className="nav-left">
-          <button className="hamburger-btn" onClick={() => setSideMenuOpen(true)}>
-            <Menu className="w-5 h-5" />
-          </button>
-          <button onClick={() => navigate('/')} className="nav-logo">
-            <img src={BRAND.logoPath} alt={BRAND.logoAlt} className="logo-image" />
-            <span className="logo-text">{BRAND.name}</span>
-          </button>
-        </div>
-        <nav className="nav-links">
-          <button onClick={() => navigate('/ai-ninja')} className="nav-link nav-link-active">
-            <Bot className="w-4 h-4" /> AI Ninja
-          </button>
-          <button onClick={() => navigate('/human-ninja')} className="nav-link">
-            <UserCheck className="w-4 h-4" /> Human Ninja
-          </button>
-          <button onClick={() => navigate('/pricing')} className="nav-link">Pricing</button>
-        </nav>
-        <div className="nav-actions">
-          {isAuthenticated ? (
-            <Button variant="secondary" className="btn-secondary" onClick={() => navigate('/dashboard')}>
-              Dashboard
-            </Button>
-          ) : (
-            <>
-              <Button variant="secondary" className="btn-secondary" onClick={() => navigate('/login')}>
-                Login
-              </Button>
-              <Button className="btn-primary" onClick={() => navigate('/signup')}>
-                Get Started
-              </Button>
-            </>
-          )}
-        </div>
-      </header>
+      <Header onMenuClick={() => setSideMenuOpen(true)} />
 
       {/* Hero Section */}
       <section className="ai-ninja-hero">

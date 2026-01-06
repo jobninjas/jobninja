@@ -8,6 +8,8 @@ import { Check, Bot, UserCheck, ArrowRight, Zap } from 'lucide-react';
 import { BRAND, PRICING } from '../config/branding';
 import BookCallModal from './BookCallModal';
 import SideMenu from './SideMenu';
+import Header from './Header';
+import './SideMenu.css';
 
 const Pricing = () => {
   const navigate = useNavigate();
@@ -55,49 +57,12 @@ const Pricing = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 pricing-page">
       {/* Side Menu */}
       <SideMenu isOpen={sideMenuOpen} onClose={() => setSideMenuOpen(false)} />
 
-      {/* Navigation */}
-      <nav className="bg-white border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center gap-4">
-              <button 
-                onClick={() => setSideMenuOpen(true)} 
-                className="p-2 rounded-lg border border-gray-200 hover:bg-gray-50"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
-              </button>
-              <button onClick={() => navigate('/')} className="flex items-center gap-2">
-                <img src={BRAND.logoPath} alt={BRAND.logoAlt} className="h-8" />
-                <span className="text-xl font-bold text-primary">{BRAND.name}</span>
-              </button>
-            </div>
-            <div className="flex items-center gap-4">
-              <button onClick={() => navigate('/ai-ninja')} className="text-sm font-medium text-gray-600 hover:text-primary flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-green-50 transition-all">
-                <Bot className="w-4 h-4" /> AI Ninja
-              </button>
-              <button onClick={() => navigate('/human-ninja')} className="text-sm font-medium text-gray-600 hover:text-primary flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-orange-50 transition-all">
-                <UserCheck className="w-4 h-4" /> Human Ninja
-              </button>
-              {isAuthenticated ? (
-                <Button onClick={() => navigate('/dashboard')}>Dashboard</Button>
-              ) : (
-                <>
-                  <Button variant="ghost" onClick={() => navigate('/login')}>
-                    Login
-                  </Button>
-                  <Button onClick={() => navigate('/signup')}>Get Started</Button>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-      </nav>
+      {/* Navigation Header */}
+      <Header onMenuClick={() => setSideMenuOpen(true)} />
 
       {/* Pricing Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
