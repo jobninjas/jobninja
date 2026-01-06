@@ -1,5 +1,5 @@
 """
-Resume Analyzer using Google Gemini API
+Resume Analyzer using Groq API (with Gemini fallback)
 Analyzes resumes against job descriptions and provides match scores
 """
 
@@ -8,50 +8,75 @@ import json
 import re
 import logging
 import asyncio
+import aiohttp
 from typing import Dict, Any, Optional
-import google.generativeai as genai
 
 logger = logging.getLogger(__name__)
 
+# API Keys
+GROQ_API_KEY = os.environ.get('GROQ_API_KEY')
+GOOGLE_API_KEY = os.environ.get('GOOGLE_API_KEY')
+
+# Groq API settings
+GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
+GROQ_MODEL = "llama-3.1-70b-versatile"  # Fast and powerful
+
 # Retry configuration
 MAX_RETRIES = 3
-RETRY_DELAY = 7  # seconds to wait on rate limit
+RETRY_DELAY = 2  # seconds
 
-# Configure Gemini
-GOOGLE_API_KEY = os.environ.get('GOOGLE_API_KEY')
-model = None
 
-def get_gemini_model():
-    """Get an available Gemini model"""
-    global model
-    if model:
-        return model
-    
-    if not GOOGLE_API_KEY:
-        logger.warning("GOOGLE_API_KEY not set - Resume analyzer will not work")
+async def call_groq_api(prompt: str) -> Optional[str]:
+    """Call Groq API for text generation"""
+    if not GROQ_API_KEY:
+        logger.warning("GROQ_API_KEY not set")
         return None
     
-    genai.configure(api_key=GOOGLE_API_KEY)
+    headers = {
+        "Authorization": f"Bearer {GROQ_API_KEY}",
+        "Content-Type": "application/json"
+    }
     
-    # Try different model names in order of preference
-    model_names = [
-        'gemini-2.0-flash',
-        'gemini-1.5-flash-latest', 
-        'gemini-1.5-flash',
-        'gemini-pro',
-        'models/gemini-pro'
-    ]
+    payload = {
+        "model": GROQ_MODEL,
+        "messages": [
+            {
+                "role": "system",
+                "content": "You are an expert ATS resume analyzer. Always respond with valid JSON only, no markdown or explanation."
+            },
+            {
+                "role": "user", 
+                "content": prompt
+            }
+        ],
+        "temperature": 0.3,
+        "max_tokens": 4000
+    }
     
-    for name in model_names:
+    for attempt in range(MAX_RETRIES):
         try:
-            model = genai.GenerativeModel(name)
-            logger.info(f"Using Gemini model: {name}")
-            return model
+            async with aiohttp.ClientSession() as session:
+                async with session.post(GROQ_API_URL, headers=headers, json=payload) as response:
+                    if response.status == 200:
+                        data = await response.json()
+                        return data["choices"][0]["message"]["content"]
+                    elif response.status == 429:
+                        # Rate limited, wait and retry
+                        if attempt < MAX_RETRIES - 1:
+                            logger.warning(f"Groq rate limit, retrying in {RETRY_DELAY}s...")
+                            await asyncio.sleep(RETRY_DELAY)
+                            continue
+                    else:
+                        error_text = await response.text()
+                        logger.error(f"Groq API error {response.status}: {error_text}")
+                        return None
         except Exception as e:
-            logger.debug(f"Model {name} not available: {e}")
-            continue
+            logger.error(f"Groq API request failed: {e}")
+            if attempt < MAX_RETRIES - 1:
+                await asyncio.sleep(RETRY_DELAY)
+                continue
+            return None
     
-    logger.error("No Gemini model available")
     return None
 
 
@@ -66,7 +91,7 @@ def clean_json_response(text: str) -> str:
 
 async def analyze_resume(resume_text: str, job_description: str) -> Dict[str, Any]:
     """
-    Analyze a resume against a job description using Gemini AI
+    Analyze a resume against a job description using Groq AI
     
     Args:
         resume_text: The extracted text from the resume
@@ -75,10 +100,9 @@ async def analyze_resume(resume_text: str, job_description: str) -> Dict[str, An
     Returns:
         Analysis results including match score, skills comparison, and suggestions
     """
-    gemini_model = get_gemini_model()
-    if not gemini_model:
+    if not GROQ_API_KEY:
         return {
-            "error": "Gemini API not configured",
+            "error": "GROQ_API_KEY not configured. Please add it to environment variables.",
             "matchScore": 0
         }
     
@@ -176,41 +200,37 @@ Important:
 - Return ONLY the JSON, no other text
 """
 
-    # Retry logic for rate limits
-    for attempt in range(MAX_RETRIES):
-        try:
-            response = gemini_model.generate_content(prompt)
-            json_text = clean_json_response(response.text)
-            result = json.loads(json_text)
-            return result
-        except json.JSONDecodeError as e:
-            logger.error(f"Failed to parse Gemini response as JSON: {e}")
-            logger.error(f"Raw response: {response.text[:500]}")
+    try:
+        response_text = await call_groq_api(prompt)
+        
+        if not response_text:
             return {
-                "error": "Failed to parse analysis results",
-                "matchScore": 0,
-                "rawResponse": response.text[:1000]
-            }
-        except Exception as e:
-            error_str = str(e).lower()
-            # Check if it's a rate limit error (429)
-            if "429" in str(e) or "quota" in error_str or "rate" in error_str:
-                if attempt < MAX_RETRIES - 1:
-                    logger.warning(f"Rate limit hit, waiting {RETRY_DELAY}s before retry {attempt + 2}/{MAX_RETRIES}")
-                    await asyncio.sleep(RETRY_DELAY)
-                    continue
-            logger.error(f"Gemini API error: {e}")
-            return {
-                "error": str(e),
+                "error": "Failed to get response from AI",
                 "matchScore": 0
             }
-    
-    return {"error": "Max retries exceeded", "matchScore": 0}
+        
+        json_text = clean_json_response(response_text)
+        result = json.loads(json_text)
+        return result
+        
+    except json.JSONDecodeError as e:
+        logger.error(f"Failed to parse AI response as JSON: {e}")
+        logger.error(f"Raw response: {response_text[:500] if response_text else 'None'}")
+        return {
+            "error": "Failed to parse analysis results",
+            "matchScore": 0
+        }
+    except Exception as e:
+        logger.error(f"AI API error: {e}")
+        return {
+            "error": str(e),
+            "matchScore": 0
+        }
 
 
 async def extract_resume_data(resume_text: str) -> Dict[str, Any]:
     """
-    Extract structured data from resume text using Gemini
+    Extract structured data from resume text using Groq AI
     
     Args:
         resume_text: The extracted text from the resume
@@ -218,9 +238,8 @@ async def extract_resume_data(resume_text: str) -> Dict[str, Any]:
     Returns:
         Structured resume data
     """
-    gemini_model = get_gemini_model()
-    if not gemini_model:
-        return {"error": "Gemini API not configured"}
+    if not GROQ_API_KEY:
+        return {"error": "GROQ_API_KEY not configured"}
     
     prompt = f"""
 Extract structured data from this resume text. Return ONLY valid JSON.
@@ -267,8 +286,10 @@ Return ONLY the JSON, no other text.
 """
 
     try:
-        response = gemini_model.generate_content(prompt)
-        json_text = clean_json_response(response.text)
+        response_text = await call_groq_api(prompt)
+        if not response_text:
+            return {"error": "Failed to get response from AI"}
+        json_text = clean_json_response(response_text)
         result = json.loads(json_text)
         return result
     except Exception as e:
@@ -287,9 +308,8 @@ async def generate_optimized_resume(resume_text: str, job_description: str) -> D
     Returns:
         Optimized resume suggestions
     """
-    gemini_model = get_gemini_model()
-    if not gemini_model:
-        return {"error": "Gemini API not configured"}
+    if not GROQ_API_KEY:
+        return {"error": "GROQ_API_KEY not configured"}
     
     prompt = f"""
 Based on this resume and job description, provide specific text rewrites to optimize the resume.
@@ -318,8 +338,10 @@ Return ONLY the JSON, no other text.
 """
 
     try:
-        response = gemini_model.generate_content(prompt)
-        json_text = clean_json_response(response.text)
+        response_text = await call_groq_api(prompt)
+        if not response_text:
+            return {"error": "Failed to get response from AI"}
+        json_text = clean_json_response(response_text)
         result = json.loads(json_text)
         return result
     except Exception as e:
