@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from './ui/button';
@@ -20,7 +20,11 @@ import {
   Target,
   Sparkles,
   Download,
-  FileDown
+  FileDown,
+  Save,
+  FolderOpen,
+  Trash2,
+  Clock
 } from 'lucide-react';
 import { BRAND } from '../config/branding';
 import { API_URL } from '../config/api';
@@ -56,6 +60,104 @@ const ResumeScanner = () => {
   const [generatingResume, setGeneratingResume] = useState(false);
   const [generatingCoverLetter, setGeneratingCoverLetter] = useState(false);
   const [parsedResumeText, setParsedResumeText] = useState('');
+  
+  // Saved resumes state
+  const [savedResumes, setSavedResumes] = useState([]);
+  const [loadingResumes, setLoadingResumes] = useState(false);
+  const [selectedSavedResume, setSelectedSavedResume] = useState(null);
+  const [showSaveModal, setShowSaveModal] = useState(false);
+  const [resumeName, setResumeName] = useState('');
+  const [savingResume, setSavingResume] = useState(false);
+
+  // Fetch saved resumes on mount
+  useEffect(() => {
+    if (isAuthenticated && user?.email) {
+      fetchSavedResumes();
+    }
+  }, [isAuthenticated, user]);
+
+  const fetchSavedResumes = async () => {
+    if (!user?.email) return;
+    
+    setLoadingResumes(true);
+    try {
+      const response = await fetch(`${API_URL}/api/resumes/${encodeURIComponent(user.email)}`);
+      if (response.ok) {
+        const data = await response.json();
+        setSavedResumes(data.resumes || []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch saved resumes:', err);
+    } finally {
+      setLoadingResumes(false);
+    }
+  };
+
+  const selectSavedResume = async (resume) => {
+    try {
+      const response = await fetch(`${API_URL}/api/resumes/detail/${resume.id}`);
+      if (response.ok) {
+        const data = await response.json();
+        setSelectedSavedResume(data.resume);
+        setParsedResumeText(data.resume.resumeText);
+        setResumeFile(null); // Clear file upload
+        setCurrentStep(2); // Go to job description step
+      }
+    } catch (err) {
+      setError('Failed to load resume');
+    }
+  };
+
+  const saveCurrentResume = async () => {
+    if (!parsedResumeText || !resumeName.trim() || !user?.email) return;
+    
+    setSavingResume(true);
+    try {
+      const response = await fetch(`${API_URL}/api/resumes/save`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_email: user.email,
+          resume_name: resumeName.trim(),
+          resume_text: parsedResumeText,
+          file_name: resumeFile?.name || 'Saved Resume'
+        })
+      });
+      
+      if (response.ok) {
+        setShowSaveModal(false);
+        setResumeName('');
+        fetchSavedResumes(); // Refresh list
+      } else {
+        const data = await response.json();
+        throw new Error(data.detail || 'Failed to save');
+      }
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSavingResume(false);
+    }
+  };
+
+  const deleteSavedResume = async (resumeId, e) => {
+    e.stopPropagation();
+    if (!confirm('Delete this saved resume?')) return;
+    
+    try {
+      const response = await fetch(`${API_URL}/api/resumes/${resumeId}`, {
+        method: 'DELETE'
+      });
+      
+      if (response.ok) {
+        setSavedResumes(prev => prev.filter(r => r.id !== resumeId));
+        if (selectedSavedResume?.id === resumeId) {
+          setSelectedSavedResume(null);
+        }
+      }
+    } catch (err) {
+      setError('Failed to delete resume');
+    }
+  };
 
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
@@ -88,7 +190,7 @@ const ResumeScanner = () => {
   };
 
   const handleAnalyze = async () => {
-    if (!resumeFile || !jobDescription.trim()) {
+    if ((!resumeFile && !selectedSavedResume) || !jobDescription.trim()) {
       setError('Please upload a resume and enter a job description');
       return;
     }
@@ -97,23 +199,50 @@ const ResumeScanner = () => {
     setError(null);
 
     try {
-      const formData = new FormData();
-      formData.append('resume', resumeFile);
-      formData.append('job_description', jobDescription);
+      let data;
+      
+      if (selectedSavedResume) {
+        // Use saved resume text - call analyze with text directly
+        const formData = new FormData();
+        // Create a blob from the saved text to send as file
+        const blob = new Blob([selectedSavedResume.resumeText], { type: 'text/plain' });
+        formData.append('resume', blob, 'saved_resume.txt');
+        formData.append('job_description', jobDescription);
 
-      const response = await fetch(`${API_URL}/api/scan/analyze`, {
-        method: 'POST',
-        body: formData,
-      });
+        const response = await fetch(`${API_URL}/api/scan/analyze`, {
+          method: 'POST',
+          body: formData,
+        });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || 'Analysis failed');
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.detail || 'Analysis failed');
+        }
+
+        data = await response.json();
+        // Keep using the saved resume text
+        setParsedResumeText(selectedSavedResume.resumeText);
+      } else {
+        // Upload new file
+        const formData = new FormData();
+        formData.append('resume', resumeFile);
+        formData.append('job_description', jobDescription);
+
+        const response = await fetch(`${API_URL}/api/scan/analyze`, {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.detail || 'Analysis failed');
+        }
+
+        data = await response.json();
+        setParsedResumeText(data.resumeText || '');
       }
 
-      const data = await response.json();
       setAnalysisResult(data.analysis);
-      setParsedResumeText(data.resumeText || ''); // Store for document generation
       setCurrentStep(3);
 
       // Save scan if user is authenticated
@@ -286,46 +415,91 @@ const ResumeScanner = () => {
             <h2>Upload Your Resume</h2>
             <p>We'll analyze your resume against the job description to find the best match</p>
 
-            <div 
-              className={`upload-zone ${resumeFile ? 'has-file' : ''}`}
-              onDrop={handleDrop}
-              onDragOver={handleDragOver}
-            >
-              {resumeFile ? (
+            {/* Saved Resumes Section */}
+            {isAuthenticated && savedResumes.length > 0 && (
+              <div className="saved-resumes-section">
+                <h3><FolderOpen className="w-5 h-5" /> Your Saved Resumes</h3>
+                <div className="saved-resumes-list">
+                  {savedResumes.map((resume) => (
+                    <div 
+                      key={resume.id} 
+                      className={`saved-resume-card ${selectedSavedResume?.id === resume.id ? 'selected' : ''}`}
+                      onClick={() => selectSavedResume(resume)}
+                    >
+                      <FileText className="w-8 h-8" />
+                      <div className="resume-info">
+                        <span className="resume-name">{resume.resumeName}</span>
+                        <span className="resume-date">
+                          <Clock className="w-3 h-3" />
+                          {new Date(resume.updatedAt).toLocaleDateString()}
+                        </span>
+                      </div>
+                      <button 
+                        className="delete-resume-btn"
+                        onClick={(e) => deleteSavedResume(resume.id, e)}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <div className="divider-or">
+                  <span>or upload a new resume</span>
+                </div>
+              </div>
+            )}
+
+            {/* Selected Saved Resume */}
+            {selectedSavedResume && (
+              <div className="upload-zone has-file">
                 <div className="uploaded-file">
                   <FileText className="w-12 h-12" style={{ color: 'var(--primary)' }} />
-                  <span className="file-name">{resumeFile.name}</span>
-                  <span className="file-size">{(resumeFile.size / 1024).toFixed(1)} KB</span>
-                  <button className="remove-file" onClick={() => setResumeFile(null)}>
-                    <X className="w-4 h-4" /> Remove
+                  <span className="file-name">{selectedSavedResume.resumeName}</span>
+                  <span className="file-size">Saved Resume</span>
+                  <button className="remove-file" onClick={() => { setSelectedSavedResume(null); setParsedResumeText(''); }}>
+                    <X className="w-4 h-4" /> Change
                   </button>
                 </div>
-              ) : (
-                <>
-                  <Upload className="w-12 h-12" style={{ color: '#94a3b8' }} />
-                  <p>Drag & Drop or <label className="choose-file">
-                    Choose file
-                    <input 
-                      type="file" 
-                      accept=".pdf,.docx,.txt"
-                      onChange={handleFileUpload}
-                      hidden 
-                    />
-                  </label> to upload</p>
-                  <span className="file-types">as .pdf or .docx file</span>
-                </>
-              )}
-            </div>
+              </div>
+            )}
 
-            <div className="paste-option">
-              <button onClick={() => {/* Future: paste text option */}}>
-                Or paste resume text
-              </button>
-            </div>
+            {/* Upload Zone - show only if no saved resume selected */}
+            {!selectedSavedResume && (
+              <div 
+                className={`upload-zone ${resumeFile ? 'has-file' : ''}`}
+                onDrop={handleDrop}
+                onDragOver={handleDragOver}
+              >
+                {resumeFile ? (
+                  <div className="uploaded-file">
+                    <FileText className="w-12 h-12" style={{ color: 'var(--primary)' }} />
+                    <span className="file-name">{resumeFile.name}</span>
+                    <span className="file-size">{(resumeFile.size / 1024).toFixed(1)} KB</span>
+                    <button className="remove-file" onClick={() => setResumeFile(null)}>
+                      <X className="w-4 h-4" /> Remove
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <Upload className="w-12 h-12" style={{ color: '#94a3b8' }} />
+                    <p>Drag & Drop or <label className="choose-file">
+                      Choose file
+                      <input 
+                        type="file" 
+                        accept=".pdf,.docx,.txt"
+                        onChange={handleFileUpload}
+                        hidden 
+                      />
+                    </label> to upload</p>
+                    <span className="file-types">as .pdf or .docx file</span>
+                  </>
+                )}
+              </div>
+            )}
 
             <Button 
               className="btn-primary next-btn"
-              disabled={!resumeFile}
+              disabled={!resumeFile && !selectedSavedResume}
               onClick={() => setCurrentStep(2)}
             >
               Continue <ArrowRight className="w-4 h-4" />
@@ -426,7 +600,46 @@ const ResumeScanner = () => {
                   <><FileDown className="w-4 h-4" /> Get Cover Letter</>
                 )}
               </Button>
+              {isAuthenticated && !selectedSavedResume && parsedResumeText && (
+                <Button 
+                  variant="outline"
+                  className="save-resume-btn"
+                  onClick={() => setShowSaveModal(true)}
+                >
+                  <Save className="w-4 h-4" /> Save Resume
+                </Button>
+              )}
             </div>
+            
+            {/* Save Resume Modal */}
+            {showSaveModal && (
+              <div className="modal-overlay" onClick={() => setShowSaveModal(false)}>
+                <div className="save-resume-modal" onClick={(e) => e.stopPropagation()}>
+                  <h3><Save className="w-5 h-5" /> Save Resume for Later</h3>
+                  <p>Give your resume a name to easily find it next time</p>
+                  <input
+                    type="text"
+                    placeholder="e.g., Software Engineer Resume"
+                    value={resumeName}
+                    onChange={(e) => setResumeName(e.target.value)}
+                    className="resume-name-input"
+                  />
+                  <div className="modal-actions">
+                    <Button variant="outline" onClick={() => setShowSaveModal(false)}>
+                      Cancel
+                    </Button>
+                    <Button 
+                      className="btn-primary"
+                      onClick={saveCurrentResume}
+                      disabled={!resumeName.trim() || savingResume}
+                    >
+                      {savingResume ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                      {savingResume ? 'Saving...' : 'Save'}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Match Score */}
             <div className="match-score-section">

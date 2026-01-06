@@ -333,6 +333,200 @@
   background: rgba(34, 197, 94, 0.1);
 }
 
+.save-resume-btn {
+  padding: 1rem 1.5rem !important;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Saved Resumes Section */
+.saved-resumes-section {
+  margin-bottom: 1.5rem;
+  text-align: left;
+}
+
+.saved-resumes-section h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.saved-resumes-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.saved-resume-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: white;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 200px;
+}
+
+.saved-resume-card:hover {
+  border-color: var(--primary);
+  background: rgba(34, 197, 94, 0.05);
+}
+
+.saved-resume-card.selected {
+  border-color: var(--primary);
+  background: rgba(34, 197, 94, 0.1);
+}
+
+.saved-resume-card svg:first-child {
+  color: var(--primary);
+  flex-shrink: 0;
+}
+
+.resume-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.resume-name {
+  font-weight: 600;
+  color: #1e293b;
+  font-size: 0.9rem;
+}
+
+.resume-date {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.delete-resume-btn {
+  background: none;
+  border: none;
+  padding: 0.25rem;
+  cursor: pointer;
+  color: #94a3b8;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.delete-resume-btn:hover {
+  color: #ef4444;
+  background: #fee2e2;
+}
+
+.divider-or {
+  text-align: center;
+  margin: 1.5rem 0;
+  position: relative;
+}
+
+.divider-or::before,
+.divider-or::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 40%;
+  height: 1px;
+  background: #e2e8f0;
+}
+
+.divider-or::before {
+  left: 0;
+}
+
+.divider-or::after {
+  right: 0;
+}
+
+.divider-or span {
+  background: white;
+  padding: 0 1rem;
+  color: #94a3b8;
+  font-size: 0.875rem;
+}
+
+/* Save Resume Modal */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.save-resume-modal {
+  background: white;
+  border-radius: 20px;
+  padding: 2rem;
+  max-width: 400px;
+  width: 90%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+}
+
+.save-resume-modal h3 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.save-resume-modal h3 svg {
+  color: var(--primary);
+}
+
+.save-resume-modal p {
+  color: #64748b;
+  margin-bottom: 1.5rem;
+}
+
+.resume-name-input {
+  width: 100%;
+  padding: 0.875rem 1rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 1rem;
+  margin-bottom: 1.5rem;
+  transition: all 0.2s;
+}
+
+.resume-name-input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
+}
+
+.modal-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+}
+
+.modal-actions button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 /* Match Score Section */
 .match-score-section {
   display: flex;

@@ -2116,6 +2116,134 @@ class ScanSaveRequest(BaseModel):
     analysis: dict
 
 
+class SaveResumeRequest(BaseModel):
+    user_email: str
+    resume_name: str
+    resume_text: str
+    file_name: str = ""
+
+
+@app.post("/api/resumes/save")
+async def save_user_resume(request: SaveResumeRequest):
+    """
+    Save a user's resume for future use
+    """
+    try:
+        # Check if resume with same name exists
+        existing = await db.saved_resumes.find_one({
+            "userEmail": request.user_email,
+            "resumeName": request.resume_name
+        })
+        
+        if existing:
+            # Update existing
+            await db.saved_resumes.update_one(
+                {"_id": existing["_id"]},
+                {"$set": {
+                    "resumeText": request.resume_text,
+                    "fileName": request.file_name,
+                    "updatedAt": datetime.now(timezone.utc).isoformat()
+                }}
+            )
+            return {"success": True, "message": "Resume updated", "id": str(existing["_id"])}
+        
+        # Create new
+        resume_doc = {
+            "userEmail": request.user_email,
+            "resumeName": request.resume_name,
+            "resumeText": request.resume_text,
+            "fileName": request.file_name,
+            "createdAt": datetime.now(timezone.utc).isoformat(),
+            "updatedAt": datetime.now(timezone.utc).isoformat()
+        }
+        
+        result = await db.saved_resumes.insert_one(resume_doc)
+        
+        return {
+            "success": True,
+            "message": "Resume saved",
+            "id": str(result.inserted_id)
+        }
+        
+    except Exception as e:
+        logger.error(f"Save resume error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/resumes/{user_email}")
+async def get_user_resumes(user_email: str):
+    """
+    Get all saved resumes for a user
+    """
+    try:
+        resumes = await db.saved_resumes.find(
+            {"userEmail": user_email}
+        ).sort("updatedAt", -1).to_list(length=20)
+        
+        for resume in resumes:
+            resume["id"] = str(resume.pop("_id"))
+            # Don't send full text in list view
+            resume["textPreview"] = resume.get("resumeText", "")[:200] + "..."
+        
+        return {
+            "success": True,
+            "resumes": resumes
+        }
+        
+    except Exception as e:
+        logger.error(f"Get resumes error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/resumes/detail/{resume_id}")
+async def get_resume_detail(resume_id: str):
+    """
+    Get a specific saved resume with full text
+    """
+    try:
+        from bson import ObjectId
+        
+        resume = await db.saved_resumes.find_one({"_id": ObjectId(resume_id)})
+        
+        if not resume:
+            raise HTTPException(status_code=404, detail="Resume not found")
+        
+        resume["id"] = str(resume.pop("_id"))
+        
+        return {
+            "success": True,
+            "resume": resume
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Get resume detail error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.delete("/api/resumes/{resume_id}")
+async def delete_saved_resume(resume_id: str):
+    """
+    Delete a saved resume
+    """
+    try:
+        from bson import ObjectId
+        
+        result = await db.saved_resumes.delete_one({"_id": ObjectId(resume_id)})
+        
+        if result.deleted_count == 0:
+            raise HTTPException(status_code=404, detail="Resume not found")
+        
+        return {"success": True, "message": "Resume deleted"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Delete resume error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.post("/api/scan/save")
 async def save_scan(request: ScanSaveRequest):
     """
