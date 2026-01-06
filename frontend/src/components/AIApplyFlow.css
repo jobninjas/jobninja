@@ -655,3 +655,250 @@
   }
 }
 
+/* ========== Full Analysis Section Styles ========== */
+.full-analysis-section {
+  margin-top: 2rem;
+}
+
+.analysis-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+/* Match Summary Card */
+.match-summary-card {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  padding: 2rem;
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+  border-radius: 16px;
+  margin-bottom: 2rem;
+}
+
+.score-circle-large {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.score-inner {
+  width: 100px;
+  height: 100px;
+  background: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.score-number {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #22c55e;
+}
+
+.match-summary-text {
+  flex: 1;
+}
+
+.match-summary-text h4 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0 0 0.5rem 0;
+}
+
+.match-summary-text h4.strong {
+  color: #22c55e;
+}
+
+.match-summary-text h4.moderate {
+  color: #eab308;
+}
+
+.match-summary-text h4.needs-work {
+  color: #ef4444;
+}
+
+.match-summary-text p {
+  color: #4b5563;
+  font-size: 1rem;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* Quick Stats Grid */
+.quick-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.stat-item {
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 1.25rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1px solid #e2e8f0;
+}
+
+.stat-item svg {
+  color: #64748b;
+}
+
+.stat-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #64748b;
+  letter-spacing: 0.05em;
+}
+
+.stat-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+}
+
+/* Skills Sections */
+.skills-section {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+  border: 1px solid #e2e8f0;
+}
+
+.skills-section .section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.skills-section .section-header h4 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin: 0;
+}
+
+.skills-badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.35rem 0.75rem;
+  border-radius: 20px;
+  background: #dcfce7;
+  color: #166534;
+}
+
+.skills-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+.skills-column h5 {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #4b5563;
+  margin: 0 0 0.75rem 0;
+}
+
+.skill-chip {
+  display: inline-block;
+  padding: 0.4rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  margin: 0.25rem;
+}
+
+.skill-chip.matched {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.skill-chip.missing {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.no-skills {
+  color: #9ca3af;
+  font-style: italic;
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+/* Tips Section */
+.tips-section {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+.tips-section h4 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #92400e;
+  margin: 0 0 1rem 0;
+}
+
+.tips-list {
+  margin: 0;
+  padding-left: 1.5rem;
+}
+
+.tips-list li {
+  color: #78350f;
+  margin-bottom: 0.5rem;
+  line-height: 1.5;
+}
+
+/* Responsive Styles */
+@media (max-width: 768px) {
+  .match-summary-card {
+    flex-direction: column;
+    text-align: center;
+    gap: 1rem;
+    padding: 1.5rem;
+  }
+
+  .quick-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .skills-columns {
+    grid-template-columns: 1fr;
+  }
+
+  .score-circle-large {
+    width: 100px;
+    height: 100px;
+  }
+
+  .score-inner {
+    width: 84px;
+    height: 84px;
+  }
+
+  .score-number {
+    font-size: 1.5rem;
+  }
+}
+

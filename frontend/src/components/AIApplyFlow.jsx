@@ -20,13 +20,23 @@ import {
   MapPin,
   Building2,
   X,
-  Save
+  Save,
+  Target,
+  TrendingUp,
+  Lightbulb
 } from 'lucide-react';
 import { BRAND } from '../config/branding';
 import { API_URL } from '../config/api';
 import SideMenu from './SideMenu';
 import Header from './Header';
 import './AIApplyFlow.css';
+
+// Helper function to get color based on score
+const getScoreColor = (score) => {
+  if (score >= 70) return '#22c55e'; // Green
+  if (score >= 50) return '#eab308'; // Yellow
+  return '#ef4444'; // Red
+};
 
 const AIApplyFlow = () => {
   const navigate = useNavigate();
@@ -581,19 +591,8 @@ const AIApplyFlow = () => {
               <p>Download your tailored resume and cover letter, then apply to the job.</p>
             </div>
 
-            {/* Match Score */}
-            {analysisResult?.matchScore && (
-              <div className="match-score-display">
-                <div className="score-circle">
-                  <span className="score-value">{analysisResult.matchScore}%</span>
-                  <span className="score-label">Match</span>
-                </div>
-              </div>
-            )}
-
-            {/* Download Buttons */}
+            {/* Download Buttons - Moved to top */}
             <div className="download-section">
-              <h3>Download Your Documents</h3>
               <div className="download-buttons">
                 {optimizedResumeUrl && (
                   <a 
@@ -603,8 +602,7 @@ const AIApplyFlow = () => {
                   >
                     <Download className="w-5 h-5" />
                     <div>
-                      <strong>Tailored Resume</strong>
-                      <span>Optimized for this job</span>
+                      <strong>Download Optimized Resume</strong>
                     </div>
                   </a>
                 )}
@@ -616,13 +614,148 @@ const AIApplyFlow = () => {
                   >
                     <Download className="w-5 h-5" />
                     <div>
-                      <strong>Cover Letter</strong>
-                      <span>Customized for {jobData.company}</span>
+                      <strong>Get Cover Letter</strong>
                     </div>
                   </a>
                 )}
               </div>
             </div>
+
+            {/* Resume Analysis Section - Full Details */}
+            {analysisResult && (
+              <div className="full-analysis-section">
+                <h3 className="analysis-title">Resume Analysis</h3>
+                
+                {/* Match Score Circle with Summary */}
+                <div className="match-summary-card">
+                  <div className="score-circle-large" style={{ 
+                    background: `conic-gradient(${getScoreColor(analysisResult.matchScore || 0)} ${(analysisResult.matchScore || 0) * 3.6}deg, #e5e7eb ${(analysisResult.matchScore || 0) * 3.6}deg)`
+                  }}>
+                    <div className="score-inner">
+                      <span className="score-number">{analysisResult.matchScore || 0}%</span>
+                    </div>
+                  </div>
+                  <div className="match-summary-text">
+                    <h4 className={`match-level ${(analysisResult.matchScore || 0) >= 70 ? 'strong' : (analysisResult.matchScore || 0) >= 50 ? 'moderate' : 'needs-work'}`}>
+                      {(analysisResult.matchScore || 0) >= 70 ? 'Strong Match' : (analysisResult.matchScore || 0) >= 50 ? 'Moderate Match' : 'Needs Improvement'}
+                    </h4>
+                    <p>{analysisResult.summary || 'Your resume has been analyzed against this job description.'}</p>
+                  </div>
+                </div>
+
+                {/* Quick Stats Grid */}
+                <div className="quick-stats-grid">
+                  <div className="stat-item">
+                    <Target className="w-5 h-5" />
+                    <span className="stat-label">HARD SKILLS</span>
+                    <span className="stat-value" style={{ color: getScoreColor(analysisResult.hardSkills?.score || 0) }}>
+                      {analysisResult.hardSkills?.score || 0}%
+                    </span>
+                  </div>
+                  <div className="stat-item">
+                    <TrendingUp className="w-5 h-5" />
+                    <span className="stat-label">SOFT SKILLS</span>
+                    <span className="stat-value" style={{ color: getScoreColor(analysisResult.softSkills?.score || 0) }}>
+                      {analysisResult.softSkills?.score || 0}%
+                    </span>
+                  </div>
+                  <div className="stat-item">
+                    <Briefcase className="w-5 h-5" />
+                    <span className="stat-label">EXPERIENCE</span>
+                    <span className="stat-value" style={{ color: getScoreColor(analysisResult.experience?.score || 0) }}>
+                      {analysisResult.experience?.score || 0}%
+                    </span>
+                  </div>
+                  <div className="stat-item">
+                    <FileText className="w-5 h-5" />
+                    <span className="stat-label">SEARCHABILITY</span>
+                    <span className="stat-value" style={{ color: getScoreColor(analysisResult.searchability?.score || 0) }}>
+                      {analysisResult.searchability?.score || 0}%
+                    </span>
+                  </div>
+                </div>
+
+                {/* Hard Skills Section */}
+                <div className="skills-section">
+                  <div className="section-header">
+                    <h4>Hard Skills</h4>
+                    <span className="skills-badge">
+                      {analysisResult.hardSkills?.matched?.length || 0} MATCHED, {analysisResult.hardSkills?.missing?.length || 0} MISSING
+                    </span>
+                  </div>
+                  <div className="skills-columns">
+                    <div className="skills-column matched-column">
+                      <h5>✅ Matched Skills</h5>
+                      {analysisResult.hardSkills?.matched?.slice(0, 8).map((skill, i) => (
+                        <div key={i} className="skill-chip matched">
+                          {typeof skill === 'string' ? skill : skill.skill}
+                        </div>
+                      ))}
+                      {(!analysisResult.hardSkills?.matched || analysisResult.hardSkills.matched.length === 0) && (
+                        <p className="no-skills">No matched skills found</p>
+                      )}
+                    </div>
+                    <div className="skills-column missing-column">
+                      <h5>❌ Missing Skills</h5>
+                      {analysisResult.hardSkills?.missing?.slice(0, 8).map((skill, i) => (
+                        <div key={i} className="skill-chip missing">
+                          {typeof skill === 'string' ? skill : skill.skill}
+                        </div>
+                      ))}
+                      {(!analysisResult.hardSkills?.missing || analysisResult.hardSkills.missing.length === 0) && (
+                        <p className="no-skills">No missing skills</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Soft Skills Section */}
+                <div className="skills-section">
+                  <div className="section-header">
+                    <h4>Soft Skills</h4>
+                    <span className="skills-badge">
+                      {analysisResult.softSkills?.matched?.length || 0} MATCHED, {analysisResult.softSkills?.missing?.length || 0} MISSING
+                    </span>
+                  </div>
+                  <div className="skills-columns">
+                    <div className="skills-column matched-column">
+                      <h5>✅ Found</h5>
+                      {analysisResult.softSkills?.matched?.slice(0, 6).map((skill, i) => (
+                        <div key={i} className="skill-chip matched">
+                          {typeof skill === 'string' ? skill : skill.skill}
+                        </div>
+                      ))}
+                      {(!analysisResult.softSkills?.matched || analysisResult.softSkills.matched.length === 0) && (
+                        <p className="no-skills">No soft skills found</p>
+                      )}
+                    </div>
+                    <div className="skills-column missing-column">
+                      <h5>❌ Missing</h5>
+                      {analysisResult.softSkills?.missing?.slice(0, 6).map((skill, i) => (
+                        <div key={i} className="skill-chip missing">
+                          {typeof skill === 'string' ? skill : skill.skill}
+                        </div>
+                      ))}
+                      {(!analysisResult.softSkills?.missing || analysisResult.softSkills.missing.length === 0) && (
+                        <p className="no-skills">No missing skills</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Recruiter Tips */}
+                {analysisResult.tips && analysisResult.tips.length > 0 && (
+                  <div className="tips-section">
+                    <h4><Lightbulb className="w-5 h-5" /> Recruiter Tips</h4>
+                    <ul className="tips-list">
+                      {analysisResult.tips.slice(0, 5).map((tip, i) => (
+                        <li key={i}>{tip}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Action Buttons */}
             <div className="results-actions">
