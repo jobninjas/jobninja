@@ -1546,14 +1546,40 @@
   font-family: system-ui, sans-serif;
   font-size: 0.95rem;
   font-weight: 600;
-  padding: 6px 12px;
+  padding: 8px 16px;
   border-radius: 9999px;
-  transition: all 0.2s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background: transparent;
+  border: 1px solid transparent;
+  position: relative;
+  overflow: hidden;
+}
+
+.nav-link::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.6),
+    transparent
+  );
+  transition: left 0.5s ease;
+}
+
+.nav-link:hover::before {
+  left: 100%;
 }
 
 .nav-link:hover {
-  background: rgba(0, 0, 0, 0.08);
+  background: rgba(0, 0, 0, 0.06);
   color: #000000;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .nav-actions {
@@ -3212,19 +3238,52 @@
    AI NINJA & HUMAN NINJA PAGES
    =================================== */
 
-/* Navigation Highlight */
+/* Navigation Highlight - Styled pill buttons */
 .nav-link-highlight {
   display: flex;
   align-items: center;
-  gap: 0.25rem;
-  background: none;
-  border: none;
+  gap: 0.5rem;
+  background: rgba(34, 197, 94, 0.08);
+  border: 1px solid rgba(34, 197, 94, 0.15);
+  border-radius: 9999px;
+  padding: 8px 16px !important;
   cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.nav-link-highlight::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.4),
+    transparent
+  );
+  transition: left 0.5s ease;
+}
+
+.nav-link-highlight:hover::before {
+  left: 100%;
+}
+
+.nav-link-highlight:hover {
+  background: rgba(34, 197, 94, 0.15);
+  border-color: rgba(34, 197, 94, 0.3);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.15);
 }
 
 .nav-link-active {
   background: var(--primary-light) !important;
   color: var(--primary) !important;
+  border-color: rgba(34, 197, 94, 0.3) !important;
 }
 
 /* Text Gradient */
