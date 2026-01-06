@@ -77,93 +77,93 @@ async def generate_optimized_resume_content(resume_text: str, job_description: s
         matched_skills.extend([s.get("skill", s) if isinstance(s, dict) else s for s in analysis["hardSkills"]["matched"]])
     
     prompt = f"""
-You are an expert ATS resume optimizer. Your task is to enhance this resume for the target job.
+You are a resume ENHANCER, not a summarizer. Your job is to EXPAND and IMPROVE the resume, NOT shorten it.
 
-CRITICAL RULES:
-1. PRESERVE ALL original content - every job, every bullet point, every achievement
-2. DO NOT shorten or summarize - keep FULL details from the original
-3. DO NOT remove any experience, education, or sections
-4. ENHANCE bullet points by adding metrics, keywords, and action verbs
-5. REORDER sections to highlight most relevant experience first
-6. ADD missing keywords naturally into existing bullet points
-7. Include ALL original projects, certifications, and achievements
+=== ABSOLUTE RULES - VIOLATION = FAILURE ===
+1. EVERY job position in the original MUST appear in output (count them!)
+2. EVERY bullet point MUST be preserved - you can ONLY add more, never remove
+3. EVERY project MUST be included with ALL its details
+4. The output MUST be LONGER than the input
+5. Copy the EXACT job titles, company names, dates - do NOT paraphrase
+6. Keep the original professional summary structure but enhance it with keywords
 
-ORIGINAL RESUME (PRESERVE ALL CONTENT):
+=== YOUR TASK ===
+Take each bullet point and ENHANCE it by:
+- Adding specific metrics/numbers where logical (e.g., "improved by X%", "reduced X hours")
+- Weaving in relevant keywords from the job description
+- Making the action verbs stronger
+- BUT keeping the original meaning and all details intact
+
+=== ORIGINAL RESUME (COPY ALL CONTENT - DO NOT SKIP ANY SECTION) ===
 {resume_text}
 
-TARGET JOB DESCRIPTION:
+=== TARGET JOB DESCRIPTION ===
 {job_description}
 
-KEYWORDS ALREADY MATCHED (emphasize these): {', '.join(matched_skills[:20])}
-KEYWORDS TO ADD (weave into bullet points): {', '.join(missing_skills[:15])}
-ADDITIONAL KEYWORDS: {', '.join(keywords[:10])}
+=== KEYWORDS TO WEAVE INTO EXISTING BULLETS ===
+Add naturally: {', '.join(missing_skills[:15] + keywords[:10])}
 
-Return a comprehensive JSON object. Include ALL experiences from the original resume with ENHANCED bullet points (4-6 bullets per job minimum):
+=== OUTPUT FORMAT (JSON) ===
+Return ONLY valid JSON, no markdown:
 
 {{
     "contactInfo": {{
-        "name": "Exact name from resume",
-        "email": "email from resume",
-        "phone": "phone from resume",
-        "linkedin": "linkedin URL if present",
-        "location": "location from resume",
-        "website": "portfolio/github if present"
+        "name": "COPY EXACT NAME",
+        "email": "COPY EXACT EMAIL",
+        "phone": "COPY EXACT PHONE",
+        "location": "COPY EXACT LOCATION",
+        "linkedin": "COPY IF EXISTS",
+        "website": "COPY IF EXISTS"
     }},
-    "summary": "A compelling 4-5 sentence professional summary that incorporates target job keywords while highlighting the candidate's strongest qualifications. Make it specific and impactful.",
+    "summary": "ENHANCE the original summary - keep same length or longer, add keywords naturally. Do NOT shorten.",
     "experience": [
         {{
-            "title": "Exact Job Title",
-            "company": "Company Name",
-            "location": "City, State",
-            "dates": "Start Date - End Date",
+            "title": "COPY EXACT TITLE",
+            "company": "COPY EXACT COMPANY NAME",
+            "location": "COPY EXACT LOCATION",
+            "dates": "COPY EXACT DATES",
             "bullets": [
-                "Strong action verb + specific achievement with quantifiable metrics (%, $, numbers)",
-                "Another detailed bullet showing relevant skills and impact",
-                "Include ALL original bullets, enhanced with keywords",
-                "Add more bullets to fully capture the role's scope",
-                "Minimum 4-6 bullets per position"
+                "ENHANCED version of original bullet 1 - add metrics and keywords",
+                "ENHANCED version of original bullet 2",
+                "ENHANCED version of original bullet 3",
+                "... INCLUDE EVERY ORIGINAL BULLET ...",
+                "You may ADD 1-2 extra bullets per job if relevant to target role"
             ]
         }}
+        // INCLUDE EVERY JOB FROM ORIGINAL - DO NOT SKIP ANY
     ],
     "projects": [
         {{
-            "name": "Project Name",
-            "technologies": "Tech stack used",
-            "description": "What the project does",
-            "bullets": ["Achievement 1", "Achievement 2"]
+            "name": "COPY EXACT PROJECT NAME",
+            "subtitle": "Brief description or tech stack",
+            "bullets": [
+                "COPY and enhance all project details",
+                "Include the Impact section if present"
+            ]
         }}
+        // INCLUDE ALL PROJECTS
     ],
     "education": [
         {{
-            "degree": "Full Degree Name",
-            "school": "University/Institution Name",
-            "location": "City, State",
-            "date": "Graduation Date",
-            "gpa": "GPA if above 3.0",
-            "details": "Relevant coursework, honors, activities"
+            "degree": "COPY EXACT DEGREE",
+            "school": "COPY EXACT SCHOOL NAME",
+            "location": "COPY IF EXISTS",
+            "date": "COPY DATE"
         }}
     ],
-    "skills": {{
-        "technical": ["All technical skills from resume + relevant missing keywords"],
-        "tools": ["Software, platforms, tools"],
-        "other": ["Languages, certifications, soft skills"]
-    }},
-    "certifications": [
-        {{
-            "name": "Certification Name",
-            "issuer": "Issuing Organization",
-            "date": "Date obtained"
-        }}
-    ],
-    "additionalSections": [
-        {{
-            "title": "Section Name (e.g., Publications, Awards, Volunteer)",
-            "items": ["Item 1", "Item 2"]
-        }}
-    ]
+    "skills": ["COPY ALL ORIGINAL SKILLS", "ADD relevant missing keywords at the end"]
 }}
 
-IMPORTANT: The output resume should be LONGER and MORE DETAILED than the input, not shorter. Every original bullet point should be preserved and enhanced.
+=== VERIFICATION CHECKLIST (You must pass all) ===
+[ ] All job positions from original are included
+[ ] All bullet points preserved and enhanced (not shortened!)
+[ ] All projects included with full details
+[ ] Education section complete
+[ ] All skills preserved + new keywords added
+[ ] Contact info complete with location
+[ ] Output is LONGER than input
+
+GENERATE THE ENHANCED RESUME JSON NOW:
 """
 
     try:
@@ -321,17 +321,31 @@ def create_resume_docx(resume_data: Dict) -> io.BytesIO:
             proj_header = doc.add_paragraph()
             name_run = proj_header.add_run(f"{project.get('name', 'Project')}")
             name_run.bold = True
-            if project.get("technologies"):
-                proj_header.add_run(f" | {project['technologies']}")
+            
+            # Handle subtitle or technologies
+            subtitle = project.get("subtitle") or project.get("technologies")
+            if subtitle:
+                proj_header.add_run(f" — {subtitle}")
             proj_header.paragraph_format.space_after = Pt(2)
             
             if project.get("description"):
                 desc_para = doc.add_paragraph(project["description"])
                 desc_para.paragraph_format.space_after = Pt(4)
             
-            for bullet in project.get("bullets", []):
+            # Handle bullets - could be list or single string
+            bullets = project.get("bullets", [])
+            if isinstance(bullets, str):
+                bullets = [bullets]
+            for bullet in bullets:
                 if bullet and bullet.strip():
-                    doc.add_paragraph(bullet, style='List Bullet')
+                    # Check if it's an "Impact:" section
+                    if bullet.lower().startswith("impact:"):
+                        impact_para = doc.add_paragraph()
+                        impact_label = impact_para.add_run("Impact: ")
+                        impact_label.bold = True
+                        impact_para.add_run(bullet[7:].strip())
+                    else:
+                        doc.add_paragraph(bullet, style='List Bullet')
     
     # Education
     if resume_data.get("education"):
