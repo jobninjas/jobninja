@@ -177,8 +177,8 @@ const AINinja = () => {
           {/* Resume Scanner CTA - Primary Action */}
           <div className="ai-ninja-cta-buttons" style={{ display: 'flex', gap: '1rem', marginTop: '2rem', flexWrap: 'wrap', justifyContent: 'center' }}>
             <Button className="btn-primary btn-large" onClick={() => navigate('/scanner')}>
-              <Search className="w-5 h-5 mr-2" />
-              Resume Scanner – Check Your Match Score
+              <Sparkles className="w-5 h-5 mr-2" />
+              Get Tailored Resume & Cover Letter
             </Button>
           </div>
 
@@ -186,15 +186,15 @@ const AINinja = () => {
           <div className="ai-ninja-features">
             <div className="feature-item">
               <FileText className="w-5 h-5 text-primary" />
-              <span>Tailored Resume</span>
+              <span>ATS-Optimized Resume</span>
             </div>
             <div className="feature-item">
               <MessageSquare className="w-5 h-5 text-primary" />
               <span>Custom Cover Letter</span>
             </div>
             <div className="feature-item">
-              <Sparkles className="w-5 h-5 text-primary" />
-              <span>Suggested Q&A Answers</span>
+              <Search className="w-5 h-5 text-primary" />
+              <span>ATS Match Score</span>
             </div>
           </div>
 
