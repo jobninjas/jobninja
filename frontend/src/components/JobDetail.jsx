@@ -56,13 +56,18 @@ const JobDetail = () => {
             company: jobData.company,
             location: jobData.location,
             salaryRange: jobData.salaryRange || 'Competitive',
+            salaryMin: jobData.salaryMin,
+            salaryMax: jobData.salaryMax,
             description: jobData.description,
-            fullDescription: jobData.description, // Use description as fullDescription
+            fullDescription: jobData.description,
             type: jobData.type || 'onsite',
             visaTags: jobData.visaTags || [],
             categoryTags: jobData.categoryTags || [],
             highPay: jobData.highPay || false,
-            sourceUrl: jobData.sourceUrl
+            sourceUrl: jobData.sourceUrl,
+            source: jobData.source || 'adzuna',
+            createdAt: jobData.createdAt,
+            postedDate: jobData.createdAt ? new Date(jobData.createdAt).toLocaleDateString() : null
           });
         } else {
           setError('Job not found');
@@ -240,6 +245,69 @@ const JobDetail = () => {
                   {(job.fullDescription || job.description || '').split('\n').map((line, i) => (
                     <p key={i}>{line}</p>
                   ))}
+                </div>
+                
+                {/* Full details notice */}
+                {job.sourceUrl && (
+                  <div style={{ 
+                    marginTop: '1.5rem', 
+                    padding: '1rem', 
+                    background: '#f0fdf4', 
+                    borderRadius: '8px',
+                    border: '1px solid #10b981'
+                  }}>
+                    <p style={{ margin: 0, fontSize: '0.95rem', color: '#166534' }}>
+                      <strong>📋 Full Job Details:</strong> This is a preview. For complete job requirements, 
+                      qualifications, and application instructions, view the original posting.
+                    </p>
+                    <Button 
+                      variant="outline" 
+                      style={{ marginTop: '0.75rem' }}
+                      onClick={() => window.open(job.sourceUrl, '_blank')}
+                    >
+                      <ExternalLink className="w-4 h-4 mr-2" /> View Full Job Posting
+                    </Button>
+                  </div>
+                )}
+              </div>
+
+              {/* Quick Job Info */}
+              <div className="job-info-section" style={{ marginTop: '2rem' }}>
+                <h2>Job Details</h2>
+                <div style={{ 
+                  display: 'grid', 
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
+                  gap: '1rem',
+                  marginTop: '1rem'
+                }}>
+                  <div style={{ padding: '1rem', background: '#f8fafc', borderRadius: '8px' }}>
+                    <p style={{ fontSize: '0.85rem', color: '#64748b', margin: 0 }}>Company</p>
+                    <p style={{ fontSize: '1rem', fontWeight: 600, margin: '0.25rem 0 0' }}>{job.company}</p>
+                  </div>
+                  <div style={{ padding: '1rem', background: '#f8fafc', borderRadius: '8px' }}>
+                    <p style={{ fontSize: '0.85rem', color: '#64748b', margin: 0 }}>Location</p>
+                    <p style={{ fontSize: '1rem', fontWeight: 600, margin: '0.25rem 0 0' }}>{job.location}</p>
+                  </div>
+                  <div style={{ padding: '1rem', background: '#f8fafc', borderRadius: '8px' }}>
+                    <p style={{ fontSize: '0.85rem', color: '#64748b', margin: 0 }}>Salary Range</p>
+                    <p style={{ fontSize: '1rem', fontWeight: 600, margin: '0.25rem 0 0' }}>{job.salaryRange}</p>
+                  </div>
+                  <div style={{ padding: '1rem', background: '#f8fafc', borderRadius: '8px' }}>
+                    <p style={{ fontSize: '0.85rem', color: '#64748b', margin: 0 }}>Work Type</p>
+                    <p style={{ fontSize: '1rem', fontWeight: 600, margin: '0.25rem 0 0', textTransform: 'capitalize' }}>{job.type}</p>
+                  </div>
+                  {job.postedDate && (
+                    <div style={{ padding: '1rem', background: '#f8fafc', borderRadius: '8px' }}>
+                      <p style={{ fontSize: '0.85rem', color: '#64748b', margin: 0 }}>Posted</p>
+                      <p style={{ fontSize: '1rem', fontWeight: 600, margin: '0.25rem 0 0' }}>{job.postedDate}</p>
+                    </div>
+                  )}
+                  {job.source && (
+                    <div style={{ padding: '1rem', background: '#f8fafc', borderRadius: '8px' }}>
+                      <p style={{ fontSize: '0.85rem', color: '#64748b', margin: 0 }}>Source</p>
+                      <p style={{ fontSize: '1rem', fontWeight: 600, margin: '0.25rem 0 0', textTransform: 'capitalize' }}>{job.source}</p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
