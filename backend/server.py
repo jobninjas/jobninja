@@ -1620,20 +1620,6 @@ async def update_application_status(application_id: str, status: str):
     
     return {"success": True, "status": status}
 
-@api_router.get("/jobs")
-async def get_jobs():
-    """
-    Get all jobs from the job board.
-    """
-    try:
-        jobs = await db.jobs.find({}, {"_id": 0}).sort("postedDate", -1).to_list(100)
-        return {"jobs": jobs, "total": len(jobs)}
-    except Exception as e:
-        logger.error(f"Error fetching jobs: {str(e)}")
-        # Return empty list if no jobs collection exists yet
-        return {"jobs": [], "total": 0}
-
-
 # Include the router in the main app
 app.include_router(api_router)
 
