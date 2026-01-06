@@ -363,6 +363,7 @@ const AIApplyFlow = () => {
       };
       
       console.log('Saving resume:', { ...resumeData, resume_text: `[${textToSave.length} chars]` });
+      console.log('API URL:', `${API_URL}/api/resumes/save`);
       
       const response = await fetch(`${API_URL}/api/resumes/save`, {
         method: 'POST',
@@ -370,19 +371,23 @@ const AIApplyFlow = () => {
         body: JSON.stringify(resumeData)
       });
       
-      if (response.ok) {
+      console.log('Response status:', response.status);
+      const responseData = await response.json();
+      console.log('Response data:', responseData);
+      
+      if (response.ok || responseData.success) {
         setResumeSaved(true);
         setShowSaveResumePrompt(false);
         // Refresh saved resumes list
         fetchSavedResumes();
       } else {
-        const errorData = await response.json().catch(() => ({}));
-        alert(errorData.detail || 'Failed to save resume. Please try again.');
+        alert(responseData.detail || 'Failed to save resume. Please try again.');
       }
     } catch (error) {
       console.error('Failed to save resume:', error);
-      alert('Failed to save resume. Please try again.');
+      alert('Network error: ' + error.message);
     } finally {
+      console.log('Save complete, stopping loading');
       setIsSavingResume(false);
     }
   };
