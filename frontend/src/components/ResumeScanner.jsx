@@ -48,6 +48,8 @@ const ResumeScanner = () => {
   const [jobDescription, setJobDescription] = useState('');
   const [jobTitle, setJobTitle] = useState('');
   const [company, setCompany] = useState('');
+  const [jobUrl, setJobUrl] = useState('');
+  const [isFetchingUrl, setIsFetchingUrl] = useState(false);
 
   // Analysis state
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -203,6 +205,41 @@ const ResumeScanner = () => {
 
   const handleDragOver = (e) => {
     e.preventDefault();
+  };
+
+  const handleFetchJobDescription = async () => {
+    if (!jobUrl.trim()) {
+      setError('Please enter a valid job URL');
+      return;
+    }
+
+    setIsFetchingUrl(true);
+    setError(null);
+
+    try {
+      const response = await fetch(`${API_URL}/api/fetch-job-description`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: jobUrl.trim() })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch job description. The site might be blocking access.');
+      }
+
+      const data = await response.json();
+      if (data.success) {
+        setJobDescription(data.description || '');
+        if (data.jobTitle) setJobTitle(data.jobTitle);
+        if (data.company) setCompany(data.company);
+      } else {
+        throw new Error(data.error || 'Could not extract job information from the URL.');
+      }
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setIsFetchingUrl(false);
+    }
   };
 
   const handleAnalyze = async () => {
@@ -564,6 +601,32 @@ const ResumeScanner = () => {
             <p>Paste the job description you want to match your resume against</p>
 
             <div className="job-input-section">
+              <div className="url-fetch-group mb-6">
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="Paste job URL here (LinkedIn, Indeed, etc.)..."
+                    value={jobUrl}
+                    onChange={(e) => setJobUrl(e.target.value)}
+                    className="job-url-input flex-grow p-3 border rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
+                  />
+                  <Button
+                    onClick={handleFetchJobDescription}
+                    disabled={isFetchingUrl || !jobUrl.trim()}
+                    className="bg-secondary hover:bg-secondary/90 text-white px-6 rounded-xl"
+                  >
+                    {isFetchingUrl ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      'Fetch'
+                    )}
+                  </Button>
+                </div>
+                <p className="text-xs text-gray-400 mt-2 px-1">
+                  AI will extract the job title, company, and description for you.
+                </p>
+              </div>
+
               <div className="job-meta">
                 <input
                   type="text"
@@ -582,7 +645,7 @@ const ResumeScanner = () => {
               </div>
 
               <textarea
-                placeholder="Copy and paste a job description here..."
+                placeholder="Or paste a job description manually here..."
                 value={jobDescription}
                 onChange={(e) => setJobDescription(e.target.value)}
                 className="job-description-textarea"

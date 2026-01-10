@@ -23,7 +23,8 @@ import {
   Save,
   Target,
   TrendingUp,
-  Lightbulb
+  Lightbulb,
+  Link
 } from 'lucide-react';
 import { BRAND } from '../config/branding';
 import { API_URL } from '../config/api';
@@ -77,6 +78,10 @@ const AIApplyFlow = () => {
 
   // New Usage & Company state
   const [companyName, setCompanyName] = useState(jobData.company || '');
+  const [jobUrl, setJobUrl] = useState('');
+  const [isFetchingUrl, setIsFetchingUrl] = useState(false);
+  const [customJobDescription, setCustomJobDescription] = useState(jobData.description || '');
+  const [customJobTitle, setCustomJobTitle] = useState(jobData.jobTitle || jobData.title || '');
   const [usageLimits, setUsageLimits] = useState(null);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
@@ -165,6 +170,35 @@ const AIApplyFlow = () => {
     setResumeText(resume.resumeText || '');
   };
 
+  const handleFetchJobDescription = async () => {
+    if (!jobUrl.trim()) return;
+
+    setIsFetchingUrl(true);
+    try {
+      const response = await fetch(`${API_URL}/api/fetch-job-description`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: jobUrl.trim() })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch job description');
+      }
+
+      const data = await response.json();
+      if (data.success) {
+        if (data.description) setCustomJobDescription(data.description);
+        if (data.jobTitle) setCustomJobTitle(data.jobTitle);
+        if (data.company) setCompanyName(data.company);
+      }
+    } catch (error) {
+      console.error('Failed to fetch job description:', error);
+      alert('Failed to fetch job description. You might need to paste it manually.');
+    } finally {
+      setIsFetchingUrl(false);
+    }
+  };
+
   const handleStartGeneration = async () => {
     // If we have a file but no text, try to parse it again
     let textToUse = resumeText;
@@ -201,7 +235,7 @@ const AIApplyFlow = () => {
       return;
     }
 
-    if (!jobData.description) {
+    if (!customJobDescription) {
       alert('Job description is missing');
       return;
     }
@@ -236,7 +270,7 @@ const AIApplyFlow = () => {
         const blob = new Blob([textToUse], { type: 'text/plain' });
         analyzeFormData.append('resume', blob, 'resume.txt');
       }
-      analyzeFormData.append('job_description', jobData.description);
+      analyzeFormData.append('job_description', customJobDescription);
 
       const analyzeResponse = await fetch(`${API_URL}/api/scan/analyze`, {
         method: 'POST',
@@ -265,10 +299,10 @@ const AIApplyFlow = () => {
       const applyFormData = new FormData();
       applyFormData.append('userId', user.id);
       applyFormData.append('jobId', jobData.jobId || jobData.id || '');
-      applyFormData.append('jobTitle', jobData.jobTitle || jobData.title || '');
+      applyFormData.append('jobTitle', customJobTitle);
       applyFormData.append('company', companyName);
-      applyFormData.append('jobDescription', jobData.description);
-      applyFormData.append('jobUrl', jobData.sourceUrl || jobData.url || '');
+      applyFormData.append('jobDescription', customJobDescription);
+      applyFormData.append('jobUrl', jobUrl || jobData.sourceUrl || jobData.url || '');
 
       if (resumeFile) {
         applyFormData.append('resume', resumeFile);
@@ -489,9 +523,87 @@ const AIApplyFlow = () => {
           </div>
         </div>
 
-        {/* Step 1: Resume Selection */}
+        {/* Step 1: Resume Selection & Job Details */}
         {currentStep === 1 && (
           <Card className="ai-apply-card">
+            {/* Job Details Section at the TOP */}
+            <div className="job-description-section mb-8 p-6 bg-slate-50 rounded-xl border border-slate-200">
+              <h3 className="flex items-center gap-2 mb-4 text-lg font-bold text-slate-900">
+                <Link className="w-5 h-5 text-green-600" />
+                Paste the job link to continue
+              </h3>
+
+              <div className="url-fetch-box mb-6">
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="https://www.linkedin.com/jobs/view/..."
+                    value={jobUrl}
+                    onChange={(e) => setJobUrl(e.target.value)}
+                    className="flex-grow h-12 text-base shadow-sm border-slate-300 focus:border-green-500 focus:ring-green-500"
+                  />
+                  <Button
+                    onClick={handleFetchJobDescription}
+                    disabled={isFetchingUrl || !jobUrl.trim()}
+                    className="h-12 px-6 bg-green-600 hover:bg-green-700 text-white font-semibold transition-all shadow-md"
+                  >
+                    {isFetchingUrl ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Fetch Details'}
+                  </Button>
+                </div>
+                <p className="mt-2 text-sm text-slate-500 italic">
+                  Supported: LinkedIn, Indeed, Glassdoor, and more.
+                </p>
+              </div>
+
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Applying to Company*</Label>
+                    <Input
+                      placeholder="e.g. Google"
+                      value={companyName}
+                      onChange={(e) => setCompanyName(e.target.value)}
+                      className="mt-1 bg-white"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Job Title*</Label>
+                    <Input
+                      placeholder="e.g. Senior Product Designer"
+                      value={customJobTitle}
+                      onChange={(e) => setCustomJobTitle(e.target.value)}
+                      className="mt-1 bg-white"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex justify-between items-center mb-1">
+                    <Label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Job Description*</Label>
+                    {!customJobDescription && (
+                      <button
+                        type="button"
+                        onClick={() => setCustomJobDescription(' ')}
+                        className="text-xs text-green-600 hover:underline font-medium"
+                      >
+                        Enter Manually
+                      </button>
+                    )}
+                  </div>
+                  {(customJobDescription || jobUrl) && (
+                    <Textarea
+                      value={customJobDescription}
+                      onChange={(e) => setCustomJobDescription(e.target.value)}
+                      className="mt-1 min-h-[180px] bg-white text-slate-700 leading-relaxed"
+                      placeholder="Paste the full job description text here..."
+                      required
+                    />
+                  )}
+                </div>
+              </div>
+            </div>
+
             <h2><FileText className="w-5 h-5" /> Select Your Resume</h2>
             <p className="card-description">
               Choose a saved resume or upload a new one. We'll tailor it for this job.
@@ -554,35 +666,11 @@ const AIApplyFlow = () => {
               )}
             </div>
 
-            {/* Company Name Input */}
-            <div className="company-input-section mt-4 mb-6">
-              <Label htmlFor="companyName" className="text-sm font-semibold mb-2 block">
-                Applying to Company*
-              </Label>
-              <Input
-                id="companyName"
-                placeholder="Enter company name (e.g. Google)"
-                value={companyName}
-                onChange={(e) => setCompanyName(e.target.value)}
-                className="w-full"
-                required
-              />
-            </div>
-
-            {/* Job Description Preview */}
-            <div className="job-description-section">
-              <h3>Job Description</h3>
-              <div className="job-description-preview">
-                {jobData.description?.substring(0, 500)}
-                {jobData.description?.length > 500 && '...'}
-              </div>
-            </div>
-
             <div className="card-actions">
               <Button
                 className="btn-primary btn-large"
                 onClick={handleStartGeneration}
-                disabled={isParsingResume || (!resumeText && !resumeFile)}
+                disabled={isParsingResume || (!resumeText && !resumeFile && !selectedResume)}
               >
                 {isParsingResume ? (
                   <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Parsing Resume...</>
@@ -833,78 +921,84 @@ const AIApplyFlow = () => {
       </div>
 
       {/* Save Resume Prompt Modal */}
-      {showSaveResumePrompt && (
-        <div className="modal-overlay" onClick={() => setShowSaveResumePrompt(false)}>
-          <Card className="save-resume-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2><Save className="w-5 h-5" /> Save Resume for Future Use?</h2>
-              <button className="modal-close" onClick={() => setShowSaveResumePrompt(false)}>
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="modal-content">
-              <p>Would you like to save this resume for future job applications? You won't need to upload it again.</p>
-
-              <div className="form-group" style={{ marginTop: '1rem' }}>
-                <Label>Resume Name</Label>
-                <Input
-                  placeholder="e.g., Software Engineer Resume"
-                  value={resumeName}
-                  onChange={(e) => setResumeName(e.target.value)}
-                />
+      {
+        showSaveResumePrompt && (
+          <div className="modal-overlay" onClick={() => setShowSaveResumePrompt(false)}>
+            <Card className="save-resume-modal" onClick={(e) => e.stopPropagation()}>
+              <div className="modal-header">
+                <h2><Save className="w-5 h-5" /> Save Resume for Future Use?</h2>
+                <button className="modal-close" onClick={() => setShowSaveResumePrompt(false)}>
+                  <X className="w-5 h-5" />
+                </button>
               </div>
-            </div>
-            <div className="modal-footer">
-              <Button variant="outline" onClick={() => setShowSaveResumePrompt(false)}>
-                No, Thanks
-              </Button>
-              <Button
-                className="btn-primary"
-                onClick={handleSaveResume}
-                disabled={isSavingResume || !resumeName.trim()}
-              >
-                {isSavingResume ? (
-                  <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Saving...</>
-                ) : (
-                  <><Save className="w-4 h-4 mr-2" /> Save Resume</>
-                )}
-              </Button>
-            </div>
-          </Card>
-        </div>
-      )}
+              <div className="modal-content">
+                <p>Would you like to save this resume for future job applications? You won't need to upload it again.</p>
+
+                <div className="form-group" style={{ marginTop: '1rem' }}>
+                  <Label>Resume Name</Label>
+                  <Input
+                    placeholder="e.g., Software Engineer Resume"
+                    value={resumeName}
+                    onChange={(e) => setResumeName(e.target.value)}
+                  />
+                </div>
+              </div>
+              <div className="modal-footer">
+                <Button variant="outline" onClick={() => setShowSaveResumePrompt(false)}>
+                  No, Thanks
+                </Button>
+                <Button
+                  className="btn-primary"
+                  onClick={handleSaveResume}
+                  disabled={isSavingResume || !resumeName.trim()}
+                >
+                  {isSavingResume ? (
+                    <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Saving...</>
+                  ) : (
+                    <><Save className="w-4 h-4 mr-2" /> Save Resume</>
+                  )}
+                </Button>
+              </div>
+            </Card>
+          </div>
+        )
+      }
 
       {/* Resume Saved Toast */}
-      {resumeSaved && (
-        <div className="toast-notification" style={{
-          position: 'fixed',
-          bottom: '2rem',
-          right: '2rem',
-          background: '#10b981',
-          color: 'white',
-          padding: '1rem 1.5rem',
-          borderRadius: '8px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.75rem',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-          zIndex: 1000
-        }}>
-          <CheckCircle className="w-5 h-5" />
-          Resume saved! You can use it for future applications.
-        </div>
-      )}
+      {
+        resumeSaved && (
+          <div className="toast-notification" style={{
+            position: 'fixed',
+            bottom: '2rem',
+            right: '2rem',
+            background: '#10b981',
+            color: 'white',
+            padding: '1rem 1.5rem',
+            borderRadius: '8px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.75rem',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+            zIndex: 1000
+          }}>
+            <CheckCircle className="w-5 h-5" />
+            Resume saved! You can use it for future applications.
+          </div>
+        )
+      }
 
       {/* Upgrade Modal */}
-      {showUpgradeModal && usageLimits && (
-        <UpgradeModal
-          tier={usageLimits.tier}
-          limit={usageLimits.limit}
-          resetDate={usageLimits.resetDate}
-          onClose={() => setShowUpgradeModal(false)}
-        />
-      )}
-    </div>
+      {
+        showUpgradeModal && usageLimits && (
+          <UpgradeModal
+            tier={usageLimits.tier}
+            limit={usageLimits.limit}
+            resetDate={usageLimits.resetDate}
+            onClose={() => setShowUpgradeModal(false)}
+          />
+        )
+      }
+    </div >
   );
 };
 

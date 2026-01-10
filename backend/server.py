@@ -23,6 +23,7 @@ from razorpay_service import (
     RAZORPAY_PLANS,
     RAZORPAY_PLANS_USD
 )
+from scraper_service import scrape_job_description
 
 
 ROOT_DIR = Path(__file__).parent
@@ -87,6 +88,9 @@ class StatusCheck(BaseModel):
 
 class StatusCheckCreate(BaseModel):
     client_name: str
+
+class JobUrlFetchRequest(BaseModel):
+    url: str
 
 class WaitlistEntry(BaseModel):
     model_config = ConfigDict(extra="ignore")
@@ -1588,6 +1592,22 @@ async def get_usage_limits(email: str = Query(...)):
         return usage
     except Exception as e:
         logger.error(f"Error getting usage limits: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/fetch-job-description")
+async def fetch_job_desc(request: JobUrlFetchRequest):
+    """
+    Fetch and extract job description from a URL.
+    """
+    try:
+        url = request.url.strip()
+        if not url:
+            raise HTTPException(status_code=400, detail="URL is required")
+        
+        result = await scrape_job_description(url)
+        return result
+    except Exception as e:
+        logger.error(f"Error in fetch_job_desc: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @api_router.get("/resumes")

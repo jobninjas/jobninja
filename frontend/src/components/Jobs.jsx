@@ -38,7 +38,6 @@ const Jobs = () => {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
   const [sideMenuOpen, setSideMenuOpen] = useState(false);
-  const [showExternalJDModal, setShowExternalJDModal] = useState(false);
 
   // Jobs data state
   const [jobs, setJobs] = useState([]);
@@ -53,10 +52,6 @@ const Jobs = () => {
   const [sponsorshipFilter, setSponsorshipFilter] = useState('all');
   const [workTypeFilter, setWorkTypeFilter] = useState('all');
 
-  // External JD form states
-  const [externalJobTitle, setExternalJobTitle] = useState('');
-  const [externalCompany, setExternalCompany] = useState('');
-  const [externalJobDescription, setExternalJobDescription] = useState('');
 
   // Fetch jobs from API
   const fetchJobs = async () => {
@@ -168,22 +163,6 @@ const Jobs = () => {
     }
   };
 
-  const handleExternalJDSubmit = () => {
-    if (!externalJobTitle || !externalJobDescription) {
-      alert('Please provide a job title and job description');
-      return;
-    }
-
-    // Navigate to AI Apply with external job data
-    navigate('/ai-ninja/apply/external', {
-      state: {
-        isExternal: true,
-        jobTitle: externalJobTitle,
-        company: externalCompany || 'External Company',
-        description: externalJobDescription
-      }
-    });
-  };
 
   const clearFilters = () => {
     setSearchKeyword('');
@@ -209,14 +188,6 @@ const Jobs = () => {
           <p className="jobs-subtitle">
             Browse visa-friendly, high-paying jobs and apply smarter with AI Ninja.
           </p>
-
-          {/* External JD CTA */}
-          <div className="external-jd-cta">
-            <Button variant="outline" onClick={() => setShowExternalJDModal(true)}>
-              <ExternalLink className="w-4 h-4 mr-2" />
-              Have a job from another site? Paste the job description
-            </Button>
-          </div>
         </div>
       </section>
 
@@ -393,66 +364,6 @@ const Jobs = () => {
           )}
         </div>
       </section>
-
-      {/* External JD Modal */}
-      {showExternalJDModal && (
-        <div className="modal-overlay" onClick={() => setShowExternalJDModal(false)}>
-          <Card className="external-jd-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2><FileText className="w-5 h-5" /> Apply with External Job Description</h2>
-              <button className="modal-close" onClick={() => setShowExternalJDModal(false)}>
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="modal-content">
-              <p className="modal-description">
-                Found a job on LinkedIn, Indeed, or another site? Paste the job description here
-                and use AI Ninja to generate tailored application materials.
-              </p>
-
-              <div className="form-group">
-                <Label>Job Title *</Label>
-                <Input
-                  placeholder="e.g., Senior Software Engineer"
-                  value={externalJobTitle}
-                  onChange={(e) => setExternalJobTitle(e.target.value)}
-                />
-              </div>
-
-              <div className="form-group">
-                <Label>Company Name (optional)</Label>
-                <Input
-                  placeholder="e.g., Google"
-                  value={externalCompany}
-                  onChange={(e) => setExternalCompany(e.target.value)}
-                />
-              </div>
-
-              <div className="form-group">
-                <Label>Job Description *</Label>
-                <Textarea
-                  placeholder="Paste the full job description here..."
-                  value={externalJobDescription}
-                  onChange={(e) => setExternalJobDescription(e.target.value)}
-                  rows={10}
-                />
-              </div>
-            </div>
-            <div className="modal-footer">
-              <Button variant="outline" onClick={() => setShowExternalJDModal(false)}>
-                Cancel
-              </Button>
-              <Button
-                className="btn-primary"
-                onClick={handleExternalJDSubmit}
-                disabled={!externalJobTitle || !externalJobDescription}
-              >
-                <Bot className="w-4 h-4 mr-2" /> Continue with AI Ninja
-              </Button>
-            </div>
-          </Card>
-        </div>
-      )}
 
       {/* Footer */}
       <footer className="footer footer-simple">
