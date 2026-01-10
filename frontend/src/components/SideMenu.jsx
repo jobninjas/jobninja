@@ -1,16 +1,16 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { 
-  X, 
-  Home, 
-  Briefcase, 
+import {
+  X,
+  Home,
+  Briefcase,
   Bot,
   UserCheck,
-  ClipboardList, 
-  Mic, 
-  CreditCard, 
-  User, 
+  ClipboardList,
+  Mic,
+  CreditCard,
+  User,
   LogOut,
   FileText,
   ScanLine
@@ -52,11 +52,11 @@ const SideMenu = ({ isOpen, onClose }) => {
   return (
     <>
       {/* Overlay */}
-      <div 
+      <div
         className={`side-menu-overlay ${isOpen ? 'active' : ''}`}
         onClick={onClose}
       />
-      
+
       {/* Side Menu */}
       <div className={`side-menu ${isOpen ? 'open' : ''}`}>
         {/* Header */}
@@ -139,6 +139,12 @@ const SideMenu = ({ isOpen, onClose }) => {
 
         {/* Footer */}
         <div className="side-menu-footer">
+          <button
+            onClick={() => handleNavigation('/refund-policy')}
+            className="text-xs text-gray-400 hover:text-primary mb-2 transition-colors block"
+          >
+            Refund Policy
+          </button>
           <p>{BRAND.tagline}</p>
         </div>
       </div>

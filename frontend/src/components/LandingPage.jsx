@@ -653,6 +653,11 @@ const LandingPage = () => {
               <button onClick={() => navigate('/signup')}>Sign up</button>
               <button onClick={() => navigate('/pricing')}>Pricing</button>
             </div>
+            <div className="footer-links-col">
+              <h4>Support</h4>
+              <button onClick={() => navigate('/refund-policy')}>Refund Policy</button>
+              <button onClick={() => window.open('mailto:support@novaninja.com')}>Contact Support</button>
+            </div>
           </div>
           <div className="footer-bottom-modern">
             <p>{BRAND.copyright}</p>

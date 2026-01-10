@@ -8,15 +8,15 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { 
+import {
   Menu,
-  Bot, 
-  UserCheck, 
-  Briefcase, 
-  MapPin, 
-  DollarSign, 
-  Globe, 
-  Home, 
+  Bot,
+  UserCheck,
+  Briefcase,
+  MapPin,
+  DollarSign,
+  Globe,
+  Home,
   Building2,
   ChevronRight,
   Search,
@@ -39,14 +39,14 @@ const Jobs = () => {
   const { isAuthenticated } = useAuth();
   const [sideMenuOpen, setSideMenuOpen] = useState(false);
   const [showExternalJDModal, setShowExternalJDModal] = useState(false);
-  
+
   // Jobs data state
   const [jobs, setJobs] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [jobStats, setJobStats] = useState({ totalJobs: 0, visaJobs: 0, remoteJobs: 0, highPayJobs: 0 });
   const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, pages: 0 });
-  
+
   // Filter states
   const [searchKeyword, setSearchKeyword] = useState('');
   const [locationFilter, setLocationFilter] = useState('');
@@ -66,17 +66,17 @@ const Jobs = () => {
       const url = `${API_URL}/api/jobs?page=1&limit=50`;
       console.log('Fetching jobs from:', url);
       const response = await fetch(url);
-      
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
+
       const data = await response.json();
       console.log('API Response:', data);
-      
+
       // Handle both response formats: {success, jobs, pagination} OR {jobs, total}
       const jobsArray = data.jobs || [];
-      
+
       if (jobsArray.length > 0) {
         const mappedJobs = jobsArray.map(job => ({
           id: job.id || job._id || job.externalId,
@@ -134,28 +134,28 @@ const Jobs = () => {
     // Keyword search filter
     if (searchKeyword) {
       const keyword = searchKeyword.toLowerCase();
-      const matchesKeyword = 
+      const matchesKeyword =
         job.title?.toLowerCase().includes(keyword) ||
         job.company?.toLowerCase().includes(keyword) ||
         job.description?.toLowerCase().includes(keyword);
       if (!matchesKeyword) return false;
     }
-    
+
     // Location filter
     if (locationFilter && !job.location?.toLowerCase().includes(locationFilter.toLowerCase())) {
       return false;
     }
-    
+
     // Visa sponsorship filter
     if (sponsorshipFilter === 'visa-friendly') {
       if (!job.visaTags || job.visaTags.length === 0) return false;
     }
-    
+
     // Work type filter
     if (workTypeFilter && workTypeFilter !== 'all') {
       if (job.type !== workTypeFilter) return false;
     }
-    
+
     return true;
   });
 
@@ -209,7 +209,7 @@ const Jobs = () => {
           <p className="jobs-subtitle">
             Browse visa-friendly, high-paying jobs and apply smarter with AI Ninja.
           </p>
-          
+
           {/* External JD CTA */}
           <div className="external-jd-cta">
             <Button variant="outline" onClick={() => setShowExternalJDModal(true)}>
@@ -237,7 +237,7 @@ const Jobs = () => {
                   />
                 </div>
               </div>
-              
+
               <div className="filter-group">
                 <Label>Location</Label>
                 <Input
@@ -246,7 +246,7 @@ const Jobs = () => {
                   onChange={(e) => setLocationFilter(e.target.value)}
                 />
               </div>
-              
+
               <div className="filter-group">
                 <Label>Visa Sponsorship</Label>
                 <Select value={sponsorshipFilter} onValueChange={setSponsorshipFilter}>
@@ -260,7 +260,7 @@ const Jobs = () => {
                   </SelectContent>
                 </Select>
               </div>
-              
+
               <div className="filter-group">
                 <Label>Work Type</Label>
                 <Select value={workTypeFilter} onValueChange={setWorkTypeFilter}>
@@ -354,16 +354,16 @@ const Jobs = () => {
                     </div>
                     <p className="job-description">{job.description}</p>
                     <div className="job-card-actions" style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-                      <Button 
+                      <Button
                         variant="outline"
                         onClick={() => navigate(`/ai-ninja/jobs/${job.id}`)}
                       >
                         View Details <ChevronRight className="w-4 h-4" />
                       </Button>
-                      <Button 
+                      <Button
                         className="btn-primary"
-                        onClick={() => navigate('/ai-apply', { 
-                          state: { 
+                        onClick={() => navigate('/ai-apply', {
+                          state: {
                             jobId: job.id,
                             jobTitle: job.title,
                             company: job.company,
@@ -406,10 +406,10 @@ const Jobs = () => {
             </div>
             <div className="modal-content">
               <p className="modal-description">
-                Found a job on LinkedIn, Indeed, or another site? Paste the job description here 
+                Found a job on LinkedIn, Indeed, or another site? Paste the job description here
                 and use AI Ninja to generate tailored application materials.
               </p>
-              
+
               <div className="form-group">
                 <Label>Job Title *</Label>
                 <Input
@@ -418,7 +418,7 @@ const Jobs = () => {
                   onChange={(e) => setExternalJobTitle(e.target.value)}
                 />
               </div>
-              
+
               <div className="form-group">
                 <Label>Company Name (optional)</Label>
                 <Input
@@ -427,7 +427,7 @@ const Jobs = () => {
                   onChange={(e) => setExternalCompany(e.target.value)}
                 />
               </div>
-              
+
               <div className="form-group">
                 <Label>Job Description *</Label>
                 <Textarea
@@ -442,7 +442,7 @@ const Jobs = () => {
               <Button variant="outline" onClick={() => setShowExternalJDModal(false)}>
                 Cancel
               </Button>
-              <Button 
+              <Button
                 className="btn-primary"
                 onClick={handleExternalJDSubmit}
                 disabled={!externalJobTitle || !externalJobDescription}
@@ -466,6 +466,7 @@ const Jobs = () => {
               <button onClick={() => navigate('/ai-ninja')} className="footer-link">AI Ninja</button>
               <button onClick={() => navigate('/human-ninja')} className="footer-link">Human Ninja</button>
               <button onClick={() => navigate('/pricing')} className="footer-link">Pricing</button>
+              <button onClick={() => navigate('/refund-policy')} className="footer-link">Refund Policy</button>
               <button onClick={() => navigate('/login')} className="footer-link">Login</button>
             </div>
           </div>

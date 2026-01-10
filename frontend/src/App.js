@@ -25,6 +25,7 @@ import InterviewPrep from "./components/InterviewPrep";
 import Checkout from "./components/Checkout";
 import ResumeScanner from "./components/ResumeScanner";
 import AIApplyFlow from "./components/AIApplyFlow";
+import RefundPolicy from "./components/RefundPolicy";
 import "./components/Jobs.css";
 import "./components/InterviewPrep.css";
 import "./components/ResumeScanner.css";
@@ -44,6 +45,7 @@ function App() {
             <Route path="/payment/success" element={<PaymentSuccess />} />
             <Route path="/payment/canceled" element={<PaymentCanceled />} />
             <Route path="/checkout" element={<Checkout />} />
+            <Route path="/refund-policy" element={<RefundPolicy />} />
 
             {/* AI Ninja Routes */}
             <Route path="/ai-ninja" element={<AINinja />} />
