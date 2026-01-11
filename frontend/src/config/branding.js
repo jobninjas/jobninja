@@ -6,9 +6,9 @@
 
 export const BRAND = {
   // Core branding
-  name: 'Job Ninjas',
-  oldName: 'Nova Ninjas', // For reference during migration
-  domain: 'jobninjas.org',
+  name: 'Nova Ninjas',
+  oldName: 'Job Ninjas', // For reference during migration
+  domain: 'novaninjas.com',
 
   // Taglines
   tagline: 'Human job squad, supercharged by AI. We apply for you, not bots.',

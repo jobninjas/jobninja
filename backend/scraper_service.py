@@ -103,6 +103,13 @@ async def scrape_job_description(url: str) -> Dict[str, Any]:
             processed_url = f"https://www.monster.com/job-openings/job-description--{job_id}"
             logger.info(f"Targeting direct Monster job link: {processed_url}")
 
+    # Specific handling for Workday URLs - they are almost always JS-heavy and block simple scraping
+    if "myworkdayjobs.com" in url.lower():
+        return {
+            "success": False,
+            "error": "Workday job links are protected and require manual entry. Please click 'Enter Manually' below and paste the job description text."
+        }
+
     html = await fetch_url_content(processed_url)
     
     # If the direct link failed, try the original URL as fallback
