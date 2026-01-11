@@ -182,115 +182,73 @@ const AINinja = () => {
         </div>
       </section>
 
-      {/* Job Board Section */}
-      <section className="job-board-section">
+      {/* How it Works Section */}
+      <section className="how-it-works-section" style={{ padding: '4rem 0', backgroundColor: '#f9fafb' }}>
         <div className="container">
-          <h2 className="section-title">Browse Open Positions</h2>
-
-          {/* Filters */}
-          <div className="job-filters">
-            {filters.map(filter => (
-              <button
-                key={filter.id}
-                className={`filter-btn ${activeFilter === filter.id ? 'active' : ''}`}
-                onClick={() => setActiveFilter(filter.id)}
-              >
-                {filter.label}
-                <span className="filter-count">{filter.count}</span>
-              </button>
-            ))}
-          </div>
-
-          {/* Job List */}
-          <div className="job-list">
-            {isLoading && (
-              <div className="text-center py-12">
-                <Loader2 className="w-8 h-8 animate-spin mx-auto text-green-600 mb-4" />
-                <p className="text-gray-600">Loading jobs...</p>
+          <h2 className="section-title text-center mb-12">How AI Ninja Works</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="step-card text-center p-6">
+              <div className="step-icon-wrapper mb-4 mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+                <Globe className="w-8 h-8 text-green-600" />
               </div>
-            )}
-
-            {error && !isLoading && (
-              <div className="text-center py-12">
-                <p className="text-red-600 mb-4">{error}</p>
-                <Button onClick={() => window.location.reload()}>Retry</Button>
-              </div>
-            )}
-
-            {!isLoading && !error && filteredJobs.length === 0 && (
-              <div className="text-center py-12">
-                <p className="text-gray-600">No jobs found matching your filters.</p>
-              </div>
-            )}
-
-            {!isLoading && !error && filteredJobs.map(job => (
-              <Card key={job.id} className="job-card">
-                <div className="job-card-main">
-                  <div className="job-info">
-                    <h3 className="job-title">{job.title}</h3>
-                    <p className="job-company">{job.company}</p>
-                    <div className="job-meta">
-                      <span className="job-location">
-                        <MapPin className="w-4 h-4" />
-                        {job.location}
-                      </span>
-                      <span className="job-salary">
-                        <DollarSign className="w-4 h-4" />
-                        {job.salaryRange}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="job-tags">
-                    <Badge variant="outline" className="work-type-badge">
-                      {getWorkTypeIcon(job.type)}
-                      {job.type.charAt(0).toUpperCase() + job.type.slice(1)}
-                    </Badge>
-                    {job.highPay && (
-                      <Badge className="tag-high-pay">
-                        <DollarSign className="w-3 h-3" /> High-paying
-                      </Badge>
-                    )}
-                    {job.visaTags && job.visaTags.length > 0 && (
-                      <Badge className="tag-visa">
-                        <Globe className="w-3 h-3" /> Visa-friendly
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-                <p className="job-description">{job.description}</p>
-                <div className="job-card-actions" style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-                  <Button
-                    variant="outline"
-                    onClick={() => navigate(`/ai-ninja/jobs/${job.id}`)}
-                  >
-                    View Details <ChevronRight className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    className="btn-primary"
-                    onClick={() => navigate('/ai-apply', {
-                      state: {
-                        jobId: job.id,
-                        jobTitle: job.title,
-                        company: job.company,
-                        location: job.location,
-                        description: job.description,
-                        sourceUrl: job.sourceUrl,
-                        salaryRange: job.salaryRange
-                      }
-                    })}
-                  >
-                    <Zap className="w-4 h-4 mr-1" /> Apply with AI Ninja
-                  </Button>
-                </div>
-              </Card>
-            ))}
-          </div>
-
-          {filteredJobs.length === 0 && (
-            <div className="no-jobs">
-              <p>No jobs match your current filters. Try adjusting your selection.</p>
+              <h3 className="text-xl font-bold mb-2">1. Find a Job</h3>
+              <p className="text-gray-600">Find any job listing on LinkedIn, Indeed, Glassdoor, or any company career page.</p>
             </div>
-          )}
+            <div className="step-card text-center p-6">
+              <div className="step-icon-wrapper mb-4 mx-auto w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
+                <Zap className="w-8 h-8 text-blue-600" />
+              </div>
+              <h3 className="text-xl font-bold mb-2">2. Paste the Link</h3>
+              <p className="text-gray-600">Paste the job URL into AI Ninja. We'll instantly extract the job description and requirements.</p>
+            </div>
+            <div className="step-card text-center p-6">
+              <div className="step-icon-wrapper mb-4 mx-auto w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center">
+                <Sparkles className="w-8 h-8 text-purple-600" />
+              </div>
+              <h3 className="text-xl font-bold mb-2">3. Get Tailored Docs</h3>
+              <p className="text-gray-600">Download your ATS-optimized resume and a custom cover letter tailored specifically for that role.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Why Choose AI Ninja Section */}
+      <section className="why-ai-ninja" style={{ padding: '4rem 0' }}>
+        <div className="container">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+            <div>
+              <h2 className="text-3xl font-bold mb-6">Why use AI Ninja?</h2>
+              <ul className="space-y-4">
+                <li className="flex gap-3">
+                  <div className="mt-1 bg-green-500 rounded-full p-1"><Check className="w-3 h-3 text-white" /></div>
+                  <div>
+                    <span className="font-bold">Beat the ATS:</span> Our AI identifies key skills and keywords the ATS is looking for and integrates them naturally into your resume.
+                  </div>
+                </li>
+                <li className="flex gap-3">
+                  <div className="mt-1 bg-green-500 rounded-full p-1"><Check className="w-3 h-3 text-white" /></div>
+                  <div>
+                    <span className="font-bold">Save 2+ Hours per App:</span> No more staring at a blank page. Get a polished cover letter in seconds, not hours.
+                  </div>
+                </li>
+                <li className="flex gap-3">
+                  <div className="mt-1 bg-green-500 rounded-full p-1"><Check className="w-3 h-3 text-white" /></div>
+                  <div>
+                    <span className="font-bold">Higher Match Score:</span> See exactly how well your profile aligns with the job before you even apply.
+                  </div>
+                </li>
+                <li className="flex gap-3">
+                  <div className="mt-1 bg-green-500 rounded-full p-1"><Check className="w-3 h-3 text-white" /></div>
+                  <div>
+                    <span className="font-bold">Total Control:</span> You get editable documents. Make final tweaks and submit them yourself with confidence.
+                  </div>
+                </li>
+              </ul>
+            </div>
+            <div className="bg-gray-100 rounded-2xl p-8 flex items-center justify-center">
+              <Bot className="w-48 h-48 text-green-600 opacity-20" />
+            </div>
+          </div>
         </div>
       </section>
 
