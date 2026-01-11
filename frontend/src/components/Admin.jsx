@@ -134,8 +134,8 @@ const Admin = () => {
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center gap-4">
               <button onClick={() => navigate('/')} className="flex items-center gap-2">
-                <img src="/logo.png" alt="jobninjas.org" className="h-8" />
-                <span className="text-xl font-bold">jobninjas.org</span>
+                <img src="/logo.png" alt="jobNinjas.org" className="h-8" />
+                <span className="text-xl font-bold">jobNinjas.org</span>
               </button>
               <Badge variant="secondary" className="bg-white/20 text-white border-0">
                 <Shield className="w-3 h-3 mr-1" />

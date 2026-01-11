@@ -6,9 +6,9 @@
 
 export const BRAND = {
   // Core branding
-  name: 'jobninjas.org',
+  name: 'jobNinjas.org',
   oldName: 'Nova Ninjas', // For reference during migration
-  domain: 'jobninjas.org',
+  domain: 'jobNinjas.org',
 
   // Taglines
   tagline: 'Human job squad, supercharged by AI. We apply for you, not bots.',
@@ -16,11 +16,11 @@ export const BRAND = {
   heroTagline: 'Your Ninja. Your Job Search. Your Success.',
 
   // Contact
-  contactEmail: 'hello@jobninjas.org',
-  supportEmail: 'support@jobninjas.org',
+  contactEmail: 'hello@jobNinjas.org',
+  supportEmail: 'support@jobNinjas.org',
 
   // Social/Links
-  website: 'https://jobninjas.org',
+  website: 'https://jobNinjas.org',
 
   // Logo (update path when new logo is ready)
   logoPath: '/logo.png',
@@ -28,7 +28,7 @@ export const BRAND = {
 
   // Company info
   year: new Date().getFullYear(),
-  copyright: `© ${new Date().getFullYear()} jobninjas.org. All rights reserved.`,
+  copyright: `© ${new Date().getFullYear()} jobNinjas.org. All rights reserved.`,
 };
 
 // ============================================
@@ -65,7 +65,7 @@ export const PRICING = {
     priceDisplay: 'Free',
     period: '',
     applications: 5,
-    description: 'Try jobninjas.org with a few applications before upgrading.',
+    description: 'Try jobNinjas.org with a few applications before upgrading.',
     features: [
       'Apply to up to 5 jobs using AI Ninja',
       'Upload 1 base resume',
