@@ -8,7 +8,9 @@ import json
 
 logger = logging.getLogger(__name__)
 
-async def fetch_url_content(url: str) -> Optional[str]:
+from typing import List, Dict, Any, Optional, Tuple
+
+async def fetch_url_content(url: str) -> Tuple[Optional[str], int]:
     """Fetch raw HTML content from a URL with improved headers to bypass bot detection"""
     
     # Common browser headers
@@ -43,29 +45,31 @@ async def fetch_url_content(url: str) -> Optional[str]:
     if "monster.com" in url.lower():
         headers_list = [mobile_headers, desktop_headers]
 
+    last_status = 200
     for headers in headers_list:
         try:
             timeout = aiohttp.ClientTimeout(total=15)
             async with aiohttp.ClientSession(headers=headers, timeout=timeout) as session:
                 async with session.get(url, allow_redirects=True) as response:
+                    last_status = response.status
                     if response.status == 200:
                         content = await response.text()
                         # Check if we got a "JS required" or "Blocked" shell
                         if len(content) < 2000 and ("enable JavaScript" in content or "Access blocked" in content or "Verification Required" in content):
                             logger.warning(f"Got JS-required shell for {url} with current headers. Retrying...")
                             continue
-                        return content
+                        return content, 200
                     elif response.status == 403:
                         logger.warning(f"403 Forbidden for {url} with current headers. Retrying...")
                         continue
                     else:
                         logger.error(f"Failed to fetch URL {url}: Status {response.status}")
-                        return None
+                        continue
         except Exception as e:
             logger.error(f"Error fetching URL {url} with current headers: {e}")
             continue
             
-    return None
+    return None, last_status
 
 def extract_main_text(html: str) -> str:
     """Extract readable text from HTML, removing scripts and styles"""
@@ -110,14 +114,20 @@ async def scrape_job_description(url: str) -> Dict[str, Any]:
             "error": "Workday job links are protected and require manual entry. Please click 'Enter Manually' below and paste the job description text."
         }
 
-    html = await fetch_url_content(processed_url)
+    html, status = await fetch_url_content(processed_url)
     
     # If the direct link failed, try the original URL as fallback
     if not html and processed_url != url:
         logger.info(f"Direct link failed, falling back to original URL: {url}")
-        html = await fetch_url_content(url)
+        html, status = await fetch_url_content(url)
 
     if not html:
+        if status == 404:
+            return {
+                "success": False,
+                "error": "This job posting appears to be inactive or no longer exists (404 Error). Please verify the link is still valid."
+            }
+        
         return {
             "success": False, 
             "error": "Access blocked by the job board. This site (like Monster, LinkedIn, or Indeed) has strong anti-scraping measures. Please copy and paste the job description manually."
