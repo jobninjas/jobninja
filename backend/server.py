@@ -1689,28 +1689,66 @@ async def ai_ninja_apply(request: Request):
         # Generate application ID
         applicationId = str(uuid.uuid4())
         
-        # Call Expert AI Ninja for tailored documents
+        # Call Expert AI Ninja for tailored documents with HARD TIMEOUT
         logger.info(f"Generating expert documents for {company} - {jobTitle}")
-        expert_docs = await generate_expert_documents(resumeText, jobDescription)
+        expert_docs = None
+        try:
+            # 30 second hard timeout to prevent infinite spinning
+            async with asyncio.timeout(30):
+                expert_docs = await generate_expert_documents(resumeText, jobDescription)
+        except asyncio.TimeoutError:
+            logger.warning(f"Expert AI generation timed out after 30s for {company}")
+            expert_docs = None
+        except Exception as e:
+            logger.error(f"Expert AI generation failed: {e}")
+            expert_docs = None
         
         if not expert_docs or "ats_resume" not in expert_docs:
-            logger.error("Expert AI generation failed to return documents")
-            # Fallback to simple tailoring if expert fails
-            tailoredResume = f"Professional Resume for {jobTitle} at {company} (Tailored)\n\n" + resumeText[:1000]
+            logger.warning("Expert AI failed or timed out - using immediate fallback")
+            # Immediate fallback - give user SOMETHING right now
+            tailoredResume = f"""RESUME - {jobTitle}
+
+PROFESSIONAL CANDIDATE
+
+SUMMARY
+Experienced professional seeking the {jobTitle} position at {company}. 
+Background demonstrates relevant expertise and qualifications for this role.
+
+ORIGINAL RESUME TEXT:
+{resumeText[:3000]}
+
+---
+(Note: AI was temporarily busy. Your original resume content is preserved above. 
+Edit as needed or try generating again later.)
+"""
             detailedCv = tailoredResume
-            # Generate cover letter as fallback
-            tailoredCoverLetter = await generate_cover_letter_content(
-                resumeText, jobDescription, jobTitle, company
-            )
+            tailoredCoverLetter = f"""Dear Hiring Manager,
+
+I am writing to express my strong interest in the {jobTitle} position at {company}.
+
+My background and experience make me a strong candidate for this role. I am confident that my skills and dedication would be a valuable addition to your team.
+
+I would welcome the opportunity to discuss how my qualifications align with your needs.
+
+Sincerely,
+[Your Name]
+
+---
+(Note: AI was temporarily busy. Please personalize this letter with your specific achievements.)
+"""
         else:
             tailoredResume = expert_docs.get("ats_resume", "")
             detailedCv = expert_docs.get("detailed_cv", "")
             tailoredCoverLetter = expert_docs.get("cover_letter", "")
             # If cover letter is missing from expert_docs, try to generate it
             if not tailoredCoverLetter:
-                tailoredCoverLetter = await generate_cover_letter_content(
-                    resumeText, jobDescription, jobTitle, company
-                )
+                try:
+                    async with asyncio.timeout(15):
+                        tailoredCoverLetter = await generate_cover_letter_content(
+                            resumeText, jobDescription, jobTitle, company
+                        )
+                except:
+                    tailoredCoverLetter = None
         
         if not tailoredCoverLetter:
             tailoredCoverLetter = f"Dear Hiring Manager,\n\nI am excited to apply for the {jobTitle} at {company}..."
