@@ -32,6 +32,10 @@ import BulletPointsGenerator from "./components/BulletPointsGenerator";
 import SummaryGenerator from "./components/SummaryGenerator";
 import LinkedInOptimizer from "./components/LinkedInOptimizer";
 import CareerChangeTool from "./components/CareerChangeTool";
+// Phase 2 Tools
+import ChatGPTResume from "./components/ChatGPTResume";
+import ChatGPTCoverLetter from "./components/ChatGPTCoverLetter";
+import LinkedInExamples from "./components/LinkedInExamples";
 import "./components/Jobs.css";
 import "./components/InterviewPrep.css";
 import "./components/ResumeScanner.css";
@@ -81,6 +85,11 @@ function App() {
             <Route path="/summary-generator" element={<SummaryGenerator />} />
             <Route path="/linkedin-optimizer" element={<LinkedInOptimizer />} />
             <Route path="/career-change" element={<CareerChangeTool />} />
+
+            {/* Phase 2 Tools Routes */}
+            <Route path="/chatgpt-resume" element={<ChatGPTResume />} />
+            <Route path="/chatgpt-cover-letter" element={<ChatGPTCoverLetter />} />
+            <Route path="/linkedin-examples" element={<LinkedInExamples />} />
 
             {/* Resume Scanner Route */}
             <Route
