@@ -1,12 +1,16 @@
 from fastapi import FastAPI, APIRouter, Request, Header, HTTPException, Query, File, Form, UploadFile
 from fastapi.responses import JSONResponse
+import os
+from pathlib import Path
 from dotenv import load_dotenv
+
+ROOT_DIR = Path(__file__).parent
+load_dotenv(ROOT_DIR / '.env')
+
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
-import os
 import logging
 import asyncio
-from pathlib import Path
 from pydantic import BaseModel, Field, ConfigDict
 from typing import List, Optional, Union
 import uuid
@@ -24,10 +28,6 @@ from razorpay_service import (
     RAZORPAY_PLANS_USD
 )
 from scraper_service import scrape_job_description
-
-
-ROOT_DIR = Path(__file__).parent
-load_dotenv(ROOT_DIR / '.env')
 
 # Setup logging
 logger = logging.getLogger(__name__)

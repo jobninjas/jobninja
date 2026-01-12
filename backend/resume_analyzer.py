@@ -9,9 +9,13 @@ import re
 import logging
 import asyncio
 import aiohttp
+from dotenv import load_dotenv
 from typing import Dict, Any, Optional
 
 logger = logging.getLogger(__name__)
+
+# Load environment variables
+load_dotenv()
 
 # API Keys
 GROQ_API_KEY = os.environ.get('GROQ_API_KEY')
@@ -28,12 +32,15 @@ RETRY_DELAY = 2  # seconds
 
 async def call_groq_api(prompt: str, max_tokens: int = 4000) -> Optional[str]:
     """Call Groq API for text generation"""
-    if not GROQ_API_KEY:
-        logger.warning("GROQ_API_KEY not set")
+    # Re-check key in case it was loaded later
+    api_key = GROQ_API_KEY or os.environ.get('GROQ_API_KEY')
+    
+    if not api_key:
+        logger.error("GROQ_API_KEY not found in environment or already set variables")
         return None
     
     headers = {
-        "Authorization": f"Bearer {GROQ_API_KEY}",
+        "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json"
     }
     
