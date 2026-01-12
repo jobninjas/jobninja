@@ -2739,7 +2739,7 @@ async def delete_application(application_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@api_router.get("/health-check")
+@app.get("/api/health-check")
 async def health_check():
     from resume_analyzer import GROQ_API_KEY
     return {
