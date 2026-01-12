@@ -26,6 +26,12 @@ import Checkout from "./components/Checkout";
 import ResumeScanner from "./components/ResumeScanner";
 import AIApplyFlow from "./components/AIApplyFlow";
 import RefundPolicy from "./components/RefundPolicy";
+// Phase 1 Tools
+import OneClickOptimize from "./components/OneClickOptimize";
+import BulletPointsGenerator from "./components/BulletPointsGenerator";
+import SummaryGenerator from "./components/SummaryGenerator";
+import LinkedInOptimizer from "./components/LinkedInOptimizer";
+import CareerChangeTool from "./components/CareerChangeTool";
 import "./components/Jobs.css";
 import "./components/InterviewPrep.css";
 import "./components/ResumeScanner.css";
@@ -68,6 +74,13 @@ function App() {
 
             {/* Interview Prep Route */}
             <Route path="/interview-prep" element={<InterviewPrep />} />
+
+            {/* Phase 1 Tools Routes */}
+            <Route path="/one-click-optimize" element={<OneClickOptimize />} />
+            <Route path="/bullet-points" element={<BulletPointsGenerator />} />
+            <Route path="/summary-generator" element={<SummaryGenerator />} />
+            <Route path="/linkedin-optimizer" element={<LinkedInOptimizer />} />
+            <Route path="/career-change" element={<CareerChangeTool />} />
 
             {/* Resume Scanner Route */}
             <Route

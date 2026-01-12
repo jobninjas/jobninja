@@ -1,0 +1,239 @@
+.linkedin-page {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+}
+
+.linkedin-container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+.linkedin-hero {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.linkedin-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: linear-gradient(135deg, #0077b5, #0a66c2);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 9999px;
+    font-weight: 600;
+    font-size: 0.875rem;
+    margin-bottom: 1rem;
+}
+
+.linkedin-hero h1 {
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin-bottom: 1rem;
+}
+
+.text-gradient-blue {
+    background: linear-gradient(135deg, #0077b5, #0a66c2);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.linkedin-hero p {
+    color: #64748b;
+    font-size: 1.125rem;
+}
+
+.linkedin-card {
+    background: white;
+    border-radius: 1.5rem;
+    padding: 0;
+    overflow: hidden;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+}
+
+.linkedin-tabs {
+    display: flex;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.tab-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 1rem;
+    background: none;
+    border: none;
+    font-weight: 600;
+    color: #64748b;
+    cursor: pointer;
+    transition: all 0.2s;
+    border-bottom: 2px solid transparent;
+}
+
+.tab-btn:hover {
+    color: #0077b5;
+    background: #f8fafc;
+}
+
+.tab-btn.active {
+    color: #0077b5;
+    border-bottom-color: #0077b5;
+    background: #f0f9ff;
+}
+
+.linkedin-content {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    min-height: 500px;
+}
+
+.input-section {
+    padding: 2rem;
+    border-right: 1px solid #e2e8f0;
+}
+
+.output-section {
+    padding: 2rem;
+    background: #f8fafc;
+}
+
+.linkedin-page .form-group {
+    margin-bottom: 1.25rem;
+}
+
+.linkedin-page .form-group label {
+    display: block;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 0.5rem;
+    font-size: 0.875rem;
+}
+
+.linkedin-page .form-group input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.5rem;
+    font-size: 1rem;
+    transition: border-color 0.2s;
+}
+
+.linkedin-page .form-group input:focus {
+    outline: none;
+    border-color: #0077b5;
+    box-shadow: 0 0 0 3px rgba(0, 119, 181, 0.1);
+}
+
+.linkedin-page .error-message {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #dc2626;
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+    margin-bottom: 1rem;
+    font-size: 0.875rem;
+}
+
+.linkedin-page .generate-btn {
+    width: 100%;
+    padding: 1rem;
+    font-size: 1rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, #0077b5, #0a66c2);
+    color: white;
+    border: none;
+    border-radius: 0.75rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.linkedin-page .generate-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 119, 181, 0.3);
+}
+
+.linkedin-page .generate-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.output-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.output-header h3 {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.linkedin-page .empty-state {
+    text-align: center;
+    padding: 3rem;
+    color: #94a3b8;
+}
+
+.linkedin-page .empty-state svg {
+    opacity: 0.3;
+    margin-bottom: 1rem;
+}
+
+.result-content {
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.result-content pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-family: inherit;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    color: #1e293b;
+    margin: 0;
+}
+
+.linkedin-page .regenerate-btn {
+    width: 100%;
+    margin-top: 1rem;
+    color: #64748b;
+}
+
+@media (max-width: 768px) {
+    .linkedin-content {
+        grid-template-columns: 1fr;
+    }
+
+    .input-section {
+        border-right: none;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .linkedin-hero h1 {
+        font-size: 1.75rem;
+    }
+
+    .tab-btn {
+        font-size: 0.875rem;
+        padding: 0.75rem 0.5rem;
+    }
+
+    .tab-btn span {
+        display: none;
+    }
+}

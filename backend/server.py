@@ -2206,6 +2206,41 @@ from document_generator import (
 )
 from fastapi.responses import StreamingResponse
 
+# ============================================
+# AI GENERATION ENDPOINT FOR TOOLS
+# ============================================
+
+class AIGenerateRequest(BaseModel):
+    prompt: str
+    max_tokens: int = 1000
+
+@app.post("/api/ai/generate")
+async def ai_generate(request: AIGenerateRequest):
+    """
+    General-purpose AI text generation endpoint for tools like
+    Bullet Points Generator, Summary Generator, LinkedIn Optimizer.
+    """
+    try:
+        from resume_analyzer import call_groq_api
+        
+        response = await call_groq_api(
+            request.prompt, 
+            max_tokens=request.max_tokens,
+            model="llama-3.1-8b-instant"
+        )
+        
+        if not response:
+            raise HTTPException(status_code=500, detail="AI generation failed")
+        
+        return {
+            "success": True,
+            "response": response
+        }
+    except Exception as e:
+        logger.error(f"AI generation error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.post("/api/scan/analyze")
 async def scan_resume(
     resume: UploadFile = File(...),
