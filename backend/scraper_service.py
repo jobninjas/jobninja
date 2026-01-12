@@ -48,12 +48,15 @@ async def fetch_url_content(url: str) -> Tuple[Optional[str], int]:
     last_status = 200
     for headers in headers_list:
         try:
+            logger.info(f"Attempting to fetch {url} with headers sample: {headers.get('User-Agent')[:50]}...")
             timeout = aiohttp.ClientTimeout(total=15)
             async with aiohttp.ClientSession(headers=headers, timeout=timeout) as session:
                 async with session.get(url, allow_redirects=True) as response:
                     last_status = response.status
+                    logger.info(f"Response status for {url}: {last_status}")
                     if response.status == 200:
                         content = await response.text()
+                        logger.info(f"Fetched {len(content)} characters from {url}")
                         # Check if we got a "JS required" or "Blocked" shell
                         blocked_keywords = [
                             "enable JavaScript", "Access blocked", "Verification Required", 
@@ -61,7 +64,7 @@ async def fetch_url_content(url: str) -> Tuple[Optional[str], int]:
                             "Please solve this CAPTCHA", "robot or a human"
                         ]
                         if len(content) < 5000 and any(keyword.lower() in content.lower() for keyword in blocked_keywords):
-                            logger.warning(f"Detected blocked/restricted content for {url} with current headers. Retrying...")
+                            logger.warning(f"Detected blocked/restricted content for {url} with current headers. Content sample: {content[:200]}")
                             continue
                         return content, 200
                     elif response.status == 403:
@@ -80,9 +83,10 @@ def extract_main_text(html: str) -> str:
     """Extract readable text from HTML, removing scripts and styles"""
     soup = BeautifulSoup(html, 'html.parser')
     
-    # Remove script and style elements
-    for script_or_style in soup(["script", "style", "nav", "footer", "header", "aside"]):
-        script_or_style.decompose()
+    # Remove script and style elements, but also code blocks (common in LinkedIn for JS metadata)
+    # and unnecessary visual elements
+    for element in soup(["script", "style", "nav", "footer", "header", "aside", "code", "svg", "button", "input"]):
+        element.decompose()
 
     # Get text
     text = soup.get_text(separator=' ')
@@ -119,15 +123,21 @@ async def scrape_job_description(url: str) -> Dict[str, Any]:
         view_match = re.search(r'/jobs/view/(\d+)', url)
         # Pattern 2: ?currentJobId=12345
         query_match = re.search(r'currentJobId=(\d+)', url)
+        # Pattern 3: jobs/view/some-title-12345
+        slug_match = re.search(r'-(\d+)(?:/|\?|$)', url)
         
         if view_match:
             job_id = view_match.group(1)
         elif query_match:
             job_id = query_match.group(1)
+        elif slug_match:
+            job_id = slug_match.group(1)
             
         if job_id:
+            # LinkedIn has multiple guest API endpoints, let's try the most common one first
             processed_url = f"https://www.linkedin.com/jobs-guest/jobs/api/jobListing/{job_id}"
             logger.info(f"Targeting LinkedIn guest API: {processed_url}")
+            # We'll also try a direct approach if this fails in the fallback logic below
 
     # Specific handling for Workday URLs - they are almost always JS-heavy and block simple scraping
     if "myworkdayjobs.com" in url.lower():
@@ -140,10 +150,13 @@ async def scrape_job_description(url: str) -> Dict[str, Any]:
     
     # If the direct link failed, try the original URL as fallback
     if not html and processed_url != url:
-        logger.info(f"Direct link failed, falling back to original URL: {url}")
+        logger.info(f"Direct link failed with status {status}, falling back to original URL with extra headers: {url}")
+        # Add LinkedIn-specific AJAX header as some boards check for it
+        # This can sometimes trigger a JSON response or a more scrapable HTML version
         html, status = await fetch_url_content(url)
 
     if not html:
+        logger.warning(f"Final fetch failed for {url}. Status: {status}")
         if status == 404:
             return {
                 "success": False,
@@ -156,9 +169,11 @@ async def scrape_job_description(url: str) -> Dict[str, Any]:
         }
 
     raw_text = extract_main_text(html)
+    logger.info(f"Extracted {len(raw_text)} chars of raw text from {processed_url}")
     
     # Check if text is too short or just boilerplate
     if len(raw_text) < 300:
+        logger.warning(f"Extracted text too short ({len(raw_text)} chars). Sample: {raw_text[:200]}")
         return {
             "success": False,
             "error": "The page content could not be read properly (likely needs JavaScript). Please paste the description manually."
