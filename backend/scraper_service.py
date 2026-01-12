@@ -55,8 +55,13 @@ async def fetch_url_content(url: str) -> Tuple[Optional[str], int]:
                     if response.status == 200:
                         content = await response.text()
                         # Check if we got a "JS required" or "Blocked" shell
-                        if len(content) < 2000 and ("enable JavaScript" in content or "Access blocked" in content or "Verification Required" in content):
-                            logger.warning(f"Got JS-required shell for {url} with current headers. Retrying...")
+                        blocked_keywords = [
+                            "enable JavaScript", "Access blocked", "Verification Required", 
+                            "Security verification", "sign in to", "login to", 
+                            "Please solve this CAPTCHA", "robot or a human"
+                        ]
+                        if len(content) < 5000 and any(keyword.lower() in content.lower() for keyword in blocked_keywords):
+                            logger.warning(f"Detected blocked/restricted content for {url} with current headers. Retrying...")
                             continue
                         return content, 200
                     elif response.status == 403:
@@ -106,6 +111,23 @@ async def scrape_job_description(url: str) -> Dict[str, Any]:
             # Try to construct a more direct URL if it's a search page pointing to an ID
             processed_url = f"https://www.monster.com/job-openings/job-description--{job_id}"
             logger.info(f"Targeting direct Monster job link: {processed_url}")
+
+    # Specific handling for LinkedIn URLs - try to use the guest API which is more stable
+    elif "linkedin.com/jobs" in url.lower():
+        job_id = None
+        # Pattern 1: /jobs/view/12345
+        view_match = re.search(r'/jobs/view/(\d+)', url)
+        # Pattern 2: ?currentJobId=12345
+        query_match = re.search(r'currentJobId=(\d+)', url)
+        
+        if view_match:
+            job_id = view_match.group(1)
+        elif query_match:
+            job_id = query_match.group(1)
+            
+        if job_id:
+            processed_url = f"https://www.linkedin.com/jobs-guest/jobs/api/jobListing/{job_id}"
+            logger.info(f"Targeting LinkedIn guest API: {processed_url}")
 
     # Specific handling for Workday URLs - they are almost always JS-heavy and block simple scraping
     if "myworkdayjobs.com" in url.lower():

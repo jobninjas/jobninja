@@ -69,6 +69,9 @@ async def call_groq_api(prompt: str) -> Optional[str]:
                     else:
                         error_text = await response.text()
                         logger.error(f"Groq API error {response.status}: {error_text}")
+                        # Log the full request for debugging if it's a 400
+                        if response.status == 400:
+                            logger.error(f"Bad Request Payload: {json.dumps(payload)[:1000]}...")
                         return None
         except Exception as e:
             logger.error(f"Groq API request failed: {e}")
@@ -89,18 +92,23 @@ def clean_json_response(text: str) -> str:
     text = re.sub(r'```json\s*', '', text)
     text = re.sub(r'```\s*', '', text)
     
-    # Try to find the first '{' and last '}'
+    # Try to find the first '{' and last '}' to handle potential preamble/epilogue
     start_index = text.find('{')
     end_index = text.rfind('}')
     
     if start_index != -1 and end_index != -1 and end_index > start_index:
         text = text[start_index:end_index+1]
+    elif start_index != -1 and end_index == -1:
+        # If no closing brace, just take from start_index
+        text = text[start_index:]
         
     text = text.strip()
     
     # Remove problematic control characters (0-31) except for tab, newline, carriage return
     # This helps avoid "Invalid control character" errors in json.loads
-    # However, json.loads(..., strict=False) is also used for better resilience
+    # We use regex to find and remove them
+    text = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f]', '', text)
+    
     return text
 
 
