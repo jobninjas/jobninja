@@ -70,6 +70,9 @@ const AIApplyFlow = () => {
   const [coverLetterUrl, setCoverLetterUrl] = useState(null);
   const [isSavingApplication, setIsSavingApplication] = useState(false);
   const [applicationSaved, setApplicationSaved] = useState(false);
+  const [tailoredResume, setTailoredResume] = useState('');
+  const [tailoredCoverLetter, setTailoredCoverLetter] = useState('');
+  const [suggestedAnswers, setSuggestedAnswers] = useState([]);
 
   const [showSaveResumePrompt, setShowSaveResumePrompt] = useState(false);
   const [resumeName, setResumeName] = useState('');
@@ -729,6 +732,31 @@ const AIApplyFlow = () => {
                       <strong>Get Cover Letter</strong>
                     </div>
                   </a>
+                )}
+              </div>
+            </div>
+
+            {/* AI Generated Content Tabs */}
+            <div className="generated-content-tabs mt-8">
+              <div className="flex border-b border-slate-200 mb-6">
+                <button
+                  className={`px-6 py-3 font-semibold text-sm transition-all border-b-2 ${!analysisResult ? 'border-green-600 text-green-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+                  style={{ marginBottom: '-2px' }}
+                >
+                  <FileText className="w-4 h-4 inline mr-2" /> Tailored Resume
+                </button>
+              </div>
+
+              <div className="content-display bg-slate-50 rounded-xl p-6 border border-slate-200">
+                {tailoredResume && (
+                  <div className="resume-preview whitespace-pre-wrap font-serif text-slate-800 leading-relaxed max-h-[500px] overflow-y-auto">
+                    {tailoredResume}
+                  </div>
+                )}
+                {tailoredCoverLetter && !tailoredResume && (
+                  <div className="cover-letter-preview whitespace-pre-wrap font-serif text-slate-800 leading-relaxed max-h-[500px] overflow-y-auto">
+                    {tailoredCoverLetter}
+                  </div>
                 )}
               </div>
             </div>
