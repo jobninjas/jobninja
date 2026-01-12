@@ -235,8 +235,8 @@ const AIApplyFlow = () => {
       }
     }
 
-    if (!textToUse && !resumeFile && !selectedResume) {
-      alert('Please upload a resume first');
+    if (!textToUse && !resumeFile) {
+      alert('Your resume content seems to be empty. Please re-upload your resume.');
       return;
     }
 
