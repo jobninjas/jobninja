@@ -9,6 +9,7 @@ import {
   Menu
 } from 'lucide-react';
 import { BRAND } from '../config/branding';
+import MegaMenu from './MegaMenu';
 
 const Header = ({ onMenuClick }) => {
   const navigate = useNavigate();
@@ -29,19 +30,11 @@ const Header = ({ onMenuClick }) => {
           <span className="logo-text">{BRAND.name}</span>
         </button>
       </div>
+
+      {/* Mega Menu Navigation */}
+      <MegaMenu />
+
       <nav className="nav-links">
-        <button
-          onClick={() => navigate('/ai-ninja')}
-          className={`nav-link nav-link-highlight ${isActive('/ai-ninja') ? 'nav-link-active' : ''}`}
-        >
-          <Bot className="w-4 h-4" /> AI Ninja
-        </button>
-        <button
-          onClick={() => navigate('/human-ninja')}
-          className={`nav-link nav-link-highlight ${isActive('/human-ninja') ? 'nav-link-active' : ''}`}
-        >
-          <UserCheck className="w-4 h-4" /> Human Ninja
-        </button>
         <button
           onClick={() => navigate('/jobs')}
           className={`nav-link ${isActive('/jobs') ? 'nav-link-active' : ''}`}
@@ -74,4 +67,3 @@ const Header = ({ onMenuClick }) => {
 };
 
 export default Header;
-
