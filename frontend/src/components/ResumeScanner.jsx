@@ -613,7 +613,7 @@ const ResumeScanner = () => {
                   <Button
                     onClick={handleFetchJobDescription}
                     disabled={isFetchingUrl || !jobUrl.trim()}
-                    className="bg-secondary hover:bg-secondary/90 text-white px-6 rounded-xl"
+                    className="bg-green-600 hover:bg-green-700 text-white px-6 rounded-xl font-semibold"
                   >
                     {isFetchingUrl ? (
                       <Loader2 className="w-4 h-4 animate-spin" />
