@@ -307,32 +307,41 @@ Use ONLY the JSON facts below. If a skill/tool/industry is missing from JSON, do
 
 Output Structure (Return ONLY valid JSON with these keys):
 {{
+  "evidence_table": "string",
   "ats_resume": "string",
   "detailed_cv": "string",
   "cover_letter": "string"
 }}
 
-Hard rules:
-- Do NOT mention banking/finance/telecom/apparel unless included in facts_json.industries_explicit
-- Do NOT mention Azure unless included in facts_json.skills.cloud
-- Do NOT use "state-of-the-art" or "cutting-edge"
-- Metrics only from facts_json.metrics_explicit
-- Every document must start with a === EVIDENCE TABLE === mapping the claims to the evidence found in facts_json.evidence.
-
-=== ATS RESUME ===
-(1–2 pages plain text ATS friendly)
-- Summary: 3–4 lines, MUST NOT include any industry unless supported
-- Skills: only supported tools
-- Experience: 4–6 bullets per role, each bullet must include: action + tools + outcome (no invented numbers)
-- Projects: 2–4, only supported
-
-=== DETAILED CV ===
-(2–4 pages)
-Expanded experience + project portfolio (no invented claims)
-
-=== COVER LETTER ===
-250–350 words, 3 paragraphs + 4 bullet highlights
-Mention Azure OpenAI ONLY if Azure is in facts_json.skills.cloud; otherwise say “cloud-based GenAI deployments”.
+Rules:
+1. "evidence_table" should be the verbatim evidence quotes justifying the inclusion of industries, cloud, and metrics.
+2. "ats_resume" must follow this EXACT layout:
+   NAME | CONTACT INFO
+   TITLE (AI ARCHITECT / GENAI SOLUTIONS ARCHITECT)
+   SUMMARY (3-4 lines)
+   CORE CAPABILITIES (MATCHED TO ROLE)
+   - [Category]: [Verbatim items from JSON]
+   TECHNICAL STACK
+   [Linear list of languages, frameworks, etc from JSON]
+   EXPERIENCE
+   - [Company]: [Role] | [Dates]
+     - 4-6 bullets: [Action] + [Tool] + [Outcome]
+   SELECTED GENAI PROJECTS
+   - [Project Name]: [Architecture] + [Tools] + [Verbatim metrics from metrics_explicit]
+   EDUCATION
+3. "detailed_cv" must be a 2-4 page expanded version with:
+   - All resume sections but with significantly more detail on architecture and technical decision-making for each role/project.
+   - A dedicated "PROJECT PORTFOLIO" section with 4-6 projects.
+   - A dedicated "TECHNICAL LEADERSHIP" section if supported by JSON.
+4. "cover_letter" must be 250–350 words, 3-4 paragraphs + 4 bullet highlights:
+   - Paragraph 1: Purpose and enthusiasm for Voya Financial.
+   - Paragraph 2: High-level architectural focus.
+   - Bullets: Top 4 specific, verified achievements.
+   - Paragraph 3: Closing and call to action.
+   - Mention Azure OpenAI ONLY if Azure is in facts_json.skills.cloud; otherwise say “cloud-based GenAI deployments”.
+5. Do NOT mention banking/finance/telecom/apparel unless in facts_json.industries_explicit.
+6. Use ONLY verbatim metrics from facts_json.metrics_explicit.
+7. Style: Professional, senior-level, direct. No fluff.
 
 Return ONLY valid JSON.
 """
