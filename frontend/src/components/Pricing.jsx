@@ -17,21 +17,15 @@ import { cn } from "@/lib/utils";
 import './SideMenu.css';
 
 const PricingSwitch = ({
+  selected,
   onSwitch,
   className,
 }) => {
-  const [selected, setSelected] = useState("0");
-
-  const handleSwitch = (value) => {
-    setSelected(value);
-    onSwitch(value);
-  };
-
   return (
     <div className={cn("flex justify-start", className)}>
       <div className="relative z-10 flex w-fit rounded-xl bg-neutral-100 border border-gray-200 p-1">
         <button
-          onClick={() => handleSwitch("0")}
+          onClick={() => onSwitch("0")}
           className={cn(
             "relative z-10 w-fit cursor-pointer h-12 rounded-xl sm:px-6 px-3 sm:py-2 py-1 font-medium transition-colors sm:text-base text-sm",
             selected === "0" ? "text-white" : "text-muted-foreground hover:text-black",
@@ -40,7 +34,8 @@ const PricingSwitch = ({
           {selected === "0" && (
             <motion.span
               layoutId={"switch"}
-              className="absolute top-0 left-0 h-12 w-full rounded-xl border-4 shadow-sm shadow-orange-600 border-orange-600 bg-gradient-to-t from-orange-500 via-orange-400 to-orange-600"
+              className="absolute top-0 left-0 h-10 w-full rounded-xl border-4 shadow-sm shadow-blue-600 border-blue-600 bg-gradient-to-t from-blue-500 via-blue-400 to-blue-600 my-1"
+              style={{ top: '1px' }}
               transition={{ type: "spring", stiffness: 500, damping: 30 }}
             />
           )}
@@ -48,7 +43,7 @@ const PricingSwitch = ({
         </button>
 
         <button
-          onClick={() => handleSwitch("1")}
+          onClick={() => onSwitch("1")}
           className={cn(
             "relative z-10 w-fit cursor-pointer h-12 flex-shrink-0 rounded-xl sm:px-6 px-3 sm:py-2 py-1 font-medium transition-colors sm:text-base text-sm",
             selected === "1" ? "text-white" : "text-muted-foreground hover:text-black",
@@ -57,7 +52,8 @@ const PricingSwitch = ({
           {selected === "1" && (
             <motion.span
               layoutId={"switch"}
-              className="absolute top-0 left-0 h-12 w-full rounded-xl border-4 shadow-sm shadow-orange-600 border-orange-600 bg-gradient-to-t from-orange-500 via-orange-400 to-orange-600"
+              className="absolute top-0 left-0 h-10 w-full rounded-xl border-4 shadow-sm shadow-blue-600 border-blue-600 bg-gradient-to-t from-blue-500 via-blue-400 to-blue-600 my-1"
+              style={{ top: '1px' }}
               transition={{ type: "spring", stiffness: 500, damping: 30 }}
             />
           )}
@@ -75,8 +71,10 @@ const Pricing = () => {
   const { isAuthenticated, user } = useAuth();
   const [isBookCallModalOpen, setIsBookCallModalOpen] = useState(false);
   const [sideMenuOpen, setSideMenuOpen] = useState(false);
-  const [planType, setPlanType] = useState('ai'); // 'ai' or 'human'
+  const [switchValue, setSwitchValue] = useState("0"); // "0" for ai, "1" for human
   const pricingRef = useRef(null);
+
+  const planType = switchValue === "0" ? 'ai' : 'human';
 
   const revealVariants = {
     visible: (i) => ({
@@ -93,10 +91,6 @@ const Pricing = () => {
       y: -20,
       opacity: 0,
     },
-  };
-
-  const handleSwitchChange = (value) => {
-    setPlanType(value === "1" ? 'human' : 'ai');
   };
 
   const aiNinjaPlans = [
@@ -155,7 +149,11 @@ const Pricing = () => {
             timelineRef={pricingRef}
             customVariants={revealVariants}
           >
-            <PricingSwitch onSwitch={handleSwitchChange} className="w-fit" />
+            <PricingSwitch
+              selected={switchValue}
+              onSwitch={setSwitchValue}
+              className="w-fit"
+            />
           </TimelineContent>
         </article>
 
@@ -169,7 +167,7 @@ const Pricing = () => {
               customVariants={revealVariants}
             >
               <Card
-                className={`relative border border-neutral-200 h-full flex flex-col ${plan.popular ? "ring-2 ring-orange-500 bg-orange-50 shadow-xl" : "bg-white shadow-sm"
+                className={`relative border border-neutral-200 h-full flex flex-col ${plan.popular ? "ring-2 ring-blue-500 bg-blue-50 shadow-xl" : "bg-white shadow-sm"
                   }`}
               >
                 <CardHeader className="text-left">
@@ -178,7 +176,7 @@ const Pricing = () => {
                       {plan.name}
                     </h3>
                     {plan.popular && (
-                      <span className="bg-orange-500 text-white px-3 py-1 rounded-full text-xs font-medium">
+                      <span className="bg-blue-600 text-white px-3 py-1 rounded-full text-xs font-medium">
                         Popular
                       </span>
                     )}
@@ -212,7 +210,7 @@ const Pricing = () => {
                 <CardContent className="pt-0 flex-1 flex flex-col">
                   <button
                     className={`w-full mb-4 p-3 text-lg font-semibold rounded-xl transition-all ${plan.popular
-                      ? "bg-gradient-to-t from-orange-500 to-orange-600 shadow-lg shadow-orange-500 border border-orange-400 text-white"
+                      ? "bg-gradient-to-t from-blue-600 to-blue-700 shadow-lg shadow-blue-500 border border-blue-400 text-white"
                       : "bg-gradient-to-t from-neutral-900 to-neutral-700 shadow-lg shadow-neutral-900 border border-neutral-700 text-white"
                       }`}
                     onClick={() => {
@@ -230,15 +228,15 @@ const Pricing = () => {
                     {plan.price === 0 ? 'Try Free' : (plan.id === 'human-enterprise' ? 'Contact Us' : 'Get Started')}
                   </button>
 
-                  <div className="space-y-4 pt-6 border-t border-neutral-200 mt-auto">
+                  <div className="space-y-4 pt-4 border-t border-neutral-200">
                     <h4 className="font-semibold text-sm uppercase text-gray-400 tracking-wider">
                       Includes:
                     </h4>
                     <ul className="space-y-3">
                       {plan.features.map((feature, featureIndex) => (
                         <li key={featureIndex} className="flex items-start">
-                          <span className="h-5 w-5 bg-white border border-orange-500 rounded-full flex items-center justify-center mt-0.5 mr-3 shrink-0">
-                            <CheckCheck className="h-3 w-3 text-orange-500" />
+                          <span className="h-5 w-5 bg-white border border-blue-500 rounded-full flex items-center justify-center mt-0.5 mr-3 shrink-0">
+                            <CheckCheck className="h-3 w-3 text-blue-600" />
                           </span>
                           <span className="text-sm text-gray-600">{feature}</span>
                         </li>
@@ -272,4 +270,3 @@ const Pricing = () => {
 };
 
 export default Pricing;
-
