@@ -346,7 +346,7 @@ async def send_waitlist_email(name: str, email: str):
             <p>Best regards,<br><strong>The Nova Ninjas Team</strong></p>
         </div>
         <div class="footer">
-            <p>Human-powered job applications for serious job seekers</p>
+            <p>Apply Smarter, Land Faster - AI Resume Tools & Human Job Application Service</p>
         </div>
     </div>
 </body>

@@ -263,4 +263,4 @@ All dashboards are built with mock data from `/lib/mockData.ts`. Real database i
 
 ---
 
-**Nova Ninjas** - Human-powered job applications for serious job seekers
+**jobNinjas** - Apply Smarter, Land Faster - AI Resume Tools & Human Job Application Service

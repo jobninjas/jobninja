@@ -5,7 +5,7 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Nova Ninjas - Human-Powered Job Applications",
+  title: "jobNinjas - Apply Smarter, Land Faster",
   description: "Professional job application service with human specialists",
 };
 
