@@ -137,42 +137,39 @@ const HumanNinja = () => {
         </div>
       </section>
 
-      {/* Pricing Section - Shadcn Style */}
-      <section className="py-16 md:py-24 bg-slate-50">
-        <div className="mx-auto max-w-7xl px-6">
-          <div className="mx-auto max-w-2xl space-y-4 text-center mb-12">
-            <h2 className="text-center text-3xl font-semibold lg:text-4xl text-gray-900">Human Ninja Pricing</h2>
-            <p className="text-gray-600">Pay for results, not promises. Our team applies for you using AI + human judgment.</p>
+      {/* Pricing Section - Dark Theme */}
+      <section className="py-16 md:py-32">
+        <div className="mx-auto max-w-6xl px-6">
+          <div className="mx-auto max-w-2xl space-y-6 text-center">
+            <h1 className="text-center text-4xl font-semibold lg:text-5xl">Human Ninja Pricing</h1>
+            <p className="text-muted-foreground">Our team applies for you using AI + human judgment. You focus on interviews.</p>
           </div>
 
-          <div className="mt-8 grid gap-6 md:mt-12 md:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-8 grid gap-6 md:mt-20 md:grid-cols-2 lg:grid-cols-4">
             {humanNinjaPlans.map((plan, index) => (
-              <Card key={plan.id} className={`flex flex-col bg-white border ${plan.popular ? 'border-orange-400 ring-2 ring-orange-400' : 'border-gray-200'} ${plan.isEnterprise ? 'border-purple-400' : ''} relative`}>
+              <Card key={plan.id} className={`flex flex-col bg-zinc-900 text-white border-none shadow-none ${plan.popular ? 'relative' : ''}`}>
                 {plan.popular && (
-                  <span className="absolute inset-x-0 -top-3 mx-auto flex h-6 w-fit items-center rounded-full bg-gradient-to-br from-orange-400 to-amber-500 px-3 py-1 text-xs font-medium text-white shadow-lg">Most Popular</span>
+                  <span className="absolute inset-x-0 -top-3 mx-auto flex h-6 w-fit items-center rounded-full bg-gradient-to-r from-purple-400 to-amber-300 px-3 py-1 text-xs font-medium text-amber-950 ring-1 ring-inset ring-white/20 ring-offset-1 ring-offset-gray-950/5">Popular</span>
                 )}
 
                 <CardHeader className={plan.popular ? 'pt-8' : ''}>
-                  <div className="flex items-center justify-between">
-                    <span className={`inline-block px-2 py-1 text-xs font-semibold rounded ${plan.popular ? 'bg-orange-100 text-orange-700' : plan.isEnterprise ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-600'}`}>
-                      {plan.name.toUpperCase()}
-                    </span>
-                    <UserCheck className="w-5 h-5 text-orange-500" />
-                  </div>
-                  <CardTitle className="font-semibold text-lg mt-3">{plan.name}</CardTitle>
-                  <span className="my-3 block text-3xl font-bold text-orange-500">{plan.priceDisplay}</span>
-                  <CardDescription className="text-sm text-gray-500">
-                    {plan.isEnterprise ? 'for custom volume' : `for ${plan.applications} applications`}
+                  <CardTitle className="font-medium text-white">{plan.name}</CardTitle>
+                  <span className="my-3 block text-2xl font-semibold text-white">
+                    {plan.priceDisplay}
+                    {!plan.isEnterprise && <span className="text-lg font-normal text-gray-400"> / {plan.applications} apps</span>}
+                  </span>
+                  <CardDescription className="text-sm text-gray-400">
+                    {plan.isEnterprise ? 'For high-volume needs' : 'Per package'}
                   </CardDescription>
                 </CardHeader>
 
                 <CardContent className="space-y-4 flex-1">
-                  <hr className="border-dashed border-gray-200" />
+                  <hr className="border-dashed border-zinc-700" />
                   <ul className="list-outside space-y-3 text-sm">
                     {plan.features.map((feature, i) => (
-                      <li key={i} className="flex items-start gap-2 text-gray-700">
-                        <Check className="w-4 h-4 text-orange-500 flex-shrink-0 mt-0.5" />
-                        <span>{feature}</span>
+                      <li key={i} className="flex items-center gap-2 text-gray-300">
+                        <Check className="size-3 text-gray-400" />
+                        {feature}
                       </li>
                     ))}
                   </ul>
@@ -180,19 +177,18 @@ const HumanNinja = () => {
 
                 <CardFooter className="mt-auto">
                   <Button
-                    variant={plan.popular ? 'default' : 'outline'}
-                    className={`w-full ${plan.popular ? 'bg-orange-500 hover:bg-orange-600 text-white' : 'border-gray-300 text-gray-700 hover:bg-gray-50'}`}
+                    variant="outline"
+                    className={`w-full ${plan.popular ? 'bg-zinc-800 border-blue-500 text-white hover:bg-zinc-700' : 'bg-zinc-800 border-zinc-600 text-white hover:bg-zinc-700'}`}
                     onClick={() => setIsBookCallModalOpen(true)}
                   >
                     {plan.isEnterprise ? 'Contact Us' : 'Get Started'}
-                    <ArrowRight className="w-4 h-4 ml-2" />
                   </Button>
                 </CardFooter>
               </Card>
             ))}
           </div>
 
-          <p className="text-center text-sm text-gray-500 mt-8 bg-orange-50 py-3 px-4 rounded-lg border border-orange-200">
+          <p className="text-center text-sm text-gray-500 mt-8">
             We do not guarantee a job or visa outcome. We run a serious, structured job search process so you're not doing this alone.
           </p>
         </div>
