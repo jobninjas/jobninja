@@ -1,240 +1,268 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Card, CardHeader, CardContent, CardTitle } from './ui/card';
+import { Check, Bot, UserCheck, ArrowRight, Zap, Briefcase, Database, Server, CheckCheck } from 'lucide-react';
+import { Card, CardHeader, CardContent, CardFooter, CardTitle, CardDescription } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
-import { Check, Bot, UserCheck, ArrowRight, Zap } from 'lucide-react';
 import { BRAND, PRICING } from '../config/branding';
 import BookCallModal from './BookCallModal';
 import SideMenu from './SideMenu';
 import Header from './Header';
+import { TimelineContent } from "./ui/timeline-animation";
+import { VerticalCutReveal } from "./ui/vertical-cut-reveal";
+import NumberFlow from "@number-flow/react";
+import { motion } from "framer-motion";
+import { cn } from "@/lib/utils";
 import './SideMenu.css';
+
+const PricingSwitch = ({
+  onSwitch,
+  className,
+}) => {
+  const [selected, setSelected] = useState("0");
+
+  const handleSwitch = (value) => {
+    setSelected(value);
+    onSwitch(value);
+  };
+
+  return (
+    <div className={cn("flex justify-start", className)}>
+      <div className="relative z-10 flex w-fit rounded-xl bg-neutral-100 border border-gray-200 p-1">
+        <button
+          onClick={() => handleSwitch("0")}
+          className={cn(
+            "relative z-10 w-fit cursor-pointer h-12 rounded-xl sm:px-6 px-3 sm:py-2 py-1 font-medium transition-colors sm:text-base text-sm",
+            selected === "0" ? "text-white" : "text-muted-foreground hover:text-black",
+          )}
+        >
+          {selected === "0" && (
+            <motion.span
+              layoutId={"switch"}
+              className="absolute top-0 left-0 h-12 w-full rounded-xl border-4 shadow-sm shadow-orange-600 border-orange-600 bg-gradient-to-t from-orange-500 via-orange-400 to-orange-600"
+              transition={{ type: "spring", stiffness: 500, damping: 30 }}
+            />
+          )}
+          <span className="relative">AI Ninja (SaaS)</span>
+        </button>
+
+        <button
+          onClick={() => handleSwitch("1")}
+          className={cn(
+            "relative z-10 w-fit cursor-pointer h-12 flex-shrink-0 rounded-xl sm:px-6 px-3 sm:py-2 py-1 font-medium transition-colors sm:text-base text-sm",
+            selected === "1" ? "text-white" : "text-muted-foreground hover:text-black",
+          )}
+        >
+          {selected === "1" && (
+            <motion.span
+              layoutId={"switch"}
+              className="absolute top-0 left-0 h-12 w-full rounded-xl border-4 shadow-sm shadow-orange-600 border-orange-600 bg-gradient-to-t from-orange-500 via-orange-400 to-orange-600"
+              transition={{ type: "spring", stiffness: 500, damping: 30 }}
+            />
+          )}
+          <span className="relative flex items-center gap-2">
+            Human Ninja (Service)
+          </span>
+        </button>
+      </div>
+    </div>
+  );
+};
 
 const Pricing = () => {
   const navigate = useNavigate();
   const { isAuthenticated, user } = useAuth();
   const [isBookCallModalOpen, setIsBookCallModalOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState('ai'); // 'ai', 'human'
   const [sideMenuOpen, setSideMenuOpen] = useState(false);
+  const [planType, setPlanType] = useState('ai'); // 'ai' or 'human'
+  const pricingRef = useRef(null);
 
-  const handleSubscribe = (planId) => {
-    // Navigate to checkout with plan ID
-    navigate(`/checkout?plan=${planId}`);
+  const revealVariants = {
+    visible: (i) => ({
+      y: 0,
+      opacity: 1,
+      filter: "blur(0px)",
+      transition: {
+        delay: i * 0.2,
+        duration: 0.5,
+      },
+    }),
+    hidden: {
+      filter: "blur(10px)",
+      y: -20,
+      opacity: 0,
+    },
   };
 
-  // AI Ninja Plans from config
+  const handleSwitchChange = (value) => {
+    setPlanType(value === "1" ? 'human' : 'ai');
+  };
+
   const aiNinjaPlans = [
-    {
-      ...PRICING.AI_FREE,
-      badge: 'FREE',
-      featured: false,
-    },
-    {
-      ...PRICING.AI_BEGINNER,
-      badge: 'BEGINNER',
-      featured: false,
-    },
-    {
-      ...PRICING.AI_PRO,
-      badge: 'PRO',
-      featured: true,
-    },
+    { ...PRICING.AI_FREE, popular: false, buttonVariant: 'outline', description: 'Try jobNinjas with a few applications.' },
+    { ...PRICING.AI_BEGINNER, popular: false, buttonVariant: 'outline', description: 'Perfect for more applications and interview prep.' },
+    { ...PRICING.AI_PRO, popular: true, buttonVariant: 'default', description: 'Unlimited high-volume tailored applications.' },
   ];
 
-  // Human Ninja Plans from config (new structure)
   const humanNinjaPlans = [
-    {
-      ...PRICING.HUMAN_STARTER,
-      badge: 'STARTER',
-      featured: false,
-    },
-    {
-      ...PRICING.HUMAN_GROWTH,
-      badge: 'POPULAR',
-      featured: true,
-    },
-    {
-      ...PRICING.HUMAN_SCALE,
-      badge: 'BEST VALUE',
-      featured: false,
-    },
+    { ...PRICING.HUMAN_STARTER, popular: false, buttonVariant: 'outline', description: 'We manually apply to 50 roles for you.' },
+    { ...PRICING.HUMAN_GROWTH, popular: true, buttonVariant: 'default', description: 'Higher-volume campaign for serious seekers.' },
+    { ...PRICING.HUMAN_SCALE, popular: false, buttonVariant: 'outline', description: 'Aggressive outreach while staying targeted.' },
+    { ...PRICING.HUMAN_ENTERPRISE, popular: false, buttonVariant: 'outline', description: 'For high-volume or custom requirements.' },
   ];
+
+  const currentPlans = planType === 'ai' ? aiNinjaPlans : humanNinjaPlans;
 
   return (
-    <div className="min-h-screen bg-gray-50 pricing-page">
-      {/* Side Menu */}
+    <div className="min-h-screen bg-white pricing-page">
       <SideMenu isOpen={sideMenuOpen} onClose={() => setSideMenuOpen(false)} />
-
-      {/* Navigation Header */}
       <Header onMenuClick={() => setSideMenuOpen(true)} />
 
-      {/* Pricing Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold mb-4">{BRAND.name} Pricing</h1>
-          <p className="text-xl text-gray-600 mb-2">
-            {BRAND.tagline}
-          </p>
-          <p className="text-gray-500">
-            Choose the plan that fits your job search needs
-          </p>
-        </div>
+      <div className="px-4 pt-20 pb-32 max-w-7xl mx-auto relative" ref={pricingRef}>
+        <article className="text-left mb-6 space-y-4 max-w-2xl">
+          <h2 className="md:text-6xl text-4xl capitalize font-medium text-gray-900 mb-4">
+            <VerticalCutReveal
+              splitBy="words"
+              staggerDuration={0.15}
+              staggerFrom="first"
+              reverse={true}
+              containerClassName="justify-start"
+              transition={{
+                type: "spring",
+                stiffness: 250,
+                damping: 40,
+                delay: 0,
+              }}
+            >
+              We've got a plan that's perfect for you
+            </VerticalCutReveal>
+          </h2>
 
-        {/* AI Ninja Section */}
-        <div className="mb-16">
-          <div className="flex items-center justify-center gap-3 mb-4">
-            <Bot className="w-8 h-8 text-primary" />
-            <h2 className="text-2xl font-bold">AI Ninja – Self-Serve</h2>
-          </div>
-          <p className="text-center text-gray-600 mb-8 max-w-2xl mx-auto">
-            AI-powered job application tools. You browse jobs, AI tailors your resume and cover letter, you submit.
-          </p>
+          <TimelineContent
+            as="p"
+            animationNum={0}
+            timelineRef={pricingRef}
+            customVariants={revealVariants}
+            className="md:text-base text-sm text-gray-600 w-[80%]"
+          >
+            Trusted by candidates worldwide. {planType === 'ai' ? 'Automate your search with AI' : 'Let our human Ninjas handle everything.'} Choose your path.
+          </TimelineContent>
 
-          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-            {aiNinjaPlans.map((plan) => (
-              <Card key={plan.id} className={`relative ${plan.featured ? 'border-primary border-2 shadow-lg' : ''}`}>
-                {plan.featured && (
-                  <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                    <Badge className="bg-primary text-white px-4 py-1">Recommended</Badge>
-                  </div>
-                )}
-                <CardHeader className="pb-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <Badge variant="outline">{plan.badge}</Badge>
-                    <Bot className="w-5 h-5 text-primary" />
-                  </div>
-                  <CardTitle className="text-2xl">{plan.name}</CardTitle>
-                  <p className="text-sm text-gray-500 mt-1">{plan.description}</p>
+          <TimelineContent
+            as="div"
+            animationNum={1}
+            timelineRef={pricingRef}
+            customVariants={revealVariants}
+          >
+            <PricingSwitch onSwitch={handleSwitchChange} className="w-fit" />
+          </TimelineContent>
+        </article>
 
-                  <div className="mt-4">
-                    <div className="flex items-baseline gap-1">
-                      <span className="text-4xl font-bold text-primary">{plan.priceDisplay}</span>
-                      {plan.period && <span className="text-gray-600">{plan.period}</span>}
-                    </div>
-                  </div>
-
-                  <div className="mt-3 p-3 bg-primary/5 rounded-lg border border-primary/20">
-                    <div className="flex items-center gap-2">
-                      <Zap className="w-4 h-4 text-primary" />
-                      <span className="text-sm font-semibold text-primary">
-                        Up to {plan.applications} AI-tailored applications{plan.period ? '/month' : ''}
+        <div className={`grid gap-4 py-6 ${planType === 'ai' ? 'md:grid-cols-3' : 'md:grid-cols-2 lg:grid-cols-4'}`}>
+          {currentPlans.map((plan, index) => (
+            <TimelineContent
+              key={plan.id}
+              as="div"
+              animationNum={2 + index}
+              timelineRef={pricingRef}
+              customVariants={revealVariants}
+            >
+              <Card
+                className={`relative border border-neutral-200 h-full flex flex-col ${plan.popular ? "ring-2 ring-orange-500 bg-orange-50 shadow-xl" : "bg-white shadow-sm"
+                  }`}
+              >
+                <CardHeader className="text-left">
+                  <div className="flex justify-between items-start">
+                    <h3 className="xl:text-3xl md:text-2xl text-2xl font-semibold text-gray-900 mb-2">
+                      {plan.name}
+                    </h3>
+                    {plan.popular && (
+                      <span className="bg-orange-500 text-white px-3 py-1 rounded-full text-xs font-medium">
+                        Popular
                       </span>
-                    </div>
+                    )}
+                  </div>
+                  <p className="xl:text-sm md:text-xs text-sm text-gray-600 mb-4">
+                    {plan.description}
+                  </p>
+                  <div className="flex items-baseline">
+                    <span className="text-4xl font-semibold text-gray-900">
+                      {plan.price !== null ? (
+                        <>
+                          $
+                          <NumberFlow
+                            format={{ minimumFractionDigits: plan.price % 1 === 0 ? 0 : 2 }}
+                            value={plan.price}
+                            className="text-4xl font-semibold"
+                          />
+                        </>
+                      ) : (
+                        "Contact Us"
+                      )}
+                    </span>
+                    {plan.price !== null && (
+                      <span className="text-gray-600 ml-1">
+                        /{plan.period ? plan.period.replace('/', '') : (planType === 'human' ? 'package' : 'total')}
+                      </span>
+                    )}
                   </div>
                 </CardHeader>
-                <CardContent>
-                  <ul className="space-y-3 mb-6">
-                    {plan.features.map((feature, index) => (
-                      <li key={index} className="flex items-start gap-2">
-                        <Check className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                        <span className="text-sm">{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  <Button
-                    className="w-full bg-green-600 hover:bg-green-700 text-white"
-                    variant={plan.featured ? 'default' : 'outline'}
+
+                <CardContent className="pt-0 flex-1 flex flex-col">
+                  <button
+                    className={`w-full mb-4 p-3 text-lg font-semibold rounded-xl transition-all ${plan.popular
+                      ? "bg-gradient-to-t from-orange-500 to-orange-600 shadow-lg shadow-orange-500 border border-orange-400 text-white"
+                      : "bg-gradient-to-t from-neutral-900 to-neutral-700 shadow-lg shadow-neutral-900 border border-neutral-700 text-white"
+                      }`}
                     onClick={() => {
-                      if (plan.price === 0) {
+                      if (plan.id === 'human-enterprise') {
+                        setIsBookCallModalOpen(true);
+                      } else if (planType === 'human') {
+                        setIsBookCallModalOpen(true);
+                      } else if (plan.price === 0) {
                         navigate('/ai-ninja');
                       } else {
-                        handleSubscribe(plan.id);
+                        navigate(`/checkout?plan=${plan.id}`);
                       }
                     }}
                   >
-                    {plan.price === 0 ? 'Try for Free' : 'Get Started'}
-                    <ArrowRight className="w-4 h-4 ml-2" />
-                  </Button>
+                    {plan.price === 0 ? 'Try Free' : (plan.id === 'human-enterprise' ? 'Contact Us' : 'Get Started')}
+                  </button>
+
+                  <div className="space-y-4 pt-6 border-t border-neutral-200 mt-auto">
+                    <h4 className="font-semibold text-sm uppercase text-gray-400 tracking-wider">
+                      Includes:
+                    </h4>
+                    <ul className="space-y-3">
+                      {plan.features.map((feature, featureIndex) => (
+                        <li key={featureIndex} className="flex items-start">
+                          <span className="h-5 w-5 bg-white border border-orange-500 rounded-full flex items-center justify-center mt-0.5 mr-3 shrink-0">
+                            <CheckCheck className="h-3 w-3 text-orange-500" />
+                          </span>
+                          <span className="text-sm text-gray-600">{feature}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 </CardContent>
               </Card>
-            ))}
-          </div>
-
-          {/* Usage limit note */}
-          <div className="max-w-3xl mx-auto mt-6 text-center">
-            <p className="text-sm text-gray-500">
-              <strong>Free:</strong> 5 total applications • <strong>Beginner:</strong> 200 applications/month • <strong>Pro:</strong> Unlimited applications
-            </p>
-          </div>
+            </TimelineContent>
+          ))}
         </div>
 
-        {/* Human Ninja Section */}
-        <div className="mb-16">
-          <div className="flex items-center justify-center gap-3 mb-4">
-            <UserCheck className="w-8 h-8 text-orange-500" />
-            <h2 className="text-2xl font-bold">Human Ninja – Done-for-You</h2>
-          </div>
-          <p className="text-center text-gray-600 mb-8 max-w-2xl mx-auto">
-            Our team applies for you using AI + human judgment. You focus on interviews.
-          </p>
-
-          <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-            {humanNinjaPlans.map((plan) => (
-              <Card key={plan.id} className={`relative ${plan.featured ? 'border-orange-400 border-2 shadow-lg' : ''}`}>
-                {plan.featured && (
-                  <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                    <Badge className="bg-orange-500 text-white px-4 py-1">Most Popular</Badge>
-                  </div>
-                )}
-                <CardHeader className="pb-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <Badge variant="outline" className={plan.featured ? 'border-orange-400 text-orange-600' : ''}>
-                      {plan.badge}
-                    </Badge>
-                    <UserCheck className="w-5 h-5 text-orange-500" />
-                  </div>
-                  <CardTitle className="text-xl">{plan.name}</CardTitle>
-
-                  <div className="mt-4">
-                    <div className="flex items-baseline gap-1">
-                      <span className="text-3xl font-bold text-orange-500">{plan.priceDisplay}</span>
-                    </div>
-                    <div className="text-sm font-medium text-gray-700 mt-1">
-                      for {plan.applications} applications
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <ul className="space-y-3 mb-6">
-                    {plan.features.map((feature, index) => (
-                      <li key={index} className="flex items-start gap-2">
-                        <Check className="w-5 h-5 text-orange-500 flex-shrink-0 mt-0.5" />
-                        <span className="text-sm">{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  <Button
-                    className={`w-full ${plan.featured ? 'bg-orange-500 hover:bg-orange-600' : ''}`}
-                    variant={plan.featured ? 'default' : 'outline'}
-                    onClick={() => setIsBookCallModalOpen(true)}
-                  >
-                    Get Started <ArrowRight className="w-4 h-4 ml-2" />
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-
-          {/* Human Ninja Disclaimer */}
-          <div className="max-w-3xl mx-auto mt-8 p-4 bg-orange-50 border border-orange-200 rounded-lg">
-            <p className="text-sm text-orange-800 text-center italic">
+        {planType === 'human' && (
+          <TimelineContent
+            animationNum={currentPlans.length + 2}
+            className="text-center mt-12 max-w-2xl mx-auto"
+          >
+            <p className="text-sm text-gray-500 italic">
               {PRICING.HUMAN_NINJA_DISCLAIMER}
             </p>
-          </div>
-        </div>
-
-
-
-        {/* General Disclaimer */}
-        <div className="text-center mt-12 max-w-2xl mx-auto">
-          <p className="text-sm text-gray-600 mb-4">
-            All plans include access to the Application Tracker. Cancel anytime.
-          </p>
-        </div>
+          </TimelineContent>
+        )}
       </div>
 
-      {/* Book Call Modal */}
       <BookCallModal
         isOpen={isBookCallModalOpen}
         onClose={() => setIsBookCallModalOpen(false)}
@@ -244,3 +272,4 @@ const Pricing = () => {
 };
 
 export default Pricing;
+

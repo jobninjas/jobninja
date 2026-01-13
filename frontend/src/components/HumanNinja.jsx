@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from './ui/button';
-import { Card, CardHeader, CardContent, CardFooter, CardTitle, CardDescription } from './ui/card';
+import { Card } from './ui/card';
 import {
   Bot,
   UserCheck,
@@ -17,7 +17,7 @@ import {
   Users,
   Menu
 } from 'lucide-react';
-import { BRAND, PRICING } from '../config/branding';
+import { BRAND } from '../config/branding';
 import BookCallModal from './BookCallModal';
 import SideMenu from './SideMenu';
 import Header from './Header';
@@ -50,16 +50,6 @@ const HumanNinja = () => {
       title: "Manual applying + tracking",
       description: "We submit applications for you and log everything into your Application Tracker. You focus on preparing for interviews."
     }
-  ];
-
-  const humanNinjaPlans = [
-    PRICING.HUMAN_STARTER,
-    {
-      ...PRICING.HUMAN_GROWTH,
-      popular: true
-    },
-    PRICING.HUMAN_SCALE,
-    PRICING.HUMAN_ENTERPRISE
   ];
 
   return (
@@ -137,60 +127,19 @@ const HumanNinja = () => {
         </div>
       </section>
 
-      {/* Pricing Section - Dark Theme */}
-      <section className="py-16 md:py-32">
-        <div className="mx-auto max-w-6xl px-6">
-          <div className="mx-auto max-w-2xl space-y-6 text-center">
-            <h1 className="text-center text-4xl font-semibold lg:text-5xl">Human Ninja Pricing</h1>
-            <p className="text-muted-foreground">Our team applies for you using AI + human judgment. You focus on interviews.</p>
-          </div>
-
-          <div className="mt-8 grid gap-6 md:mt-20 md:grid-cols-2 lg:grid-cols-4">
-            {humanNinjaPlans.map((plan, index) => (
-              <Card key={plan.id} className={`flex flex-col bg-zinc-900 text-white border-none shadow-none ${plan.popular ? 'relative' : ''}`}>
-                {plan.popular && (
-                  <span className="absolute inset-x-0 -top-3 mx-auto flex h-6 w-fit items-center rounded-full bg-gradient-to-r from-purple-400 to-amber-300 px-3 py-1 text-xs font-medium text-amber-950 ring-1 ring-inset ring-white/20 ring-offset-1 ring-offset-gray-950/5">Popular</span>
-                )}
-
-                <CardHeader className={plan.popular ? 'pt-8' : ''}>
-                  <CardTitle className="font-medium text-white">{plan.name}</CardTitle>
-                  <span className="my-3 block text-2xl font-semibold text-white">
-                    {plan.priceDisplay}
-                    {!plan.isEnterprise && <span className="text-lg font-normal text-gray-400"> / {plan.applications} apps</span>}
-                  </span>
-                  <CardDescription className="text-sm text-gray-400">
-                    {plan.isEnterprise ? 'For high-volume needs' : 'Per package'}
-                  </CardDescription>
-                </CardHeader>
-
-                <CardContent className="space-y-4 flex-1">
-                  <hr className="border-dashed border-zinc-700" />
-                  <ul className="list-outside space-y-3 text-sm">
-                    {plan.features.map((feature, i) => (
-                      <li key={i} className="flex items-center gap-2 text-gray-300">
-                        <Check className="size-3 text-gray-400" />
-                        {feature}
-                      </li>
-                    ))}
-                  </ul>
-                </CardContent>
-
-                <CardFooter className="mt-auto">
-                  <Button
-                    variant="outline"
-                    className={`w-full ${plan.popular ? 'bg-zinc-800 border-blue-500 text-white hover:bg-zinc-700' : 'bg-zinc-800 border-zinc-600 text-white hover:bg-zinc-700'}`}
-                    onClick={() => setIsBookCallModalOpen(true)}
-                  >
-                    {plan.isEnterprise ? 'Contact Us' : 'Get Started'}
-                  </Button>
-                </CardFooter>
-              </Card>
-            ))}
-          </div>
-
-          <p className="text-center text-sm text-gray-500 mt-8">
-            We do not guarantee a job or visa outcome. We run a serious, structured job search process so you're not doing this alone.
+      {/* View Pricing CTA */}
+      <section className="py-16 text-center bg-slate-50">
+        <div className="container mx-auto px-6">
+          <h2 className="text-3xl font-semibold mb-4">Ready to Get Started?</h2>
+          <p className="text-gray-600 mb-8 max-w-2xl mx-auto">
+            View our pricing plans and choose the package that fits your job search needs.
           </p>
+          <Button
+            className="bg-orange-500 hover:bg-orange-600 text-white px-8 py-3"
+            onClick={() => navigate('/pricing')}
+          >
+            View Pricing <ArrowRight className="w-4 h-4 ml-2" />
+          </Button>
         </div>
       </section>
 
