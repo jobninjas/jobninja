@@ -3,9 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
-import { 
-  Bot, 
-  UserCheck, 
+import {
+  Bot,
+  UserCheck,
   ClipboardList,
   Search,
   Sparkles,
@@ -58,7 +58,8 @@ const HumanNinja = () => {
       ...PRICING.HUMAN_GROWTH,
       popular: true
     },
-    PRICING.HUMAN_SCALE
+    PRICING.HUMAN_SCALE,
+    PRICING.HUMAN_ENTERPRISE
   ];
 
   return (
@@ -98,7 +99,7 @@ const HumanNinja = () => {
         <div className="container">
           <h2 className="section-title">How Human Ninja Works</h2>
           <p className="section-subtitle">We handle your entire job application process in 4 simple steps</p>
-          
+
           <div className="steps-grid">
             {steps.map((step, index) => (
               <Card key={index} className="step-card">
@@ -141,15 +142,23 @@ const HumanNinja = () => {
         <div className="container">
           <h2 className="section-title">Human Ninja Pricing</h2>
           <p className="section-subtitle">Pay for results, not promises</p>
-          
-          <div className="pricing-grid">
+
+          <div className="pricing-grid pricing-grid-4">
             {humanNinjaPlans.map((plan, index) => (
-              <Card key={plan.id} className={`pricing-card ${plan.popular ? 'popular' : ''}`}>
+              <Card key={plan.id} className={`pricing-card ${plan.popular ? 'popular' : ''} ${plan.isEnterprise ? 'enterprise' : ''}`}>
                 {plan.popular && <div className="popular-badge">Most Popular</div>}
+                <div className="pricing-card-header">
+                  <span className="plan-badge">{plan.name.toUpperCase()}</span>
+                </div>
                 <h3 className="plan-name">{plan.name}</h3>
                 <div className="plan-price">
                   <span className="price-amount">{plan.priceDisplay}</span>
-                  <span className="price-apps">for {plan.applications} applications</span>
+                  {!plan.isEnterprise && (
+                    <span className="price-apps">for {plan.applications} applications</span>
+                  )}
+                  {plan.isEnterprise && (
+                    <span className="price-apps">for custom volume</span>
+                  )}
                 </div>
                 <ul className="plan-features">
                   {plan.features.map((feature, i) => (
@@ -159,11 +168,12 @@ const HumanNinja = () => {
                     </li>
                   ))}
                 </ul>
-                <Button 
-                  className={plan.popular ? 'btn-primary w-full' : 'btn-secondary w-full'}
+                <Button
+                  className={plan.popular ? 'btn-primary w-full' : 'btn-outline w-full'}
+                  variant={plan.popular ? 'default' : 'outline'}
                   onClick={() => setIsBookCallModalOpen(true)}
                 >
-                  Get Started <ArrowRight className="w-4 h-4" />
+                  {plan.isEnterprise ? 'Contact Us' : 'Get Started'} <ArrowRight className="w-4 h-4" />
                 </Button>
               </Card>
             ))}
@@ -261,9 +271,9 @@ const HumanNinja = () => {
       </footer>
 
       {/* Book Call Modal */}
-      <BookCallModal 
-        isOpen={isBookCallModalOpen} 
-        onClose={() => setIsBookCallModalOpen(false)} 
+      <BookCallModal
+        isOpen={isBookCallModalOpen}
+        onClose={() => setIsBookCallModalOpen(false)}
       />
     </div>
   );
