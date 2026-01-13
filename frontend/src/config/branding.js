@@ -6,7 +6,7 @@
 
 export const BRAND = {
   // Core branding
-  name: 'jobNinjas',
+  name: 'jobNinjas.org',
   oldName: 'Nova Ninjas', // For reference during migration
   domain: 'jobNinjas.org',
 
