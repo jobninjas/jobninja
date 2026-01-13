@@ -13,7 +13,16 @@ import {
   User,
   LogOut,
   FileText,
-  ScanLine
+  ScanLine,
+  Zap,
+  List,
+  Target,
+  Linkedin,
+  TrendingUp,
+  MessageSquare,
+  Mail,
+  BookOpen,
+  Layout
 } from 'lucide-react';
 import { BRAND } from '../config/branding';
 
@@ -43,6 +52,26 @@ const SideMenu = ({ isOpen, onClose }) => {
     { icon: FileText, label: 'My Resumes', path: '/resumes', requiresAuth: true },
     { icon: Mic, label: 'Interview Prep', path: '/interview-prep' },
     { icon: CreditCard, label: 'Pricing', path: '/pricing' },
+  ];
+
+  const toolItems = [
+    { icon: Zap, label: 'One-Click Optimize', path: '/one-click-optimize' },
+    { icon: List, label: 'Bullet Points Generator', path: '/bullet-points' },
+    { icon: Target, label: 'Summary Generator', path: '/summary-generator' },
+    { icon: MessageSquare, label: 'ChatGPT Resume', path: '/chatgpt-resume' },
+    { icon: Mail, label: 'ChatGPT Cover Letter', path: '/chatgpt-cover-letter' },
+    { icon: TrendingUp, label: 'Career Change', path: '/career-change' },
+  ];
+
+  const linkedinItems = [
+    { icon: Linkedin, label: 'LinkedIn Optimizer', path: '/linkedin-optimizer' },
+    { icon: BookOpen, label: 'LinkedIn Examples', path: '/linkedin-examples' },
+  ];
+
+  const resourceItems = [
+    { icon: Layout, label: 'Resume Templates', path: '/resume-templates' },
+    { icon: FileText, label: 'Cover Letter Templates', path: '/cover-letter-templates' },
+    { icon: BookOpen, label: 'ATS Guides', path: '/ats-guides' },
   ];
 
   const accountItems = [
@@ -89,6 +118,60 @@ const SideMenu = ({ isOpen, onClose }) => {
                   {item.label === 'Interview Prep' && (
                     <span className="side-menu-badge">Soon</span>
                   )}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="side-menu-section">
+            <span className="side-menu-section-title">Resume Tools</span>
+            {toolItems.map((item) => {
+              const isActive = location.pathname === item.path;
+              const Icon = item.icon;
+              return (
+                <button
+                  key={item.path}
+                  onClick={() => handleNavigation(item.path)}
+                  className={`side-menu-item ${isActive ? 'active' : ''}`}
+                >
+                  <Icon className="side-menu-icon" />
+                  <span>{item.label}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="side-menu-section">
+            <span className="side-menu-section-title">LinkedIn</span>
+            {linkedinItems.map((item) => {
+              const isActive = location.pathname === item.path;
+              const Icon = item.icon;
+              return (
+                <button
+                  key={item.path}
+                  onClick={() => handleNavigation(item.path)}
+                  className={`side-menu-item ${isActive ? 'active' : ''}`}
+                >
+                  <Icon className="side-menu-icon" />
+                  <span>{item.label}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="side-menu-section">
+            <span className="side-menu-section-title">Resources</span>
+            {resourceItems.map((item) => {
+              const isActive = location.pathname === item.path;
+              const Icon = item.icon;
+              return (
+                <button
+                  key={item.path}
+                  onClick={() => handleNavigation(item.path)}
+                  className={`side-menu-item ${isActive ? 'active' : ''}`}
+                >
+                  <Icon className="side-menu-icon" />
+                  <span>{item.label}</span>
                 </button>
               );
             })}
