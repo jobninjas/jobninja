@@ -42,23 +42,23 @@ const Checkout = () => {
 
   // Auto-checkout effect
   useEffect(() => {
-    if (shouldAutoCheckout && isAuthenticated && !autoCheckoutAttempted && !isLoading) {
+    if (shouldAutoCheckout && !autoCheckoutAttempted && !isLoading) {
       setAutoCheckoutAttempted(true);
       handlePayment();
     }
-  }, [shouldAutoCheckout, isAuthenticated, autoCheckoutAttempted, isLoading]);
+  }, [shouldAutoCheckout, autoCheckoutAttempted, isLoading]);
 
   // Plan details mapping
   const planDetails = {
     'ai-free': {
       ...PRICING.AI_FREE,
       icon: Bot,
-      color: 'green'
+      color: 'blue'
     },
     'ai-pro': {
       ...PRICING.AI_PRO,
       icon: Bot,
-      color: 'green'
+      color: 'blue'
     },
     'human-starter': {
       ...PRICING.HUMAN_STARTER,
@@ -98,7 +98,7 @@ const Checkout = () => {
   // Handle payment
   const handlePayment = async () => {
     if (!isAuthenticated) {
-      navigate('/login?redirect=/checkout?plan=' + planId);
+      navigate(`/login?redirect=${encodeURIComponent(`/checkout?plan=${planId}&auto=true`)}`);
       return;
     }
 
@@ -249,6 +249,18 @@ const Checkout = () => {
             </div>
           </CardContent>
         </Card>
+      </div>
+    );
+  }
+
+  if (shouldAutoCheckout && !paymentStatus) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 text-blue-600 animate-spin mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Securing your payment session...</h2>
+          <p className="text-gray-600">Please wait while we prepare the Razorpay portal.</p>
+        </div>
       </div>
     );
   }
