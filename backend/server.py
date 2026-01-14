@@ -140,6 +140,8 @@ class User(BaseModel):
     password_hash: str  # In production, use proper hashing like bcrypt
     role: str = "customer"  # customer, employee, admin
     plan: Optional[str] = None
+    is_verified: bool = False
+    verification_token: Optional[str] = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class UserSignup(BaseModel):
@@ -267,7 +269,7 @@ async def send_email_resend(to_email: str, subject: str, html_content: str):
     Send email using Resend API (HTTP-based, works on Railway).
     """
     resend_api_key = os.environ.get('RESEND_API_KEY')
-    from_email = os.environ.get('FROM_EMAIL', 'Nova Ninjas <onboarding@resend.dev>')
+    from_email = os.environ.get('FROM_EMAIL', 'jobNinjas.org <onboarding@resend.dev>')
     
     if not resend_api_key:
         logger.warning("RESEND_API_KEY not configured, skipping email")
@@ -381,7 +383,7 @@ async def send_booking_email(name: str, email: str):
         <div class="content">
             <p>Hi <strong>{name}</strong>,</p>
             
-            <p>Thank you for booking a consultation call with Nova Ninjas!</p>
+            <p>Thank you for booking a consultation call with jobNinjas.org!</p>
             
             <p>We've received your request and our team will reach out to you within 24 hours to schedule your 15-minute call.</p>
             
@@ -396,20 +398,23 @@ async def send_booking_email(name: str, email: str):
             
             <p>We're excited to help you land your dream job faster!</p>
             
-            <p>Best regards,<br><strong>The Nova Ninjas Team</strong></p>
+            <p>Best regards,<br><strong>The jobNinjas Team</strong></p>
         </div>
     </div>
 </body>
 </html>
     """
     
-    return await send_email_resend(email, "Your Call with Nova Ninjas is Booked! 📞", html_content)
+    return await send_email_resend(email, "Your Call with jobNinjas.org is Booked! 📞", html_content)
 
 
-async def send_welcome_email(name: str, email: str):
+async def send_welcome_email(name: str, email: str, token: str = None):
     """
     Send a welcome email to new users who sign up.
     """
+    frontend_url = os.environ.get('FRONTEND_URL', 'https://jobninjas.org')
+    verify_link = f"{frontend_url}/verify-email?token={token}" if token else f"{frontend_url}/dashboard"
+    
     html_content = f"""
 <!DOCTYPE html>
 <html>
@@ -427,14 +432,18 @@ async def send_welcome_email(name: str, email: str):
 <body>
     <div class="container">
         <div class="header">
-            <h1>Welcome to Nova Ninjas! 🥷</h1>
+            <h1>Welcome to jobNinjas! 🥷</h1>
             <p>Your Job Search Just Got a Ninja</p>
         </div>
         <div class="content">
             <h2>Hi {name},</h2>
             <p>Thank you for signing up! We're thrilled to have you join our community of job seekers who are taking their career to the next level.</p>
             
-            <h3>What Nova Ninjas Does For You:</h3>
+            <center>
+                <a href="{verify_link}" class="cta-button">Confirm Your Account →</a>
+            </center>
+
+            <h3>What jobNinjas Does For You:</h3>
             <div class="feature">✅ Your dedicated Job Ninja applies to jobs on your behalf</div>
             <div class="feature">✅ AI-powered application tailoring for maximum impact</div>
             <div class="feature">✅ Real-time tracking dashboard to monitor progress</div>
@@ -442,30 +451,26 @@ async def send_welcome_email(name: str, email: str):
             
             <h3>Ready to Get Started?</h3>
             <ol>
-                <li>Log in to your dashboard</li>
+                <li>Confirm your account using the button above</li>
                 <li>Complete your profile</li>
                 <li>Choose a plan that fits your needs</li>
                 <li>Let your Ninja handle the job application grind!</li>
             </ol>
             
-            <center>
-                <a href="https://jobninjas.org/dashboard" class="cta-button">Go to Dashboard →</a>
-            </center>
-            
             <p>If you have any questions, just reply to this email - we're here to help.</p>
             
-            <p>Best regards,<br><strong>The Nova Ninjas Team</strong></p>
+            <p>Best regards,<br><strong>The jobNinjas Team</strong></p>
         </div>
         <div class="footer">
             <p>Your Personal Job Ninja - Fast, Accurate, Human.</p>
-            <p>© 2025 Nova Ninjas. All rights reserved.</p>
+            <p>© 2025 jobNinjas.org. All rights reserved.</p>
         </div>
     </div>
 </body>
 </html>
     """
     
-    return await send_email_resend(email, f"Welcome to Nova Ninjas, {name}! 🥷", html_content)
+    return await send_email_resend(email, f"Welcome to jobNinjas, {name}! 🥷", html_content)
 
 
 async def send_admin_booking_notification(booking):
@@ -537,10 +542,14 @@ async def signup(user_data: UserSignup):
         import hashlib
         password_hash = hashlib.sha256(user_data.password.encode()).hexdigest()
         
+        verification_token = str(uuid.uuid4())
+        
         user = User(
             email=user_data.email,
             name=user_data.name,
-            password_hash=password_hash
+            password_hash=password_hash,
+            verification_token=verification_token,
+            is_verified=False
         )
         
         # Save to database
@@ -551,7 +560,7 @@ async def signup(user_data: UserSignup):
         
         # Send welcome email in background (don't wait)
         try:
-            asyncio.create_task(send_welcome_email(user.name, user.email))
+            asyncio.create_task(send_welcome_email(user.name, user.email, verification_token))
         except Exception as email_error:
             logger.error(f"Error sending welcome email: {email_error}")
         
@@ -596,10 +605,30 @@ async def login(credentials: UserLogin):
             "email": user['email'],
             "name": user['name'],
             "role": user['role'],
-            "plan": user.get('plan')
+            "plan": user.get('plan'),
+            "is_verified": user.get('is_verified', False)
         },
         "token": f"token_{user['id']}"  # In production, use JWT
     }
+
+@api_router.get("/auth/verify-email")
+async def verify_email(token: str):
+    """
+    Verify user email using the token.
+    """
+    user = await db.users.find_one({"verification_token": token})
+    
+    if not user:
+        raise HTTPException(status_code=400, detail="Invalid or expired verification token")
+    
+    await db.users.update_one(
+        {"id": user['id']},
+        {"$set": {"is_verified": True}, "$unset": {"verification_token": ""}}
+    )
+    
+    logger.info(f"User email verified: {user['email']}")
+    
+    return {"success": True, "message": "Email verified successfully"}
 
 @api_router.get("/auth/users")
 async def get_all_users():
