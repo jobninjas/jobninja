@@ -10,11 +10,30 @@ import SideMenu from './SideMenu';
 import './SideMenu.css';
 import { BRAND } from '../config/branding';
 
+import { useGoogleLogin } from '@react-oauth/google';
+
 const Signup = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { signup, isAuthenticated, loading: authLoading } = useAuth();
+  const { signup, googleLogin, isAuthenticated, loading: authLoading } = useAuth();
   const referralCode = searchParams.get('ref');
+
+  const handleGoogleLogin = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      try {
+        setSubmitting(true);
+        const result = await googleLogin(tokenResponse.access_token, referralCode);
+        if (result.success) {
+          navigate('/');
+        }
+      } catch (err) {
+        setError('Google signup failed. Please try again.');
+      } finally {
+        setSubmitting(false);
+      }
+    },
+    onError: () => setError('Google signup failed. Please try again.')
+  });
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -89,7 +108,8 @@ const Signup = () => {
           <Button
             variant="outline"
             className="w-full py-6 border-[#e5e7eb] text-[#1a1a1a] font-semibold text-base rounded-full hover:bg-gray-50 flex items-center justify-center gap-3"
-            onClick={() => alert('Google signup coming soon!')}
+            onClick={() => handleGoogleLogin()}
+            disabled={submitting}
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M23.5 12.2c0-.8-.1-1.6-.2-2.3H12v4.4h6.5c-.3 1.5-1.1 2.7-2.3 3.5v2.9h3.7c2.2-2 3.4-5 3.4-8.5z" fill="#4285F4" />

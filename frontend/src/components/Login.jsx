@@ -10,9 +10,46 @@ import SideMenu from './SideMenu';
 import './SideMenu.css';
 import { BRAND } from '../config/branding';
 
+import { useGoogleLogin } from '@react-oauth/google';
+
 const Login = () => {
   const navigate = useNavigate();
-  const { login, isAuthenticated, loading: authLoading } = useAuth();
+  const { login, googleLogin, isAuthenticated, loading: authLoading } = useAuth();
+
+  const handleGoogleSuccess = async (tokenResponse) => {
+    try {
+      setSubmitting(true);
+      const result = await googleLogin(tokenResponse.credential);
+      if (result.success) {
+        navigate('/');
+      }
+    } catch (err) {
+      setError('Google login failed. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleGoogleLogin = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      try {
+        setSubmitting(true);
+        // Note: useGoogleLogin returns an access token by default. 
+        // For ID tokens, we might need to use the standard GoogleLogin component 
+        // or fetch the user info using the access token.
+        // However, the backend expects a token. I'll pass the access_token.
+        const result = await googleLogin(tokenResponse.access_token);
+        if (result.success) {
+          navigate('/');
+        }
+      } catch (err) {
+        setError('Google login failed. Please try again.');
+      } finally {
+        setSubmitting(false);
+      }
+    },
+    onError: () => setError('Google login failed. Please try again.')
+  });
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -82,7 +119,8 @@ const Login = () => {
           <Button
             variant="outline"
             className="w-full py-6 border-[#e5e7eb] text-[#1a1a1a] font-semibold text-base rounded-full hover:bg-gray-50 flex items-center justify-center gap-3"
-            onClick={() => alert('Google login coming soon!')}
+            onClick={() => handleGoogleLogin()}
+            disabled={submitting}
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M23.5 12.2c0-.8-.1-1.6-.2-2.3H12v4.4h6.5c-.3 1.5-1.1 2.7-2.3 3.5v2.9h3.7c2.2-2 3.4-5 3.4-8.5z" fill="#4285F4" />
