@@ -151,10 +151,7 @@ const LandingPage = () => {
   ];
 
   const faqs = [
-    {
-      question: 'Do you use mass-apply bots that spam companies?',
-      answer: 'Absolutely not. We don\'t use automated bots that blast the same resume to hundreds of companies. Our approach is targeted and strategic — one quality, tailored application per company. This protects your professional reputation and prevents your resume from being blacklisted by recruiters or ATS systems.'
-    },
+
     {
       question: 'How does AI Ninja work?',
       answer: 'AI Ninja analyzes the job description and your resume, then generates a tailored resume, cover letter, and suggested answers for application questions. You review the materials and submit them yourself—staying in full control of your applications.'
@@ -163,10 +160,7 @@ const LandingPage = () => {
       question: 'What is Human Ninja?',
       answer: 'Human Ninja is our done-for-you service. Our team of specialists finds relevant roles, tailors your applications using AI + human judgment, and submits them on your behalf. Perfect for busy professionals or those needing visa sponsorship.'
     },
-    {
-      question: 'Will my resume get blacklisted?',
-      answer: 'No. Unlike mass-apply services, we never spam companies with untargeted applications. Each application is tailored to the specific role and company. We avoid applying to multiple roles at the same company simultaneously, which is what typically triggers blacklisting.'
-    },
+
     {
       question: 'Do you guarantee a job or visa?',
       answer: 'No. We don\'t make fake promises. We guarantee a serious, structured application process that significantly increases your chances. Your interview performance and the market still matter.'
@@ -221,14 +215,7 @@ const LandingPage = () => {
           </div>
 
           <div className="hero-trust-badges">
-            <div className="trust-badge">
-              <Shield className="w-4 h-4" />
-              <span>No mass-apply bots</span>
-            </div>
-            <div className="trust-badge">
-              <CheckCircle className="w-4 h-4" />
-              <span>Won't blacklist your resume</span>
-            </div>
+
             <div className="trust-badge">
               <Globe className="w-4 h-4" />
               <span>Visa-friendly jobs</span>
@@ -306,25 +293,6 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* No Bots Differentiator */}
-      <section className="no-bots-section">
-        <div className="container">
-          <div className="no-bots-card">
-            <div className="no-bots-icon">
-              <Shield className="w-10 h-10" />
-            </div>
-            <div className="no-bots-content">
-              <h3>We don't use mass-apply bots that get your resume blacklisted</h3>
-              <p>
-                Unlike other services that spam hundreds of companies with the same resume,
-                we use <strong>targeted, human-reviewed applications</strong>. Your Ninja applies
-                strategically — one quality application per company, tailored for each role.
-                Your professional reputation stays protected.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
 
       {/* Stats Bar */}
       <section className="stats-section-modern">
