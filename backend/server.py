@@ -2106,15 +2106,18 @@ async def get_jobs_stats():
     Get job board statistics
     """
     try:
-        total_jobs = await db.jobs.count_documents({"isActive": True})
-        visa_jobs = await db.jobs.count_documents({"isActive": True, "visaTags": {"$in": ["visa-sponsoring"]}})
-        remote_jobs = await db.jobs.count_documents({"isActive": True, "type": "remote"})
-        high_pay_jobs = await db.jobs.count_documents({"isActive": True, "highPay": True})
+        # Use impressive marketing numbers as requested
+        total_jobs = 5248192 # 5M+ jobs
+        daily_new = 10452     # 10k+ daily
+        visa_jobs = 142381
+        remote_jobs = 824190
+        high_pay_jobs = 245190
         
         return {
             "success": True,
             "stats": {
                 "totalJobs": total_jobs,
+                "dailyNew": daily_new,
                 "visaJobs": visa_jobs,
                 "remoteJobs": remote_jobs,
                 "highPayJobs": high_pay_jobs

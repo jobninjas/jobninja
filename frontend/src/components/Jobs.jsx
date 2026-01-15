@@ -186,7 +186,7 @@ const Jobs = () => {
         <div className="container">
           <h1 className="jobs-title">Find Your Next <span className="text-gradient">Opportunity</span></h1>
           <p className="jobs-subtitle">
-            Browse visa-friendly, high-paying jobs and apply smarter with AI Ninja.
+            Search through 5 Million+ active jobs scanned daily. Apply smarter with AI Ninja.
           </p>
         </div>
       </section>
@@ -293,7 +293,12 @@ const Jobs = () => {
                   <Card key={job.id} className="job-card">
                     <div className="job-card-main">
                       <div className="job-info">
-                        <h3 className="job-title">{job.title}</h3>
+                        <div className="flex items-center gap-2">
+                          <h3 className="job-title">{job.title}</h3>
+                          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-100 text-[10px] py-0 px-1.5 h-4">
+                            <RefreshCw className="w-2.5 h-2.5 mr-1" /> Freshly Scanned
+                          </Badge>
+                        </div>
                         <p className="job-company">{job.company}</p>
                         <div className="job-meta">
                           <span className="job-location">

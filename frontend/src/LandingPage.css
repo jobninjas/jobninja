@@ -5709,12 +5709,260 @@
     font-size: 0.75rem;
     padding: 0.5rem 1rem !important;
   }
+}
 
-  .final-cta-buttons {
+/* Fresh Jobs Section Styles */
+.fresh-jobs-section {
+  padding: 8rem 0;
+  background: white;
+  position: relative;
+}
+
+.fresh-jobs-card {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 4rem;
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.03) 0%, rgba(20, 184, 166, 0.03) 100%);
+  border-radius: 32px;
+  padding: 4rem;
+  border: 1px solid rgba(34, 197, 94, 0.1);
+  align-items: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.fresh-badge {
+  background: rgba(34, 197, 94, 0.1);
+  color: #16a34a;
+  border: 1px solid rgba(34, 197, 94, 0.2);
+  padding: 0.5rem 1rem;
+  border-radius: 99px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  margin-bottom: 2rem;
+}
+
+.fresh-title {
+  font-size: 3.5rem;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1.1;
+  margin-bottom: 1.5rem;
+  letter-spacing: -0.02em;
+}
+
+.fresh-description {
+  font-size: 1.25rem;
+  color: #64748b;
+  line-height: 1.6;
+  margin-bottom: 3rem;
+  max-width: 500px;
+}
+
+.fresh-stats-grid {
+  display: flex;
+  align-items: center;
+  gap: 3rem;
+  margin-bottom: 4rem;
+}
+
+.fresh-stat-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.fresh-stat-number {
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1;
+  margin-bottom: 0.5rem;
+}
+
+.fresh-stat-label {
+  font-size: 0.95rem;
+  color: #94a3b8;
+  font-weight: 500;
+  line-height: 1.4;
+  max-width: 150px;
+}
+
+.fresh-stat-divider {
+  width: 1px;
+  height: 60px;
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.fresh-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.btn-large {
+  padding: 1rem 2rem !important;
+  font-size: 1.1rem !important;
+  width: fit-content;
+}
+
+.fresh-trust {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #94a3b8;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+/* Visual Side */
+.fresh-jobs-visual {
+  position: relative;
+  height: 400px;
+}
+
+.floating-job-cards {
+  position: relative;
+  height: 100%;
+}
+
+.job-card-float {
+  position: absolute;
+  background: white;
+  padding: 1.5rem;
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05), 0 0 0 1px rgba(0, 0, 0, 0.03);
+  width: 280px;
+  animation: float 6s ease-in-out infinite;
+  z-index: 2;
+}
+
+.job-card-float h4 {
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0.5rem 0 0.25rem;
+}
+
+.job-card-float p {
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+.card-1 {
+  top: 0;
+  right: 0;
+  animation-delay: 0s;
+}
+
+.card-2 {
+  top: 45%;
+  left: 0;
+  animation-delay: -2s;
+}
+
+.card-3 {
+  bottom: 0;
+  right: 10%;
+  animation-delay: -4s;
+}
+
+@keyframes float {
+  0% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-15px);
+  }
+
+  100% {
+    transform: translateY(0px);
+  }
+}
+
+.animate-spin-slow {
+  animation: spin 3s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Tablet & Mobile Responsiveness */
+@media (max-width: 1200px) {
+  .fresh-jobs-card {
+    grid-template-columns: 1fr;
+    padding: 3rem;
+    gap: 3rem;
+  }
+
+  .fresh-jobs-visual {
+    height: 350px;
+    order: -1;
+  }
+
+  .floating-job-cards {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    height: auto;
+  }
+
+  .job-card-float {
+    position: relative;
+    top: auto !important;
+    left: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    width: 33%;
+  }
+}
+
+@media (max-width: 768px) {
+  .fresh-jobs-section {
+    padding: 4rem 1rem;
+  }
+
+  .fresh-title {
+    font-size: 2.5rem;
+  }
+
+  .fresh-stats-grid {
     flex-direction: column;
+    align-items: flex-start;
+    gap: 2rem;
   }
 
-  .final-cta-card {
-    padding: 2rem;
+  .fresh-stat-divider {
+    display: none;
   }
+
+  .floating-job-cards {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .job-card-float {
+    width: 100%;
+  }
+
+  .fresh-jobs-visual {
+    height: auto;
+  }
+}
+
+.final-cta-buttons {
+  flex-direction: column;
+}
+
+.final-cta-card {
+  padding: 2rem;
 }

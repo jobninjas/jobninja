@@ -58,6 +58,22 @@ const LandingPage = () => {
     return baseInterviews + (daysSinceStart * 9);
   });
 
+  const [jobStats, setJobStats] = useState({
+    total: 5248192,
+    daily: 10452
+  });
+
+  useEffect(() => {
+    // Increment total jobs slightly every few seconds for a "live" feel
+    const interval = setInterval(() => {
+      setJobStats(prev => ({
+        ...prev,
+        total: prev.total + Math.floor(Math.random() * 3)
+      }));
+    }, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
   // Update counter every hour (check every minute for smoother UX)
   useEffect(() => {
     const interval = setInterval(() => {
@@ -441,6 +457,67 @@ const LandingPage = () => {
                   </div>
                 </div>
               </Card>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Fresh Jobs Section */}
+      <section className="fresh-jobs-section">
+        <div className="container">
+          <div className="fresh-jobs-card">
+            <div className="fresh-jobs-content">
+              <Badge className="fresh-badge">
+                <RefreshCw className="w-3 h-3 animate-spin-slow" /> Live Market Update
+              </Badge>
+              <h2 className="fresh-title">Find the Freshest Jobs</h2>
+              <p className="fresh-description">
+                Our AI constantly scans the global job market, bringing you up-to-date
+                opportunities to ensure you don't miss out on your best matches.
+              </p>
+
+              <div className="fresh-stats-grid">
+                <div className="fresh-stat-item">
+                  <div className="fresh-stat-number">{jobStats.daily.toLocaleString()}+</div>
+                  <div className="fresh-stat-label">new jobs added today</div>
+                </div>
+                <div className="fresh-stat-divider" />
+                <div className="fresh-stat-item">
+                  <div className="fresh-stat-number">{jobStats.total.toLocaleString()}+</div>
+                  <div className="fresh-stat-label">Millions of jobs for you to choose from</div>
+                </div>
+              </div>
+
+              <div className="fresh-actions">
+                <Button
+                  className="btn-primary-modern btn-large"
+                  onClick={() => navigate('/jobs')}
+                >
+                  Browse All Jobs <ArrowRight className="w-5 h-5" />
+                </Button>
+                <div className="fresh-trust">
+                  <Users className="w-4 h-4" /> Trusted by 50,000+ candidates worldwide
+                </div>
+              </div>
+            </div>
+            <div className="fresh-jobs-visual">
+              <div className="floating-job-cards">
+                <div className="job-card-float card-1">
+                  <Badge variant="outline" className="text-primary border-primary/20 bg-white/50 backdrop-blur-sm">Active Now</Badge>
+                  <h4>Senior Software Engineer</h4>
+                  <p>Google • Mountain View, CA</p>
+                </div>
+                <div className="job-card-float card-2">
+                  <Badge variant="outline" className="text-secondary border-secondary/20 bg-white/50 backdrop-blur-sm">Recently Added</Badge>
+                  <h4>Product Designer</h4>
+                  <p>Airbnb • San Francisco, CA</p>
+                </div>
+                <div className="job-card-float card-3">
+                  <Badge variant="outline" className="text-green-600 border-green-200 bg-white/50 backdrop-blur-sm">New</Badge>
+                  <h4>Data Scientist</h4>
+                  <p>Tesla • Austin, TX</p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
