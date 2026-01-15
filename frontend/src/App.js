@@ -27,6 +27,7 @@ import ResumeScanner from "./components/ResumeScanner";
 import AIApplyFlow from "./components/AIApplyFlow";
 import RefundPolicy from "./components/RefundPolicy";
 import VerifyEmail from "./components/VerifyEmail";
+import ScrollToTop from "./components/ScrollToTop";
 // Phase 1 Tools
 import OneClickOptimize from "./components/OneClickOptimize";
 import BulletPointsGenerator from "./components/BulletPointsGenerator";
@@ -51,6 +52,7 @@ function App() {
     <div className="App">
       <AuthProvider>
         <BrowserRouter>
+          <ScrollToTop />
           <Routes>
             {/* Public Routes */}
             <Route path="/" element={<LandingPage />} />
