@@ -37,6 +37,7 @@ import { BRAND } from '../config/branding';
 import './SideMenu.css';
 
 const LandingPage = () => {
+  console.log("LandingPage rendering...");
   const navigate = useNavigate();
   const { isAuthenticated, loading } = useAuth();
   const [isBookCallModalOpen, setIsBookCallModalOpen] = useState(false);

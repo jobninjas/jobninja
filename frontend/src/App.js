@@ -1,4 +1,5 @@
 import React from "react";
+console.log("App component loading...");
 import "./App.css";
 import "./LandingPage.css";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
