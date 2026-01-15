@@ -505,7 +505,10 @@ const ResumeScanner = () => {
             {/* Saved Resumes Section */}
             {isAuthenticated && savedResumes.length > 0 && (
               <div className="saved-resumes-section">
-                <h3><FolderOpen className="w-5 h-5" /> Your Saved Resumes</h3>
+                <h3>
+                  <FolderOpen className="w-5 h-5" />
+                  Your Saved Resumes <span className="text-slate-400 font-normal ml-2">({savedResumes.length}/3)</span>
+                </h3>
                 <div className="saved-resumes-list">
                   {savedResumes.map((resume) => (
                     <div

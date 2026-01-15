@@ -1735,19 +1735,21 @@ async def fetch_job_desc(request: JobUrlFetchRequest):
 @api_router.get("/resumes")
 async def get_resumes(email: str = Query(...)):
     """
-    Get all resumes for the user.
+    Get all resumes for the user from saved_resumes.
     """
     try:
-        user = await db.users.find_one({"email": email})
-        if not user:
-            return []
+        resumes = await db.saved_resumes.find(
+            {"userEmail": email}
+        ).sort("updatedAt", -1).to_list(10)
         
-        resumes = await db.resumes.find(
-            {"userId": user['id']},
-            {"_id": 0}
-        ).sort("createdAt", -1).to_list(1000)
+        for resume in resumes:
+            resume["id"] = str(resume.pop("_id"))
+            resume["textPreview"] = resume.get("resumeText", "")[:200] + "..."
         
-        return resumes
+        return {
+            "success": True,
+            "resumes": resumes
+        }
     except Exception as e:
         logger.error(f"Error getting resumes: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -1884,24 +1886,8 @@ Sincerely,
             }
         ]
         
-        # Save resume to database
-        resume_id = str(uuid.uuid4())
-        resume = Resume(
-            id=resume_id,
-            userId=userId,
-            resumeName=f"Resume for {jobTitle} at {company}",
-            resumeHtml=tailoredResume,
-            jobTitle=jobTitle,
-            companyName=company,
-            jobDescription=jobDescription,
-            jobUrl=jobUrl,
-            isSystemGenerated=True
-        )
-        
-        resume_doc = resume.model_dump()
-        resume_doc['createdAt'] = resume_doc['createdAt'].isoformat()
-        resume_doc['updatedAt'] = resume_doc['updatedAt'].isoformat()
-        await db.resumes.insert_one(resume_doc)
+        # No longer auto-saving every tailored resume to db.resumes to enforce 3-resume limit
+        # await db.resumes.insert_one(resume_doc)
         
         # Save application to database
         application = Application(
@@ -2587,7 +2573,7 @@ class SaveResumeRequest(BaseModel):
 @app.post("/api/resumes/save")
 async def save_user_resume(request: SaveResumeRequest):
     """
-    Save a user's resume for future use
+    Save a user's resume for future use (Limit: 3)
     """
     try:
         # Check if resume with same name exists
@@ -2597,7 +2583,7 @@ async def save_user_resume(request: SaveResumeRequest):
         })
         
         if existing:
-            # Update existing
+            # Update existing - does not count towards limit
             await db.saved_resumes.update_one(
                 {"_id": existing["_id"]},
                 {"$set": {
@@ -2608,6 +2594,11 @@ async def save_user_resume(request: SaveResumeRequest):
             )
             return {"success": True, "message": "Resume updated", "id": str(existing["_id"])}
         
+        # Check limit only for new resumes
+        count = await db.saved_resumes.count_documents({"userEmail": request.user_email})
+        if count >= 3:
+             raise HTTPException(status_code=400, detail="You can only save up to 3 resumes. Please delete one to add a new one.")
+
         # Create new
         resume_doc = {
             "userEmail": request.user_email,
@@ -2625,7 +2616,8 @@ async def save_user_resume(request: SaveResumeRequest):
             "message": "Resume saved",
             "id": str(result.inserted_id)
         }
-        
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Save resume error: {e}")
         raise HTTPException(status_code=500, detail=str(e))

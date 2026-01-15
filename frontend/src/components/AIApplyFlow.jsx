@@ -26,7 +26,8 @@ import {
   Lightbulb,
   Link,
   Copy,
-  Clock
+  Clock,
+  Trash2
 } from 'lucide-react';
 import { BRAND } from '../config/branding';
 import { API_URL } from '../config/api';
@@ -126,7 +127,7 @@ const AIApplyFlow = () => {
       const response = await fetch(`${API_URL}/api/resumes?email=${encodeURIComponent(user.email)}`);
       if (response.ok) {
         const data = await response.json();
-        setSavedResumes(data || []);
+        setSavedResumes(data.resumes || []);
       }
     } catch (error) {
       console.error('Failed to fetch resumes:', error);
@@ -183,6 +184,30 @@ const AIApplyFlow = () => {
     setResumeFile(null);
     setResumeText(resume.resumeText || '');
     setResumeName(resume.resumeName || resume.fileName || 'Resume');
+  };
+
+  const handleDeleteResume = async (resumeId, e) => {
+    e.stopPropagation();
+    if (!window.confirm('Are you sure you want to delete this resume?')) return;
+
+    try {
+      const response = await fetch(`${API_URL}/api/resumes/${resumeId}`, {
+        method: 'DELETE'
+      });
+
+      if (response.ok) {
+        setSavedResumes(prev => prev.filter(r => r.id !== resumeId));
+        if (selectedResume?.id === resumeId) {
+          setSelectedResume(null);
+          setResumeText('');
+        }
+      } else {
+        alert('Failed to delete resume');
+      }
+    } catch (error) {
+      console.error('Error deleting resume:', error);
+      alert('Error deleting resume');
+    }
   };
 
   const handleFetchJobDescription = async () => {
@@ -614,7 +639,10 @@ const AIApplyFlow = () => {
               {/* Saved Resumes Section - ResumeScanner Style */}
               {isAuthenticated && savedResumes.length > 0 && (
                 <div className="saved-resumes-section">
-                  <h3><FileText className="w-5 h-5" /> Your Saved Resumes</h3>
+                  <h3>
+                    <FileText className="w-5 h-5" />
+                    Your Saved Resumes <span className="text-slate-400 font-normal ml-2">({savedResumes.length}/3)</span>
+                  </h3>
                   <div className="saved-resumes-grid">
                     {savedResumes.map(resume => (
                       <div
@@ -626,13 +654,22 @@ const AIApplyFlow = () => {
                           <FileText className="w-8 h-8 text-indigo-500" />
                         </div>
                         <div className="resume-info">
-                          <span className="resume-name">{resume.resumeName || resume.fileName || 'Resume'}</span>
+                          <span className="resume-name text-truncate">{resume.resumeName || resume.fileName || 'Resume'}</span>
                           <span className="resume-date">
                             <Clock className="w-3 h-3" />
                             {resume.updatedAt ? new Date(resume.updatedAt).toLocaleDateString() : 'Recent'}
                           </span>
                         </div>
-                        {selectedResume?.id === resume.id && <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />}
+                        <div className="resume-actions-overlay">
+                          <button
+                            className="delete-resume-btn"
+                            onClick={(e) => handleDeleteResume(resume.id, e)}
+                            title="Delete Resume"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                        {selectedResume?.id === resume.id && <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 relative z-10" />}
                       </div>
                     ))}
                   </div>

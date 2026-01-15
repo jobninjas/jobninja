@@ -84,38 +84,44 @@ const LandingPage = () => {
       icon: FileText,
       title: 'AI Resume Builder',
       description: 'AI generates tailored resumes for each job application, optimized for ATS systems.',
-      cta: 'Build Resume'
+      cta: 'Build Resume',
+      path: '/chatgpt-resume'
     },
     {
       icon: MessageSquare,
       title: 'AI Cover Letter',
       description: 'Generate personalized cover letters that highlight your relevant experience.',
-      cta: 'Create Letter'
+      cta: 'Create Letter',
+      path: '/chatgpt-cover-letter'
     },
     {
       icon: Bot,
       title: 'AI Ninja Apply',
       description: 'One-click application with AI-tailored documents for every job you want.',
-      cta: 'Start Applying'
+      cta: 'Start Applying',
+      path: '/jobs'
     },
     {
       icon: Mic,
       title: 'Interview Prep',
       description: 'Practice with AI-generated interviews and get real-time feedback.',
       cta: 'Coming Soon',
+      path: '/interview-prep',
       comingSoon: true
     },
     {
       icon: Target,
       title: 'ATS Scanner',
       description: 'Check your resume compatibility and get optimization suggestions.',
-      cta: 'Scan Resume'
+      cta: 'Scan Resume',
+      path: '/scanner'
     },
     {
       icon: Search,
       title: 'Job Board',
       description: 'Browse visa-friendly, high-paying roles curated for international talent.',
-      cta: 'Find Jobs'
+      cta: 'Find Jobs',
+      path: '/jobs'
     }
   ];
 
@@ -450,7 +456,11 @@ const LandingPage = () => {
             {features.map((feature, index) => {
               const Icon = feature.icon;
               return (
-                <Card key={index} className={`feature-card-modern ${feature.comingSoon ? 'coming-soon' : ''}`}>
+                <Card
+                  key={index}
+                  className={`feature-card-modern ${feature.comingSoon ? 'coming-soon' : ''}`}
+                  onClick={() => !feature.comingSoon && navigate(feature.path)}
+                >
                   <div className="feature-icon-modern">
                     <Icon className="w-6 h-6" />
                   </div>
@@ -466,56 +476,6 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* AI Ninja vs Human Ninja */}
-      <section className="comparison-section-modern">
-        <div className="container">
-          <h2 className="section-title-modern">Choose Your Path</h2>
-          <div className="comparison-cards-modern">
-            <Card className="comparison-card-modern ai-card">
-              <div className="comparison-icon-wrapper">
-                <Bot className="w-12 h-12" />
-              </div>
-              <h3>AI Ninja</h3>
-              <p className="comparison-tagline">Self-serve. You control.</p>
-              <ul className="comparison-features">
-                <li><Check className="w-4 h-4" /> You browse and pick jobs</li>
-                <li><Check className="w-4 h-4" /> AI tailors your documents</li>
-                <li><Check className="w-4 h-4" /> You review and submit</li>
-                <li><Check className="w-4 h-4" /> Track in dashboard</li>
-              </ul>
-              <div className="comparison-price">
-                <span className="price-big">Free</span>
-                <span className="price-sub">to $29.99/mo</span>
-              </div>
-              <Button className="btn-primary-modern w-full" onClick={() => navigate('/ai-ninja')}>
-                Try AI Ninja
-              </Button>
-            </Card>
-
-            <Card className="comparison-card-modern human-card featured">
-              <Badge className="popular-badge">Most Popular</Badge>
-              <div className="comparison-icon-wrapper">
-                <UserCheck className="w-12 h-12" />
-              </div>
-              <h3>Human Ninja</h3>
-              <p className="comparison-tagline">Done-for-you. We handle it.</p>
-              <ul className="comparison-features">
-                <li><Check className="w-4 h-4" /> We find jobs for you</li>
-                <li><Check className="w-4 h-4" /> AI + human tailoring</li>
-                <li><Check className="w-4 h-4" /> We submit for you</li>
-                <li><Check className="w-4 h-4" /> Full tracking & support</li>
-              </ul>
-              <div className="comparison-price">
-                <span className="price-big">$50</span>
-                <span className="price-sub">for 25 applications</span>
-              </div>
-              <Button className="btn-primary-modern w-full" onClick={() => navigate('/human-ninja')}>
-                Get Human Ninja
-              </Button>
-            </Card>
-          </div>
-        </div>
-      </section>
 
       {/* Testimonials */}
       <section className="testimonials-section-modern">

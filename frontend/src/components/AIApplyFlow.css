@@ -234,6 +234,48 @@
   box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.1);
 }
 
+.resume-actions-overlay {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  opacity: 0;
+  transition: opacity 0.2s;
+  z-index: 20;
+}
+
+.saved-resume-item:hover .resume-actions-overlay {
+  opacity: 1;
+}
+
+.delete-resume-btn {
+  background: white;
+  color: #ef4444;
+  border: 1px solid #fee2e2;
+  border-radius: 8px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.delete-resume-btn:hover {
+  background: #ef4444;
+  color: white;
+  border-color: #ef4444;
+  transform: scale(1.1);
+}
+
+.text-truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
 .divider-or {
   display: flex;
   align-items: center;
