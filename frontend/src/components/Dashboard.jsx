@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Card, CardHeader, CardContent, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
@@ -12,6 +12,7 @@ import { API_URL } from '../config/api';
 import { BRAND, APPLICATION_STATUS_LABELS } from '../config/branding';
 import SideMenu from './SideMenu';
 import './SideMenu.css';
+import VerificationBanner from './VerificationBanner';
 import {
   User, Upload, Briefcase, Linkedin, Mail, Shield, Trash2, Save, CheckCircle,
   AlertCircle, Eye, EyeOff, FileText, ExternalLink, Download, Bot, UserCheck,
@@ -22,6 +23,7 @@ import {
 const Dashboard = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [activeTab, setActiveTab] = useState('tracker');
   const [applications, setApplications] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -257,6 +259,13 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <VerificationBanner />
+      {location.state?.message && (
+        <div className="bg-primary/10 text-primary px-4 py-3 flex items-center justify-center gap-2 border-b border-primary/20 animate-in fade-in slide-in-from-top duration-500">
+          <AlertCircle className="w-5 h-5" />
+          <span className="font-medium">{location.state.message}</span>
+        </div>
+      )}
       {/* Side Menu */}
       <SideMenu isOpen={sideMenuOpen} onClose={() => setSideMenuOpen(false)} />
 
