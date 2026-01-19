@@ -221,8 +221,8 @@ const LandingPage = () => {
             </div>
 
             <h1 className="hero-title-modern">
-              Applying Jobs in<br />
-              <span className="hero-title-gradient">Ninja Speed!</span>
+              Land Your Dream Job<br />
+              <span className="hero-title-gradient">10x Faster!</span>
             </h1>
 
             <p className="hero-subtitle-modern">
