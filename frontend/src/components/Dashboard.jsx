@@ -15,7 +15,8 @@ import './SideMenu.css';
 import {
   User, Upload, Briefcase, Linkedin, Mail, Shield, Trash2, Save, CheckCircle,
   AlertCircle, Eye, EyeOff, FileText, ExternalLink, Download, Bot, UserCheck,
-  ClipboardList, Menu, Share2, Gift
+  ClipboardList, Menu, Share2, Gift, Settings, LogOut, TrendingUp, Target,
+  Users, Clock, CreditCard, Loader2
 } from 'lucide-react';
 
 const Dashboard = () => {

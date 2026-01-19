@@ -147,6 +147,7 @@ function App() {
               }
             />
             <Route path="/linkedin-examples" element={<LinkedInExamples />} />
+            <Route path="/resume-examples" element={<LinkedInExamples />} />
 
             {/* Phase 3 Tools Routes */}
             <Route path="/resume-templates" element={<ResumeTemplates />} />
