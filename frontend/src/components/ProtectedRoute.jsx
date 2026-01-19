@@ -2,7 +2,7 @@ import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
-const ProtectedRoute = ({ children, allowedRoles }) => {
+const ProtectedRoute = ({ children, allowedRoles, requireVerification = false }) => {
   const { isAuthenticated, user, loading } = useAuth();
 
   if (loading) {
@@ -23,6 +23,11 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
   // Check role-based access if allowedRoles is specified
   if (allowedRoles && !allowedRoles.includes(user?.role)) {
     return <Navigate to="/dashboard" replace />;
+  }
+
+  // Check email verification if required
+  if (requireVerification && !user?.is_verified) {
+    return <Navigate to="/dashboard" state={{ message: 'Please verify your email to access this feature.' }} replace />;
   }
 
   return children;

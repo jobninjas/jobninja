@@ -87,12 +87,17 @@ const OneClickOptimize = () => {
 
             if (!response.ok) throw new Error('Download failed');
 
+            const sanitizeFileName = (base, company, extension) => {
+                const safeCompany = (company || 'Job').trim().replace(/[^a-z0-9]/gi, '_').replace(/_+/g, '_');
+                return `${base}_${safeCompany}.${extension}`;
+            };
+
             const blob = await response.blob();
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.style.display = 'none';
             a.href = url;
-            a.download = 'Optimized_Resume.docx';
+            a.download = sanitizeFileName('Optimized_Resume', '', 'docx');
             document.body.appendChild(a);
             a.click();
 

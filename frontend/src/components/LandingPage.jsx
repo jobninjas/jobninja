@@ -35,6 +35,7 @@ import SideMenu from './SideMenu';
 import Header from './Header';
 import { BRAND } from '../config/branding';
 import './SideMenu.css';
+import './LandingPage.css';
 
 const LandingPage = () => {
   const navigate = useNavigate();
@@ -213,36 +214,62 @@ const LandingPage = () => {
         <div className="hero-blob-bg-2"></div>
 
         <div className="hero-container-modern">
-          <div className="hero-badge-modern">
-            <Zap className="w-4 h-4" />
-            <span>AI-powered job applications for visa seekers & busy professionals</span>
-          </div>
-
-          <h1 className="hero-title-modern">
-            Land your next role<br />
-            <span className="hero-title-gradient rotating-word">{rotatingWords[activeWord]}</span>
-          </h1>
-
-          <p className="hero-subtitle-modern">
-            Upload your resume. Pick a job. Get a tailored application in minutes —
-            or let our team handle everything while you prep for interviews.
-          </p>
-
-          <div className="hero-cta-group">
-            <Button className="btn-cta-primary" onClick={() => navigate('/ai-ninja')}>
-              <Bot className="w-5 h-5" /> Try AI Ninja Free
-            </Button>
-            <Button variant="outline" className="btn-cta-secondary" onClick={() => navigate('/human-ninja')}>
-              <UserCheck className="w-5 h-5" /> Let Humans Apply For Me
-            </Button>
-          </div>
-
-          <div className="hero-trust-badges">
-
-            <div className="trust-badge">
-              <Globe className="w-4 h-4" />
-              <span>Visa-friendly jobs</span>
+          <div className="hero-content-wrapper">
+            <div className="hero-badge-modern">
+              <Zap className="w-4 h-4" />
+              <span>AI-powered job applications for visa seekers & busy professionals</span>
             </div>
+
+            <h1 className="hero-title-modern">
+              Applying Jobs in<br />
+              <span className="hero-title-gradient">Ninja Speed!</span>
+            </h1>
+
+            <p className="hero-subtitle-modern">
+              Tailored Resume • Tailored CV • Tailored Cold Email<br />
+              Get your dream job with AI-powered applications — lightning fast, perfectly tailored.
+            </p>
+
+            <div className="hero-cta-group">
+              <Button className="btn-cta-primary" onClick={() => navigate('/ai-ninja')}>
+                <Bot className="w-5 h-5" /> Try AI Ninja Free
+              </Button>
+              <Button variant="outline" className="btn-cta-secondary" onClick={() => navigate('/human-ninja')}>
+                <UserCheck className="w-5 h-5" /> Let Humans Apply For Me
+              </Button>
+            </div>
+
+            <div className="hero-trust-badges">
+              <div className="trust-badge">
+                <Globe className="w-4 h-4" />
+                <span>Visa Sponsoring</span>
+              </div>
+              <div className="trust-badge">
+                <DollarSign className="w-4 h-4" />
+                <span>High Paying</span>
+              </div>
+              <div className="trust-badge">
+                <Sparkles className="w-4 h-4" />
+                <span>Startups</span>
+              </div>
+              <div className="trust-badge">
+                <FileText className="w-4 h-4" />
+                <span>Contract</span>
+              </div>
+              <div className="trust-badge">
+                <Target className="w-4 h-4" />
+                <span>Remote Jobs</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Ninja Illustration */}
+          <div className="hero-ninja-illustration">
+            <img
+              src="/ninja-hero.jpg"
+              alt="Applying Jobs in Ninja Speed"
+              className="ninja-hero-image"
+            />
           </div>
         </div>
 
@@ -303,16 +330,42 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* Company Logos */}
+      {/* Company Logos - Scrolling Marquee */}
       <section className="companies-section">
         <p className="companies-label">Get hired by top companies worldwide</p>
-        <div className="companies-logos">
-          <span className="company-logo">Google</span>
-          <span className="company-logo">Microsoft</span>
-          <span className="company-logo">Amazon</span>
-          <span className="company-logo">Meta</span>
-          <span className="company-logo">Apple</span>
-          <span className="company-logo">Netflix</span>
+        <div className="companies-marquee-container">
+          <div className="companies-marquee-content">
+            {/* First set */}
+            <div className="companies-logos-scroll">
+              <span className="company-logo">Google</span>
+              <span className="company-logo">Microsoft</span>
+              <span className="company-logo">Amazon</span>
+              <span className="company-logo">Meta</span>
+              <span className="company-logo">Apple</span>
+              <span className="company-logo">Netflix</span>
+              <span className="company-logo">Tesla</span>
+              <span className="company-logo">Uber</span>
+              <span className="company-logo">Airbnb</span>
+              <span className="company-logo">Spotify</span>
+              <span className="company-logo">Adobe</span>
+              <span className="company-logo">Salesforce</span>
+            </div>
+            {/* Duplicate set for seamless loop */}
+            <div className="companies-logos-scroll">
+              <span className="company-logo">Google</span>
+              <span className="company-logo">Microsoft</span>
+              <span className="company-logo">Amazon</span>
+              <span className="company-logo">Meta</span>
+              <span className="company-logo">Apple</span>
+              <span className="company-logo">Netflix</span>
+              <span className="company-logo">Tesla</span>
+              <span className="company-logo">Uber</span>
+              <span className="company-logo">Airbnb</span>
+              <span className="company-logo">Spotify</span>
+              <span className="company-logo">Adobe</span>
+              <span className="company-logo">Salesforce</span>
+            </div>
+          </div>
         </div>
       </section>
 

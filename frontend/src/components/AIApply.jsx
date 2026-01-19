@@ -7,19 +7,19 @@ import { Badge } from './ui/badge';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
-import { 
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from './ui/select';
-import { 
-  Bot, 
-  UserCheck, 
-  MapPin, 
-  DollarSign, 
-  Globe, 
+import {
+  Bot,
+  UserCheck,
+  MapPin,
+  DollarSign,
+  Globe,
   ArrowLeft,
   Sparkles,
   FileText,
@@ -267,13 +267,13 @@ const AIApply = () => {
           },
           {
             question: "What is your visa status?",
-            answer: formData.visaStatus 
+            answer: formData.visaStatus
               ? `I am currently on ${formData.visaStatus} status and am authorized to work in the United States. ${formData.visaStatus.includes('OPT') ? 'I have work authorization through my STEM OPT extension and am looking for an employer who can sponsor H-1B in the future.' : 'I am eligible to work without any additional sponsorship requirements at this time.'}`
               : "I am authorized to work in the United States."
           },
           {
             question: "What are your salary expectations?",
-            answer: formData.targetSalary 
+            answer: formData.targetSalary
               ? `Based on my research and experience level, I'm targeting a salary in the range of ${formData.targetSalary}. However, I'm open to discussing compensation as part of a complete package that includes benefits and growth opportunities.`
               : `I'm open to discussing compensation based on the full scope of the role and the complete benefits package. I'm primarily focused on finding the right fit and growth opportunity.`
           }
@@ -283,10 +283,9 @@ const AIApply = () => {
     }
   };
 
-  const handleCopy = (text, key) => {
-    navigator.clipboard.writeText(text);
-    setCopied({ ...copied, [key]: true });
-    setTimeout(() => setCopied({ ...copied, [key]: false }), 2000);
+  const sanitizeFileName = (base, company, extension) => {
+    const safeCompany = (company || 'Company').trim().replace(/[^a-z0-9]/gi, '_').replace(/_+/g, '_');
+    return `${base}_${safeCompany}.${extension}`;
   };
 
   const handleDownload = (content, filename) => {
@@ -395,7 +394,7 @@ const AIApply = () => {
                 <div className="form-row">
                   <div className="form-group">
                     <Label htmlFor="experience">Years of Experience</Label>
-                    <Select 
+                    <Select
                       value={formData.yearsOfExperience}
                       onValueChange={(value) => setFormData({ ...formData, yearsOfExperience: value })}
                     >
@@ -414,7 +413,7 @@ const AIApply = () => {
 
                   <div className="form-group">
                     <Label htmlFor="visaStatus">Visa Status</Label>
-                    <Select 
+                    <Select
                       value={formData.visaStatus}
                       onValueChange={(value) => setFormData({ ...formData, visaStatus: value })}
                     >
@@ -453,7 +452,7 @@ const AIApply = () => {
 
                   <div className="form-group">
                     <Label htmlFor="workType">Preferred Work Type</Label>
-                    <Select 
+                    <Select
                       value={formData.preferredWorkType}
                       onValueChange={(value) => setFormData({ ...formData, preferredWorkType: value })}
                     >
@@ -619,7 +618,7 @@ const AIApply = () => {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => handleDownload(results.tailoredResume, `Resume_${job.company}_${job.title.replace(/\s+/g, '_')}.txt`)}
+                      onClick={() => handleDownload(results.tailoredResume, sanitizeFileName('Resume', job.company, 'txt'))}
                     >
                       <Download className="w-4 h-4" /> Download
                     </Button>
@@ -647,7 +646,7 @@ const AIApply = () => {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => handleDownload(results.tailoredCoverLetter, `CoverLetter_${job.company}_${job.title.replace(/\s+/g, '_')}.txt`)}
+                      onClick={() => handleDownload(results.tailoredCoverLetter, sanitizeFileName('Cover_Letter', job.company, 'txt'))}
                     >
                       <Download className="w-4 h-4" /> Download
                     </Button>

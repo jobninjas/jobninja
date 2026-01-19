@@ -2,19 +2,20 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     ChevronDown,
-    Zap,
-    List,
-    Target,
-    Linkedin,
-    TrendingUp,
-    MessageSquare,
+    Sparkles,
+    FileSearch,
+    Wand2,
+    ListChecks,
+    FileType,
     Mail,
-    FileText,
-    BookOpen,
-    Layout,
     Download,
+    TrendingUp,
+    GraduationCap,
+    Linkedin,
     Briefcase,
-    Users
+    Users,
+    Scan,
+    Zap
 } from 'lucide-react';
 import './MegaMenu.css';
 
@@ -40,24 +41,24 @@ const MegaMenu = () => {
                 {
                     title: 'Resume Tools',
                     items: [
-                        { icon: Zap, label: 'One-Click Optimize', desc: 'Auto-optimize your resume', path: '/one-click-optimize' },
-                        { icon: List, label: 'Bullet Points Generator', desc: 'Generate powerful bullet points', path: '/bullet-points' },
-                        { icon: Target, label: 'Summary Generator', desc: 'Create professional summaries', path: '/summary-generator' },
-                        { icon: FileText, label: 'Resume Scanner', desc: 'Analyze your resume', path: '/scanner' }
+                        { icon: Scan, label: 'Resume Scanner', desc: 'ATS score & insights', path: '/scanner', color: '#3b82f6' },
+                        { icon: Sparkles, label: 'One-Click Optimize', desc: 'Instant optimization', path: '/one-click-optimize', color: '#8b5cf6' },
+                        { icon: ListChecks, label: 'Bullet Points Generator', desc: 'Impact-driven bullets', path: '/bullet-points', color: '#ec4899' },
+                        { icon: FileType, label: 'Summary Generator', desc: 'Professional summaries', path: '/summary-generator', color: '#f59e0b' }
                     ]
                 },
                 {
                     title: 'Cover Letter',
                     items: [
-                        { icon: Mail, label: 'ChatGPT Cover Letter', desc: 'AI-powered cover letters', path: '/chatgpt-cover-letter' },
-                        { icon: Download, label: 'Cover Letter Templates', desc: 'Free templates to start', path: '/cover-letter-templates' }
+                        { icon: Wand2, label: 'ChatGPT Cover Letter', desc: 'AI-powered letters', path: '/chatgpt-cover-letter', color: '#10b981' },
+                        { icon: Download, label: 'Cover Letter Templates', desc: 'Ready-to-use templates', path: '/cover-letter-templates', color: '#06b6d4' }
                     ]
                 },
                 {
                     title: 'Career Tools',
                     items: [
-                        { icon: TrendingUp, label: 'Career Change Tool', desc: 'Discover your next step', path: '/career-change' },
-                        { icon: BookOpen, label: 'Interview Prep', desc: 'Practice with AI', path: '/interview-prep' }
+                        { icon: TrendingUp, label: 'Career Change Tool', desc: 'Find your path', path: '/career-change', color: '#6366f1' },
+                        { icon: GraduationCap, label: 'Interview Prep', desc: 'AI mock interviews', path: '/interview-prep', color: '#14b8a6' }
                     ]
                 }
             ]
@@ -68,16 +69,16 @@ const MegaMenu = () => {
                 {
                     title: 'Build & Optimize',
                     items: [
-                        { icon: Zap, label: 'One-Click Optimize', desc: 'Instant ATS optimization', path: '/one-click-optimize' },
-                        { icon: FileText, label: 'Resume Scanner', desc: 'Score your resume', path: '/scanner' },
-                        { icon: MessageSquare, label: 'ChatGPT Resume', desc: 'Write with AI assistance', path: '/chatgpt-resume' }
+                        { icon: Sparkles, label: 'One-Click Optimize', desc: 'Instant ATS boost', path: '/one-click-optimize', color: '#8b5cf6' },
+                        { icon: Scan, label: 'Resume Scanner', desc: 'Score your resume', path: '/scanner', color: '#3b82f6' },
+                        { icon: Wand2, label: 'ChatGPT Resume', desc: 'AI resume writer', path: '/chatgpt-resume', color: '#10b981' }
                     ]
                 },
                 {
                     title: 'Templates & Examples',
                     items: [
-                        { icon: Layout, label: 'Resume Templates', desc: 'ATS-friendly templates', path: '/resume-templates' },
-                        { icon: BookOpen, label: 'Resume Examples', desc: 'Browse by industry', path: '/resume-examples' }
+                        { icon: FileSearch, label: 'Resume Templates', desc: 'ATS-friendly designs', path: '/resume-templates', color: '#f59e0b' },
+                        { icon: FileType, label: 'Resume Examples', desc: 'Industry-specific', path: '/resume-examples', color: '#ec4899' }
                     ]
                 }
             ]
@@ -88,13 +89,13 @@ const MegaMenu = () => {
                 {
                     title: 'Optimization',
                     items: [
-                        { icon: Linkedin, label: 'LinkedIn Optimizer', desc: 'Optimize your profile', path: '/linkedin-optimizer' }
+                        { icon: Linkedin, label: 'LinkedIn Optimizer', desc: 'Profile optimization', path: '/linkedin-optimizer', color: '#0077b5' }
                     ]
                 },
                 {
                     title: 'Examples & Guides',
                     items: [
-                        { icon: BookOpen, label: 'LinkedIn Examples', desc: 'Headlines, summaries, about', path: '/linkedin-examples' }
+                        { icon: FileSearch, label: 'LinkedIn Examples', desc: 'Headlines & summaries', path: '/linkedin-examples', color: '#06b6d4' }
                     ]
                 }
             ]
@@ -131,7 +132,7 @@ const MegaMenu = () => {
                                                     className="dropdown-item"
                                                     onClick={() => handleItemClick(item.path)}
                                                 >
-                                                    <div className="item-icon">
+                                                    <div className="item-icon" style={{ backgroundColor: `${item.color}15`, color: item.color }}>
                                                         <item.icon className="w-5 h-5" />
                                                     </div>
                                                     <div className="item-content">

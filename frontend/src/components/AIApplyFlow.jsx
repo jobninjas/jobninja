@@ -494,6 +494,11 @@ const AIApplyFlow = () => {
     }
   };
 
+  const sanitizeFileName = (base, company, extension) => {
+    const safeCompany = (company || 'Company').trim().replace(/[^a-z0-9]/gi, '_').replace(/_+/g, '_');
+    return `${base}_${safeCompany}.${extension}`;
+  };
+
   const handleDownload = async (type) => {
     setIsDownloading(type);
     try {
@@ -510,7 +515,7 @@ const AIApplyFlow = () => {
           job_description: customJobDescription,
           analysis: {}
         };
-        fileName = `Optimized_Resume_${companyName.replace(/\s+/g, '_')}.docx`;
+        fileName = sanitizeFileName('Optimized_Resume', companyName, 'docx');
       } else if (type === 'cv') {
         endpoint = `${API_URL}/api/generate/cv`;
         payload = {
@@ -520,7 +525,7 @@ const AIApplyFlow = () => {
           job_description: customJobDescription,
           analysis: {}
         };
-        fileName = `Detailed_CV_${companyName.replace(/\s+/g, '_')}.docx`;
+        fileName = sanitizeFileName('Detailed_CV', companyName, 'docx');
       } else if (type === 'cover') {
         endpoint = `${API_URL}/api/generate/cover-letter`;
         payload = {
@@ -530,7 +535,7 @@ const AIApplyFlow = () => {
           job_title: customJobTitle,
           company: companyName
         };
-        fileName = `Cover_Letter_${companyName.replace(/\s+/g, '_')}.docx`;
+        fileName = sanitizeFileName('Cover_Letter', companyName, 'docx');
       }
 
       console.log(`Downloading ${type} from ${endpoint}`);

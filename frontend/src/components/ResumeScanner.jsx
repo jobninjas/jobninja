@@ -352,6 +352,11 @@ const ResumeScanner = () => {
     }
   };
 
+  const sanitizeFileName = (base, company, extension) => {
+    const safeCompany = (company || 'Job').trim().replace(/[^a-z0-9]/gi, '_').replace(/_+/g, '_');
+    return `${base}_${safeCompany}.${extension}`;
+  };
+
   const copyAllSkills = () => {
     if (!analysisResult) return;
 
@@ -401,8 +406,7 @@ const ResumeScanner = () => {
       a.href = url;
 
       // Sanitized filename
-      const safeCompany = (company || 'Job').trim().replace(/[^a-z0-9]/gi, '_');
-      a.download = `Optimized_Resume_${safeCompany}.docx`;
+      a.download = sanitizeFileName('Optimized_Resume', company, 'docx');
 
       document.body.appendChild(a);
       a.click();
@@ -450,8 +454,7 @@ const ResumeScanner = () => {
       a.href = url;
 
       // Sanitized filename
-      const safeCompany = (company || 'Job').trim().replace(/[^a-z0-9]/gi, '_');
-      a.download = `Cover_Letter_${safeCompany}.docx`;
+      a.download = sanitizeFileName('Cover_Letter', company, 'docx');
 
       document.body.appendChild(a);
       a.click();

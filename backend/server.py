@@ -98,17 +98,26 @@ def hash_password(password: str) -> str:
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify a plain password against a bcrypt hash, with SHA256 fallback."""
+    if not hashed_password:
+        return False
     try:
-        # Try bcrypt first
-        if bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8')):
-            return True
-    except Exception:
-        pass
+        # Check if it's a bcrypt hash
+        if hashed_password.startswith('$2b$'):
+            return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
         
-    # Fallback to legacy SHA256
-    import hashlib
-    legacy_hash = hashlib.sha256(plain_password.encode()).hexdigest()
-    return legacy_hash == hashed_password
+        # Fallback for old SHA256 hashes if any
+        import hashlib
+        return hashlib.sha256(plain_password.encode('utf-8')).hexdigest() == hashed_password
+    except Exception:
+        return False
+
+def ensure_verified(user: dict):
+    """Raise 403 if user is not verified."""
+    if not user.get('is_verified', False):
+        raise HTTPException(
+            status_code=403, 
+            detail="Email verification required to use this feature. Please check your inbox or resend the link from your dashboard."
+        )
 
 def create_access_token(data: dict):
     """Create a signed JWT access token."""
@@ -131,6 +140,18 @@ def get_current_user_email(token: str = Header(...)):
         return email
     except jwt.PyJWTError:
         raise HTTPException(status_code=401, detail="Invalid or expired token")
+
+async def get_current_user(token: str = Header(...)):
+    """Dependency to get full user object from database."""
+    email = get_current_user_email(token)
+    if not email:
+        raise HTTPException(status_code=401, detail="Authentication required")
+        
+    user = await db.users.find_one({"email": email})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    return user
 
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
@@ -333,7 +354,7 @@ async def send_email_resend(to_email: str, subject: str, html_content: str):
     Send email using Resend API (HTTP-based, works on Railway).
     """
     resend_api_key = os.environ.get('RESEND_API_KEY')
-    from_email = os.environ.get('FROM_EMAIL', 'jobNinjas.org <onboarding@resend.dev>')
+    from_email = os.environ.get('FROM_EMAIL', 'jobNinjas.org <veereddy@jobninjas.org>')
     
     if not resend_api_key:
         logger.warning("RESEND_API_KEY not configured, skipping email")
@@ -601,7 +622,7 @@ async def send_admin_booking_notification(booking):
     """
     Send notification to admin when someone books a call.
     """
-    admin_email = os.environ.get('ADMIN_EMAIL', 'hello@jobninjas.org')
+    admin_email = os.environ.get('ADMIN_EMAIL', 'veereddy@jobninjas.org')
     
     html_content = f"""
 <!DOCTYPE html>
@@ -764,6 +785,46 @@ async def verify_email(token: str):
     logger.info(f"User email verified: {user['email']}")
     
     return {"success": True, "message": "Email verified successfully"}
+
+@api_router.post("/auth/resend-verification")
+@limiter.limit("3/minute")
+async def resend_verification(request: Request):
+    """
+    Resend verification email to the logged-in user.
+    """
+    try:
+        # Get token from header
+        token = request.headers.get('token')
+        if not token:
+            raise HTTPException(status_code=401, detail="Authentication required")
+            
+        email = get_current_user_email(token)
+        user = await db.users.find_one({"email": email})
+        
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+            
+        if user.get('is_verified'):
+            return {"success": True, "message": "Email is already verified"}
+            
+        # Generate new token or use existing one
+        verification_token = user.get('verification_token')
+        if not verification_token:
+            verification_token = str(uuid.uuid4())
+            await db.users.update_one(
+                {"id": user['id']},
+                {"$set": {"verification_token": verification_token}}
+            )
+            
+        # Send email in background
+        asyncio.create_task(send_welcome_email(user['name'], user['email'], verification_token, user.get('referral_code')))
+        
+        return {"success": True, "message": "Verification email resent"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error resending verification: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to resend verification email")
 
 @api_router.get("/auth/users")
 async def get_all_users():
@@ -1838,6 +1899,9 @@ async def ai_ninja_apply(request: Request):
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
             
+        # Enforce email verification
+        ensure_verified(user)
+            
         # Check usage limits
         usage = await get_user_usage_limits(user['email'])
         if not usage['canGenerate']:
@@ -2396,12 +2460,15 @@ class AIGenerateRequest(BaseModel):
     max_tokens: int = 1000
 
 @app.post("/api/ai/generate")
-async def ai_generate(request: AIGenerateRequest):
+async def generate_ai_content(request: AIGenerateRequest, user: dict = Depends(get_current_user)):
     """
     General-purpose AI text generation endpoint for tools like
     Bullet Points Generator, Summary Generator, LinkedIn Optimizer.
     """
     try:
+        # Enforce email verification
+        ensure_verified(user)
+        
         from resume_analyzer import call_groq_api
         
         response = await call_groq_api(
@@ -2519,6 +2586,11 @@ async def generate_resume_docx(request: GenerateResumeRequest):
     Generate an optimized resume as a Word document
     """
     try:
+        # Get user to verify status
+        user = await db.users.find_one({"id": request.userId})
+        if user:
+            ensure_verified(user)
+        
         # Check if we should use raw text or structured data
         if hasattr(request, 'resume_text') and not request.resume_text.startswith('{'):
             # It's raw text from Expert AI
@@ -2537,12 +2609,15 @@ async def generate_resume_docx(request: GenerateResumeRequest):
             # Create Word document
             docx_file = create_resume_docx(resume_data)
         
+        # Sanitize company name for header
+        safe_company = request.company.replace(' ', '_').replace('"', '')
+        
         # Return as downloadable file
         return StreamingResponse(
             docx_file,
             media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
             headers={
-                "Content-Disposition": f"attachment; filename=Optimized_Resume_{request.company.replace(' ', '_')}.docx"
+                "Content-Disposition": f'attachment; filename="Optimized_Resume_{safe_company}.docx"'
             }
         )
         
@@ -2559,18 +2634,26 @@ async def generate_cv_docx(request: GenerateResumeRequest):
     Generate a detailed CV as a Word document
     """
     try:
+        # Get user to verify status
+        user = await db.users.find_one({"id": request.userId})
+        if user:
+            ensure_verified(user)
+            
         if not request.resume_text:
              raise HTTPException(status_code=400, detail="CV text is missing")
              
         # Create Word document from the detailed CV text
         docx_file = create_text_docx(request.resume_text, "Detailed_CV")
         
+        # Sanitize company name for header
+        safe_company = request.company.replace(' ', '_').replace('"', '')
+        
         # Return as downloadable file
         return StreamingResponse(
             docx_file,
             media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
             headers={
-                "Content-Disposition": f"attachment; filename=Detailed_CV_{request.company.replace(' ', '_')}.docx"
+                "Content-Disposition": f'attachment; filename="Detailed_CV_{safe_company}.docx"'
             }
         )
         
@@ -2595,6 +2678,11 @@ async def generate_cover_letter_docx(request: GenerateCoverLetterRequest):
     Generate a cover letter as a Word document
     """
     try:
+        # Get user to verify status
+        user = await db.users.find_one({"id": request.userId})
+        if user:
+            ensure_verified(user)
+            
         # Check usage limits (optional if we don't want to limit cover letters, but good for consistency)
         # For now, let's keep cover letters unlimited or tied to the same check?
         # User said "Resume generation limit", but usually they go together.
@@ -2614,12 +2702,15 @@ async def generate_cover_letter_docx(request: GenerateCoverLetterRequest):
         # Create Word document
         docx_file = create_cover_letter_docx(cover_letter_text, request.job_title, request.company)
         
+        # Sanitize company name for header
+        safe_company = request.company.replace(' ', '_').replace('"', '')
+        
         # Return as downloadable file
         return StreamingResponse(
             docx_file,
             media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
             headers={
-                "Content-Disposition": f"attachment; filename=Cover_Letter_{request.company.replace(' ', '_')}.docx"
+                "Content-Disposition": f'attachment; filename="Cover_Letter_{safe_company}.docx"'
             }
         )
         

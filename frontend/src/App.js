@@ -72,7 +72,7 @@ function App() {
             <Route
               path="/ai-apply"
               element={
-                <ProtectedRoute allowedRoles={['customer']}>
+                <ProtectedRoute allowedRoles={['customer']} requireVerification={true}>
                   <AIApplyFlow />
                 </ProtectedRoute>
               }
@@ -88,15 +88,64 @@ function App() {
             <Route path="/interview-prep" element={<InterviewPrep />} />
 
             {/* Phase 1 Tools Routes */}
-            <Route path="/one-click-optimize" element={<OneClickOptimize />} />
-            <Route path="/bullet-points" element={<BulletPointsGenerator />} />
-            <Route path="/summary-generator" element={<SummaryGenerator />} />
-            <Route path="/linkedin-optimizer" element={<LinkedInOptimizer />} />
-            <Route path="/career-change" element={<CareerChangeTool />} />
+            <Route
+              path="/one-click-optimize"
+              element={
+                <ProtectedRoute allowedRoles={['customer']} requireVerification={true}>
+                  <OneClickOptimize />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/bullet-points"
+              element={
+                <ProtectedRoute allowedRoles={['customer']} requireVerification={true}>
+                  <BulletPointsGenerator />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/summary-generator"
+              element={
+                <ProtectedRoute allowedRoles={['customer']} requireVerification={true}>
+                  <SummaryGenerator />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/linkedin-optimizer"
+              element={
+                <ProtectedRoute allowedRoles={['customer']} requireVerification={true}>
+                  <LinkedInOptimizer />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/career-change"
+              element={
+                <ProtectedRoute allowedRoles={['customer']} requireVerification={true}>
+                  <CareerChangeTool />
+                </ProtectedRoute>
+              }
+            />
 
             {/* Phase 2 Tools Routes */}
-            <Route path="/chatgpt-resume" element={<ChatGPTResume />} />
-            <Route path="/chatgpt-cover-letter" element={<ChatGPTCoverLetter />} />
+            <Route
+              path="/chatgpt-resume"
+              element={
+                <ProtectedRoute allowedRoles={['customer']} requireVerification={true}>
+                  <ChatGPTResume />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/chatgpt-cover-letter"
+              element={
+                <ProtectedRoute allowedRoles={['customer']} requireVerification={true}>
+                  <ChatGPTCoverLetter />
+                </ProtectedRoute>
+              }
+            />
             <Route path="/linkedin-examples" element={<LinkedInExamples />} />
 
             {/* Phase 3 Tools Routes */}
@@ -108,7 +157,7 @@ function App() {
             <Route
               path="/scanner"
               element={
-                <ProtectedRoute allowedRoles={['customer']}>
+                <ProtectedRoute allowedRoles={['customer']} requireVerification={true}>
                   <ResumeScanner />
                 </ProtectedRoute>
               }
@@ -118,7 +167,7 @@ function App() {
             <Route
               path="/resumes"
               element={
-                <ProtectedRoute allowedRoles={['customer']}>
+                <ProtectedRoute allowedRoles={['customer']} requireVerification={true}>
                   <MyResumes />
                 </ProtectedRoute>
               }

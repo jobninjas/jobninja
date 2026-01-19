@@ -5,6 +5,7 @@ import { Card } from './ui/card';
 import { CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import Header from './Header';
 import SideMenu from './SideMenu';
+import { API_URL } from '../config/api';
 
 const VerifyEmail = () => {
     const [searchParams] = useSearchParams();
@@ -23,7 +24,7 @@ const VerifyEmail = () => {
             }
 
             try {
-                const response = await fetch(`${process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001'}/api/auth/verify-email?token=${token}`);
+                const response = await fetch(`${API_URL}/api/auth/verify-email?token=${token}`);
                 const data = await response.json();
 
                 if (response.ok) {
