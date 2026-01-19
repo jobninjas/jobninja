@@ -187,10 +187,10 @@ async def extract_compliance_facts(resume_text: str) -> Dict[str, Any]:
     
     prompt = f"""
 SYSTEM:
-You are a fact extractor. Output JSON ONLY. No prose.
+You are a precision fact extractor. Output JSON ONLY. No prose.
 
 USER:
-Extract ONLY what is explicitly in the candidate resume.
+Extract ONLY what is explicitly in the candidate resume below. Do NOT hallucinate or infer details.
 
 [CANDIDATE_BASE_RESUME]
 <<<
@@ -204,21 +204,18 @@ Return JSON with this exact schema:
   "email": "",
   "phone": "",
   "links": {{"linkedin":"", "github":"", "portfolio":""}},
-  "industries_explicit": [],
+  "summary_original": "",
   "employers": [{{"company":"","title":"","location":"","start":"","end":"","bullets":[] }}],
   "projects": [{{"name":"","bullets":[],"tools":[],"metrics":[] }}],
-  "skills": {{"languages":[], "llm_frameworks":[], "ml_frameworks":[], "vector_dbs":[], "cloud":[], "devops":[]}},
-  "metrics_explicit": [],
-  "evidence": {{
-     "industries_explicit": [],
-     "cloud": [],
-     "metrics_explicit": []
-  }}
+  "skills": {{"technical":[], "soft":[], "certifications":[]}},
+  "metrics_explicit": []
 }}
 
 Rules:
 - If a field is not explicitly present, use "" or [].
-- evidence fields must contain verbatim quotes from the resume text supporting the claims in industries_explicit, cloud, and metrics_explicit.
+- summary_original: Extract the PROFESSIONAL SUMMARY verbatim if it exists.
+- employers: List all work experience. Keep company, title, dates, and bullets exactly as written.
+- skills: Group all technical and soft skills and certifications found.
 """
     try:
         # Stage 1: Fact extraction - Using high-availability compound model
@@ -248,11 +245,18 @@ async def generate_expert_documents(resume_text: str, job_description: str) -> O
     logger.info("Stage 2: Drafting documents from facts")
     prompt = f"""
 SYSTEM:
-You are a strict resume writer. You can ONLY use facts from the JSON provided. No invention.
+You are an ATS Resume Tailor. You are expert at matching candidates to roles.
+Your tone is professional, achievement-oriented, and direct.
 
-USER:
-Create ATS RESUME + DETAILED CV + COVER LETTER for the target role.
-Use ONLY the JSON facts below. If a skill/tool/industry is missing from JSON, do not mention it.
+USER TASK:
+Create a TAILORED RESUME, DETAILED CV, and COVER LETTER using ONLY facts from the provided JSON.
+
+NON-NEGOTIABLE RULES:
+1. Use ONLY facts from [FACTS_JSON]. Do NOT invent employers, dates, titles, tools, or results.
+2. You MUST tailor to the [JOB_DESCRIPTION]: change wording, reorder skills, and rewrite bullets to mirror JD keywords/responsibilities supported by Base Resume evidence.
+3. Rewrite at least 70% of bullets across EXPERIENCE. Mirror JD keywords while keeping original meaning.
+4. Output must be ATS-friendly: plain text, hyphen bullets only ("- "). No tables, no icons.
+5. Bullet Formula: [Action Verb] + [What you built/managed] + [Tech/Tools used] + [Measurable Impact (if in JSON)].
 
 [JOB_DESCRIPTION]
 <<<
@@ -266,41 +270,23 @@ Use ONLY the JSON facts below. If a skill/tool/industry is missing from JSON, do
 
 Output Structure (Return ONLY valid JSON with these keys):
 {{
-  "evidence_table": "string",
+  "alignment_highlights": "4 bullets mapping JD needs -> candidate evidence from JSON",
   "ats_resume": "string",
   "detailed_cv": "string",
   "cover_letter": "string"
 }}
 
-Rules:
-1. "evidence_table" should be the verbatim evidence quotes justifying the inclusion of industries, cloud, and metrics.
-2. "ats_resume" must follow this EXACT layout:
-   NAME | CONTACT INFO
-   TITLE (AI ARCHITECT / GENAI SOLUTIONS ARCHITECT)
-   SUMMARY (3-4 lines)
-   CORE CAPABILITIES (MATCHED TO ROLE)
-   - [Category]: [Verbatim items from JSON]
-   TECHNICAL STACK
-   [Linear list of languages, frameworks, etc from JSON]
-   EXPERIENCE
-   - [Company]: [Role] | [Dates]
-     - 4-6 bullets: [Action] + [Tool] + [Outcome]
-   SELECTED GENAI PROJECTS
-   - [Project Name]: [Architecture] + [Tools] + [Verbatim metrics from metrics_explicit]
-   EDUCATION
-3. "detailed_cv" must be a 2-4 page expanded version with:
-   - All resume sections but with significantly more detail on architecture and technical decision-making for each role/project.
-   - A dedicated "PROJECT PORTFOLIO" section with 4-6 projects.
-   - A dedicated "TECHNICAL LEADERSHIP" section if supported by JSON.
-4. "cover_letter" must be 250–350 words, 3-4 paragraphs + 4 bullet highlights:
-   - Paragraph 1: Purpose and enthusiasm for Voya Financial.
-   - Paragraph 2: High-level architectural focus.
-   - Bullets: Top 4 specific, verified achievements.
-   - Paragraph 3: Closing and call to action.
-   - Mention Azure OpenAI ONLY if Azure is in facts_json.skills.cloud; otherwise say “cloud-based GenAI deployments”.
-5. Do NOT mention banking/finance/telecom/apparel unless in facts_json.industries_explicit.
-6. Use ONLY verbatim metrics from facts_json.metrics_explicit.
-7. Style: Professional, senior-level, direct. No fluff.
+ATS RESUME CONTENT RULES:
+- NAME | CONTACT INFO (from JSON)
+- SUMMARY: 3-4 lines tailored to JD's top requirements. No buzzword dumping.
+- SKILLS: Group exactly into these 3 categories:
+  1) GenAI / LLMs
+  2) ML / DL
+  3) MLOps / Cloud / Data
+- EXPERIENCE: 4-6 bullets per role. Aggressive rewrite (70%+) to JD keywords.
+- PROJECTS: Max 2 relevant projects. Emphasize JD keywords.
+- ALIGNMENT HIGHLIGHTS: 4 distinct bullets showing JD-candidate alignment.
+- No special characters, no quotes, no semicolons as bullets.
 
 Return ONLY valid JSON.
 """
