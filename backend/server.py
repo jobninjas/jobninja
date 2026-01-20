@@ -23,6 +23,7 @@ import uuid
 import traceback
 from dateutil.relativedelta import relativedelta
 import aiohttp
+import re
 from models import CheckoutRequest, SubscriptionData, WebhookEvent
 from payment_service import create_checkout_session, verify_webhook_signature, create_customer_portal_session
 from job_fetcher import fetch_all_job_categories, update_jobs_in_database, scheduled_job_fetch
@@ -147,9 +148,10 @@ async def get_current_user(token: str = Header(...)):
     if not email:
         raise HTTPException(status_code=401, detail="Authentication required")
         
-    user = await db.users.find_one({"email": email})
+    # Case-insensitive search to be robust
+    user = await db.users.find_one({"email": {"$regex": f"^{re.escape(email)}$", "$options": "i"}})
     if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(status_code=404, detail=f"User {email} not found in database")
         
     return user
 
@@ -739,7 +741,7 @@ async def login(credentials: UserLogin, request: Request):
     Login user with email and password.
     """
     user = await db.users.find_one({
-        "email": credentials.email
+        "email": {"$regex": f"^{re.escape(credentials.email)}$", "$options": "i"}
     })
     
     if not user or not verify_password(credentials.password, user.get('password_hash', '')):
@@ -818,10 +820,10 @@ async def resend_verification(request: Request):
             raise HTTPException(status_code=401, detail="Authentication required")
             
         email = get_current_user_email(token)
-        user = await db.users.find_one({"email": email})
+        user = await db.users.find_one({"email": {"$regex": f"^{re.escape(email)}$", "$options": "i"}})
         
         if not user:
-            raise HTTPException(status_code=404, detail="User not found")
+            raise HTTPException(status_code=404, detail=f"User {email} not found")
             
         if user.get('is_verified'):
             return {"success": True, "message": "Email is already verified"}
