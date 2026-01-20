@@ -53,14 +53,15 @@ Requirements:
     resume_text = result.get('ats_resume', '')
     print(resume_text[:500])
 
+
     # Validation checks
     print("\n--- Validation ---")
     
-    # 1. Check for Skill Categories
-    has_genai_cat = "GenAI / LLMs" in resume_text
-    has_ml_cat = "ML / DL" in resume_text
-    has_ops_cat = "MLOps / Cloud / Data" in resume_text
-    print(f"Skill Groups Present: {has_genai_cat and has_ml_cat and has_ops_cat}")
+    # 1. Check for Skill Categories (Step 4)
+    has_lang = "Languages:" in resume_text
+    has_etl = "Data/ETL:" in resume_text
+    has_cloud = "Cloud:" in resume_text
+    print(f"Skill Groups Present: {has_lang and has_etl and has_cloud}")
 
     # 2. Check for Alignment Highlights
     has_highlights = "alignment_highlights" in result and len(result['alignment_highlights']) > 10
@@ -70,10 +71,14 @@ Requirements:
     has_hyphens = "- " in resume_text
     print(f"Uses Hyphen Bullets: {has_hyphens}")
 
-    if all([has_genai_cat, has_ml_cat, has_ops_cat, has_highlights, has_hyphens]):
-        print("\nSUCCESS: All tailoring rules verified.")
+    # 4. Check for Structured Data
+    has_json = "resume_json" in result
+    print(f"Has Structured JSON: {has_json}")
+
+    if all([has_lang, has_etl, has_cloud, has_highlights, has_hyphens, has_json]):
+        print("\nSUCCESS: Structured tailoring pipeline verified.")
     else:
-        print("\nPARTIAL SUCCESS: Some rules might have been missed by AI. Check content manually.")
+        print("\nPARTIAL SUCCESS: Check content manually.")
 
 if __name__ == "__main__":
     asyncio.run(test_tailoring())

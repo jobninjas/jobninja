@@ -53,9 +53,13 @@ Each bullet point should:
 
 Return ONLY a JSON array of strings like: ["bullet 1", "bullet 2", ...]`;
 
+            const token = localStorage.getItem('auth_token');
             const response = await fetch(`${API_URL}/api/ai/generate`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'token': token
+                },
                 body: JSON.stringify({ prompt, max_tokens: 1000 })
             });
 

@@ -84,9 +84,13 @@ Make it:
         }
 
         try {
+            const token = localStorage.getItem('auth_token');
             const response = await fetch(`${API_URL}/api/ai/generate`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'token': token
+                },
                 body: JSON.stringify({ prompt, max_tokens: 1000 })
             });
 

@@ -721,7 +721,8 @@ async def signup(user_data: UserSignup, request: Request):
                 "email": user.email,
                 "name": user.name,
                 "role": user.role,
-                "plan": user.plan
+                "plan": user.plan,
+                "is_verified": False
             },
             "token": access_token
         }
@@ -747,7 +748,7 @@ async def login(credentials: UserLogin, request: Request):
     # Auto-upgrade legacy hashes to bcrypt
     if not user.get('password_hash', '').startswith('$2b$'):
         new_hash = hash_password(credentials.password)
-        await db.users.update_one({"id": user['id']}, {"$set": {"password_hash": new_hash}})
+        await db.users.update_one({"_id": user['_id']}, {"$set": {"password_hash": new_hash}})
         logger.info(f"Upgraded password hash for user: {credentials.email}")
     
     # Generate secure JWT access token
@@ -767,6 +768,24 @@ async def login(credentials: UserLogin, request: Request):
         "token": access_token
     }
 
+@api_router.get("/auth/me")
+async def get_me(user: dict = Depends(get_current_user)):
+    """
+    Get current authenticated user data.
+    """
+    return {
+        "success": True,
+        "user": {
+            "id": user.get('id'),
+            "email": user.get('email'),
+            "name": user.get('name'),
+            "role": user.get('role'),
+            "plan": user.get('plan'),
+            "is_verified": user.get('is_verified', False),
+            "referral_code": user.get('referral_code')
+        }
+    }
+
 @api_router.get("/auth/verify-email")
 async def verify_email(token: str):
     """
@@ -778,7 +797,7 @@ async def verify_email(token: str):
         raise HTTPException(status_code=400, detail="Invalid or expired verification token")
     
     await db.users.update_one(
-        {"id": user['id']},
+        {"_id": user['_id']},
         {"$set": {"is_verified": True}, "$unset": {"verification_token": ""}}
     )
     
@@ -2599,7 +2618,13 @@ async def generate_resume_docx(request: GenerateResumeRequest):
         elif not request.resume_text.startswith('{'):
             # It's raw text that NEEDS tailoring - use the high-quality expert pipeline
             # This is the flow for Resume Scanner and One-Click Optimize
-            expert_docs = await generate_expert_documents(request.resume_text, request.job_description)
+            user_info = {
+                "name": user.get("name"),
+                "email": user.get("email"),
+                "phone": user.get("phone"),
+                "location": user.get("location")
+            } if user else None
+            expert_docs = await generate_expert_documents(request.resume_text, request.job_description, user_info=user_info)
             
             if expert_docs and expert_docs.get('ats_resume'):
                 docx_file = create_text_docx(expert_docs['ats_resume'], "Optimized_Resume")

@@ -59,9 +59,13 @@ If the user has provided enough information about their experience and target ro
 
 Be helpful, professional, and provide specific, actionable resume content when possible.`;
 
+            const token = localStorage.getItem('auth_token');
             const response = await fetch(`${API_URL}/api/ai/generate`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'token': token
+                },
                 body: JSON.stringify({ prompt, max_tokens: 1500 })
             });
 

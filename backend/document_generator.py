@@ -11,7 +11,10 @@ from docx.shared import Inches, Pt
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.enum.style import WD_STYLE_TYPE
 import aiohttp
+import asyncio
 import json
+from pydantic import BaseModel, Field
+from typing import List, Optional, Dict, Any
 from resume_analyzer import call_groq_api, clean_json_response
 
 logger = logging.getLogger(__name__)
@@ -20,6 +23,147 @@ logger = logging.getLogger(__name__)
 # GROQ_API_KEY = os.environ.get('GROQ_API_KEY')
 # GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
 # GROQ_MODEL = "llama-3.3-70b-versatile"
+
+# ============================================
+# STRUCTURED RESUME SCHEMA (Step 3 & 4)
+# ============================================
+
+class ResumeHeader(BaseModel):
+    full_name: str
+    city_state: str
+    phone: str
+    email: str
+    linkedin: str = ""
+    portfolio: str = ""
+
+class CoreSkills(BaseModel):
+    languages: List[str] = []
+    data_etl: List[str] = []
+    cloud: List[str] = []
+    databases: List[str] = []
+    devops_tools: List[str] = []
+    other: List[str] = []
+
+class ExperienceRole(BaseModel):
+    company: str
+    job_title: str
+    city_state_or_remote: str
+    start: str
+    end: str
+    bullets: List[str]
+
+class ProjectItem(BaseModel):
+    name: str
+    tech_stack: List[str] = []
+    link: str = ""
+    bullets: List[str]
+
+class EducationItem(BaseModel):
+    degree: Optional[str] = ""
+    major: Optional[str] = ""
+    university: Optional[str] = ""
+    year: Optional[str] = ""
+
+class ResumeDataSchema(BaseModel):
+    """The structured data for a tailored resume"""
+    header: ResumeHeader
+    target_title: str
+    positioning_statement: str
+    core_skills: CoreSkills
+    experience: List[ExperienceRole]
+    projects: List[ProjectItem] = []
+    education: List[EducationItem] = []
+    certifications: List[str] = []
+
+class ExpertTailoringOutput(BaseModel):
+    """The complete response from the Expert AI"""
+    alignment_highlights: List[str]
+    cover_letter: str
+    resume_data: ResumeDataSchema
+
+
+def cleanup_bullet(s: str) -> str:
+    """Removes weird bullet characters and extra whitespace (Step 4)"""
+    import re
+    cleaned = re.sub(r'[•●▪︎\-]', '', str(s))
+    cleaned = re.sub(r'\s+', ' ', cleaned).strip()
+    return cleaned
+
+
+def render_ats_resume_from_json(r: ResumeDataSchema) -> str:
+    """
+    Deterministic rendering of the ATS template (Step 4).
+    Guarantees same headings, order, and style.
+    """
+    header_parts = [
+        r.header.city_state,
+        r.header.phone,
+        r.header.email,
+        r.header.linkedin,
+        r.header.portfolio
+    ]
+    header_line = " | ".join([p for p in header_parts if p and p.strip()])
+
+    out = []
+    out.append(r.header.full_name)
+    out.append(header_line)
+    out.append("")
+
+    out.append(r.target_title)
+    out.append(r.positioning_statement)
+    out.append("")
+
+
+    out.append("CORE SKILLS")
+    out.append("")
+    out.append(f"Languages: {', '.join(r.core_skills.languages or [])}")
+    out.append(f"Data/ETL: {', '.join(r.core_skills.data_etl or [])}")
+    out.append(f"Cloud: {', '.join(r.core_skills.cloud or [])}")
+    out.append(f"Databases: {', '.join(r.core_skills.databases or [])}")
+    out.append(f"DevOps/Tools: {', '.join(r.core_skills.devops_tools or [])}")
+    out.append(f"Other: {', '.join(r.core_skills.other or [])}")
+    out.append("")
+
+    out.append("PROFESSIONAL EXPERIENCE")
+    out.append("")
+    for role in r.experience:
+        role_header = f"{role.company} — {role.job_title} | {role.city_state_or_remote}"
+        out.append(role_header)
+        out.append(f"{role.start} – {role.end}")
+        for b in role.bullets[:6]:
+            out.append(f"- {cleanup_bullet(b)}")
+        out.append("")
+
+    if r.projects:
+        out.append("PROJECTS")
+        out.append("")
+        for p in r.projects[:2]:
+            tech = ", ".join(p.tech_stack)
+            link = f" ({p.link})" if p.link else ""
+            out.append(f"{p.name} — {tech}{link}")
+            for b in p.bullets[:3]:
+                out.append(f"- {cleanup_bullet(b)}")
+            out.append("")
+
+    if r.education:
+        out.append("EDUCATION")
+        out.append("")
+        for e in r.education:
+            left_parts = [e.degree, e.major]
+            left = ", ".join([p for p in left_parts if p and p.strip()])
+            right_parts = [e.university, e.year]
+            right = " | ".join([p for p in right_parts if p and p.strip()])
+            out.append(f"{left} — {right}")
+        out.append("")
+
+    if r.certifications:
+        out.append("CERTIFICATIONS")
+        out.append("")
+        for c in r.certifications:
+            out.append(f"- {c}")
+        out.append("")
+
+    return "\n".join(out).strip()
 
 
 async def generate_optimized_resume_content(resume_text: str, job_description: str, analysis: Dict) -> Optional[Dict]:
@@ -218,8 +362,9 @@ Rules:
 - skills: Group all technical and soft skills and certifications found.
 """
     try:
-        # Stage 1: Fact extraction - Using high-availability compound model
-        response_text = await call_groq_api(prompt, max_tokens=1000, model="groq/compound")
+        # Stage 1: Fact extraction - Using high-speed 8B model for extraction (Step 1 Optimization)
+        # 8B is perfect for extraction and significantly faster than larger models
+        response_text = await call_groq_api(prompt, max_tokens=1500, model="llama-3.1-8b-instant")
         if not response_text:
             return {}
         
@@ -230,8 +375,12 @@ Rules:
         return {}
 
 
-async def generate_expert_documents(resume_text: str, job_description: str) -> Optional[Dict[str, str]]:
+async def generate_expert_documents(resume_text: str, job_description: str, user_info: Optional[Dict] = None) -> Optional[Dict[str, Any]]:
     """Generate ATS Resume and Detailed CV using the compliance-grade two-stage pipeline"""
+    
+    # Resolving model selection (Optimization)
+    extraction_model = "llama-3.1-8b-instant"
+    drafting_model = "llama-3.3-70b-versatile"
     
     # Stage 1: Extract Facts
     logger.info("Stage 1: Extracting compliance-grade facts")
@@ -241,69 +390,128 @@ async def generate_expert_documents(resume_text: str, job_description: str) -> O
         logger.error("Fact extraction returned empty results")
         return None
 
-    # Stage 2: Strict Drafting
-    logger.info("Stage 2: Drafting documents from facts")
-    prompt = f"""
+    # Resolve Header Precedence (Step 5)
+    u = user_info or {}
+    f = facts_json
+    header_info = {
+        "full_name": u.get("name") or f.get("name") or "Your Name",
+        "city_state": u.get("location") or f.get("location") or "Location",
+        "phone": u.get("phone") or f.get("phone") or "Phone Number",
+        "email": u.get("email") or f.get("email") or "Email Address",
+        "linkedin": f.get("links", {}).get("linkedin", ""),
+        "portfolio": f.get("links", {}).get("portfolio", "")
+    }
+
+    # Prepare Resume and Cover Letter generation prompts (Optimization: Parallelization)
+    
+    # Schema for the Resume AI
+    resume_schema_hint = {
+        "alignment_highlights": ["List of 4 JD-candidate mapping bullets"],
+        "resume_data": {
+            "header": header_info,
+            "target_title": "Optimized job title",
+            "positioning_statement": "3-4 lines tailored summary",
+            "core_skills": {
+                "languages": [], "data_etl": [], "cloud": [], "databases": [], "devops_tools": [], "other": []
+            },
+            "experience": [
+                {
+                    "company": "@FACTS@", "job_title": "@FACTS@", "city_state_or_remote": "@FACTS@",
+                    "start": "MMM YYYY", "end": "Present", "bullets": []
+                }
+            ],
+            "projects": [{"name": "", "tech_stack": [], "link": "", "bullets": []}],
+            "education": [{"degree": "", "major": "", "university": "", "year": ""}],
+            "certifications": []
+        }
+    }
+
+    resume_prompt = f"""
 SYSTEM:
-You are an ATS Resume Tailor. You are expert at matching candidates to roles.
-Your tone is professional, achievement-oriented, and direct.
+You are a Precision ATS Resume Architect. 
+Your goal is to transform candidate facts into a high-impact, JD-mirrored structured JSON.
 
-USER TASK:
-Create a TAILORED RESUME, DETAILED CV, and COVER LETTER using ONLY facts from the provided JSON.
+ABSOLUTE RULES:
+1. Output ONLY valid JSON.
+2. Use ONLY facts from [FACTS_JSON]. Do NOT invent dates or titles.
+3. TAILOR AGGRESSIVELY: Rewrite 70%+ of bullets to mirror [JOB_DESCRIPTION] keywords.
+4. Bullet Formula: [Action Verb] + [What you built/managed] + [Tech/Tools used] + [Measurable Impact].
 
-NON-NEGOTIABLE RULES:
-1. Use ONLY facts from [FACTS_JSON]. Do NOT invent employers, dates, titles, tools, or results.
-2. You MUST tailor to the [JOB_DESCRIPTION]: change wording, reorder skills, and rewrite bullets to mirror JD keywords/responsibilities supported by Base Resume evidence.
-3. Rewrite at least 70% of bullets across EXPERIENCE. Mirror JD keywords while keeping original meaning.
-4. Output must be ATS-friendly: plain text, hyphen bullets only ("- "). No tables, no icons.
-5. Bullet Formula: [Action Verb] + [What you built/managed] + [Tech/Tools used] + [Measurable Impact (if in JSON)].
+[HEADER_INFO]
+{json.dumps(header_info, indent=2)}
 
 [JOB_DESCRIPTION]
-<<<
 {job_description}
->>>
 
 [FACTS_JSON]
-<<<
 {json.dumps(facts_json, indent=2)}
->>>
 
-Output Structure (Return ONLY valid JSON with these keys):
-{{
-  "alignment_highlights": "4 bullets mapping JD needs -> candidate evidence from JSON",
-  "ats_resume": "string",
-  "detailed_cv": "string",
-  "cover_letter": "string"
-}}
-
-ATS RESUME CONTENT RULES:
-- NAME | CONTACT INFO (from JSON)
-- SUMMARY: 3-4 lines tailored to JD's top requirements. No buzzword dumping.
-- SKILLS: Group exactly into these 3 categories:
-  1) GenAI / LLMs
-  2) ML / DL
-  3) MLOps / Cloud / Data
-- EXPERIENCE: 4-6 bullets per role. Aggressive rewrite (70%+) to JD keywords.
-- PROJECTS: Max 2 relevant projects. Emphasize JD keywords.
-- ALIGNMENT HIGHLIGHTS: 4 distinct bullets showing JD-candidate alignment.
-- No special characters, no quotes, no semicolons as bullets.
-
-Return ONLY valid JSON.
+Return JSON matching this structure:
+{json.dumps(resume_schema_hint, indent=2)}
 """
 
-    try:
-        # Stage 2: Drafting - Using high-availability compound model
-        response_text = await call_groq_api(prompt, max_tokens=6000, model="groq/compound")
-        if not response_text:
-            return None
+    cover_letter_prompt = f"""
+Write a 3-paragraph tailored cover letter for:
+Candidate: {header_info['full_name']}
+Target Job: {job_description[:1000]}
+
+Base facts from Resume:
+{json.dumps(facts_json, indent=2)}
+
+Rules:
+- Professional but modern tone.
+- NO placeholders. Use actual company and role from JD.
+- Keep it under 300 words.
+- Return ONLY the cover letter text.
+"""
+
+    logger.info("Stage 2: Drafting documents (Parallel Execution)")
+    
+    # Parallelize Resume and Cover Letter generation
+    resume_task = call_groq_api(resume_prompt, max_tokens=4000, model=drafting_model)
+    cl_task = call_groq_api(cover_letter_prompt, max_tokens=1000, model=extraction_model) # CL is easier, use 8B
+    
+    results = await asyncio.gather(resume_task, cl_task, return_exceptions=True)
+    resume_response, cl_response = results
+
+    if isinstance(resume_response, Exception) or not resume_response:
+        logger.error(f"Resume generation failed: {resume_response}")
+        return None
         
-        # Clean and parse JSON using robust standardized logic
-        json_text = clean_json_response(response_text)
-        return json.loads(json_text, strict=False)
+    cl_text = cl_response if not isinstance(cl_response, Exception) and cl_response else "Failed to generate cover letter."
+
+    try:
+        # Clean and parse JSON for resume
+        json_text = clean_json_response(resume_response)
+        raw_output = json.loads(json_text)
+        
+        # Merge cover letter back into output for compatibility
+        raw_output['cover_letter'] = cl_text
+        
+        # Validate with Pydantic
+        # Extract the correct class for validation
+        class ResumeOnlyOutput(BaseModel):
+            alignment_highlights: List[str]
+            resume_data: ResumeDataSchema
+
+        validated_resume = ResumeOnlyOutput(**raw_output)
+        
+        # Step 4: Render the exact ATS template
+        ats_resume_text = render_ats_resume_from_json(validated_resume.resume_data)
+        
+        return {
+            "alignment_highlights": "\n".join([f"- {h}" for h in validated_resume.alignment_highlights]),
+            "ats_resume": ats_resume_text,
+            "detailed_cv": ats_resume_text,
+            "cover_letter": cl_text,
+            "resume_json": validated_resume.resume_data.model_dump()
+        }
+
     except Exception as e:
-        logger.error(f"Failed in generate_expert_documents drafting stage: {e}")
+        logger.error(f"Final assembly failed: {e}")
         return None
 
+    return None
 
 def create_resume_docx(resume_data: Dict) -> io.BytesIO:
     """Create a comprehensive Word document from resume data"""

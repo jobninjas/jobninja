@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
 import { CheckCircle, XCircle, Loader2 } from 'lucide-react';
@@ -10,6 +11,7 @@ import { API_URL } from '../config/api';
 const VerifyEmail = () => {
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
+    const { refreshUser, isAuthenticated } = useAuth();
     const token = searchParams.get('token');
     const [status, setStatus] = useState('loading'); // loading, success, error
     const [message, setMessage] = useState('');
@@ -30,6 +32,15 @@ const VerifyEmail = () => {
                 if (response.ok) {
                     setStatus('success');
                     setMessage('Your email has been successfully verified! You can now access all features.');
+
+                    // Refresh user data if logged in to update verification status in session
+                    if (isAuthenticated) {
+                        try {
+                            await refreshUser();
+                        } catch (e) {
+                            console.error('Error refreshing user status:', e);
+                        }
+                    }
                 } else {
                     setStatus('error');
                     setMessage(data.detail || 'Verification failed. The link may be invalid or expired.');
@@ -41,7 +52,7 @@ const VerifyEmail = () => {
         };
 
         verifyToken();
-    }, [token]);
+    }, [token, isAuthenticated, refreshUser]);
 
     return (
         <div className="min-h-screen bg-slate-50">
@@ -65,9 +76,9 @@ const VerifyEmail = () => {
                             <p className="text-gray-600">{message}</p>
                             <Button
                                 className="w-full bg-green-600 hover:bg-green-700 text-white py-6 text-lg"
-                                onClick={() => navigate('/login')}
+                                onClick={() => navigate(isAuthenticated ? '/dashboard' : '/login')}
                             >
-                                Go to Login
+                                {isAuthenticated ? 'Go to Dashboard' : 'Go to Login'}
                             </Button>
                         </div>
                     )}

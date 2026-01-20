@@ -232,7 +232,7 @@ Important:
     try:
         # For scraping, we want to fail faster if Groq is overloaded
         # Use 3 retries max instead of the global 7
-        response_text = await call_groq_api(prompt, max_tokens=2000, model="groq/compound-mini", max_retries=3)
+        response_text = await call_groq_api(prompt, max_tokens=2000, model="llama-3.1-8b-instant", max_retries=3)
         if not response_text:
             logger.warning("AI extraction failed (rate limit or timeout). Falling back to raw text.")
             # FALLBACK: If AI fails, return the raw text so the user at least gets the content

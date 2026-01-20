@@ -345,8 +345,8 @@ Return ONLY the JSON, no other text.
 """
 
     try:
-        # Use high-availability compound model for extraction
-        response_text = await call_groq_api(prompt, max_tokens=1000, model="groq/compound-mini")
+        # Use high-speed 8B model for extraction
+        response_text = await call_groq_api(prompt, max_tokens=1000, model="llama-3.1-8b-instant")
         if not response_text:
             return {"error": "Failed to get response from AI"}
         json_text = clean_json_response(response_text)

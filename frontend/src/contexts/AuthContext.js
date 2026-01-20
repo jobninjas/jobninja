@@ -15,21 +15,48 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Refresh user data (useful after email verification or plan upgrade)
+  const refreshUser = async () => {
+    const token = localStorage.getItem('auth_token');
+    if (!token) return;
+
+    try {
+      const response = await fetch(`${API_URL}/api/auth/me`, {
+        headers: { 'token': token }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        localStorage.setItem('user_data', JSON.stringify(data.user));
+        setUser(data.user);
+        return data.user;
+      }
+    } catch (error) {
+      console.error('Refresh user error:', error);
+    }
+  };
+
   // Check for existing auth on mount
   useEffect(() => {
-    const token = localStorage.getItem('auth_token');
-    const userData = localStorage.getItem('user_data');
+    const initAuth = async () => {
+      const token = localStorage.getItem('auth_token');
+      const userData = localStorage.getItem('user_data');
 
-    if (token && userData) {
-      try {
-        setUser(JSON.parse(userData));
-      } catch (e) {
-        console.error('Error parsing user data from localStorage:', e);
-        localStorage.removeItem('auth_token');
-        localStorage.removeItem('user_data');
+      if (token && userData) {
+        try {
+          setUser(JSON.parse(userData));
+          // Verify with backend to ensure data like is_verified is up to date
+          await refreshUser();
+        } catch (e) {
+          console.error('Error parsing user data from localStorage:', e);
+          localStorage.removeItem('auth_token');
+          localStorage.removeItem('user_data');
+        }
       }
-    }
-    setLoading(false);
+      setLoading(false);
+    };
+
+    initAuth();
   }, []);
 
   // Login function - calls backend API
@@ -84,7 +111,6 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-
   // Logout function
   const logout = () => {
     localStorage.removeItem('auth_token');
@@ -98,7 +124,8 @@ export const AuthProvider = ({ children }) => {
     isAuthenticated: !!user,
     login,
     signup,
-    logout
+    logout,
+    refreshUser
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
