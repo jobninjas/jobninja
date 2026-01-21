@@ -142,18 +142,29 @@ def get_current_user_email(token: str = Header(...)):
     except jwt.PyJWTError:
         raise HTTPException(status_code=401, detail="Invalid or expired token")
 
-async def get_current_user(token: str = Header(...)):
+async def get_current_user(token: str = Header(None, alias="token")):
     """Dependency to get full user object from database."""
-    # Case-insensitive and stripped search to be robust
+    if not token:
+        # Check if it was sent as 'auth-token' or just 'Token'
+        # FastAPI Header with None alias handles case-insensitivity partially, 
+        # but let's be explicit if needed.
+        raise HTTPException(status_code=401, detail="Authentication required")
+        
     email = get_current_user_email(token)
     if not email:
         raise HTTPException(status_code=401, detail="Authentication required")
         
     email = email.strip()
-    user = await db.users.find_one({"email": {"$regex": f"^{re.escape(email)}$", "$options": "i"}})
-    if not user:
+    # Find all matching users and sort by is_verified (True first)
+    cursor = db.users.find({"email": {"$regex": f"^{re.escape(email)}$", "$options": "i"}}).sort("is_verified", -1)
+    users = await cursor.to_list(length=2)
+    
+    if not users:
+        logger.warning(f"User not found for email: {email}")
         raise HTTPException(status_code=404, detail=f"User {email} not found in database")
-        
+    
+    user = users[0]
+    logger.info(f"Retrieved user: {user.get('email')} (is_verified: {user.get('is_verified')})")
     return user
 
 # Create a router with the /api prefix
@@ -682,8 +693,10 @@ async def signup(user_data: UserSignup, request: Request):
     Register a new user and send welcome email.
     """
     try:
-        # Check if user already exists
-        existing_user = await db.users.find_one({"email": user_data.email})
+        # Check if user already exists (case-insensitive)
+        existing_user = await db.users.find_one({
+            "email": {"$regex": f"^{re.escape(user_data.email)}$", "$options": "i"}
+        })
         if existing_user:
             raise HTTPException(status_code=400, detail="Email already registered")
         
@@ -812,22 +825,11 @@ async def verify_email(token: str):
 
 @api_router.post("/auth/resend-verification")
 @limiter.limit("3/minute")
-async def resend_verification(request: Request):
+async def resend_verification(request: Request, user: dict = Depends(get_current_user)):
     """
     Resend verification email to the logged-in user.
     """
     try:
-        # Get token from header
-        token = request.headers.get('token')
-        if not token:
-            raise HTTPException(status_code=401, detail="Authentication required")
-            
-        email = get_current_user_email(token).strip()
-        user = await db.users.find_one({"email": {"$regex": f"^{re.escape(email)}$", "$options": "i"}})
-        
-        if not user:
-            raise HTTPException(status_code=404, detail=f"User {email} not found")
-            
         if user.get('is_verified'):
             return {"success": True, "message": "Email is already verified"}
             
