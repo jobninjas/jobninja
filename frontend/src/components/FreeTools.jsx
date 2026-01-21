@@ -39,6 +39,22 @@ const FreeTools = () => {
     const [selectedTool, setSelectedTool] = useState(null);
     const [savingConsent, setSavingConsent] = useState(false);
 
+    // Map tool IDs to actual icon filenames
+    const iconMap = {
+        'ats-score': 'ats_score_icon_1769016476448.png',
+        'cover-letter': 'cover_letter_icon_1769016491731.png',
+        'career-netflix': 'netflix_career_icon_1769016507886.png',
+        'roast-resume': 'roast_resume_icon_1769016525581.png',
+        'job-tracker': 'job_tracker_icon_1769016541321.png',
+        'job-strategy': 'job_strategy_icon_1769016555901.png',
+        'interview-predictor': 'interview_predictor_icon_1769016570832.png',
+        'self-intro': 'self_intro_icon_1769016583102.png',
+        'buzzword-detector': 'buzzword_detector_icon_1769016596691.png',
+        'cold-email': 'cold_email_icon_1769016610895.png',
+        'tech-comparison': 'tech_comparison_icon_1769016623766.png',
+        'wikipedia-generator': 'wikipedia_icon_1769016637087.png'
+    };
+
     const freeTools = [
         {
             id: 'ats-score',
