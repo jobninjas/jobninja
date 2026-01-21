@@ -1126,6 +1126,194 @@ async def save_user_consent(request: dict):
         logger.error(f"Error saving consent: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
+# ============ FREE TOOLS AI ENDPOINTS ============
+
+@api_router.post("/ai/salary-negotiation")
+async def generate_salary_negotiation_script(request: dict):
+    """Generate personalized salary negotiation script"""
+    try:
+        prompt = f"""Create a professional salary negotiation script for:
+- Current offer: ${request.get('currentOffer')}
+- Market rate/Target: ${request.get('marketRate')}
+- Role: {request.get('role')}
+- Years of experience: {request.get('yearsExperience', 'Not specified')}
+- Unique value: {request.get('uniqueValue', 'Not specified')}
+
+Generate a conversational script that:
+1. Opens positively and expresses enthusiasm
+2. Presents market research tactfully
+3. Highlights unique value
+4. Makes a specific ask
+5. Ends professionally
+
+Keep it natural and confident, not robotic."""
+
+        response = await openai_client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.7
+        )
+        
+        return {"script": response.choices[0].message.content}
+    except Exception as e:
+        logger.error(f"Error generating salary script: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/ai/linkedin-headline")
+async def generate_linkedin_headlines(request: dict):
+    """Generate optimized LinkedIn headlines"""
+    try:
+        prompt = f"""Generate 10 optimized LinkedIn headlines based on:
+- Current headline: {request.get('current_headline')}
+- Target role: {request.get('target_role', 'Not specified')}
+
+Each headline should:
+1. Be under 220 characters
+2. Include relevant keywords recruiters search for
+3. Show value proposition, not just job title
+4. Be professional yet engaging
+5. Vary in style (some focus on skills, some on achievements, some on aspirations)
+
+Return ONLY the 10 headlines, one per line, no numbering or extra text."""
+
+        response = await openai_client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.8
+        )
+        
+        headlines = response.choices[0].message.content.strip().split('\n')
+        headlines = [h.strip() for h in headlines if h.strip()]
+        
+        return {"headlines": headlines[:10]}
+    except Exception as e:
+        logger.error(f"Error generating headlines: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/ai/career-gap")
+async def generate_career_gap_explanations(request: dict):
+    """Generate professional career gap explanations"""
+    try:
+        prompt = f"""Create professional explanations for a career gap:
+- Duration: {request.get('gapDuration')}
+- Reason: {request.get('reason')}
+- Activities during gap: {request.get('activities', 'Not specified')}
+
+Generate TWO versions:
+
+1. RESUME VERSION (1-2 sentences, concise, for resume experience section)
+2. INTERVIEW VERSION (3-4 sentences, detailed but positive, for interview questions)
+
+Both should:
+- Be honest and professional
+- Focus on growth/learning during the gap
+- Show readiness to return to work
+- Avoid defensive language
+- Emphasize positive outcomes
+
+Format:
+RESUME:
+[resume version]
+
+INTERVIEW:
+[interview version]"""
+
+        response = await openai_client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.7
+        )
+        
+        content = response.choices[0].message.content
+        parts = content.split('INTERVIEW:')
+        resume_part = parts[0].replace('RESUME:', '').strip()
+        interview_part = parts[1].strip() if len(parts) > 1 else ""
+        
+        return {
+            "explanations": {
+                "resume": resume_part,
+                "interview": interview_part
+            }
+        }
+    except Exception as e:
+        logger.error(f"Error generating career gap explanation: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/ai/job-decoder")
+async def decode_job_description(request: dict):
+    """Decode job description to reveal hidden meanings and red flags"""
+    try:
+        prompt = f"""Analyze this job description and decode what it really means:
+
+{request.get('job_description')}
+
+Provide analysis in these categories:
+
+1. RED FLAGS (3-5 warning signs about company culture, expectations, or requirements)
+2. TRANSLATIONS (5-7 common phrases and what they really mean, format: "phrase" → meaning)
+3. HIDDEN REQUIREMENTS (3-5 skills/qualifications they expect but didn't explicitly list)
+4. GREEN FLAGS (2-4 positive signs if any exist)
+5. OVERALL ASSESSMENT (2-3 sentences: is this a good opportunity?)
+
+Be honest and insightful. Help the candidate make an informed decision."""
+
+        response = await openai_client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.7
+        )
+        
+        content = response.choices[0].message.content
+        
+        # Parse the response into structured data
+        analysis = {
+            "red_flags": [],
+            "translations": [],
+            "hidden_requirements": [],
+            "green_flags": [],
+            "overall_assessment": ""
+        }
+        
+        # Simple parsing (you can make this more robust)
+        sections = content.split('\n\n')
+        current_section = None
+        
+        for section in sections:
+            if 'RED FLAG' in section.upper():
+                current_section = 'red_flags'
+            elif 'TRANSLATION' in section.upper():
+                current_section = 'translations'
+            elif 'HIDDEN REQUIREMENT' in section.upper():
+                current_section = 'hidden_requirements'
+            elif 'GREEN FLAG' in section.upper():
+                current_section = 'green_flags'
+            elif 'OVERALL' in section.upper() or 'ASSESSMENT' in section.upper():
+                current_section = 'overall_assessment'
+            elif current_section:
+                lines = [l.strip() for l in section.split('\n') if l.strip() and not any(x in l.upper() for x in ['RED FLAG', 'TRANSLATION', 'HIDDEN', 'GREEN', 'OVERALL'])]
+                
+                if current_section == 'overall_assessment':
+                    analysis[current_section] = ' '.join(lines)
+                elif current_section == 'translations':
+                    for line in lines:
+                        if '→' in line or '->' in line:
+                            parts = line.split('→' if '→' in line else '->')
+                            if len(parts) == 2:
+                                analysis[current_section].append({
+                                    "phrase": parts[0].strip().strip('"').strip("'").strip('•').strip('-').strip(),
+                                    "meaning": parts[1].strip()
+                                })
+                else:
+                    for line in lines:
+                        clean_line = line.strip('•').strip('-').strip('*').strip()
+                        if clean_line:
+                            analysis[current_section].append(clean_line)
+        
+        return {"analysis": analysis}
+    except Exception as e:
+        logger.error(f"Error decoding job description: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 # ============ GOOGLE SHEETS INTEGRATION ============
 
 @api_router.get("/applications/{user_email}")
