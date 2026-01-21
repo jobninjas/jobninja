@@ -755,11 +755,25 @@ async def login(credentials: UserLogin, request: Request):
     Login user with email and password.
     """
     email_clean = credentials.email.strip()
-    user = await db.users.find_one({
+    # Find all matching users and sort by is_verified (True first)
+    cursor = db.users.find({
         "email": {"$regex": f"^{re.escape(email_clean)}$", "$options": "i"}
-    })
+    }).sort("is_verified", -1)
+    users = await cursor.to_list(length=2)
     
-    if not user or not verify_password(credentials.password, user.get('password_hash', '')):
+    if not users:
+        logger.warning(f"Login failed: User {email_clean} not found")
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+    
+    # Try to find a user where the password matches (check all if there are dupes)
+    user = None
+    for u in users:
+        if verify_password(credentials.password, u.get('password_hash', '')):
+            user = u
+            break
+            
+    if not user:
+        logger.warning(f"Login failed: Password mismatch for {email_clean}")
         raise HTTPException(status_code=401, detail="Invalid email or password")
     
     # Auto-upgrade legacy hashes to bcrypt
@@ -780,7 +794,7 @@ async def login(credentials: UserLogin, request: Request):
             "name": user.get('name', 'User'),
             "role": user.get('role', 'customer'),
             "plan": user.get('plan'),
-            "is_verified": user.get('is_verified', False),
+            "is_verified": bool(user.get('is_verified', False)),
             "referral_code": user.get('referral_code')
         },
         "token": access_token
@@ -799,7 +813,7 @@ async def get_me(user: dict = Depends(get_current_user)):
             "name": user.get('name'),
             "role": user.get('role'),
             "plan": user.get('plan'),
-            "is_verified": user.get('is_verified', False),
+            "is_verified": bool(user.get('is_verified', False)),
             "referral_code": user.get('referral_code')
         }
     }
