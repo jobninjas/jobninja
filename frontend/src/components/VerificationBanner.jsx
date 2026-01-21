@@ -19,9 +19,13 @@ const VerificationBanner = () => {
         return false;
     });
 
+    // EMERGENCY FIX: Hide for known verified users while DB issue is resolved
+    const knownVerifiedEmails = ['srkreddy452@gmail.com'];
+    const isKnownVerified = user?.email && knownVerifiedEmails.includes(user.email.toLowerCase());
+
     // Only show if user is logged in but NOT verified
     // We check explicitly for is_verified === true to avoid showing it for non-boolean falsy values
-    if (!isAuthenticated || !user || user.is_verified === true || hidden) {
+    if (!isAuthenticated || !user || user.is_verified === true || hidden || isKnownVerified) {
         return null;
     }
 
