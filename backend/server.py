@@ -1077,6 +1077,29 @@ async def update_call_booking_status(booking_id: str, status: str):
     
     return {"message": "Booking status updated", "status": status}
 
+# ============ RESUMES API ============
+
+@api_router.get("/resumes")
+async def get_user_resumes(email: str = Query(...)):
+    """
+    Get all resumes for a user
+    """
+    try:
+        # Fetch all resumes for this user from the database
+        cursor = db.resumes.find({"user_email": email}).sort("created_at", -1)
+        resumes = await cursor.to_list(length=100)
+        
+        # Convert ObjectId to string for JSON serialization
+        for resume in resumes:
+            if "_id" in resume:
+                resume["id"] = str(resume["_id"])
+                del resume["_id"]
+        
+        return resumes
+    except Exception as e:
+        logger.error(f"Error fetching resumes: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 # ============ GOOGLE SHEETS INTEGRATION ============
 
 @api_router.get("/applications/{user_email}")
