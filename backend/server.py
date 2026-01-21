@@ -1100,6 +1100,32 @@ async def get_user_resumes(email: str = Query(...)):
         logger.error(f"Error fetching resumes: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@api_router.post("/user/consent")
+async def save_user_consent(request: dict):
+    """
+    Save user consent for marketing communications
+    """
+    try:
+        consent_data = {
+            "email": request.get("email"),
+            "consent_type": request.get("consent_type"),
+            "consent_given": request.get("consent_given"),
+            "consent_date": request.get("consent_date"),
+            "updated_at": datetime.utcnow().isoformat()
+        }
+        
+        # Update or insert consent
+        await db.user_consents.update_one(
+            {"email": consent_data["email"], "consent_type": consent_data["consent_type"]},
+            {"$set": consent_data},
+            upsert=True
+        )
+        
+        return {"success": True, "message": "Consent saved successfully"}
+    except Exception as e:
+        logger.error(f"Error saving consent: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 # ============ GOOGLE SHEETS INTEGRATION ============
 
 @api_router.get("/applications/{user_email}")

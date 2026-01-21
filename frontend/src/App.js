@@ -42,6 +42,7 @@ import LinkedInExamples from "./components/LinkedInExamples";
 import ResumeTemplates from "./components/ResumeTemplates";
 import CoverLetterTemplates from "./components/CoverLetterTemplates";
 import ATSGuides from "./components/ATSGuides";
+import FreeTools from "./components/FreeTools";
 import "./components/Jobs.css";
 import "./components/InterviewPrep.css";
 import "./components/ResumeScanner.css";
@@ -83,6 +84,9 @@ function App() {
 
             {/* Jobs Route */}
             <Route path="/jobs" element={<Jobs />} />
+
+            {/* Free Tools Route */}
+            <Route path="/free-tools" element={<FreeTools />} />
 
             {/* Interview Prep Route */}
             <Route path="/interview-prep" element={<InterviewPrep />} />
