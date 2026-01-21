@@ -1,37 +1,29 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
-import { Badge } from './ui/badge';
-import { Input } from './ui/input';
-import { Label } from './ui/label';
-import { Textarea } from './ui/textarea';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
 import {
   Bot,
-  UserCheck,
-  Briefcase,
-  MapPin,
-  DollarSign,
-  Globe,
-  Home,
-  Building2,
-  ChevronRight,
-  Sparkles,
   FileText,
-  MessageSquare,
-  Check,
-  Menu,
-  ExternalLink,
-  X,
-  Loader2,
+  Sparkles,
   Search,
-  Zap
+  Zap,
+  MessageSquare,
+  Briefcase,
+  Target,
+  TrendingUp,
+  Globe,
+  BookOpen,
+  FileCheck,
+  Lightbulb,
+  Pen,
+  Users,
+  ArrowRight,
+  Check,
+  ChevronRight
 } from 'lucide-react';
-import { BRAND, PRODUCTS } from '../config/branding';
-import { aiNinjaFAQ } from '../mock';
-import { API_URL } from '../config/api';
+import { BRAND } from '../config/branding';
 import SideMenu from './SideMenu';
 import Header from './Header';
 import './SideMenu.css';
@@ -39,303 +31,457 @@ import './SideMenu.css';
 const AINinja = () => {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
-  const [activeFilter, setActiveFilter] = useState('all');
   const [sideMenuOpen, setSideMenuOpen] = useState(false);
 
-  // Jobs state
-  const [jobs, setJobs] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  // Fetch jobs from API
-  useEffect(() => {
-    const fetchJobs = async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const url = `${API_URL}/api/jobs?limit=50`;
-        console.log('AI Ninja - Fetching jobs from:', url);
-        const response = await fetch(url);
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+  // All available tools organized by category
+  const toolCategories = [
+    {
+      name: "Resume Tools",
+      tools: [
+        {
+          icon: <Sparkles className="w-6 h-6" />,
+          name: "Resume Scanner",
+          description: "Get ATS match score & tailored resume",
+          path: "/scanner",
+          color: "from-purple-500 to-pink-500"
+        },
+        {
+          icon: <Zap className="w-6 h-6" />,
+          name: "One-Click Optimize",
+          description: "Instantly optimize your resume for any job",
+          path: "/one-click-optimize",
+          color: "from-blue-500 to-cyan-500"
+        },
+        {
+          icon: <Target className="w-6 h-6" />,
+          name: "Bullet Points Generator",
+          description: "Create powerful achievement bullets",
+          path: "/bullet-points",
+          color: "from-green-500 to-emerald-500"
+        },
+        {
+          icon: <FileText className="w-6 h-6" />,
+          name: "Summary Generator",
+          description: "Craft compelling professional summaries",
+          path: "/summary-generator",
+          color: "from-orange-500 to-red-500"
+        },
+        {
+          icon: <Bot className="w-6 h-6" />,
+          name: "ChatGPT Resume",
+          description: "AI-powered resume writing assistant",
+          path: "/chatgpt-resume",
+          color: "from-indigo-500 to-purple-500"
         }
-        const data = await response.json();
-        console.log('AI Ninja - API Response:', data);
-
-        // Handle both response formats: {success, jobs, pagination} OR {jobs, total}
-        const jobsArray = data.jobs || [];
-
-        if (jobsArray.length > 0) {
-          const mappedJobs = jobsArray.map(job => ({
-            id: job.id || job._id || job.externalId,
-            title: job.title,
-            company: job.company,
-            location: job.location,
-            salaryRange: job.salaryRange || 'Competitive',
-            description: job.description,
-            type: job.type || 'onsite',
-            visaTags: job.visaTags || [],
-            categoryTags: job.categoryTags || [],
-            highPay: job.highPay || false,
-            sourceUrl: job.sourceUrl
-          }));
-          setJobs(mappedJobs);
-          console.log('AI Ninja - Loaded', mappedJobs.length, 'jobs');
-        } else {
-          setError('No jobs available at the moment');
+      ]
+    },
+    {
+      name: "Cover Letter & LinkedIn",
+      tools: [
+        {
+          icon: <MessageSquare className="w-6 h-6" />,
+          name: "ChatGPT Cover Letter",
+          description: "Generate personalized cover letters",
+          path: "/chatgpt-cover-letter",
+          color: "from-pink-500 to-rose-500"
+        },
+        {
+          icon: <Users className="w-6 h-6" />,
+          name: "LinkedIn Optimizer",
+          description: "Optimize your LinkedIn profile",
+          path: "/linkedin-optimizer",
+          color: "from-blue-600 to-blue-400"
+        },
+        {
+          icon: <Lightbulb className="w-6 h-6" />,
+          name: "LinkedIn Examples",
+          description: "Browse professional LinkedIn examples",
+          path: "/linkedin-examples",
+          color: "from-yellow-500 to-amber-500"
         }
-      } catch (error) {
-        console.error('Error fetching jobs:', error);
-        setError(`Failed to load jobs: ${error.message}`);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchJobs();
-  }, []);
-
-
-  // Filter jobs based on active filter
-  const filteredJobs = jobs.filter(job => {
-    switch (activeFilter) {
-      case 'high-paying':
-        return job.highPay;
-      case 'visa-friendly':
-        return job.visaTags && job.visaTags.length > 0;
-      case 'remote':
-        return job.type === 'remote';
-      default:
-        return true;
+      ]
+    },
+    {
+      name: "Job Search & Career",
+      tools: [
+        {
+          icon: <Search className="w-6 h-6" />,
+          name: "Job Board",
+          description: "Browse 5M+ visa-friendly jobs",
+          path: "/jobs",
+          color: "from-teal-500 to-cyan-500"
+        },
+        {
+          icon: <Briefcase className="w-6 h-6" />,
+          name: "AI Apply Flow",
+          description: "Complete AI-powered application flow",
+          path: "/ai-apply",
+          color: "from-violet-500 to-purple-500"
+        },
+        {
+          icon: <TrendingUp className="w-6 h-6" />,
+          name: "Career Change Tool",
+          description: "Transition to a new career path",
+          path: "/career-change",
+          color: "from-emerald-500 to-green-500"
+        },
+        {
+          icon: <MessageSquare className="w-6 h-6" />,
+          name: "Interview Prep",
+          description: "Practice common interview questions",
+          path: "/interview-prep",
+          color: "from-red-500 to-pink-500"
+        }
+      ]
+    },
+    {
+      name: "Templates & Resources",
+      tools: [
+        {
+          icon: <FileCheck className="w-6 h-6" />,
+          name: "Resume Templates",
+          description: "Professional ATS-friendly templates",
+          path: "/resume-templates",
+          color: "from-cyan-500 to-blue-500"
+        },
+        {
+          icon: <Pen className="w-6 h-6" />,
+          name: "Cover Letter Templates",
+          description: "Ready-to-use cover letter formats",
+          path: "/cover-letter-templates",
+          color: "from-fuchsia-500 to-pink-500"
+        },
+        {
+          icon: <BookOpen className="w-6 h-6" />,
+          name: "ATS Guides",
+          description: "Learn how to beat applicant tracking systems",
+          path: "/ats-guides",
+          color: "from-amber-500 to-orange-500"
+        }
+      ]
     }
-  });
-
-  const filters = [
-    { id: 'all', label: 'All Jobs', count: jobs.length },
-    { id: 'high-paying', label: 'High-paying', count: jobs.filter(j => j.highPay).length },
-    { id: 'visa-friendly', label: 'Visa-friendly', count: jobs.filter(j => j.visaTags?.length > 0).length },
-    { id: 'remote', label: 'Remote', count: jobs.filter(j => j.type === 'remote').length },
   ];
 
-  const getWorkTypeIcon = (type) => {
-    switch (type) {
-      case 'remote':
-        return <Home className="w-3 h-3" />;
-      case 'hybrid':
-        return <Building2 className="w-3 h-3" />;
-      case 'onsite':
-        return <Briefcase className="w-3 h-3" />;
-      default:
-        return <Briefcase className="w-3 h-3" />;
-    }
-  };
+  const totalTools = toolCategories.reduce((sum, cat) => sum + cat.tools.length, 0);
 
   return (
-    <div className="ai-ninja-page">
-      {/* Side Menu */}
+    <div className="ai-ninja-page" style={{ fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
       <SideMenu isOpen={sideMenuOpen} onClose={() => setSideMenuOpen(false)} />
-
-      {/* Navigation Header */}
       <Header onMenuClick={() => setSideMenuOpen(true)} />
 
-      {/* Hero Section */}
-      <section className="ai-ninja-hero">
-        <div className="container">
-          <div className="hero-badge-premium">
-            <Bot className="w-5 h-5" />
-            <span>AI Ninja – Self-Serve</span>
-          </div>
-          <h1 className="ai-ninja-title">
-            Apply smarter, <span className="text-gradient">not slower.</span>
-          </h1>
-          <p className="ai-ninja-subtitle">
-            Browse visa-friendly, high-paying roles and use AI Ninja to tailor your resume and cover letter for each job in minutes.
-          </p>
-          <p className="ai-ninja-description">
-            {BRAND.name} AI Ninja helps you skip the copy–paste chaos. Open a job, click "Apply with AI Ninja",
-            upload your base resume, and get a tailored resume, cover letter, and suggested answers for common
-            application questions. You stay in control of final submission – we just give you everything you need, fast.
-          </p>
+      {/* Hero Section with Ninja Image */}
+      <section style={{
+        background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%)',
+        padding: '5rem 0',
+        position: 'relative',
+        overflow: 'hidden'
+      }}>
+        <div className="container" style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 2rem', position: 'relative', zIndex: 10 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4rem', alignItems: 'center' }}>
+            {/* Left: Text Content */}
+            <div>
+              <div style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                background: 'rgba(139, 92, 246, 0.1)',
+                border: '1px solid rgba(139, 92, 246, 0.3)',
+                padding: '0.5rem 1rem',
+                borderRadius: '50px',
+                marginBottom: '1.5rem'
+              }}>
+                <Bot className="w-5 h-5" style={{ color: '#a78bfa' }} />
+                <span style={{ color: '#c4b5fd', fontSize: '0.875rem', fontWeight: 600 }}>AI-Powered Tools</span>
+              </div>
 
-          <div className="ai-ninja-cta-buttons" style={{ display: 'flex', gap: '1rem', marginTop: '2rem', flexWrap: 'wrap', justifyContent: 'center' }}>
-            <Button className="btn-primary btn-large" onClick={() => navigate('/scanner')}>
-              <Sparkles className="w-5 h-5 mr-2" />
-              Tailor Your Resume & Cover Letter
+              <h1 style={{
+                fontSize: '3.5rem',
+                fontWeight: 800,
+                lineHeight: 1.1,
+                marginBottom: '1.5rem',
+                color: 'white',
+                letterSpacing: '-0.02em'
+              }}>
+                {totalTools}+ Tools to <span style={{
+                  background: 'linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  backgroundClip: 'text'
+                }}>Land Your Dream Job</span>
+              </h1>
+
+              <p style={{
+                fontSize: '1.25rem',
+                lineHeight: 1.7,
+                color: '#cbd5e1',
+                marginBottom: '2rem',
+                fontWeight: 400
+              }}>
+                From resume optimization to interview prep, we've got everything you need to stand out and get hired faster.
+              </p>
+
+              <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                <Button
+                  className="btn-primary"
+                  onClick={() => navigate('/scanner')}
+                  style={{
+                    background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
+                    padding: '1rem 2rem',
+                    fontSize: '1.1rem',
+                    fontWeight: 600,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem'
+                  }}
+                >
+                  <Sparkles className="w-5 h-5" />
+                  Start with Resume Scanner
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => navigate('/pricing')}
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.1)',
+                    border: '1px solid rgba(255, 255, 255, 0.2)',
+                    color: 'white',
+                    padding: '1rem 2rem',
+                    fontSize: '1.1rem',
+                    fontWeight: 600
+                  }}
+                >
+                  View Pricing
+                </Button>
+              </div>
+            </div>
+
+            {/* Right: Ninja Hero Image */}
+            <div style={{ position: 'relative' }}>
+              <div style={{
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
+                width: '400px',
+                height: '400px',
+                background: 'radial-gradient(circle, rgba(139, 92, 246, 0.3) 0%, transparent 70%)',
+                filter: 'blur(60px)',
+                zIndex: 0
+              }}></div>
+              <img
+                src="/ninja-hero.jpg"
+                alt="AI Ninja Tools"
+                style={{
+                  width: '100%',
+                  height: 'auto',
+                  borderRadius: '20px',
+                  boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+                  position: 'relative',
+                  zIndex: 1
+                }}
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                  e.target.nextSibling.style.display = 'flex';
+                }}
+              />
+              <div style={{
+                display: 'none',
+                width: '100%',
+                height: '400px',
+                background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.2) 0%, rgba(236, 72, 153, 0.2) 100%)',
+                borderRadius: '20px',
+                alignItems: 'center',
+                justifyContent: 'center',
+                position: 'relative',
+                zIndex: 1
+              }}>
+                <Bot className="w-48 h-48" style={{ color: 'rgba(139, 92, 246, 0.3)' }} />
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* All Tools Grid */}
+      <section style={{ padding: '5rem 0', background: '#f8fafc' }}>
+        <div className="container" style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 2rem' }}>
+          <div style={{ textAlign: 'center', marginBottom: '4rem' }}>
+            <h2 style={{
+              fontSize: '2.5rem',
+              fontWeight: 800,
+              marginBottom: '1rem',
+              color: '#0f172a',
+              letterSpacing: '-0.02em'
+            }}>
+              Complete AI Toolkit
+            </h2>
+            <p style={{
+              fontSize: '1.125rem',
+              color: '#64748b',
+              maxWidth: '600px',
+              margin: '0 auto'
+            }}>
+              Everything you need to optimize your job search, all in one place
+            </p>
+          </div>
+
+          {toolCategories.map((category, idx) => (
+            <div key={idx} style={{ marginBottom: '4rem' }}>
+              <h3 style={{
+                fontSize: '1.5rem',
+                fontWeight: 700,
+                marginBottom: '1.5rem',
+                color: '#1e293b',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem'
+              }}>
+                <div style={{
+                  width: '4px',
+                  height: '24px',
+                  background: 'linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%)',
+                  borderRadius: '2px'
+                }}></div>
+                {category.name}
+              </h3>
+
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+                gap: '1.5rem'
+              }}>
+                {category.tools.map((tool, toolIdx) => (
+                  <Card
+                    key={toolIdx}
+                    onClick={() => navigate(tool.path)}
+                    style={{
+                      padding: '1.5rem',
+                      cursor: 'pointer',
+                      transition: 'all 0.3s ease',
+                      border: '1px solid #e2e8f0',
+                      background: 'white',
+                      borderRadius: '12px',
+                      position: 'relative',
+                      overflow: 'hidden'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = 'translateY(-4px)';
+                      e.currentTarget.style.boxShadow = '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = 'translateY(0)';
+                      e.currentTarget.style.boxShadow = 'none';
+                    }}
+                  >
+                    <div style={{
+                      width: '48px',
+                      height: '48px',
+                      borderRadius: '12px',
+                      background: `linear-gradient(135deg, ${tool.color})`,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: 'white',
+                      marginBottom: '1rem'
+                    }}>
+                      {tool.icon}
+                    </div>
+
+                    <h4 style={{
+                      fontSize: '1.125rem',
+                      fontWeight: 700,
+                      marginBottom: '0.5rem',
+                      color: '#0f172a'
+                    }}>
+                      {tool.name}
+                    </h4>
+
+                    <p style={{
+                      fontSize: '0.875rem',
+                      color: '#64748b',
+                      lineHeight: 1.6,
+                      marginBottom: '1rem'
+                    }}>
+                      {tool.description}
+                    </p>
+
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem',
+                      color: '#8b5cf6',
+                      fontSize: '0.875rem',
+                      fontWeight: 600
+                    }}>
+                      Try it now
+                      <ChevronRight className="w-4 h-4" />
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section style={{
+        padding: '5rem 0',
+        background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
+        position: 'relative'
+      }}>
+        <div className="container" style={{ maxWidth: '800px', margin: '0 auto', padding: '0 2rem', textAlign: 'center' }}>
+          <h2 style={{
+            fontSize: '2.5rem',
+            fontWeight: 800,
+            marginBottom: '1.5rem',
+            color: 'white',
+            letterSpacing: '-0.02em'
+          }}>
+            Ready to Transform Your Job Search?
+          </h2>
+          <p style={{
+            fontSize: '1.25rem',
+            color: '#cbd5e1',
+            marginBottom: '2rem',
+            lineHeight: 1.7
+          }}>
+            Join thousands of job seekers who are landing interviews faster with our AI-powered tools
+          </p>
+          <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+            <Button
+              className="btn-primary"
+              onClick={() => navigate('/signup')}
+              style={{
+                background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
+                padding: '1rem 2.5rem',
+                fontSize: '1.1rem',
+                fontWeight: 600
+              }}
+            >
+              Get Started Free
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => navigate('/pricing')}
+              style={{
+                background: 'rgba(255, 255, 255, 0.1)',
+                border: '1px solid rgba(255, 255, 255, 0.2)',
+                color: 'white',
+                padding: '1rem 2.5rem',
+                fontSize: '1.1rem',
+                fontWeight: 600
+              }}
+            >
+              View All Plans
             </Button>
           </div>
-
-          {/* What you get */}
-          <div className="ai-ninja-features">
-            <div className="feature-item">
-              <FileText className="w-5 h-5 text-primary" />
-              <span>ATS-Optimized Resume</span>
-            </div>
-            <div className="feature-item">
-              <MessageSquare className="w-5 h-5 text-primary" />
-              <span>Custom Cover Letter</span>
-            </div>
-            <div className="feature-item">
-              <Search className="w-5 h-5 text-primary" />
-              <span>ATS Match Score</span>
-            </div>
-          </div>
-
-        </div>
-      </section>
-
-      {/* How it Works Section */}
-      <section className="how-it-works-section" style={{ padding: '4rem 0', backgroundColor: '#f9fafb' }}>
-        <div className="container">
-          <h2 className="section-title text-center mb-12">How AI Ninja Works</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="step-card text-center p-6">
-              <div className="step-icon-wrapper mb-4 mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
-                <Globe className="w-8 h-8 text-green-600" />
-              </div>
-              <h3 className="text-xl font-bold mb-2">1. Find a Job</h3>
-              <p className="text-gray-600">Find any job listing on LinkedIn, Indeed, Glassdoor, or any company career page.</p>
-            </div>
-            <div className="step-card text-center p-6">
-              <div className="step-icon-wrapper mb-4 mx-auto w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
-                <Zap className="w-8 h-8 text-blue-600" />
-              </div>
-              <h3 className="text-xl font-bold mb-2">2. Paste the Link</h3>
-              <p className="text-gray-600">Paste the job URL into AI Ninja. We'll instantly extract the job description and requirements.</p>
-            </div>
-            <div className="step-card text-center p-6">
-              <div className="step-icon-wrapper mb-4 mx-auto w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center">
-                <Sparkles className="w-8 h-8 text-purple-600" />
-              </div>
-              <h3 className="text-xl font-bold mb-2">3. Get Tailored Docs</h3>
-              <p className="text-gray-600">Download your ATS-optimized resume and a custom cover letter tailored specifically for that role.</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Why Choose AI Ninja Section */}
-      <section className="why-ai-ninja" style={{ padding: '4rem 0' }}>
-        <div className="container">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-            <div>
-              <h2 className="text-3xl font-bold mb-6">Why use AI Ninja?</h2>
-              <ul className="space-y-4">
-                <li className="flex gap-3">
-                  <div className="mt-1 bg-green-500 rounded-full p-1"><Check className="w-3 h-3 text-white" /></div>
-                  <div>
-                    <span className="font-bold">Beat the ATS:</span> Our AI identifies key skills and keywords the ATS is looking for and integrates them naturally into your resume.
-                  </div>
-                </li>
-                <li className="flex gap-3">
-                  <div className="mt-1 bg-green-500 rounded-full p-1"><Check className="w-3 h-3 text-white" /></div>
-                  <div>
-                    <span className="font-bold">Save 2+ Hours per App:</span> No more staring at a blank page. Get a polished cover letter in seconds, not hours.
-                  </div>
-                </li>
-                <li className="flex gap-3">
-                  <div className="mt-1 bg-green-500 rounded-full p-1"><Check className="w-3 h-3 text-white" /></div>
-                  <div>
-                    <span className="font-bold">Higher Match Score:</span> See exactly how well your profile aligns with the job before you even apply.
-                  </div>
-                </li>
-                <li className="flex gap-3">
-                  <div className="mt-1 bg-green-500 rounded-full p-1"><Check className="w-3 h-3 text-white" /></div>
-                  <div>
-                    <span className="font-bold">Total Control:</span> You get editable documents. Make final tweaks and submit them yourself with confidence.
-                  </div>
-                </li>
-              </ul>
-            </div>
-            <div className="bg-gray-100 rounded-2xl p-8 flex items-center justify-center">
-              <Bot className="w-48 h-48 text-green-600 opacity-20" />
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Comparison Block */}
-      <section className="comparison-section">
-        <div className="container">
-          <h2 className="section-title">AI Ninja vs Human Ninja</h2>
-          <div className="comparison-grid">
-            <Card className="comparison-card ai-card">
-              <div className="comparison-header">
-                <Bot className="w-8 h-8" />
-                <h3>AI Ninja (SaaS)</h3>
-              </div>
-              <ul className="comparison-list">
-                <li><Check className="w-4 h-4" /> You browse jobs on {BRAND.name}</li>
-                <li><Check className="w-4 h-4" /> AI tailors your resume, cover letter and Q&A</li>
-                <li><Check className="w-4 h-4" /> You submit the applications yourself</li>
-                <li><Check className="w-4 h-4" /> Best for people who want speed and control</li>
-              </ul>
-              <Button className="btn-primary w-full" onClick={() => navigate('/pricing')}>
-                Start with AI Ninja
-              </Button>
-            </Card>
-
-            <Card className="comparison-card human-card">
-              <div className="comparison-header">
-                <UserCheck className="w-8 h-8" />
-                <h3>Human Ninja (Service)</h3>
-              </div>
-              <ul className="comparison-list">
-                <li><Check className="w-4 h-4" /> Our team finds and prioritizes roles</li>
-                <li><Check className="w-4 h-4" /> Uses AI + human judgment for your applications</li>
-                <li><Check className="w-4 h-4" /> We apply for you and keep everything tracked</li>
-                <li><Check className="w-4 h-4" /> Best for people with no time or high visa/family pressure</li>
-              </ul>
-              <Button variant="secondary" className="btn-secondary w-full" onClick={() => navigate('/human-ninja')}>
-                Learn About Human Ninja
-              </Button>
-            </Card>
-          </div>
-        </div>
-      </section>
-
-      {/* FAQ Section */}
-      <section className="faq-section">
-        <div className="container">
-          <h2 className="section-title">AI Ninja FAQ</h2>
-          <Accordion type="single" collapsible className="faq-accordion">
-            {aiNinjaFAQ.map(faq => (
-              <AccordionItem key={faq.id} value={`item-${faq.id}`}>
-                <AccordionTrigger className="faq-question">{faq.question}</AccordionTrigger>
-                <AccordionContent className="faq-answer">{faq.answer}</AccordionContent>
-              </AccordionItem>
-            ))}
-          </Accordion>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="footer">
-        <div className="container">
-          <div className="footer-content">
-            <div className="footer-brand">
-              <button onClick={() => navigate('/')} className="footer-logo-container">
-                <img src={BRAND.logoPath} alt={BRAND.logoAlt} className="footer-logo-image" />
-                <h3 className="footer-logo">{BRAND.name}</h3>
-              </button>
-              <p className="footer-tagline">{BRAND.tagline}</p>
-            </div>
-            <div className="footer-links">
-              <div className="footer-column">
-                <h4 className="footer-heading">Products</h4>
-                <button onClick={() => navigate('/ai-ninja')} className="footer-link">AI Ninja</button>
-                <button onClick={() => navigate('/human-ninja')} className="footer-link">Human Ninja</button>
-                <button onClick={() => navigate('/pricing')} className="footer-link">Pricing</button>
-              </div>
-              <div className="footer-column">
-                <h4 className="footer-heading">Account</h4>
-                <button onClick={() => navigate('/login')} className="footer-link">Login</button>
-                <button onClick={() => navigate('/signup')} className="footer-link">Sign Up</button>
-                <button onClick={() => navigate('/dashboard')} className="footer-link">Dashboard</button>
-              </div>
-            </div>
-          </div>
-          <div className="footer-bottom">
-            <p>{BRAND.copyright}</p>
-          </div>
+      <footer style={{ background: '#0f172a', padding: '3rem 0', color: '#94a3b8' }}>
+        <div className="container" style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 2rem', textAlign: 'center' }}>
+          <p style={{ fontSize: '0.875rem' }}>{BRAND.copyright}</p>
         </div>
       </footer>
     </div>
@@ -343,5 +489,3 @@ const AINinja = () => {
 };
 
 export default AINinja;
-
-
