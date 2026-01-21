@@ -287,14 +287,18 @@ const FreeTools = () => {
                                     width: '64px',
                                     height: '64px',
                                     borderRadius: '16px',
-                                    background: `linear-gradient(135deg, ${tool.color})`,
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    color: 'white',
+                                    overflow: 'hidden',
                                     marginBottom: '1.5rem'
                                 }}>
-                                    {tool.icon}
+                                    <img
+                                        src={`/tool-icons/${tool.id.replace('-', '_')}_icon.png`}
+                                        alt={tool.name}
+                                        style={{
+                                            width: '100%',
+                                            height: '100%',
+                                            objectFit: 'cover'
+                                        }}
+                                    />
                                 </div>
 
                                 <div style={{
