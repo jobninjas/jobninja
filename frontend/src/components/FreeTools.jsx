@@ -41,130 +41,92 @@ const FreeTools = () => {
 
     // Map tool IDs to actual icon filenames
     const iconMap = {
-        'ats-score': 'ats_score_icon_1769016476448.png',
-        'cover-letter': 'cover_letter_icon_1769016491731.png',
-        'career-netflix': 'netflix_career_icon_1769016507886.png',
-        'roast-resume': 'roast_resume_icon_1769016525581.png',
-        'job-tracker': 'job_tracker_icon_1769016541321.png',
-        'job-strategy': 'job_strategy_icon_1769016555901.png',
-        'interview-predictor': 'interview_predictor_icon_1769016570832.png',
-        'self-intro': 'self_intro_icon_1769016583102.png',
-        'buzzword-detector': 'buzzword_detector_icon_1769016596691.png',
-        'cold-email': 'cold_email_icon_1769016610895.png',
-        'tech-comparison': 'tech_comparison_icon_1769016623766.png',
-        'wikipedia-generator': 'wikipedia_icon_1769016637087.png'
+        'networking-templates': 'networking_icon.png',
+        'interview-framework': 'interview_icon.png',
+        'reference-prep': 'reference_icon.png',
+        'salary-negotiator': 'salary_icon.png',
+        'linkedin-headline': 'linkedin_icon.png',
+        'career-gap': 'career_gap_icon.png',
+        'job-decoder': 'job_decoder_icon.png',
+        'offer-comparator': 'offer_icon.png'
     };
 
     const freeTools = [
         {
-            id: 'ats-score',
-            icon: <BarChart3 className="w-8 h-8" />,
-            name: 'ATS Score Checker',
-            description: 'Get your resume past ATS systems with 90% or higher success rate.',
-            path: '/scanner',
-            color: 'from-blue-500 to-cyan-500',
-            users: '2450+'
-        },
-        {
-            id: 'cover-letter',
-            icon: <MessageSquare className="w-8 h-8" />,
-            name: 'Cover Letter Generator',
-            description: 'Create personalized cover letters in seconds.',
-            path: '/chatgpt-cover-letter',
-            color: 'from-orange-500 to-red-500',
-            users: '1230+'
-        },
-        {
-            id: 'career-netflix',
-            icon: <Sparkles className="w-8 h-8" />,
-            name: 'Your Career as a Netflix Series',
-            description: 'Transform your professional journey into a binge-worthy Netflix show.',
-            path: '/career-change',
-            color: 'from-red-600 to-pink-500',
+            id: 'networking-templates',
+            iconImage: '/tool-icons/networking_icon.png',
+            name: 'Networking Message Templates',
+            description: 'Ready-to-use templates for LinkedIn, email, and networking events.',
+            path: '/networking-templates',
+            color: 'from-indigo-500 to-purple-500',
             users: 'New!'
         },
         {
-            id: 'roast-resume',
-            icon: <Award className="w-8 h-8" />,
-            name: 'Roast My Resume',
-            description: 'Get hilariously honest feedback about your resume.',
-            path: '/summary-generator',
-            color: 'from-yellow-500 to-orange-500',
-            users: '1600+'
-        },
-        {
-            id: 'job-tracker',
-            icon: <Briefcase className="w-8 h-8" />,
-            name: 'Job Application Tracker',
-            description: 'Track and organize your jobs with a visual Kanban board.',
-            path: '/dashboard',
-            color: 'from-green-500 to-emerald-500',
-            users: '870+'
-        },
-        {
-            id: 'job-strategy',
-            icon: <Target className="w-8 h-8" />,
-            name: '30-Day Job Search Strategy Generator',
-            description: 'Get a personalized day-by-day plan to land your dream job in 30 days.',
-            path: '/interview-prep',
-            color: 'from-purple-500 to-pink-500',
-            users: 'New!',
-            badge: 'New!'
-        },
-        {
-            id: 'interview-predictor',
-            icon: <Users className="w-8 h-8" />,
-            name: 'Interview Question Predictor',
-            description: "Know what they'll ask before they ask it based on your resume.",
-            path: '/interview-prep',
-            color: 'from-indigo-500 to-purple-500',
-            users: '970+'
-        },
-        {
-            id: 'self-intro',
-            icon: <Award className="w-8 h-8" />,
-            name: 'Killer Self-Intro Generator',
-            description: 'Hook any interviewer in 30 seconds flat that make you unforgettable.',
-            path: '/summary-generator',
+            id: 'interview-framework',
+            iconImage: '/tool-icons/interview_icon.png',
+            name: 'Interview Answer Framework',
+            description: 'Master STAR, CAR, and SOAR methods for behavioral interviews.',
+            path: '/interview-framework',
             color: 'from-pink-500 to-rose-500',
-            users: '1600+'
+            users: 'New!'
         },
         {
-            id: 'buzzword-detector',
-            icon: <Pen className="w-8 h-8" />,
-            name: 'Resume Buzzword Detector',
-            description: 'Remove cliché phrases that make recruiters cringe.',
-            path: '/bullet-points',
-            color: 'from-amber-500 to-yellow-500',
-            users: '870+'
+            id: 'reference-prep',
+            iconImage: '/tool-icons/reference_icon.png',
+            name: 'Reference Check Prep',
+            description: 'Prepare your references to give you the best recommendation.',
+            path: '/reference-prep',
+            color: 'from-green-500 to-emerald-500',
+            users: 'New!'
         },
         {
-            id: 'cold-email',
-            icon: <Mail className="w-8 h-8" />,
-            name: 'Cold Email Generator for Job Seekers',
-            description: 'Craft personalized recruiter outreach emails that get responses.',
-            path: '/chatgpt-cover-letter',
+            id: 'salary-negotiator',
+            iconImage: '/tool-icons/salary_icon.png',
+            name: 'Salary Negotiation Script',
+            description: 'Get a personalized script to negotiate your best offer.',
+            path: '/salary-negotiator',
+            color: 'from-green-600 to-teal-500',
+            users: 'New!',
+            badge: 'AI'
+        },
+        {
+            id: 'linkedin-headline',
+            iconImage: '/tool-icons/linkedin_icon.png',
+            name: 'LinkedIn Headline Optimizer',
+            description: 'Get 10 optimized headline options with recruiter keywords.',
+            path: '/linkedin-headline',
             color: 'from-blue-600 to-indigo-500',
             users: 'New!',
-            badge: 'New!'
+            badge: 'AI'
         },
         {
-            id: 'tech-comparison',
-            icon: <TrendingUp className="w-8 h-8" />,
-            name: 'Tech Legend Comparison',
-            description: 'Compare yourself against tech leaders like Elon or Mark at your age.',
-            path: '/linkedin-optimizer',
-            color: 'from-red-500 to-orange-500',
-            users: '1200+'
+            id: 'career-gap',
+            iconImage: '/tool-icons/career_gap_icon.png',
+            name: 'Career Gap Explainer',
+            description: 'Turn your career gap into a professional story for resumes.',
+            path: '/career-gap',
+            color: 'from-amber-500 to-orange-500',
+            users: 'New!',
+            badge: 'AI'
         },
         {
-            id: 'wikipedia-generator',
-            icon: <Globe className="w-8 h-8" />,
-            name: 'Wikipedia Page Generator',
-            description: 'Create a Wikipedia page about yourself in seconds.',
-            path: '/linkedin-examples',
-            color: 'from-gray-600 to-gray-400',
-            users: '890+'
+            id: 'job-decoder',
+            iconImage: '/tool-icons/job_decoder_icon.png',
+            name: 'Job Description Decoder',
+            description: 'Decode what they really mean, spot red flags, find hidden requirements.',
+            path: '/job-decoder',
+            color: 'from-purple-500 to-violet-500',
+            users: 'New!',
+            badge: 'AI'
+        },
+        {
+            id: 'offer-comparator',
+            iconImage: '/tool-icons/offer_icon.png',
+            name: 'Offer Comparison Calculator',
+            description: 'Compare multiple job offers with total compensation analysis.',
+            path: '/offer-comparator',
+            color: 'from-teal-500 to-cyan-500',
+            users: 'New!'
         }
     ];
 

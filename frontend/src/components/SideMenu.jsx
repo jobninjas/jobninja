@@ -22,7 +22,8 @@ import {
   MessageSquare,
   Mail,
   BookOpen,
-  Layout
+  Layout,
+  Sparkles
 } from 'lucide-react';
 import { BRAND } from '../config/branding';
 
@@ -51,6 +52,7 @@ const SideMenu = ({ isOpen, onClose }) => {
     { icon: ClipboardList, label: 'Application Tracker', path: '/dashboard', requiresAuth: true },
     { icon: FileText, label: 'My Resumes', path: '/resumes', requiresAuth: true },
     { icon: Mic, label: 'Interview Prep', path: '/interview-prep' },
+    { icon: Sparkles, label: 'Free Tools', path: '/free-tools', highlight: true },
     { icon: CreditCard, label: 'Pricing', path: '/pricing' },
   ];
 

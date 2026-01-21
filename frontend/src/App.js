@@ -43,6 +43,15 @@ import ResumeTemplates from "./components/ResumeTemplates";
 import CoverLetterTemplates from "./components/CoverLetterTemplates";
 import ATSGuides from "./components/ATSGuides";
 import FreeTools from "./components/FreeTools";
+// Free Tools Components
+import NetworkingTemplates from "./components/NetworkingTemplates";
+import InterviewFramework from "./components/InterviewFramework";
+import ReferenceCheckPrep from "./components/ReferenceCheckPrep";
+import SalaryNegotiator from "./components/SalaryNegotiator";
+import LinkedInHeadlineOptimizer from "./components/LinkedInHeadlineOptimizer";
+import CareerGapExplainer from "./components/CareerGapExplainer";
+import JobDescriptionDecoder from "./components/JobDescriptionDecoder";
+import OfferComparator from "./components/OfferComparator";
 import "./components/Jobs.css";
 import "./components/InterviewPrep.css";
 import "./components/ResumeScanner.css";
@@ -87,6 +96,14 @@ function App() {
 
             {/* Free Tools Route */}
             <Route path="/free-tools" element={<FreeTools />} />
+            <Route path="/networking-templates" element={<NetworkingTemplates />} />
+            <Route path="/interview-framework" element={<InterviewFramework />} />
+            <Route path="/reference-prep" element={<ReferenceCheckPrep />} />
+            <Route path="/salary-negotiator" element={<SalaryNegotiator />} />
+            <Route path="/linkedin-headline" element={<LinkedInHeadlineOptimizer />} />
+            <Route path="/career-gap" element={<CareerGapExplainer />} />
+            <Route path="/job-decoder" element={<JobDescriptionDecoder />} />
+            <Route path="/offer-comparator" element={<OfferComparator />} />
 
             {/* Interview Prep Route */}
             <Route path="/interview-prep" element={<InterviewPrep />} />
