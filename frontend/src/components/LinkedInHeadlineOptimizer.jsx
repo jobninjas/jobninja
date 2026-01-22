@@ -10,71 +10,70 @@ import SideMenu from './SideMenu';
 import Header from './Header';
 
 const LinkedInHeadlineOptimizer = () => {
-    const navigate = useNavigate();
-    const { user } = useAuth();
-    const [sideMenuOpen, setSideMenuOpen] = useState(false);
-    const [loading, setLoading] = useState(false);
-    const [headlines, setHeadlines] = useState([]);
-    const [copiedId, setCopiedId] = useState(null);
-    const [currentHeadline, setCurrentHeadline] = useState('');
-    const [targetRole, setTargetRole] = useState('');
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const [sideMenuOpen, setSideMenuOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [headlines, setHeadlines] = useState([]);
+  const [copiedId, setCopiedId] = useState(null);
+  const [currentHeadline, setCurrentHeadline] = useState('');
+  const [targetRole, setTargetRole] = useState('');
 
-    const generateHeadlines = async () => {
-        if (!currentHeadline) {
-            alert('Please enter your current headline');
-            return;
-        }
+  const generateHeadlines = async () => {
+    if (!currentHeadline) {
+      alert('Please enter your current headline');
+      return;
+    }
 
-        setLoading(true);
-        try {
-            const response = await fetch(`${API_URL}/api/ai/linkedin-headline`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    email: user?.email,
-                    current_headline: currentHeadline,
-                    target_role: targetRole
-                })
-            });
+    setLoading(true);
+    try {
+      const response = await fetch(`${API_URL}/api/ai/linkedin-headline`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: user?.email,
+          current_headline: currentHeadline,
+          target_role: targetRole
+        })
+      });
 
-            const data = await response.json();
-            setHeadlines(data.headlines || []);
-        } catch (error) {
-            console.error('Error generating headlines:', error);
-            alert('Failed to generate headlines. Please try again.');
-        } finally {
-            setLoading(false);
-        }
-    };
+      const data = await response.json();
+      setHeadlines(data.headlines || []);
+    } catch (error) {
+      console.error('Error generating headlines:', error);
+      alert('Failed to generate headlines. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    const copyHeadline = (text, id) => {
-        navigator.clipboard.writeText(text);
-        setCopiedId(id);
-        setTimeout(() => setCopiedId(null), 2000);
-    };
+  const copyHeadline = (text, id) => {
+    navigator.clipboard.writeText(text);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
+  };
 
-    return (
-        <div style={{ fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", background: '#f8fafc', minHeight: '100vh' }}>
-            <SideMenu isOpen={sideMenuOpen} onClose={() => setSideMenuOpen(false)} />
-            <Header onMenuClick={() => setSideMenuOpen(true)} />
+  return (
+    <div style={{ fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", background: '#f8fafc', minHeight: '100vh' }}>
+      <SideMenu isOpen={sideMenuOpen} onClose={() => setSideMenuOpen(false)} />
+      <Header onMenuClick={() => setSideMenuOpen(true)} />
 
-            <section style={{
-                background: 'linear-gradient(135deg, #0a66c2 0%, #004182 100%)',
-                padding: '4rem 2rem',
-                textAlign: 'center',
-                color: 'white'
-            }}>
-                <div style={{ maxWidth: '800px', margin: '0 auto' }}>
-                    <Linkedin style={{ width: '64px', height: '64px', margin: '0 auto 1rem' }} />
-                    <h1 style={{ fontSize: '2.5rem', fontWeight: 800, marginBottom: '1rem' }}>
-                        LinkedIn Headline Optimizer
-                    </h1>
-                    <p style={{
-                        fontSize: '1.125rem', opacity: 0.9' }}>
+      <section style={{
+        background: 'linear-gradient(135deg, #0a66c2 0%, #004182 100%)',
+        padding: '4rem 2rem',
+        textAlign: 'center',
+        color: 'white'
+      }}>
+        <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+          <Linkedin style={{ width: '64px', height: '64px', margin: '0 auto 1rem' }} />
+          <h1 style={{ fontSize: '2.5rem', fontWeight: 800, marginBottom: '1rem' }}>
+            LinkedIn Headline Optimizer
+          </h1>
+          <p style={{ fontSize: '1.125rem', opacity: 0.9 }}>
             Get 10 optimized headline options with keywords that recruiters search for
           </p>
         </div>
-      </section >
+      </section>
 
       <section style={{ padding: '4rem 2rem' }}>
         <div style={{ maxWidth: '800px', margin: '0 auto' }}>
