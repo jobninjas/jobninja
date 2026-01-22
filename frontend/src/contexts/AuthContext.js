@@ -39,32 +39,45 @@ export const AuthProvider = ({ children }) => {
   // Check for existing auth on mount
   useEffect(() => {
     const initAuth = async () => {
+      console.log('[AuthContext] Initializing auth...');
       const token = localStorage.getItem('auth_token');
       const userData = localStorage.getItem('user_data');
+      console.log('[AuthContext] Token exists:', !!token, 'UserData exists:', !!userData);
 
       if (token && userData) {
         try {
           // Verify token with backend before setting user
+          console.log('[AuthContext] Verifying token with backend...');
           const response = await fetch(`${API_URL}/api/auth/me`, {
             headers: { 'token': token }
           });
 
+          console.log('[AuthContext] Token verification response:', response.status);
+
           if (response.ok) {
             const data = await response.json();
+            console.log('[AuthContext] Token valid, setting user:', data.user.email);
             localStorage.setItem('user_data', JSON.stringify(data.user));
             setUser(data.user);
           } else {
             // Token is invalid, clear localStorage
-            console.log('Invalid token, clearing auth data');
+            console.log('[AuthContext] Token invalid, clearing auth data');
             localStorage.removeItem('auth_token');
             localStorage.removeItem('user_data');
+            setUser(null);
           }
         } catch (e) {
-          console.error('Error verifying auth token:', e);
+          console.error('[AuthContext] Error verifying auth token:', e);
           localStorage.removeItem('auth_token');
           localStorage.removeItem('user_data');
+          setUser(null);
         }
+      } else {
+        console.log('[AuthContext] No token found, user not authenticated');
+        setUser(null);
       }
+
+      console.log('[AuthContext] Auth initialization complete, setting loading=false');
       setLoading(false);
     };
 
