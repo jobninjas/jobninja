@@ -274,7 +274,6 @@ const FreeTools = () => {
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
-                                    color: 'white',
                                     marginBottom: '1.5rem'
                                 }}>
                                     {tool.icon}
