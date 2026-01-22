@@ -35,6 +35,13 @@ from razorpay_service import (
     RAZORPAY_PLANS_USD
 )
 from scraper_service import scrape_job_description
+from byok_crypto import validate_master_key, encrypt_api_key, decrypt_api_key
+from byok_validators import (
+    validate_openai_key,
+    validate_google_key,
+    validate_anthropic_key,
+    validate_api_key_format
+)
 
 # Setup logging
 logger = logging.getLogger(__name__)
@@ -1424,6 +1431,180 @@ async def google_auth(request: dict):
     except Exception as e:
         logger.error(f"Error in Google authentication: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
+# ============ BYOK (Bring Your Own Key) API ============
+
+@api_router.post("/byok/test")
+@limiter.limit("10/minute")
+async def test_byok_key(request: Request, user: dict = Depends(get_current_user)):
+    """
+    Test a BYOK API key without saving it.
+    Makes a minimal API call to verify the key works.
+    """
+    try:
+        data = await request.json()
+        provider = data.get('provider', '').lower()
+        api_key = data.get('apiKey', '').strip()
+        
+        if not provider or not api_key:
+            raise HTTPException(status_code=400, detail="Provider and apiKey are required")
+        
+        if provider not in ['openai', 'google', 'anthropic']:
+            raise HTTPException(status_code=400, detail="Invalid provider. Must be: openai, google, or anthropic")
+        
+        # Basic format validation
+        is_valid_format, format_msg = validate_api_key_format(provider, api_key)
+        if not is_valid_format:
+            raise HTTPException(status_code=400, detail=format_msg)
+        
+        # Test with actual provider API
+        if provider == 'openai':
+            is_valid, message = await validate_openai_key(api_key)
+        elif provider == 'google':
+            is_valid, message = await validate_google_key(api_key)
+        elif provider == 'anthropic':
+            is_valid, message = await validate_anthropic_key(api_key)
+        
+        if not is_valid:
+            raise HTTPException(status_code=400, detail=message)
+        
+        return {"success": True, "message": message}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error testing BYOK key: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to test API key")
+
+
+@api_router.post("/byok/save")
+@limiter.limit("5/minute")
+async def save_byok_key(request: Request, user: dict = Depends(get_current_user)):
+    """
+    Save an encrypted BYOK API key for the user.
+    Tests the key first, then encrypts and stores it.
+    """
+    try:
+        data = await request.json()
+        provider = data.get('provider', '').lower()
+        api_key = data.get('apiKey', '').strip()
+        
+        if not provider or not api_key:
+            raise HTTPException(status_code=400, detail="Provider and apiKey are required")
+        
+        if provider not in ['openai', 'google', 'anthropic']:
+            raise HTTPException(status_code=400, detail="Invalid provider. Must be: openai, google, or anthropic")
+        
+        # Basic format validation
+        is_valid_format, format_msg = validate_api_key_format(provider, api_key)
+        if not is_valid_format:
+            raise HTTPException(status_code=400, detail=format_msg)
+        
+        # Test with actual provider API
+        if provider == 'openai':
+            is_valid, message = await validate_openai_key(api_key)
+        elif provider == 'google':
+            is_valid, message = await validate_google_key(api_key)
+        elif provider == 'anthropic':
+            is_valid, message = await validate_anthropic_key(api_key)
+        
+        if not is_valid:
+            raise HTTPException(status_code=400, detail=message)
+        
+        # Encrypt the API key
+        encrypted_data = encrypt_api_key(api_key)
+        
+        # Store in database
+        byok_doc = {
+            "user_id": user.get('email'),
+            "provider": provider,
+            "api_key_encrypted": encrypted_data['ciphertext'],
+            "api_key_iv": encrypted_data['iv'],
+            "api_key_tag": encrypted_data['tag'],
+            "is_enabled": True,
+            "created_at": datetime.utcnow(),
+            "updated_at": datetime.utcnow(),
+            "last_tested_at": datetime.utcnow()
+        }
+        
+        # Upsert (update if exists, insert if not)
+        await db.byok_keys.update_one(
+            {"user_id": user.get('email')},
+            {"$set": byok_doc},
+            upsert=True
+        )
+        
+        # Update user's plan to free_byok
+        await db.users.update_one(
+            {"email": user.get('email')},
+            {"$set": {"plan": "free_byok", "byok_enabled": True}}
+        )
+        
+        logger.info(f"BYOK key saved for user: {user.get('email')} (provider: {provider})")
+        
+        return {"success": True, "message": "API key saved successfully"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error saving BYOK key: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to save API key")
+
+
+@api_router.get("/byok/status")
+async def get_byok_status(user: dict = Depends(get_current_user)):
+    """
+    Get current BYOK configuration status for the user.
+    Does NOT return the actual API key.
+    """
+    try:
+        byok_config = await db.byok_keys.find_one(
+            {"user_id": user.get('email')},
+            {"_id": 0, "api_key_encrypted": 0, "api_key_iv": 0, "api_key_tag": 0}
+        )
+        
+        if not byok_config:
+            return {
+                "configured": False,
+                "provider": None,
+                "is_enabled": False
+            }
+        
+        return {
+            "configured": True,
+            "provider": byok_config.get('provider'),
+            "is_enabled": byok_config.get('is_enabled', True),
+            "last_tested_at": byok_config.get('last_tested_at')
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting BYOK status: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to get BYOK status")
+
+
+@api_router.delete("/byok/remove")
+async def remove_byok_key(user: dict = Depends(get_current_user)):
+    """
+    Remove BYOK configuration for the user.
+    """
+    try:
+        result = await db.byok_keys.delete_one({"user_id": user.get('email')})
+        
+        if result.deleted_count > 0:
+            # Update user's plan back to free
+            await db.users.update_one(
+                {"email": user.get('email')},
+                {"$set": {"plan": "free", "byok_enabled": False}}
+            )
+            
+            logger.info(f"BYOK key removed for user: {user.get('email')}")
+            return {"success": True, "message": "API key removed successfully"}
+        else:
+            return {"success": True, "message": "No API key was configured"}
+        
+    except Exception as e:
+        logger.error(f"Error removing BYOK key: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to remove API key")
 
 # ============ GOOGLE SHEETS INTEGRATION ============
 
@@ -3524,6 +3705,14 @@ async def health_check():
 async def startup_event():
     """Initialize background tasks on startup"""
     logger.info("🚀 Starting Job Ninjas backend...")
+    
+    # Validate BYOK master key (fails fast if missing/invalid)
+    try:
+        validate_master_key()
+        logger.info("✅ BYOK master key validated")
+    except ValueError as e:
+        logger.error(f"❌ BYOK master key validation failed: {e}")
+        logger.warning("⚠️  BYOK features will be disabled")
     
     # Start the background job fetcher (runs every 6 hours, including immediately on startup)
     asyncio.create_task(job_fetch_background_task())
