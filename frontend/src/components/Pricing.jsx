@@ -242,6 +242,13 @@ const Pricing = () => {
                         </li>
                       ))}
                     </ul>
+                    {plan.byokNote && (
+                      <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                        <p className="text-xs text-green-700 italic">
+                          {plan.byokNote}
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>

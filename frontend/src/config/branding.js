@@ -71,7 +71,9 @@ export const PRICING = {
       'Upload 1 base resume',
       'Generate tailored resume + cover letter + suggested Q&A for each job',
       'All 5 applications appear in your Application Tracker',
+      '✨ Use it for free unlimited with your own API key (OpenAI / Google / etc.)',
     ],
+    byokNote: 'Your usage is billed by your provider. Keys are stored encrypted.',
   },
   AI_BEGINNER: {
     id: 'ai-beginner',
