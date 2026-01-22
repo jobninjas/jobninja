@@ -1332,7 +1332,7 @@ async def google_auth(request: dict):
         # Verify the Google token
         try:
             # Get Google Client ID from environment or use the one from the request
-            GOOGLE_CLIENT_ID = os.getenv('GOOGLE_CLIENT_ID', '62316419452-e4jpe6v8qh0h9q9q9q9q9q9q9q9q9q9q.apps.googleusercontent.com')
+            GOOGLE_CLIENT_ID = os.getenv('GOOGLE_CLIENT_ID', '62316419452-e4gpepiaepopnfqpd96k19r1ps6e777v.apps.googleusercontent.com')
             
             idinfo = id_token.verify_oauth2_token(
                 credential, 
