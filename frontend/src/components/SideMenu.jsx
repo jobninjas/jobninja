@@ -26,7 +26,6 @@ import {
   Sparkles
 } from 'lucide-react';
 import { BRAND } from '../config/branding';
-import BrandLogo from './BrandLogo';
 
 const SideMenu = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
@@ -46,35 +45,35 @@ const SideMenu = ({ isOpen, onClose }) => {
 
   const menuItems = [
     { icon: Home, label: 'Home', path: '/' },
-    { icon: "/tool-icons/resume-scanner.png", label: 'Resume Scanner', path: '/scanner', highlight: true },
-    { icon: "/tool-icons/job-board.png", label: 'Jobs / Job Search', path: '/jobs' },
+    { icon: ScanLine, label: 'Resume Scanner', path: '/scanner', highlight: true },
+    { icon: Briefcase, label: 'Jobs / Job Search', path: '/jobs' },
     { icon: Bot, label: 'AI Ninja', path: '/ai-ninja' },
     { icon: UserCheck, label: 'Human Ninja', path: '/human-ninja' },
     { icon: ClipboardList, label: 'Application Tracker', path: '/dashboard', requiresAuth: true },
     { icon: FileText, label: 'My Resumes', path: '/resumes', requiresAuth: true },
-    { icon: "/tool-icons/interview-prep.png", label: 'Interview Prep', path: '/interview-prep' },
+    { icon: Mic, label: 'Interview Prep', path: '/interview-prep' },
     { icon: Sparkles, label: 'Free Tools', path: '/free-tools', highlight: true },
     { icon: CreditCard, label: 'Pricing', path: '/pricing' },
   ];
 
   const toolItems = [
-    { icon: "/tool-icons/one-click-optimize.png", label: 'One-Click Optimize', path: '/one-click-optimize' },
-    { icon: "/tool-icons/bullet-points.png", label: 'Bullet Points Generator', path: '/bullet-points' },
-    { icon: "/tool-icons/summary-generator.png", label: 'Summary Generator', path: '/summary-generator' },
-    { icon: "/tool-icons/chatgpt-resume.png", label: 'ChatGPT Resume', path: '/chatgpt-resume' },
-    { icon: "/tool-icons/chatgpt-cover-letter.png", label: 'ChatGPT Cover Letter', path: '/chatgpt-cover-letter' },
-    { icon: "/tool-icons/career-change.png", label: 'Career Change', path: '/career-change' },
+    { icon: Zap, label: 'One-Click Optimize', path: '/one-click-optimize' },
+    { icon: List, label: 'Bullet Points Generator', path: '/bullet-points' },
+    { icon: FileText, label: 'Summary Generator', path: '/summary-generator' },
+    { icon: MessageSquare, label: 'ChatGPT Resume', path: '/chatgpt-resume' },
+    { icon: Mail, label: 'ChatGPT Cover Letter', path: '/chatgpt-cover-letter' },
+    { icon: TrendingUp, label: 'Career Change', path: '/career-change' },
   ];
 
   const linkedinItems = [
-    { icon: "/tool-icons/linkedin-optimizer.png", label: 'LinkedIn Optimizer', path: '/linkedin-optimizer' },
-    { icon: "/tool-icons/linkedin-examples.png", label: 'LinkedIn Examples', path: '/linkedin-examples' },
+    { icon: Linkedin, label: 'LinkedIn Optimizer', path: '/linkedin-optimizer' },
+    { icon: Target, label: 'LinkedIn Examples', path: '/linkedin-examples' },
   ];
 
   const resourceItems = [
-    { icon: "/tool-icons/resume-templates.png", label: 'Resume Templates', path: '/resume-templates' },
-    { icon: "/tool-icons/cover-letter-templates.png", label: 'Cover Letter Templates', path: '/cover-letter-templates' },
-    { icon: "/tool-icons/ats-guides.png", label: 'ATS Guides', path: '/ats-guides' },
+    { icon: Layout, label: 'Resume Templates', path: '/resume-templates' },
+    { icon: BookOpen, label: 'Cover Letter Templates', path: '/cover-letter-templates' },
+    { icon: List, label: 'ATS Guides', path: '/ats-guides' },
   ];
 
   const accountItems = [
@@ -95,7 +94,7 @@ const SideMenu = ({ isOpen, onClose }) => {
         <div className="side-menu-header">
           <button onClick={() => handleNavigation('/')} className="side-menu-logo">
             <img src={BRAND.logoPath} alt={BRAND.logoAlt} className="side-menu-logo-img" />
-            <BrandLogo className="side-menu-logo-text" />
+            <span className="side-menu-logo-text">{BRAND.name}</span>
           </button>
           <button onClick={onClose} className="side-menu-close">
             <X className="w-6 h-6" />
