@@ -49,7 +49,7 @@ const Jobs = () => {
   // Filter states
   const [searchKeyword, setSearchKeyword] = useState('');
   const [locationFilter, setLocationFilter] = useState('');
-  const [countryFilter, setCountryFilter] = useState('usa'); // Default to USA
+  const [countryFilter, setCountryFilter] = useState('all'); // Show all countries for now
   const [sponsorshipFilter, setSponsorshipFilter] = useState('all');
   const [workTypeFilter, setWorkTypeFilter] = useState('all');
 
