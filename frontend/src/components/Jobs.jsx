@@ -49,6 +49,7 @@ const Jobs = () => {
   // Filter states
   const [searchKeyword, setSearchKeyword] = useState('');
   const [locationFilter, setLocationFilter] = useState('');
+  const [countryFilter, setCountryFilter] = useState('usa'); // Default to USA
   const [sponsorshipFilter, setSponsorshipFilter] = useState('all');
   const [workTypeFilter, setWorkTypeFilter] = useState('all');
 
@@ -136,7 +137,33 @@ const Jobs = () => {
       if (!matchesKeyword) return false;
     }
 
-    // Location filter
+    // Country filter (USA by default)
+    if (countryFilter && countryFilter !== 'all') {
+      const location = job.location?.toLowerCase() || '';
+      if (countryFilter === 'usa') {
+        // Filter for USA: check for US states, USA, or United States
+        const usKeywords = ['usa', 'united states', 'u.s.', 'remote us', 'remote usa'];
+        const usStates = ['al', 'ak', 'az', 'ar', 'ca', 'co', 'ct', 'de', 'fl', 'ga', 'hi', 'id', 'il', 'in', 'ia', 'ks', 'ky', 'la', 'me', 'md', 'ma', 'mi', 'mn', 'ms', 'mo', 'mt', 'ne', 'nv', 'nh', 'nj', 'nm', 'ny', 'nc', 'nd', 'oh', 'ok', 'or', 'pa', 'ri', 'sc', 'sd', 'tn', 'tx', 'ut', 'vt', 'va', 'wa', 'wv', 'wi', 'wy'];
+        const hasUSKeyword = usKeywords.some(keyword => location.includes(keyword));
+        const hasUSState = usStates.some(state => {
+          const statePattern = new RegExp(`\\b${state}\\b`, 'i');
+          return statePattern.test(location);
+        });
+        if (!hasUSKeyword && !hasUSState) return false;
+      } else if (countryFilter === 'international') {
+        // Filter for non-USA jobs
+        const usKeywords = ['usa', 'united states', 'u.s.', 'remote us', 'remote usa'];
+        const usStates = ['al', 'ak', 'az', 'ar', 'ca', 'co', 'ct', 'de', 'fl', 'ga', 'hi', 'id', 'il', 'in', 'ia', 'ks', 'ky', 'la', 'me', 'md', 'ma', 'mi', 'mn', 'ms', 'mo', 'mt', 'ne', 'nv', 'nh', 'nj', 'nm', 'ny', 'nc', 'nd', 'oh', 'ok', 'or', 'pa', 'ri', 'sc', 'sd', 'tn', 'tx', 'ut', 'vt', 'va', 'wa', 'wv', 'wi', 'wy'];
+        const hasUSKeyword = usKeywords.some(keyword => location.includes(keyword));
+        const hasUSState = usStates.some(state => {
+          const statePattern = new RegExp(`\\b${state}\\b`, 'i');
+          return statePattern.test(location);
+        });
+        if (hasUSKeyword || hasUSState) return false;
+      }
+    }
+
+    // Location filter (city/state within selected country)
     if (locationFilter && !job.location?.toLowerCase().includes(locationFilter.toLowerCase())) {
       return false;
     }
@@ -167,11 +194,12 @@ const Jobs = () => {
   const clearFilters = () => {
     setSearchKeyword('');
     setLocationFilter('');
+    setCountryFilter('usa'); // Keep USA as default
     setSponsorshipFilter('all');
     setWorkTypeFilter('all');
   };
 
-  const hasActiveFilters = searchKeyword || locationFilter || sponsorshipFilter !== 'all' || workTypeFilter !== 'all';
+  const hasActiveFilters = searchKeyword || locationFilter || countryFilter !== 'usa' || sponsorshipFilter !== 'all' || workTypeFilter !== 'all';
 
   return (
     <div className="jobs-page">
@@ -210,7 +238,21 @@ const Jobs = () => {
               </div>
 
               <div className="filter-group">
-                <Label>Location</Label>
+                <Label>Country/Region</Label>
+                <Select value={countryFilter} onValueChange={setCountryFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="USA" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Countries</SelectItem>
+                    <SelectItem value="usa">🇺🇸 USA Only</SelectItem>
+                    <SelectItem value="international">🌍 International</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="filter-group">
+                <Label>City/State</Label>
                 <Input
                   placeholder="City, state, or remote..."
                   value={locationFilter}
