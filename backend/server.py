@@ -1333,17 +1333,13 @@ async def google_auth(request: dict):
         credential = request.get('credential')
         mode = request.get('mode', 'login')
         
-        logger.info(f"[GoogleAuth] Incoming request. Mode: {mode}, Origin: {request.headers.get('origin') if hasattr(request, 'headers') else 'unknown'}")
-        
         if not credential:
-            logger.error("[GoogleAuth] No credential provided")
             raise HTTPException(status_code=400, detail="No credential provided")
         
         # Verify the Google token
         try:
             # Get Google Client ID from environment or use the one from the request
             GOOGLE_CLIENT_ID = os.getenv('GOOGLE_CLIENT_ID', '62316419452-e4gpepiaepopnfqpd96k19r1ps6e777v.apps.googleusercontent.com')
-            logger.info(f"[GoogleAuth] Verifying token with Client ID: {GOOGLE_CLIENT_ID}")
             
             idinfo = id_token.verify_oauth2_token(
                 credential, 
@@ -1357,21 +1353,17 @@ async def google_auth(request: dict):
             google_id = idinfo.get('sub')
             picture = idinfo.get('picture')
             
-            logger.info(f"[GoogleAuth] Token verified. Email: {email}, Google ID: {google_id}")
-            
             if not email:
-                logger.error("[GoogleAuth] Email not provided by Google")
                 raise HTTPException(status_code=400, detail="Email not provided by Google")
             
         except ValueError as e:
-            logger.error(f"[GoogleAuth] Invalid Google token: {str(e)}")
+            logger.error(f"Invalid Google token: {str(e)}")
             raise HTTPException(status_code=401, detail=f"Invalid Google token: {str(e)}")
         
         # Check if user exists
         existing_user = await db.users.find_one({"email": email})
         
         if existing_user:
-            logger.info(f"[GoogleAuth] Existing user found: {email}")
             # User exists - log them in
             update_data = {"google_id": google_id, "profile_picture": picture, "is_verified": True}
             await db.users.update_one({"_id": existing_user['_id']}, {"$set": update_data})
@@ -1380,7 +1372,6 @@ async def google_auth(request: dict):
             user_id = existing_user.get('id') or str(existing_user.get('_id'))
             token = create_access_token(data={"sub": email, "id": user_id})
             
-            logger.info(f"[GoogleAuth] Successful login for: {email}, ID: {user_id}")
             return {
                 "success": True,
                 "token": token,
@@ -1396,7 +1387,6 @@ async def google_auth(request: dict):
                 }
             }
         else:
-            logger.info(f"[GoogleAuth] Creating new user: {email}")
             # New user - create account using User model for consistency
             new_user_obj = User(
                 email=email,
@@ -1437,7 +1427,7 @@ async def google_auth(request: dict):
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"[GoogleAuth] Unexpected error: {str(e)}\n{traceback.format_exc()}")
+        logger.error(f"Error in Google authentication: {str(e)}\n{traceback.format_exc()}")
         raise HTTPException(status_code=500, detail="Internal server error during Google login")
 
 # ============ BYOK (Bring Your Own Key) API ============
