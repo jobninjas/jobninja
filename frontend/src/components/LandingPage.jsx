@@ -692,7 +692,8 @@ const LandingPage = () => {
             <div className="footer-links-col">
               <h4>Support</h4>
               <button onClick={() => navigate('/refund-policy')}>Refund Policy</button>
-              <button onClick={() => window.open('mailto:support@novaninja.com')}>Contact Support</button>
+              <button onClick={() => navigate('/contact')}>Contact Us</button>
+              <button onClick={() => window.open('mailto:veereddy@jobninjas.org')}>Contact Support</button>
             </div>
           </div>
           <div className="footer-bottom-modern">

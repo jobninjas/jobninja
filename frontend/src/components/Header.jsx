@@ -45,6 +45,12 @@ const Header = ({ onMenuClick }) => {
           >
             Pricing
           </button>
+          <button
+            onClick={() => navigate('/contact')}
+            className={`nav-link ${isActive('/contact') ? 'nav-link-active' : ''}`}
+          >
+            Contact
+          </button>
         </nav>
         <div className="nav-actions">
           {loading ? (

@@ -53,6 +53,7 @@ import CareerGapExplainer from "./components/CareerGapExplainer";
 import JobDescriptionDecoder from "./components/JobDescriptionDecoder";
 import OfferComparator from "./components/OfferComparator";
 import BYOKSettings from "./components/BYOKSettings";
+import ContactPage from "./components/ContactPage";
 import "./components/Jobs.css";
 import "./components/InterviewPrep.css";
 import "./components/ResumeScanner.css";
@@ -235,6 +236,9 @@ function App() {
                 </ProtectedRoute>
               }
             />
+
+            {/* Contact Route */}
+            <Route path="/contact" element={<ContactPage />} />
 
             {/* Catch all - redirect to home */}
             <Route path="*" element={<Navigate to="/" replace />} />
