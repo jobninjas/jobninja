@@ -1331,13 +1331,9 @@ async def google_auth(request: dict):
         from google.auth.transport import requests as google_requests
         
         credential = request.get('credential')
-        mode = request.get('mode', 'login')  # 'login' or 'signup'
+        mode = request.get('mode', 'login')
         
-    try:
-        credential = google_credential.credential
-        mode = google_credential.mode
-        
-        logger.info(f"[GoogleAuth] Incoming request. Mode: {mode}, Origin: {request.headers.get('origin')}")
+        logger.info(f"[GoogleAuth] Incoming request. Mode: {mode}, Origin: {request.headers.get('origin') if hasattr(request, 'headers') else 'unknown'}")
         
         if not credential:
             logger.error("[GoogleAuth] No credential provided")
@@ -1377,7 +1373,6 @@ async def google_auth(request: dict):
         if existing_user:
             logger.info(f"[GoogleAuth] Existing user found: {email}")
             # User exists - log them in
-            # Update Google ID and verification if not set
             update_data = {"google_id": google_id, "profile_picture": picture, "is_verified": True}
             await db.users.update_one({"_id": existing_user['_id']}, {"$set": update_data})
             
@@ -1406,8 +1401,8 @@ async def google_auth(request: dict):
             new_user_obj = User(
                 email=email,
                 name=name,
-                password_hash="google-oauth",  # No password for Google users
-                is_verified=True  # Google users are verified by default
+                password_hash="google-oauth",
+                is_verified=True
             )
             
             user_dict = new_user_obj.model_dump()
