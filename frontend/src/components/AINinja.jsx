@@ -65,6 +65,13 @@ const AINinja = () => {
           description: "Craft compelling professional summaries",
           path: "/summary-generator",
           color: "bg-orange-50"
+        },
+        {
+          icon: "/tool-icons/chatgpt-resume.png",
+          name: "ChatGPT Resume",
+          description: "AI-powered resume writing assistant",
+          path: "/chatgpt-resume",
+          color: "bg-indigo-50"
         }
       ]
     },
@@ -79,18 +86,18 @@ const AINinja = () => {
           color: "bg-emerald-50"
         },
         {
-          icon: <Users className="w-6 h-6" />,
+          icon: "/tool-icons/linkedin-optimizer.png",
           name: "LinkedIn Optimizer",
           description: "Optimize your LinkedIn profile",
           path: "/linkedin-optimizer",
-          color: "from-blue-600 to-blue-400"
+          color: "bg-blue-50"
         },
         {
-          icon: <Lightbulb className="w-6 h-6" />,
+          icon: "/tool-icons/linkedin-examples.png",
           name: "LinkedIn Examples",
           description: "Browse professional LinkedIn examples",
           path: "/linkedin-examples",
-          color: "from-yellow-500 to-amber-500"
+          color: "bg-teal-50"
         }
       ]
     },
@@ -98,18 +105,18 @@ const AINinja = () => {
       name: "Job Search & Career",
       tools: [
         {
-          icon: <Search className="w-6 h-6" />,
+          icon: "/tool-icons/job-board.png",
           name: "Job Board",
           description: "Browse 5M+ visa-friendly jobs",
           path: "/jobs",
-          color: "from-teal-500 to-cyan-500"
+          color: "bg-teal-50"
         },
         {
-          icon: <Briefcase className="w-6 h-6" />,
+          icon: "/tool-icons/ai-apply-flow.png",
           name: "AI Apply Flow",
           description: "Complete AI-powered application flow",
           path: "/ai-apply",
-          color: "from-violet-500 to-purple-500"
+          color: "bg-violet-50"
         },
         {
           icon: "/tool-icons/career-change.png",
@@ -131,11 +138,11 @@ const AINinja = () => {
       name: "Templates & Resources",
       tools: [
         {
-          icon: <FileCheck className="w-6 h-6" />,
+          icon: "/tool-icons/resume-templates.png",
           name: "Resume Templates",
           description: "Professional ATS-friendly templates",
           path: "/resume-templates",
-          color: "from-cyan-500 to-blue-500"
+          color: "bg-cyan-50"
         },
         {
           icon: "/tool-icons/cover-letter-templates.png",
@@ -145,11 +152,11 @@ const AINinja = () => {
           color: "bg-fuchsia-50"
         },
         {
-          icon: <BookOpen className="w-6 h-6" />,
+          icon: "/tool-icons/ats-guides.png",
           name: "ATS Guides",
           description: "Learn how to beat applicant tracking systems",
           path: "/ats-guides",
-          color: "from-amber-500 to-orange-500"
+          color: "bg-amber-50"
         }
       ]
     }
