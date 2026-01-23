@@ -853,7 +853,6 @@ const ResumeScanner = () => {
                   {analysisResult.hardSkills?.matched?.map((skill, i) => (
                     <div key={i} className="skill-item matched">
                       <span className="skill-name">{skill.skill}</span>
-                      <span className="skill-count">Resume: {skill.resumeCount} | Job: {skill.jobCount}</span>
                     </div>
                   ))}
                 </div>
