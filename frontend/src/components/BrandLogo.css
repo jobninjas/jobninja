@@ -12,15 +12,15 @@
 }
 
 .tld-roller-window {
-    height: 1.4em;
-    /* Increased to allow for 'g' descender */
+    height: 1.25em;
     overflow: hidden;
     position: relative;
+    /* Adjusted width and nudge down for perfect baseline alignment */
     width: 4.5ch;
     margin-left: -0.05ch;
     display: inline-flex;
-    margin-bottom: -0.35em;
-    /* Nudge container back to align baselines */
+    align-items: flex-end;
+    transform: translateY(0.1em);
 }
 
 .tld-roller-track {
