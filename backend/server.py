@@ -3308,6 +3308,7 @@ async def generate_resume_docx(request: GenerateResumeRequest):
     """
     Generate an optimized resume as a Word document
     """
+    safe_company = request.company.replace(' ', '_').replace('"', '').replace("'", "")
     try:
         # Get user to verify status
         user = await db.users.find_one({"id": request.userId})

@@ -29,7 +29,24 @@ except Exception as e:
 load_dotenv()
 
 # API Keys
-GROQ_API_KEY = os.environ.get('GROQ_API_KEY')
+# Supports multiple keys: GROQ_API_KEY, GROQ_API_KEY_1, GROQ_API_KEY_2, etc.
+def get_all_groq_keys():
+    keys = []
+    # Check primary key
+    main_key = os.environ.get('GROQ_API_KEY')
+    if main_key:
+        keys.append(main_key)
+    
+    # Check numbered keys
+    for i in range(1, 11):
+        key = os.environ.get(f'GROQ_API_KEY_{i}')
+        if key:
+            keys.append(key)
+    return keys
+
+GROQ_API_KEYS = get_all_groq_keys()
+GROQ_KEY_INDEX = 0  # Global index for round-robin
+
 GOOGLE_API_KEY = os.environ.get('GOOGLE_API_KEY')
 
 # Groq API settings
@@ -41,12 +58,17 @@ async def call_groq_api(prompt: str, max_tokens: int = 4000, model: str = None, 
     """Call Groq API for text generation with exponential backoff"""
     target_model = model or GROQ_MODEL
     
-    # Re-check key in case it was loaded later
-    api_key = GROQ_API_KEY or os.environ.get('GROQ_API_KEY')
+    # Use key pooling for better throughput
+    global GROQ_KEY_INDEX
+    keys = GROQ_API_KEYS or get_all_groq_keys()
     
-    if not api_key:
-        logger.error("GROQ_API_KEY not found in environment or already set variables")
+    if not keys:
+        logger.error("No Groq API keys found in environment")
         return None
+    
+    # Round-robin selection
+    api_key = keys[GROQ_KEY_INDEX % len(keys)]
+    GROQ_KEY_INDEX += 1
     
     headers = {
         "Authorization": f"Bearer {api_key}",
@@ -153,7 +175,7 @@ async def analyze_resume(resume_text: str, job_description: str) -> Dict[str, An
     Returns:
         Analysis results including match score, skills comparison, and suggestions
     """
-    if not GROQ_API_KEY:
+    if not GROQ_API_KEYS and not os.environ.get('GROQ_API_KEY'):
         return {
             "error": "GROQ_API_KEY not configured. Please add it to environment variables.",
             "matchScore": 0
@@ -297,7 +319,7 @@ async def extract_resume_data(resume_text: str) -> Dict[str, Any]:
     Returns:
         Structured resume data
     """
-    if not GROQ_API_KEY:
+    if not GROQ_API_KEYS:
         return {"error": "GROQ_API_KEY not configured"}
     
     prompt = f"""
@@ -368,7 +390,7 @@ async def generate_optimized_resume(resume_text: str, job_description: str) -> D
     Returns:
         Optimized resume suggestions
     """
-    if not GROQ_API_KEY:
+    if not GROQ_API_KEYS:
         return {"error": "GROQ_API_KEY not configured"}
     
     prompt = f"""
