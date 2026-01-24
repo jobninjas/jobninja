@@ -6051,3 +6051,26 @@
 .companies-marquee-container:hover .companies-marquee-content {
     animation-play-state: paused;
 }
+
+
+/* Missing Company Logos Styles */
+.companies-section {
+    padding: 4rem 0;
+    text-align: center;
+    background: #ffffff;
+}
+
+.companies-label {
+    color: #64748b;
+    font-size: 0.9rem;
+    margin-bottom: 2.5rem;
+    font-weight: 500;
+}
+
+.company-logo {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #cbd5e1;
+    user-select: none;
+    white-space: nowrap;
+}
