@@ -1471,6 +1471,13 @@ async def google_auth(request: dict):
             
             await db.users.insert_one(user_dict)
             logger.info(f"New user created via Google OAuth: {email}")
+
+            # Send welcome email in background
+            try:
+                # Pass None for token as Google users are auto-verified
+                asyncio.create_task(send_welcome_email(name, email, None, new_user_obj.referral_code))
+            except Exception as email_error:
+                logger.error(f"Error sending welcome email to Google user: {email_error}")
             
             # Generate standard JWT token
             token = create_access_token(data={"sub": email, "id": new_user_obj.id})
