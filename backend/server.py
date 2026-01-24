@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, Request, Header, HTTPException, Query, File, Form, UploadFile, Depends
+from fastapi import FastAPI, APIRouter, Request, Header, HTTPException, Query, File, Form, UploadFile, Depends, BackgroundTasks
 from fastapi.responses import JSONResponse
 import jwt
 import bcrypt
@@ -520,7 +520,6 @@ async def send_welcome_email(name: str, email: str, token: str = None, referral_
     Send a refined welcome email to new users who sign up.
     """
     logger.info(f"Attempting to send welcome email to {email} (Name: {name})")
-    try:
     frontend_url = os.environ.get('FRONTEND_URL', 'https://jobninjas.ai')
     verify_link = f"{frontend_url}/verify-email?token={token}" if token else f"{frontend_url}/dashboard"
     login_link = f"{frontend_url}/login"
@@ -609,7 +608,7 @@ async def send_welcome_email(name: str, email: str, token: str = None, referral_
             </div>
 
             <div class="secondary-content">
-                <h2 class="section-title">Invite and earn</h2>
+                <h2 class="section-title">Invite your friends to land their job quick</h2>
                 <div class="referral-box">
                     <span class="referral-icon">🤝</span>
                     <span class="referral-bonus">Get 5 Free AI Applications</span>
@@ -640,6 +639,7 @@ async def send_welcome_email(name: str, email: str, token: str = None, referral_
     """
     
     
+    try:
         return await send_email_resend(email, f"Welcome to jobNinjas, {name}! 🥷", html_content)
     except Exception as e:
         logger.error(f"Failed to generate/send welcome email: {e}")
@@ -1396,7 +1396,7 @@ Be honest and insightful. Help the candidate make an informed decision."""
 # ============ GOOGLE OAUTH AUTHENTICATION ============
 
 @api_router.post("/auth/google")
-async def google_auth(request: dict):
+async def google_auth(request: dict, background_tasks: BackgroundTasks):
     """Handle Google OAuth authentication"""
     try:
         from google.oauth2 import id_token
@@ -1481,7 +1481,7 @@ async def google_auth(request: dict):
             # Send welcome email in background
             try:
                 # Pass None for token as Google users are auto-verified
-                asyncio.create_task(send_welcome_email(name, email, None, new_user_obj.referral_code))
+                background_tasks.add_task(send_welcome_email, name, email, None, new_user_obj.referral_code)
             except Exception as email_error:
                 logger.error(f"Error sending welcome email to Google user: {email_error}")
             
