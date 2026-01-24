@@ -1534,11 +1534,14 @@ async def test_byok_key(request: Request, user: dict = Depends(get_current_user)
         
         return {"success": True, "message": message}
         
-    except HTTPException:
+    except HTTPException as e:
+        logger.warning(f"HTTP error testing BYOK key: {e.detail}")
         raise
     except Exception as e:
-        logger.error(f"Error testing BYOK key: {str(e)}")
-        raise HTTPException(status_code=500, detail="Failed to test API key")
+        import traceback
+        error_details = traceback.format_exc()
+        logger.error(f"Critical error testing BYOK key: {str(e)}\n{error_details}")
+        raise HTTPException(status_code=500, detail=f"Server error during testing: {str(e)}")
 
 
 @api_router.post("/byok/save")
@@ -1608,11 +1611,14 @@ async def save_byok_key(request: Request, user: dict = Depends(get_current_user)
         
         return {"success": True, "message": "API key saved successfully"}
         
-    except HTTPException:
+    except HTTPException as e:
+        logger.warning(f"HTTP error saving BYOK key: {e.detail}")
         raise
     except Exception as e:
-        logger.error(f"Error saving BYOK key: {str(e)}")
-        raise HTTPException(status_code=500, detail="Failed to save API key")
+        import traceback
+        error_details = traceback.format_exc()
+        logger.error(f"Critical error saving BYOK key: {str(e)}\n{error_details}")
+        raise HTTPException(status_code=500, detail=f"Server error during save: {str(e)}")
 
 
 @api_router.get("/byok/status")
@@ -2790,13 +2796,15 @@ app.add_middleware(
     allow_credentials=True,
     allow_origins=[
         "http://localhost:3000",
+        "http://localhost:5173", # Vite default
         "https://jobninjas.org",
         "https://www.jobninjas.org",
         "https://jobninjas.ai",
         "https://www.jobninjas.ai",
         "https://novaninjas.com",
         "https://www.novaninjas.com",
-        "https://novaninjas.vercel.app" # Backup for Vercel
+        "https://novaninjas.vercel.app",
+        "https://nova-ninjas-production.up.railway.app" # Production backend URL as origin if needed
     ],
     allow_methods=["*"],
     allow_headers=["*"],

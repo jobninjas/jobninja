@@ -8,7 +8,7 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Textarea } from './ui/textarea';
-import { API_URL } from '../config/api';
+import { API_URL, apiCall } from '../config/api';
 import { BRAND, APPLICATION_STATUS_LABELS } from '../config/branding';
 import SideMenu from './SideMenu';
 import './SideMenu.css';
@@ -191,17 +191,10 @@ const Dashboard = () => {
   // Fetch BYOK Status
   const fetchBYOKStatus = async () => {
     try {
-      const token = localStorage.getItem('auth_token');
-      const response = await fetch(`${API_URL}/api/byok/status`, {
-        headers: { 'token': token }
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setCurrentByokConfig(data);
-        if (data.configured) {
-          setByokProvider(data.provider);
-        }
+      const data = await apiCall('/byok/status');
+      setCurrentByokConfig(data);
+      if (data.configured) {
+        setByokProvider(data.provider);
       }
     } catch (error) {
       console.error('Error fetching BYOK status:', error);
@@ -283,25 +276,20 @@ const Dashboard = () => {
     setByokTestResult(null);
 
     try {
-      const token = localStorage.getItem('auth_token');
-      const response = await fetch(`${API_URL}/api/byok/test`, {
+      const data = await apiCall('/byok/test', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'token': token
-        },
         body: JSON.stringify({ provider: byokProvider, apiKey: byokApiKey })
       });
 
-      const data = await response.json();
-
-      if (response.ok) {
-        setByokTestResult({ success: true, message: data.message });
-      } else {
-        setByokTestResult({ success: false, message: data.detail || 'Test failed' });
-      }
+      setByokTestResult({ success: true, message: data.message });
     } catch (error) {
-      setByokTestResult({ success: false, message: 'Network error. Please try again.' });
+      console.error('BYOK Test Error:', error);
+      setByokTestResult({
+        success: false,
+        message: error.message && !error.message.includes('API Error')
+          ? `Network error: ${error.message}`
+          : error.message || 'Network error. Please try again.'
+      });
     } finally {
       setByokTesting(false);
     }
@@ -317,27 +305,20 @@ const Dashboard = () => {
     setByokSaveResult(null);
 
     try {
-      const token = localStorage.getItem('auth_token');
-      const response = await fetch(`${API_URL}/api/byok/save`, {
+      const data = await apiCall('/byok/save', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'token': token
-        },
         body: JSON.stringify({ provider: byokProvider, apiKey: byokApiKey })
       });
 
-      const data = await response.json();
-
-      if (response.ok) {
-        setByokSaveResult({ success: true, message: data.message });
-        setByokApiKey(''); // Clear the key from state
-        await fetchBYOKStatus(); // Refresh status
-      } else {
-        setByokSaveResult({ success: false, message: data.detail || 'Save failed' });
-      }
+      setByokSaveResult({ success: true, message: data.message });
+      setByokApiKey(''); // Clear the key from state
+      await fetchBYOKStatus(); // Refresh status
     } catch (error) {
-      setByokSaveResult({ success: false, message: 'Network error. Please try again.' });
+      console.error('BYOK Save Error:', error);
+      setByokSaveResult({
+        success: false,
+        message: error.message || 'Network error. Please try again.'
+      });
     } finally {
       setByokSaving(false);
     }
@@ -351,23 +332,17 @@ const Dashboard = () => {
     setByokRemoving(true);
 
     try {
-      const token = localStorage.getItem('auth_token');
-      const response = await fetch(`${API_URL}/api/byok/remove`, {
-        method: 'DELETE',
-        headers: { 'token': token }
-      });
+      const data = await apiCall('/byok/remove', { method: 'DELETE' });
 
-      const data = await response.json();
-
-      if (response.ok) {
-        setByokSaveResult({ success: true, message: data.message });
-        setByokApiKey('');
-        await fetchBYOKStatus();
-      } else {
-        setByokSaveResult({ success: false, message: data.detail || 'Remove failed' });
-      }
+      setByokSaveResult({ success: true, message: data.message });
+      setByokApiKey('');
+      await fetchBYOKStatus();
     } catch (error) {
-      setByokSaveResult({ success: false, message: 'Network error. Please try again.' });
+      console.error('BYOK Remove Error:', error);
+      setByokSaveResult({
+        success: false,
+        message: error.message || 'Network error. Please try again.'
+      });
     } finally {
       setByokRemoving(false);
     }
