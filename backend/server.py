@@ -2842,7 +2842,18 @@ async def get_jobs(
         if country:
             country_lower = country.lower()
             if country_lower == 'usa' or country_lower == 'us':
-                # Strictly USA: Must have country='us' AND not mention other countries in location
+                # Strictly USA: Use both Whitelist AND Blacklist
+                
+                # 1. Whitelist: Must match US state codes or country name
+                us_pattern = (
+                    r"(?i)\b("
+                    r"AL|AK|AZ|AR|CA|CO|CT|DE|FL|GA|HI|ID|IL|IN|IA|KS|KY|LA|ME|MD|MA|MI|MN|MS|MO|MT|NE|NV|NH|NJ|NM|NY|NC|ND|OH|OK|OR|PA|RI|SC|SD|TN|TX|UT|VT|VA|WA|WV|WI|WY|"
+                    r"Alabama|Alaska|Arizona|Arkansas|California|Colorado|Connecticut|Delaware|Florida|Georgia|Hawaii|Idaho|Illinois|Indiana|Iowa|Kansas|Kentucky|Louisiana|Maine|Maryland|Massachusetts|Michigan|Minnesota|Mississippi|Missouri|Montana|Nebraska|Nevada|New Hampshire|New Jersey|New Mexico|New York|North Carolina|North Dakota|Ohio|Oklahoma|Oregon|Pennsylvania|Rhode Island|South Carolina|South Dakota|Tennessee|Texas|Utah|Vermont|Virginia|Washington|West Virginia|Wisconsin|Wyoming|"
+                    r"United States|USA|US"
+                    r")\b"
+                )
+                
+                # 2. Blacklist: Explicitly exclude international major cities/countries to be safe
                 international_keywords = (
                     "israel|europe|india|uk|london|canada|germany|france|australia|asia|berlin|paris|toronto|sydney|"
                     "munich|hamburg|frankfurt|vienna|zurich|amsterdam|cairo|dubai|tokyo|singapore|beijing|shanghai|"
@@ -2853,8 +2864,13 @@ async def get_jobs(
                     "netherlands|belgium|austria|sweden|norway|denmark|finland|poland|czech|hungary|romania|bulgaria|"
                     "greece|turkey|russia|egypt|uae|china|japan|korea|brazil|mexico|argentina|spain|italy|gmbh"
                 )
+
                 query["$and"] = [
-                    {"country": "us"},
+                    # Must be tagged as 'us' (or empty/missing which typically defaults to us in some aggregators, but let's be strict)
+                    {"$or": [{"country": "us"}, {"country": "usa"}]},
+                    # Must match US pattern
+                    {"location": {"$regex": us_pattern}},
+                    # Must NOT match international pattern
                     {"location": {"$not": {"$regex": international_keywords, "$options": "i"}}}
                 ]
             elif country_lower == 'international':
