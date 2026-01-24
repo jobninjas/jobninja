@@ -368,7 +368,14 @@ const Jobs = () => {
                         )}
                       </div>
                     </div>
-                    <p className="job-description">{job.description}</p>
+                    <p className="job-description" style={{
+                      display: '-webkit-box',
+                      WebkitLineClamp: 3,
+                      WebkitBoxOrient: 'vertical',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      marginBottom: '1rem'
+                    }}>{job.description}</p>
                     <div className="job-card-actions" style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
                       <Button
                         variant="outline"

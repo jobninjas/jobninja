@@ -6,13 +6,13 @@ import { Card } from './ui/card';
 import { Badge } from './ui/badge';
 import SideMenu from './SideMenu';
 import './SideMenu.css';
-import { 
-  Bot, 
-  UserCheck, 
-  MapPin, 
-  DollarSign, 
-  Globe, 
-  Home, 
+import {
+  Bot,
+  UserCheck,
+  MapPin,
+  DollarSign,
+  Globe,
+  Home,
   Building2,
   Briefcase,
   ExternalLink,
@@ -79,7 +79,7 @@ const JobDetail = () => {
         setIsLoading(false);
       }
     };
-    
+
     if (id) {
       fetchJob();
     }
@@ -141,11 +141,11 @@ const JobDetail = () => {
     <div className="job-detail-page">
       {/* Side Menu */}
       <SideMenu isOpen={sideMenuOpen} onClose={() => setSideMenuOpen(false)} />
-      
+
       {/* Navigation Header */}
       <header className="nav-header">
-        <button 
-          onClick={() => setSideMenuOpen(true)} 
+        <button
+          onClick={() => setSideMenuOpen(true)}
           className="hamburger-btn"
           aria-label="Open menu"
         >
@@ -220,7 +220,7 @@ const JobDetail = () => {
                     )}
                   </div>
                 </div>
-                
+
                 <div className="job-tags-large">
                   <Badge variant="outline" className="work-type-badge-large">
                     {getWorkTypeIcon(job.type)}
@@ -241,27 +241,25 @@ const JobDetail = () => {
 
               <div className="job-description-section">
                 <h2>Job Description</h2>
-                <div className="job-description-text">
-                  {(job.fullDescription || job.description || '').split('\n').map((line, i) => (
-                    <p key={i}>{line}</p>
-                  ))}
+                <div className="job-description-text" style={{ whiteSpace: 'pre-wrap', lineHeight: '1.6' }}>
+                  {job.fullDescription || job.description || 'No description available.'}
                 </div>
-                
+
                 {/* Full details notice */}
                 {job.sourceUrl && (
-                  <div style={{ 
-                    marginTop: '1.5rem', 
-                    padding: '1rem', 
-                    background: '#f0fdf4', 
+                  <div style={{
+                    marginTop: '1.5rem',
+                    padding: '1rem',
+                    background: '#f0fdf4',
                     borderRadius: '8px',
                     border: '1px solid #10b981'
                   }}>
                     <p style={{ margin: 0, fontSize: '0.95rem', color: '#166534' }}>
-                      <strong>📋 Full Job Details:</strong> This is a preview. For complete job requirements, 
+                      <strong>📋 Full Job Details:</strong> This is a preview. For complete job requirements,
                       qualifications, and application instructions, view the original posting.
                     </p>
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       style={{ marginTop: '0.75rem' }}
                       onClick={() => window.open(job.sourceUrl, '_blank')}
                     >
@@ -274,9 +272,9 @@ const JobDetail = () => {
               {/* Quick Job Info */}
               <div className="job-info-section" style={{ marginTop: '2rem' }}>
                 <h2>Job Details</h2>
-                <div style={{ 
-                  display: 'grid', 
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
                   gap: '1rem',
                   marginTop: '1rem'
                 }}>
@@ -332,12 +330,12 @@ const JobDetail = () => {
                     <span>Suggested Q&A Answers</span>
                   </div>
                 </div>
-                
-                <Button 
+
+                <Button
                   className="btn-primary w-full btn-large"
                   onClick={() => {
-                    navigate('/ai-apply', { 
-                      state: { 
+                    navigate('/ai-apply', {
+                      state: {
                         jobId: job.id,
                         jobTitle: job.title,
                         company: job.company,
@@ -353,7 +351,7 @@ const JobDetail = () => {
                 </Button>
 
                 <p className="apply-note">
-                  AI Ninja will generate a tailored resume, cover letter, and suggested answers for this job. 
+                  AI Ninja will generate a tailored resume, cover letter, and suggested answers for this job.
                   You submit the final application yourself.
                 </p>
 
@@ -377,8 +375,8 @@ const JobDetail = () => {
                   <h4>No time to apply?</h4>
                 </div>
                 <p>Let Human Ninja handle your entire job search – we apply for you.</p>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   className="btn-outline w-full"
                   onClick={() => navigate('/human-ninja')}
                 >
