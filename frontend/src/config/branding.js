@@ -6,9 +6,9 @@
 
 export const BRAND = {
   // Core branding
-  name: 'jobNinjas.org',
+  name: 'jobNinjas.ai',
   oldName: 'Nova Ninjas', // For reference during migration
-  domain: 'jobNinjas.org',
+  domain: 'jobNinjas.ai',
 
   // Taglines
   tagline: 'Apply Smarter, Land Faster',
@@ -16,11 +16,11 @@ export const BRAND = {
   heroTagline: 'AI-Powered Resume Tools & Human Job Application Service',
 
   // Contact
-  contactEmail: 'hello@jobNinjas.org',
-  supportEmail: 'support@jobNinjas.org',
+  contactEmail: 'hello@jobNinjas.ai',
+  supportEmail: 'support@jobNinjas.ai',
 
   // Social/Links
-  website: 'https://jobNinjas.org',
+  website: 'https://jobNinjas.ai',
 
   // Logo (update path when new logo is ready)
   logoPath: '/logo.png?v=2',
@@ -28,7 +28,7 @@ export const BRAND = {
 
   // Company info
   year: new Date().getFullYear(),
-  copyright: `© ${new Date().getFullYear()} jobNinjas.org. All rights reserved.`,
+  copyright: `© ${new Date().getFullYear()} jobNinjas.ai. All rights reserved.`,
 };
 
 // ============================================
@@ -64,13 +64,14 @@ export const PRICING = {
     price: 0,
     priceDisplay: 'Free',
     period: '',
-    applications: 5,
-    description: 'Try jobNinjas.org with a few applications before upgrading.',
+    applications: 100,
+    isBeta: true,
+    description: 'Try jobNinjas.ai with 100 free applications as a beta.',
     features: [
-      'Apply to up to 5 jobs using AI Ninja',
+      'Apply to up to 100 jobs using AI Ninja',
       'Upload 1 base resume',
       'Generate tailored resume + cover letter + suggested Q&A for each job',
-      'All 5 applications appear in your Application Tracker',
+      'All 100 applications appear in your Application Tracker',
       '✨ Use it for free unlimited with your own API key (OpenAI / Google / etc.)',
     ],
     byokNote: 'Your usage is billed by your provider. Keys are stored encrypted.',

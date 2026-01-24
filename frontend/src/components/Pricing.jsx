@@ -94,7 +94,7 @@ const Pricing = () => {
   };
 
   const aiNinjaPlans = [
-    { ...PRICING.AI_FREE, popular: false, buttonVariant: 'outline', description: 'Try jobNinjas with a few applications.' },
+    { ...PRICING.AI_FREE, popular: false, buttonVariant: 'outline', description: 'Try jobNinjas with 100 free applications as a beta.' },
     { ...PRICING.AI_BEGINNER, popular: false, buttonVariant: 'outline', description: 'Perfect for more applications and interview prep.' },
     { ...PRICING.AI_PRO, popular: true, buttonVariant: 'default', description: 'Unlimited high-volume tailored applications.' },
   ];
@@ -178,6 +178,11 @@ const Pricing = () => {
                     {plan.popular && (
                       <span className="bg-blue-600 text-white px-3 py-1 rounded-full text-xs font-medium">
                         Popular
+                      </span>
+                    )}
+                    {plan.isBeta && (
+                      <span className="bg-amber-500 text-white px-3 py-1 rounded-full text-xs font-medium uppercase tracking-wider">
+                        Beta
                       </span>
                     )}
                   </div>
