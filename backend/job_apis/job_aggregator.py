@@ -71,15 +71,17 @@ zuna
         
         # Fetch from Adzuna
         if use_adzuna:
-            try:
-                logger.info("Fetching jobs from Adzuna...")
-                adzuna_jobs = await self.adzuna.fetch_multiple_pages(max_pages=max_adzuna_pages)
-                all_jobs.extend(adzuna_jobs)
-                stats["adzuna"] = len(adzuna_jobs)
-                logger.info(f"Fetched {len(adzuna_jobs)} jobs from Adzuna")
-            except Exception as e:
-                logger.error(f"Error fetching Adzuna jobs: {e}")
-                stats["errors"].append(f"Adzuna: {str(e)}")
+            countries = ['us', 'gb', 'ca', 'in', 'au']
+            for country in countries:
+                try:
+                    logger.info(f"Fetching jobs from Adzuna ({country.upper()})...")
+                    adzuna_jobs = await self.adzuna.fetch_multiple_pages(country=country, max_pages=max_adzuna_pages)
+                    all_jobs.extend(adzuna_jobs)
+                    stats["adzuna"] += len(adzuna_jobs)
+                    logger.info(f"Fetched {len(adzuna_jobs)} jobs from Adzuna ({country.upper()})")
+                except Exception as e:
+                    logger.error(f"Error fetching Adzuna jobs for {country}: {e}")
+                    stats["errors"].append(f"Adzuna ({country}): {str(e)}")
                 
         # Fetch from JSearch with multiple queries
         if use_jsearch:

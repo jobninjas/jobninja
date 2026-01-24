@@ -49,17 +49,35 @@ const Jobs = () => {
   // Filter states
   const [searchKeyword, setSearchKeyword] = useState('');
   const [locationFilter, setLocationFilter] = useState('');
-  const [countryFilter, setCountryFilter] = useState('all'); // Show all countries for now
+  const [countryFilter, setCountryFilter] = useState('usa');
   const [sponsorshipFilter, setSponsorshipFilter] = useState('all');
   const [workTypeFilter, setWorkTypeFilter] = useState('all');
+  const [currentPage, setCurrentPage] = useState(1);
 
 
   // Fetch jobs from API
-  const fetchJobs = async () => {
+  const fetchJobs = async (page = 1) => {
     setIsLoading(true);
     setError(null);
     try {
-      const url = `${API_URL}/api/jobs?page=1&limit=50`;
+      let url = `${API_URL}/api/jobs?page=${page}&limit=20`;
+
+      if (countryFilter && countryFilter !== 'all') {
+        url += `&country=${countryFilter}`;
+      }
+
+      if (searchKeyword) {
+        url += `&search=${encodeURIComponent(searchKeyword)}`;
+      }
+
+      if (workTypeFilter && workTypeFilter !== 'all') {
+        url += `&type=${workTypeFilter}`;
+      }
+
+      if (sponsorshipFilter === 'visa-friendly') {
+        url += `&visa=true`;
+      }
+
       console.log('Fetching jobs from:', url);
       const response = await fetch(url);
 
@@ -70,7 +88,6 @@ const Jobs = () => {
       const data = await response.json();
       console.log('API Response:', data);
 
-      // Handle both response formats: {success, jobs, pagination} OR {jobs, total}
       const jobsArray = data.jobs || [];
 
       if (jobsArray.length > 0) {
@@ -79,20 +96,32 @@ const Jobs = () => {
           title: job.title,
           company: job.company,
           location: job.location,
-          salaryRange: job.salaryRange || 'Competitive',
+          salaryRange: job.salaryRange || job.salary || 'Competitive',
           description: job.description,
           type: job.type || 'onsite',
           visaTags: job.visaTags || [],
           categoryTags: job.categoryTags || [],
           highPay: job.highPay || false,
-          sourceUrl: job.sourceUrl
+          sourceUrl: job.sourceUrl || job.url
         }));
         setJobs(mappedJobs);
-        const total = data.total || data.pagination?.total || mappedJobs.length;
-        setPagination({ page: 1, limit: 50, total, pages: Math.ceil(total / 50) });
+
+        if (data.pagination) {
+          setPagination(data.pagination);
+        } else {
+          const total = data.total || mappedJobs.length;
+          setPagination({
+            page: page,
+            limit: 20,
+            total,
+            pages: Math.ceil(total / 20)
+          });
+        }
         console.log('Loaded', mappedJobs.length, 'jobs');
       } else {
-        setError('No jobs available at the moment');
+        setJobs([]);
+        setPagination({ page: 1, limit: 20, total: 0, pages: 0 });
+        setError('No jobs found matching your filters');
       }
     } catch (error) {
       console.error('Error fetching jobs:', error);
@@ -119,76 +148,31 @@ const Jobs = () => {
   };
 
   // Initial fetch on component mount
+  // Fetch jobs when filters or page change
   useEffect(() => {
-    console.log('Jobs component mounted, fetching jobs...');
-    fetchJobs();
+    fetchJobs(currentPage);
+  }, [currentPage, countryFilter, workTypeFilter, sponsorshipFilter]);
+
+  // Debounced keyword search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (currentPage !== 1) {
+        setCurrentPage(1);
+      } else {
+        fetchJobs(1);
+      }
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchKeyword]);
+
+  // Initial fetch for stats only
+  useEffect(() => {
     fetchJobStats();
   }, []);
 
   // Filter jobs locally
-  const filteredJobs = jobs.filter(job => {
-    // Keyword search filter
-    if (searchKeyword) {
-      const keyword = searchKeyword.toLowerCase();
-      const matchesKeyword =
-        job.title?.toLowerCase().includes(keyword) ||
-        job.company?.toLowerCase().includes(keyword) ||
-        job.description?.toLowerCase().includes(keyword);
-      if (!matchesKeyword) return false;
-    }
-
-    // Country filter (USA by default)
-    if (countryFilter && countryFilter !== 'all') {
-      const location = job.location?.toLowerCase() || '';
-      if (countryFilter === 'usa') {
-        // Filter for USA: check for US indicators
-        const usKeywords = ['usa', 'united states', 'u.s.', 'remote', 'us', ', ca', ', ny', ', tx', ', fl', ', wa'];
-        const hasUSIndicator = usKeywords.some(keyword => location.includes(keyword));
-        // Also check if location contains any 2-letter state code pattern (e.g., "CA", "NY")
-        const statePattern = /\b[a-z]{2}\b/i;
-        const hasStateCode = statePattern.test(location);
-
-        // If it doesn't have US keywords or state codes, it's likely not USA
-        if (!hasUSIndicator && !hasStateCode) return false;
-
-        // Explicitly exclude common international indicators
-        const internationalKeywords = ['uk', 'canada', 'india', 'australia', 'europe', 'asia', 'london', 'toronto', 'berlin', 'paris'];
-        const hasInternationalIndicator = internationalKeywords.some(keyword => location.includes(keyword));
-        if (hasInternationalIndicator) return false;
-      } else if (countryFilter === 'international') {
-        // Filter for non-USA jobs
-        const usKeywords = ['usa', 'united states', 'u.s.', 'remote us'];
-        const hasUSKeyword = usKeywords.some(keyword => location.includes(keyword));
-        const statePattern = /\b[a-z]{2}\b/i;
-        const hasStateCode = statePattern.test(location);
-
-        // If it has US indicators, exclude it
-        if (hasUSKeyword || hasStateCode) {
-          // But allow international if explicitly mentioned
-          const internationalKeywords = ['uk', 'canada', 'india', 'australia', 'europe', 'asia'];
-          const hasInternationalIndicator = internationalKeywords.some(keyword => location.includes(keyword));
-          if (!hasInternationalIndicator) return false;
-        }
-      }
-    }
-
-    // Location filter (city/state within selected country)
-    if (locationFilter && !job.location?.toLowerCase().includes(locationFilter.toLowerCase())) {
-      return false;
-    }
-
-    // Visa sponsorship filter
-    if (sponsorshipFilter === 'visa-friendly') {
-      if (!job.visaTags || job.visaTags.length === 0) return false;
-    }
-
-    // Work type filter
-    if (workTypeFilter && workTypeFilter !== 'all') {
-      if (job.type !== workTypeFilter) return false;
-    }
-
-    return true;
-  });
+  // Jobs are now filtered on the server
+  const displayJobs = jobs;
 
   const getWorkTypeIcon = (type) => {
     switch (type) {
@@ -203,9 +187,10 @@ const Jobs = () => {
   const clearFilters = () => {
     setSearchKeyword('');
     setLocationFilter('');
-    setCountryFilter('usa'); // Keep USA as default
+    setCountryFilter('usa');
     setSponsorshipFilter('all');
     setWorkTypeFilter('all');
+    setCurrentPage(1);
   };
 
   const hasActiveFilters = searchKeyword || locationFilter || countryFilter !== 'usa' || sponsorshipFilter !== 'all' || workTypeFilter !== 'all';
@@ -248,14 +233,18 @@ const Jobs = () => {
 
               <div className="filter-group">
                 <Label>Country/Region</Label>
-                <Select value={countryFilter} onValueChange={setCountryFilter}>
+                <Select value={countryFilter} onValueChange={(val) => { setCountryFilter(val); setCurrentPage(1); }}>
                   <SelectTrigger>
                     <SelectValue placeholder="USA" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Countries</SelectItem>
                     <SelectItem value="usa">🇺🇸 USA Only</SelectItem>
-                    <SelectItem value="international">🌍 International</SelectItem>
+                    <SelectItem value="gb">🇬🇧 United Kingdom</SelectItem>
+                    <SelectItem value="ca">🇨🇦 Canada</SelectItem>
+                    <SelectItem value="in">🇮🇳 India</SelectItem>
+                    <SelectItem value="au">🇦🇺 Australia</SelectItem>
+                    <SelectItem value="international">🌍 International (Non-US)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -302,7 +291,7 @@ const Jobs = () => {
             {hasActiveFilters && (
               <div className="filters-actions">
                 <span className="filter-count-text">
-                  {filteredJobs.length} job{filteredJobs.length !== 1 ? 's' : ''} found
+                  {pagination.total.toLocaleString()} job{pagination.total !== 1 ? 's' : ''} found
                 </span>
                 <Button variant="ghost" size="sm" onClick={clearFilters}>
                   <X className="w-4 h-4 mr-1" /> Clear filters
@@ -340,7 +329,7 @@ const Jobs = () => {
           {!isLoading && !error && (
             <>
               <div className="job-list">
-                {filteredJobs.map(job => (
+                {displayJobs.map(job => (
                   <Card key={job.id} className="job-card">
                     <div className="job-card-main">
                       <div className="job-info">
@@ -408,12 +397,40 @@ const Jobs = () => {
                 ))}
               </div>
 
-              {filteredJobs.length === 0 && (
+              {displayJobs.length === 0 && (
                 <div className="no-jobs-found">
                   <Filter className="w-12 h-12" />
                   <h3>No jobs found</h3>
                   <p>Try adjusting your filters or search terms.</p>
                   <Button variant="outline" onClick={clearFilters}>Clear all filters</Button>
+                </div>
+              )}
+
+              {pagination.pages > 1 && (
+                <div className="pagination-controls flex items-center justify-center gap-4 mt-12 pb-12">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setCurrentPage(prev => Math.max(1, prev - 1));
+                      window.scrollTo({ top: 300, behavior: 'smooth' });
+                    }}
+                    disabled={currentPage === 1}
+                  >
+                    Previous
+                  </Button>
+                  <span className="text-sm font-medium">
+                    Page {currentPage} of {pagination.pages}
+                  </span>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setCurrentPage(prev => Math.min(pagination.pages, prev + 1));
+                      window.scrollTo({ top: 300, behavior: 'smooth' });
+                    }}
+                    disabled={currentPage === pagination.pages}
+                  >
+                    Next
+                  </Button>
                 </div>
               )}
             </>

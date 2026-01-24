@@ -14,10 +14,11 @@ class AdzunaService:
     def __init__(self):
         self.app_id = os.getenv('ADZUNA_APP_ID')
         self.api_key = os.getenv('ADZUNA_API_KEY')
-        self.base_url = "https://api.adzuna.com/v1/api/jobs/us/search"
+        self.base_url = "https://api.adzuna.com/v1/api/jobs"
         
     async def fetch_jobs(
         self, 
+        country: str = 'us',
         keyword: Optional[str] = None,
         location: Optional[str] = None,
         page: int = 1,
@@ -40,7 +41,8 @@ class AdzunaService:
             return {"jobs": [], "error": "API credentials missing"}
             
         try:
-            url = f"{self.base_url}/{page}"
+            # URL format: v1/api/jobs/{country}/search/{page}
+            url = f"{self.base_url}/{country.lower()}/search/{page}"
             
             params = {
                 "app_id": self.app_id,
@@ -71,7 +73,8 @@ class AdzunaService:
                         normalized_job = {
                             "title": job.get('title', 'Unknown Title'),
                             "company": job.get('company', {}).get('display_name', 'Unknown Company'),
-                            "location": job.get('location', {}).get('display_name', 'USA'),
+                            "location": job.get('location', {}).get('display_name', country.upper()),
+                            "country": country.lower(),
                             "description": job.get('description', ''),
                             "url": job.get('redirect_url', ''),
                             "salary": self._format_salary(job.get('salary_min'), job.get('salary_max')),
@@ -116,6 +119,7 @@ class AdzunaService:
         
     async def fetch_multiple_pages(
         self,
+        country: str = 'us',
         keyword: Optional[str] = None,
         location: Optional[str] = None,
         max_pages: int = 10
@@ -134,7 +138,7 @@ class AdzunaService:
         all_jobs = []
         
         for page in range(1, max_pages + 1):
-            result = await self.fetch_jobs(keyword=keyword, location=location, page=page)
+            result = await self.fetch_jobs(country=country, keyword=keyword, location=location, page=page)
             
             jobs = result.get('jobs', [])
             if not jobs:

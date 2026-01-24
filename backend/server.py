@@ -2796,6 +2796,7 @@ async def get_jobs(
     type: Optional[str] = Query(None),  # remote, hybrid, onsite
     visa: Optional[bool] = Query(None),  # visa-sponsoring jobs
     high_pay: Optional[bool] = Query(None),  # high-paying jobs
+    country: Optional[str] = Query(None),  # country code (e.g., 'us', 'gb', 'ca')
 ):
     """
     Get paginated job listings with filters
@@ -2804,6 +2805,15 @@ async def get_jobs(
         # Build query - show all jobs (active check removed for now)
         query = {}
         
+        if country:
+            country_lower = country.lower()
+            if country_lower == 'usa' or country_lower == 'us':
+                query["country"] = "us"
+            elif country_lower == 'international':
+                query["country"] = {"$ne": "us"}
+            else:
+                query["country"] = country_lower
+
         if search:
             query["$or"] = [
                 {"title": {"$regex": search, "$options": "i"}},
