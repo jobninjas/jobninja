@@ -70,11 +70,20 @@ class AdzunaService:
                     # Normalize job data to our schema
                     normalized_jobs = []
                     for job in data.get('results', []):
+                        # Validate country: sometimes Adzuna US search returns global remote jobs
+                        job_location = job.get('location', {}).get('display_name', '').lower()
+                        job_country = country.lower()
+                        
+                        if job_country == 'us':
+                            international_keywords = ['israel', 'europe', 'india', 'uk', 'london', 'canada', 'germany', 'australia']
+                            if any(k in job_location for k in international_keywords):
+                                job_country = 'international'
+
                         normalized_job = {
                             "title": job.get('title', 'Unknown Title'),
                             "company": job.get('company', {}).get('display_name', 'Unknown Company'),
                             "location": job.get('location', {}).get('display_name', country.upper()),
-                            "country": country.lower(),
+                            "country": job_country,
                             "description": job.get('description', ''),
                             "url": job.get('redirect_url', ''),
                             "salary": self._format_salary(job.get('salary_min'), job.get('salary_max')),
