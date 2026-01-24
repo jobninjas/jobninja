@@ -10,22 +10,15 @@ import {
   Bot,
   UserCheck,
   Zap,
-  Clock,
-  Shield,
   FileText,
   MessageSquare,
   Sparkles,
   ArrowRight,
-  Globe,
-  DollarSign,
   Target,
   Users,
   Menu,
   ChevronRight,
-  Upload,
   Search,
-  Send,
-  CheckCircle,
   Mic,
   Play,
   RefreshCw
@@ -47,7 +40,7 @@ const LandingPage = () => {
   const rotatingWords = ['faster', 'smarter', 'easier', 'better'];
 
   // Live application counter - starts at 15,500 and adds 10 every hour
-  const baseApplications = 15500;
+  const baseApplications = 5550;
   const baseInterviews = 800; // New base interviews
   const startDate = new Date('2026-01-01T00:00:00Z').getTime(); // Reference start date
 
@@ -62,8 +55,8 @@ const LandingPage = () => {
   });
 
   const [jobStats, setJobStats] = useState({
-    total: 5248192,
-    daily: 10452
+    total: 1000000,
+    daily: 1000
   });
 
   useEffect(() => {
@@ -240,28 +233,6 @@ const LandingPage = () => {
               </Button>
             </div>
 
-            <div className="hero-trust-badges">
-              <div className="trust-badge">
-                <Globe className="w-4 h-4" />
-                <span>Visa Sponsoring</span>
-              </div>
-              <div className="trust-badge">
-                <DollarSign className="w-4 h-4" />
-                <span>High Paying</span>
-              </div>
-              <div className="trust-badge">
-                <Sparkles className="w-4 h-4" />
-                <span>Startups</span>
-              </div>
-              <div className="trust-badge">
-                <FileText className="w-4 h-4" />
-                <span>Contract</span>
-              </div>
-              <div className="trust-badge">
-                <Target className="w-4 h-4" />
-                <span>Remote Jobs</span>
-              </div>
-            </div>
           </div>
 
           {/* Ninja Illustration */}
@@ -533,13 +504,13 @@ const LandingPage = () => {
 
               <div className="fresh-stats-grid">
                 <div className="fresh-stat-item">
-                  <div className="fresh-stat-number">{jobStats.daily.toLocaleString()}+</div>
-                  <div className="fresh-stat-label">new jobs added today</div>
+                  <div className="fresh-stat-number">1k+</div>
+                  <div className="fresh-stat-label">jobs everyday</div>
                 </div>
                 <div className="fresh-stat-divider" />
                 <div className="fresh-stat-item">
-                  <div className="fresh-stat-number">{jobStats.total.toLocaleString()}+</div>
-                  <div className="fresh-stat-label">Millions of jobs for you to choose from</div>
+                  <div className="fresh-stat-number">1million+</div>
+                  <div className="fresh-stat-label">jobs overall</div>
                 </div>
               </div>
 

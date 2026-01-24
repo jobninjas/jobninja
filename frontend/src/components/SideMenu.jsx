@@ -14,16 +14,8 @@ import {
   LogOut,
   FileText,
   ScanLine,
-  Zap,
-  List,
-  Target,
-  Linkedin,
-  TrendingUp,
-  MessageSquare,
-  Mail,
-  BookOpen,
-  Layout,
-  Sparkles
+  Sparkles,
+  MousePointerClick
 } from 'lucide-react';
 import { BRAND } from '../config/branding';
 
@@ -53,27 +45,8 @@ const SideMenu = ({ isOpen, onClose }) => {
     { icon: FileText, label: 'My Resumes', path: '/resumes', requiresAuth: true },
     { icon: Mic, label: 'Interview Prep', path: '/interview-prep' },
     { icon: Sparkles, label: 'Free Tools', path: '/free-tools', highlight: true },
+    { icon: MousePointerClick, label: 'Auto-Fill Applications', path: '/auto-fill' },
     { icon: CreditCard, label: 'Pricing', path: '/pricing' },
-  ];
-
-  const toolItems = [
-    { icon: Zap, label: 'One-Click Optimize', path: '/one-click-optimize' },
-    { icon: List, label: 'Bullet Points Generator', path: '/bullet-points' },
-    { icon: FileText, label: 'Summary Generator', path: '/summary-generator' },
-    { icon: MessageSquare, label: 'ChatGPT Resume', path: '/chatgpt-resume' },
-    { icon: Mail, label: 'ChatGPT Cover Letter', path: '/chatgpt-cover-letter' },
-    { icon: TrendingUp, label: 'Career Change', path: '/career-change' },
-  ];
-
-  const linkedinItems = [
-    { icon: Linkedin, label: 'LinkedIn Optimizer', path: '/linkedin-optimizer' },
-    { icon: Target, label: 'LinkedIn Examples', path: '/linkedin-examples' },
-  ];
-
-  const resourceItems = [
-    { icon: Layout, label: 'Resume Templates', path: '/resume-templates' },
-    { icon: BookOpen, label: 'Cover Letter Templates', path: '/cover-letter-templates' },
-    { icon: List, label: 'ATS Guides', path: '/ats-guides' },
   ];
 
   const accountItems = [
@@ -120,7 +93,7 @@ const SideMenu = ({ isOpen, onClose }) => {
                     <item.icon className="side-menu-icon" />
                   )}
                   <span>{item.label}</span>
-                  {item.label === 'Interview Prep' && (
+                  {(item.label === 'Interview Prep' || item.label === 'Auto-Fill Applications') && (
                     <span className="side-menu-badge">Soon</span>
                   )}
                 </button>
@@ -128,68 +101,7 @@ const SideMenu = ({ isOpen, onClose }) => {
             })}
           </div>
 
-          <div className="side-menu-section">
-            <span className="side-menu-section-title">Resume Tools</span>
-            {toolItems.map((item) => {
-              const isActive = location.pathname === item.path;
-              return (
-                <button
-                  key={item.path}
-                  onClick={() => handleNavigation(item.path)}
-                  className={`side-menu-item ${isActive ? 'active' : ''}`}
-                >
-                  {typeof item.icon === 'string' ? (
-                    <img src={item.icon} alt={item.label} className="side-menu-icon object-contain transform scale-150" style={{ width: '28px', height: '28px' }} />
-                  ) : (
-                    <item.icon className="side-menu-icon" />
-                  )}
-                  <span>{item.label}</span>
-                </button>
-              );
-            })}
-          </div>
 
-          <div className="side-menu-section">
-            <span className="side-menu-section-title">LinkedIn</span>
-            {linkedinItems.map((item) => {
-              const isActive = location.pathname === item.path;
-              return (
-                <button
-                  key={item.path}
-                  onClick={() => handleNavigation(item.path)}
-                  className={`side-menu-item ${isActive ? 'active' : ''}`}
-                >
-                  {typeof item.icon === 'string' ? (
-                    <img src={item.icon} alt={item.label} className="side-menu-icon object-contain transform scale-150" style={{ width: '28px', height: '28px' }} />
-                  ) : (
-                    <item.icon className="side-menu-icon" />
-                  )}
-                  <span>{item.label}</span>
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="side-menu-section">
-            <span className="side-menu-section-title">Resources</span>
-            {resourceItems.map((item) => {
-              const isActive = location.pathname === item.path;
-              return (
-                <button
-                  key={item.path}
-                  onClick={() => handleNavigation(item.path)}
-                  className={`side-menu-item ${isActive ? 'active' : ''}`}
-                >
-                  {typeof item.icon === 'string' ? (
-                    <img src={item.icon} alt={item.label} className="side-menu-icon object-contain" style={{ width: '20px', height: '20px' }} />
-                  ) : (
-                    <item.icon className="side-menu-icon" />
-                  )}
-                  <span>{item.label}</span>
-                </button>
-              );
-            })}
-          </div>
 
           {isAuthenticated && (
             <div className="side-menu-section">

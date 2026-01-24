@@ -27,6 +27,7 @@ import re
 from models import CheckoutRequest, SubscriptionData, WebhookEvent
 from payment_service import create_checkout_session, verify_webhook_signature, create_customer_portal_session
 from job_fetcher import fetch_all_job_categories, update_jobs_in_database, scheduled_job_fetch
+from job_apis.job_aggregator import JobAggregator
 from razorpay_service import (
     create_razorpay_order, 
     verify_razorpay_payment, 
@@ -2916,6 +2917,59 @@ async def refresh_jobs():
     except Exception as e:
         logger.error(f"Error refreshing jobs: {e}")
         raise HTTPException(status_code=500, detail="Failed to refresh jobs")
+
+
+@app.post("/api/jobs/aggregate")
+async def aggregate_jobs_from_apis(
+    use_adzuna: bool = Query(True, description="Fetch from Adzuna API"),
+    use_jsearch: bool = Query(True, description="Fetch from JSearch API"),
+    use_usajobs: bool = Query(True, description="Fetch from USAJobs.gov"),
+    use_rss: bool = Query(True, description="Fetch from RSS feeds (Indeed/SimplyHired)"),
+    max_adzuna_pages: int = Query(20, ge=1, le=100, description="Max Adzuna pages"),
+    max_jsearch_queries: int = Query(10, ge=1, le=20, description="Number of JSearch queries")
+):
+    """
+    Aggregate jobs from free APIs: Adzuna, JSearch, USAJobs, and RSS feeds
+    This can fetch 60K+ USA jobs using free tier limits
+    """
+    try:
+        aggregator = JobAggregator(db)
+        stats = await aggregator.aggregate_all_jobs(
+            use_adzuna=use_adzuna,
+            use_jsearch=use_jsearch,
+            use_usajobs=use_usajobs,
+            use_rss=use_rss,
+            max_adzuna_pages=max_adzuna_pages,
+            max_jsearch_queries=max_jsearch_queries
+        )
+        
+        return {
+            "success": True,
+            "message": f"Aggregated {stats['total_stored']} unique USA jobs",
+            "stats": stats
+        }
+    except Exception as e:
+        logger.error(f"Error aggregating jobs: {e}")
+        logger.error(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=f"Failed to aggregate jobs: {str(e)}")
+
+
+@app.get("/api/jobs/aggregator-stats")
+async def get_aggregator_stats():
+    """
+    Get statistics about aggregated jobs in the database
+    """
+    try:
+        aggregator = JobAggregator(db)
+        stats = await aggregator.get_job_stats()
+        
+        return {
+            "success": True,
+            "stats": stats
+        }
+    except Exception as e:
+        logger.error(f"Error fetching aggregator stats: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch aggregator stats")
 
 
 # ============================================

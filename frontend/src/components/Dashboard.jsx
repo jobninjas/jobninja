@@ -297,7 +297,9 @@ const Dashboard = () => {
             </div>
             <div className="flex items-center gap-4">
               <span className="text-sm text-gray-600">Welcome, {user?.name}</span>
-              <Badge>{user?.plan || 'Free'}</Badge>
+              <Badge className={user?.plan?.toLowerCase() === 'pro' ? 'bg-blue-600 hover:bg-blue-700 text-white border-0 font-bold px-3 py-1' : ''}>
+                {user?.plan?.toLowerCase() || 'free'}
+              </Badge>
               <Button variant="ghost" size="sm" onClick={() => setActiveTab('profile')}>
                 <User className="w-4 h-4" />
               </Button>
@@ -859,132 +861,7 @@ const Dashboard = () => {
                   </CardContent>
                 </Card>
 
-                {/* Job Portal Credentials */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Mail className="w-5 h-5" />
-                      Job Portal Credentials
-                    </CardTitle>
-                    <p className="text-sm text-gray-500 mt-1">
-                      These credentials help our Ninjas apply on your behalf. Your data is encrypted and secure.
-                    </p>
-                  </CardHeader>
-                  <CardContent className="space-y-6">
-                    {/* LinkedIn */}
-                    <div className="p-4 border rounded-lg">
-                      <div className="flex items-center gap-2 mb-4">
-                        <Linkedin className="w-5 h-5 text-blue-600" />
-                        <h4 className="font-medium">LinkedIn</h4>
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div>
-                          <Label>Profile URL</Label>
-                          <Input
-                            value={profile.linkedinUrl}
-                            onChange={(e) => handleProfileChange('linkedinUrl', e.target.value)}
-                            placeholder="https://linkedin.com/in/yourprofile"
-                          />
-                        </div>
-                        <div>
-                          <Label>Email</Label>
-                          <Input
-                            value={profile.linkedinEmail}
-                            onChange={(e) => handleProfileChange('linkedinEmail', e.target.value)}
-                            placeholder="your@email.com"
-                          />
-                        </div>
-                        <div>
-                          <Label>Password</Label>
-                          <div className="relative">
-                            <Input
-                              type={showPassword ? "text" : "password"}
-                              value={profile.linkedinPassword}
-                              onChange={(e) => handleProfileChange('linkedinPassword', e.target.value)}
-                              placeholder="••••••••"
-                            />
-                            <button
-                              type="button"
-                              className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500"
-                              onClick={() => setShowPassword(!showPassword)}
-                            >
-                              {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
 
-                    {/* Gmail for Job Applications */}
-                    <div className="p-4 border rounded-lg bg-red-50">
-                      <div className="flex items-center gap-2 mb-4">
-                        <Mail className="w-5 h-5 text-red-500" />
-                        <h4 className="font-medium">Gmail (For Job Applications)</h4>
-                        <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded">Required</span>
-                      </div>
-                      <p className="text-sm text-gray-600 mb-4">
-                        Create a new Gmail account specifically for job applications. Your Ninja will use this to apply on your behalf.
-                      </p>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <Label>Gmail Email</Label>
-                          <Input
-                            value={profile.gmailEmail}
-                            onChange={(e) => handleProfileChange('gmailEmail', e.target.value)}
-                            placeholder="yourjobsearch@gmail.com"
-                          />
-                        </div>
-                        <div>
-                          <Label>Gmail Password</Label>
-                          <div className="relative">
-                            <Input
-                              type={showPassword ? "text" : "password"}
-                              value={profile.gmailPassword}
-                              onChange={(e) => handleProfileChange('gmailPassword', e.target.value)}
-                              placeholder="••••••••"
-                            />
-                            <button
-                              type="button"
-                              className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500"
-                              onClick={() => setShowPassword(!showPassword)}
-                            >
-                              {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Indeed */}
-                    <div className="p-4 border rounded-lg">
-                      <div className="flex items-center gap-2 mb-4">
-                        <Briefcase className="w-5 h-5 text-blue-700" />
-                        <h4 className="font-medium">Indeed</h4>
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <Label>Email</Label>
-                          <Input
-                            value={profile.indeedEmail}
-                            onChange={(e) => handleProfileChange('indeedEmail', e.target.value)}
-                            placeholder="your@email.com"
-                          />
-                        </div>
-                        <div>
-                          <Label>Password</Label>
-                          <div className="relative">
-                            <Input
-                              type={showPassword ? "text" : "password"}
-                              value={profile.indeedPassword}
-                              onChange={(e) => handleProfileChange('indeedPassword', e.target.value)}
-                              placeholder="••••••••"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
 
                 {/* Resume & Documents */}
                 <Card>
