@@ -2461,7 +2461,10 @@ async def get_user_usage_limits(identifier: str) -> dict:
     else: # free
         limit = 100 # Increased to 100 for beta
         can_generate = total_resumes < limit
-        
+    return {
+        "limit": limit,
+        "usage": current_count,
+        "canGenerate": can_generate,
         "resetDate": reset_date,
         "totalResumes": total_resumes,
         "byokEnabled": user.get('byok_enabled', False)
@@ -2600,11 +2603,15 @@ async def ai_ninja_apply(request: Request):
         
         # Call Expert AI Ninja for tailored documents with HARD TIMEOUT
         logger.info(f"Generating expert documents for {company} - {jobTitle}")
+        
+        # Check for BYOK
+        byok_config = await get_decrypted_byok_key(user.get('email', ''))
+        
         expert_docs = None
         try:
             # 30 second hard timeout to prevent infinite spinning
             async with asyncio.timeout(30):
-                expert_docs = await generate_expert_documents(resumeText, jobDescription)
+                expert_docs = await generate_expert_documents(resumeText, jobDescription, user_info=user, byok_config=byok_config)
         except asyncio.TimeoutError:
             logger.warning(f"Expert AI generation timed out after 30s for {company}")
             expert_docs = None
@@ -3506,12 +3513,16 @@ async def generate_cover_letter_docx(request: GenerateCoverLetterRequest):
         # User said "Resume generation limit", but usually they go together.
         # Let's just do it for resumes for now to be strict about the request.
         
+        # Check for BYOK
+        byok_config = await get_decrypted_byok_key(user.get('email', ''))
+
         # Generate cover letter content
         cover_letter_text = await generate_cover_letter_content(
             request.resume_text,
             request.job_description,
             request.job_title,
-            request.company
+            request.company,
+            byok_config=byok_config
         )
         
         if not cover_letter_text:
