@@ -21,7 +21,10 @@ import {
   Search,
   Mic,
   Play,
-  RefreshCw
+  RefreshCw,
+  Linkedin,
+  Instagram,
+  Send
 } from 'lucide-react';
 import BookCallModal from './BookCallModal';
 import SideMenu from './SideMenu';
@@ -29,7 +32,8 @@ import Header from './Header';
 import { BRAND } from '../config/branding';
 import BrandLogo from './BrandLogo';
 import './SideMenu.css';
-import './LandingPage.css';
+import '../LandingPage.css';
+import { SocialTooltip } from './ui/SocialTooltip';
 
 const LandingPage = () => {
   const navigate = useNavigate();
@@ -38,6 +42,38 @@ const LandingPage = () => {
   const [sideMenuOpen, setSideMenuOpen] = useState(false);
   const [activeWord, setActiveWord] = useState(0);
   const rotatingWords = ['faster', 'smarter', 'easier', 'better'];
+
+  // Social Media Links
+  const socialLinks = [
+    {
+      href: "https://www.linkedin.com/company/110213459/",
+      ariaLabel: "LinkedIn",
+      tooltip: "Follow on LinkedIn",
+      color: "#0077b5",
+      icon: Linkedin,
+    },
+    {
+      href: "https://www.instagram.com/jobninjas_org",
+      ariaLabel: "Instagram",
+      tooltip: "Follow on Instagram",
+      color: "#E1306C",
+      icon: Instagram,
+    },
+    {
+      href: "https://t.me/jobNinjas",
+      ariaLabel: "Telegram",
+      tooltip: "Join Telegram Channel",
+      color: "#0088cc",
+      icon: Send,
+    },
+    {
+      href: "https://www.producthunt.com/products/jobninjas",
+      ariaLabel: "Product Hunt",
+      tooltip: "Support on Product Hunt",
+      color: "#DA552F",
+      icon: Target, // Analyzing icon as proxy for Product Hunt
+    },
+  ];
 
   // Live application counter - starts at 15,500 and adds 10 every hour
   const baseApplications = 5550;
@@ -646,6 +682,11 @@ const LandingPage = () => {
                 <span className="footer-logo-text font-bold text-xl">{BRAND.name}</span>
               </div>
               <p>{BRAND.tagline}</p>
+
+              {/* Social Media Buttons */}
+              <div className="mt-6">
+                <SocialTooltip items={socialLinks} className="justify-start" />
+              </div>
             </div>
             <div className="footer-links-col">
               <h4>Tools</h4>
