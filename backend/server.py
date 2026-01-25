@@ -1,5 +1,18 @@
-from fastapi import FastAPI, APIRouter, Request, Header, HTTPException, Query, File, Form, UploadFile, Depends, BackgroundTasks
+from fastapi import (
+    FastAPI,
+    APIRouter,
+    Request,
+    Header,
+    HTTPException,
+    Query,
+    File,
+    Form,
+    UploadFile,
+    Depends,
+    BackgroundTasks,
+)
 from fastapi.responses import JSONResponse
+import json
 import jwt
 import bcrypt
 from datetime import datetime, timedelta, timezone
@@ -11,7 +24,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 ROOT_DIR = Path(__file__).parent
-load_dotenv(ROOT_DIR / '.env')
+load_dotenv(ROOT_DIR / ".env")
 
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -25,15 +38,23 @@ from dateutil.relativedelta import relativedelta
 import aiohttp
 import re
 from models import CheckoutRequest, SubscriptionData, WebhookEvent
-from payment_service import create_checkout_session, verify_webhook_signature, create_customer_portal_session
-from job_fetcher import fetch_all_job_categories, update_jobs_in_database, scheduled_job_fetch
+from payment_service import (
+    create_checkout_session,
+    verify_webhook_signature,
+    create_customer_portal_session,
+)
+from job_fetcher import (
+    fetch_all_job_categories,
+    update_jobs_in_database,
+    scheduled_job_fetch,
+)
 from job_apis.job_aggregator import JobAggregator
 from razorpay_service import (
-    create_razorpay_order, 
-    verify_razorpay_payment, 
+    create_razorpay_order,
+    verify_razorpay_payment,
     get_payment_details,
     RAZORPAY_PLANS,
-    RAZORPAY_PLANS_USD
+    RAZORPAY_PLANS_USD,
 )
 from scraper_service import scrape_job_description
 from byok_crypto import validate_master_key, encrypt_api_key, decrypt_api_key
@@ -41,16 +62,31 @@ from byok_validators import (
     validate_openai_key,
     validate_google_key,
     validate_anthropic_key,
-    validate_api_key_format
+    validate_api_key_format,
 )
+from openai import AsyncOpenAI
+# Ensure parser is available
+try:
+    from resume_parser import parse_resume, validate_resume_file
+except ImportError:
+    # Log but don't crash yet, assume it might be fixed later or this block acts as warning
+    pass
 
 # Setup logging
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
 # MongoDB connection with error handling
-mongo_url = os.environ.get('MONGO_URL')
-db_name = os.environ.get('DB_NAME', 'novaninjas')
+mongo_url = os.environ.get("MONGO_URL")
+db_name = os.environ.get("DB_NAME", "novaninjas")
+
+# Initialize OpenAI client conditionally
+openai_api_key = os.environ.get("OPENAI_API_KEY")
+if openai_api_key:
+    openai_client = AsyncOpenAI(api_key=openai_api_key)
+else:
+    openai_client = None
+    logger.warning("OPENAI_API_KEY not set. OpenAI features will be disabled.")
 
 if not mongo_url:
     logger.error("MONGO_URL environment variable is not set!")
@@ -60,7 +96,7 @@ logger.info(f"Connecting to MongoDB database: {db_name}")
 
 try:
     import certifi
-    
+
     # Add TLS/SSL configuration for MongoDB Atlas compatibility
     # Use certifi's certificates for proper SSL verification
     # Also try tlsAllowInvalidCertificates for Railway compatibility
@@ -70,7 +106,7 @@ try:
         tls=True,
         tlsCAFile=certifi.where(),
         tlsAllowInvalidCertificates=True,
-        tlsAllowInvalidHostnames=True
+        tlsAllowInvalidHostnames=True,
     )
     db = client[db_name]
     logger.info("MongoDB client initialized successfully")
@@ -95,15 +131,17 @@ app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # Security Configuration
-JWT_SECRET = os.environ.get('JWT_SECRET', 'your-secret-key-change-in-production')
+JWT_SECRET = os.environ.get("JWT_SECRET", "your-secret-key-change-in-production")
 JWT_ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7 # 7 days
+ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 7 days
+
 
 # Security Helper Functions
 def hash_password(password: str) -> str:
     """Hash a password using bcrypt."""
     salt = bcrypt.gensalt()
-    return bcrypt.hashpw(password.encode('utf-8'), salt).decode('utf-8')
+    return bcrypt.hashpw(password.encode("utf-8"), salt).decode("utf-8")
+
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify a plain password against a bcrypt hash, with SHA256 fallback."""
@@ -111,22 +149,30 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
         return False
     try:
         # Check if it's a bcrypt hash
-        if hashed_password.startswith('$2b$'):
-            return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
-        
+        if hashed_password.startswith("$2b$"):
+            return bcrypt.checkpw(
+                plain_password.encode("utf-8"), hashed_password.encode("utf-8")
+            )
+
         # Fallback for old SHA256 hashes if any
         import hashlib
-        return hashlib.sha256(plain_password.encode('utf-8')).hexdigest() == hashed_password
+
+        return (
+            hashlib.sha256(plain_password.encode("utf-8")).hexdigest()
+            == hashed_password
+        )
     except Exception:
         return False
 
+
 def ensure_verified(user: dict):
     """Raise 403 if user is not verified."""
-    if not user.get('is_verified', False):
+    if not user.get("is_verified", False):
         raise HTTPException(
-            status_code=403, 
-            detail="Email verification required to use this feature. Please check your inbox or resend the link from your dashboard."
+            status_code=403,
+            detail="Email verification required to use this feature. Please check your inbox or resend the link from your dashboard.",
         )
+
 
 def create_access_token(data: dict):
     """Create a signed JWT access token."""
@@ -135,13 +181,14 @@ def create_access_token(data: dict):
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, JWT_SECRET, algorithm=JWT_ALGORITHM)
 
+
 def get_current_user_email(token: str = Header(...)):
     """Dependency to get current user email from JWT token."""
     try:
         # In transition, support old token_ format for now but log it
         if token.startswith("token_"):
-            return None # Force re-login or handle separately
-            
+            return None  # Force re-login or handle separately
+
         payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
         email: str = payload.get("sub")
         if email is None:
@@ -150,30 +197,70 @@ def get_current_user_email(token: str = Header(...)):
     except jwt.PyJWTError:
         raise HTTPException(status_code=401, detail="Invalid or expired token")
 
+
 async def get_current_user(token: str = Header(None, alias="token")):
     """Dependency to get full user object from database."""
     if not token:
         # Check if it was sent as 'auth-token' or just 'Token'
-        # FastAPI Header with None alias handles case-insensitivity partially, 
+        # FastAPI Header with None alias handles case-insensitivity partially,
         # but let's be explicit if needed.
         raise HTTPException(status_code=401, detail="Authentication required")
-        
+
     email = get_current_user_email(token)
     if not email:
         raise HTTPException(status_code=401, detail="Authentication required")
-        
+
     email = email.strip()
     # Find all matching users and sort by is_verified (True first)
-    cursor = db.users.find({"email": {"$regex": f"^{re.escape(email)}$", "$options": "i"}}).sort("is_verified", -1)
+    cursor = db.users.find(
+        {"email": {"$regex": f"^{re.escape(email)}$", "$options": "i"}}
+    ).sort("is_verified", -1)
     users = await cursor.to_list(length=2)
-    
+
     if not users:
         logger.warning(f"User not found for email: {email}")
-        raise HTTPException(status_code=404, detail=f"User {email} not found in database")
-    
+        raise HTTPException(
+            status_code=404, detail=f"User {email} not found in database"
+        )
+
     user = users[0]
-    logger.info(f"Retrieved user: {user.get('email')} (is_verified: {user.get('is_verified')})")
+    logger.info(
+        f"Retrieved user: {user.get('email')} (is_verified: {user.get('is_verified')})"
+    )
     return user
+
+
+async def get_decrypted_byok_key(email: str) -> dict:
+    """Helper to get and decrypt user's BYOK key if it exists"""
+    if not email:
+        return {}
+    
+    try:
+        user = await db.users.find_one({"email_normalized": email.lower()})
+        if not user: # Try exact match if normalized fails
+             user = await db.users.find_one({"email": email})
+
+        if not user or not user.get("byok_settings") or not user["byok_settings"].get("enabled"):
+            return {}
+        
+        settings = user["byok_settings"]
+        provider = settings.get("provider")
+        encrypted_key = settings.get("api_key")
+        
+        if not encrypted_key or not isinstance(encrypted_key, dict):
+            return {}
+            
+        from byok_crypto import decrypt_api_key
+        api_key = decrypt_api_key(
+            encrypted_key['ciphertext'],
+            encrypted_key['iv'],
+            encrypted_key['tag']
+        )
+        return {"provider": provider, "api_key": api_key}
+    except Exception as e:
+        logger.error(f"BYOK key lookup error for {email}: {e}")
+        return {}
+
 
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
@@ -182,20 +269,23 @@ api_router = APIRouter(prefix="/api")
 # Define Models
 class StatusCheck(BaseModel):
     model_config = ConfigDict(extra="ignore")  # Ignore MongoDB's _id field
-    
+
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     client_name: str
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
+
 class StatusCheckCreate(BaseModel):
     client_name: str
+
 
 class JobUrlFetchRequest(BaseModel):
     url: str
 
+
 class WaitlistEntry(BaseModel):
     model_config = ConfigDict(extra="ignore")
-    
+
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     name: str
     email: str
@@ -204,6 +294,7 @@ class WaitlistEntry(BaseModel):
     target_role: Optional[str] = None
     urgency: Optional[str] = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
 
 class WaitlistCreate(BaseModel):
     name: str
@@ -213,9 +304,10 @@ class WaitlistCreate(BaseModel):
     target_role: Optional[str] = None
     urgency: Optional[str] = None
 
+
 class CallBooking(BaseModel):
     model_config = ConfigDict(extra="ignore")
-    
+
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     name: str
     email: str
@@ -224,16 +316,18 @@ class CallBooking(BaseModel):
     status: str = "pending"  # pending, contacted, completed, cancelled
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
+
 class CallBookingCreate(BaseModel):
     name: str
     email: str
     mobile: str
     years_of_experience: str
 
+
 # User Authentication Models
 class User(BaseModel):
     model_config = ConfigDict(extra="ignore")
-    
+
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     email: str
     name: str
@@ -242,16 +336,20 @@ class User(BaseModel):
     plan: Optional[str] = None
     is_verified: bool = False
     verification_token: Optional[str] = None
-    referral_code: str = Field(default_factory=lambda: f"INV-{uuid.uuid4().hex[:6].upper()}")
+    referral_code: str = Field(
+        default_factory=lambda: f"INV-{uuid.uuid4().hex[:6].upper()}"
+    )
     referred_by: Optional[str] = None
     ai_applications_bonus: int = 0
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
 
 class UserSignup(BaseModel):
     email: str
     password: str
     name: str
     referral_code: Optional[str] = None
+
 
 class UserLogin(BaseModel):
     email: str
@@ -268,134 +366,156 @@ class UserResponse(BaseModel):
     plan: Optional[str] = None
     created_at: datetime
 
+
 # Add your routes to the router instead of directly to app
 @api_router.get("/")
 async def root():
     return {"message": "Hello World"}
 
+
 @api_router.get("/health")
-async def health_check():
+async def health_check_old():
     """
     Health check endpoint that also tests MongoDB connection.
     """
     mongo_status = "unknown"
     mongo_error = None
-    
+
     try:
         # Test MongoDB connection by pinging
-        await client.admin.command('ping')
+        await client.admin.command("ping")
         mongo_status = "connected"
     except Exception as e:
         error_msg = str(e)
-        if "SSL handshake failed" in error_msg or "TLSV1_ALERT_INTERNAL_ERROR" in error_msg:
+        if (
+            "SSL handshake failed" in error_msg
+            or "TLSV1_ALERT_INTERNAL_ERROR" in error_msg
+        ):
             mongo_status = "ssl_error"
             mongo_error = "SSL/TLS error - Please whitelist 0.0.0.0/0 in MongoDB Atlas Network Access"
         else:
             mongo_status = "error"
             mongo_error = error_msg[:200]  # Truncate long errors
-    
+
     # Check environment variables
     env_check = {
-        "MONGO_URL": "set" if os.environ.get('MONGO_URL') else "missing",
-        "DB_NAME": os.environ.get('DB_NAME', 'not set'),
-        "RESEND_API_KEY": "set" if os.environ.get('RESEND_API_KEY') else "missing",
-        "ADMIN_EMAIL": os.environ.get('ADMIN_EMAIL', 'not set')
+        "MONGO_URL": "set" if os.environ.get("MONGO_URL") else "missing",
+        "DB_NAME": os.environ.get("DB_NAME", "not set"),
+        "RESEND_API_KEY": "set" if os.environ.get("RESEND_API_KEY") else "missing",
+        "ADMIN_EMAIL": os.environ.get("ADMIN_EMAIL", "not set"),
     }
-    
+
     return {
         "status": "healthy" if mongo_status == "connected" else "degraded",
         "mongodb": mongo_status,
         "mongodb_error": mongo_error,
         "environment": env_check,
         "timestamp": datetime.now(timezone.utc).isoformat(),
-        "fix_instructions": "If mongodb shows ssl_error, go to MongoDB Atlas > Network Access > Add IP > Allow Access from Anywhere (0.0.0.0/0)" if mongo_status == "ssl_error" else None
+        "fix_instructions": (
+            "If mongodb shows ssl_error, go to MongoDB Atlas > Network Access > Add IP > Allow Access from Anywhere (0.0.0.0/0)"
+            if mongo_status == "ssl_error"
+            else None
+        ),
     }
+
 
 @api_router.get("/test-email/{email}")
 async def test_email_endpoint(email: str):
     """
     Test endpoint to debug email sending on Railway using Resend.
     """
-    resend_api_key = os.environ.get('RESEND_API_KEY')
-    from_email = os.environ.get('FROM_EMAIL', 'onboarding@resend.dev')
-    
+    resend_api_key = os.environ.get("RESEND_API_KEY")
+    from_email = os.environ.get("FROM_EMAIL", "onboarding@resend.dev")
+
     if not resend_api_key:
         return {"success": False, "error": "RESEND_API_KEY not configured"}
-    
+
     try:
         async with aiohttp.ClientSession() as session:
             async with session.post(
                 "https://api.resend.com/emails",
                 headers={
                     "Authorization": f"Bearer {resend_api_key}",
-                    "Content-Type": "application/json"
+                    "Content-Type": "application/json",
                 },
                 json={
                     "from": from_email,
                     "to": [email],
                     "subject": "Test Email from Railway via Resend",
-                    "html": f"<p>Test email sent at {datetime.now()}</p><p>If you receive this, emails are working! 🎉</p>"
-                }
+                    "html": f"<p>Test email sent at {datetime.now()}</p><p>If you receive this, emails are working! 🎉</p>",
+                },
             ) as response:
                 result = await response.json()
                 if response.status == 200:
-                    return {"success": True, "message": f"Email sent to {email}", "resend_response": result}
+                    return {
+                        "success": True,
+                        "message": f"Email sent to {email}",
+                        "resend_response": result,
+                    }
                 else:
-                    return {"success": False, "error": result, "status": response.status}
+                    return {
+                        "success": False,
+                        "error": result,
+                        "status": response.status,
+                    }
     except Exception as e:
         return {"success": False, "error": str(e)}
+
 
 @api_router.post("/status", response_model=StatusCheck)
 async def create_status_check(input: StatusCheckCreate):
     status_dict = input.model_dump()
     status_obj = StatusCheck(**status_dict)
-    
+
     # Convert to dict and serialize datetime to ISO string for MongoDB
     doc = status_obj.model_dump()
-    doc['timestamp'] = doc['timestamp'].isoformat()
-    
+    doc["timestamp"] = doc["timestamp"].isoformat()
+
     _ = await db.status_checks.insert_one(doc)
     return status_obj
+
 
 @api_router.get("/status", response_model=List[StatusCheck])
 async def get_status_checks():
     # Exclude MongoDB's _id field from the query results
     status_checks = await db.status_checks.find({}, {"_id": 0}).to_list(1000)
-    
+
     # Convert ISO string timestamps back to datetime objects
     for check in status_checks:
-        if isinstance(check['timestamp'], str):
-            check['timestamp'] = datetime.fromisoformat(check['timestamp'])
-    
+        if isinstance(check["timestamp"], str):
+            check["timestamp"] = datetime.fromisoformat(check["timestamp"])
+
     return status_checks
 
+
 # ============ EMAIL HELPER (RESEND) ============
+
 
 async def send_email_resend(to_email: str, subject: str, html_content: str):
     """
     Send email using Resend API (HTTP-based, works on Railway).
     """
-    resend_api_key = os.environ.get('RESEND_API_KEY')
-    from_email = os.environ.get('FROM_EMAIL', 'jobNinjas.org <veereddy@jobninjas.org>')
-    
+    resend_api_key = os.environ.get("RESEND_API_KEY")
+    from_email = os.environ.get("FROM_EMAIL", "jobNinjas.org <veereddy@jobninjas.org>")
+
     if not resend_api_key:
         logger.warning("RESEND_API_KEY not configured, skipping email")
         return False
-    
+
     try:
         async with aiohttp.ClientSession() as session:
             async with session.post(
                 "https://api.resend.com/emails",
                 headers={
                     "Authorization": f"Bearer {resend_api_key}",
-                    "Content-Type": "application/json"
+                    "Content-Type": "application/json",
                 },
                 json={
                     "from": from_email,
                     "to": [to_email],
                     "subject": subject,
-                    "html": html_content
-                }
+                    "html": html_content,
+                },
             ) as response:
                 result = await response.json()
                 if response.status == 200:
@@ -461,8 +581,10 @@ async def send_waitlist_email(name: str, email: str):
 </body>
 </html>
     """
-    
-    return await send_email_resend(email, "Welcome to jobNinjas Waitlist! 🥷", html_content)
+
+    return await send_email_resend(
+        email, "Welcome to jobNinjas Waitlist! 🥷", html_content
+    )
 
 
 async def send_booking_email(name: str, email: str):
@@ -511,22 +633,34 @@ async def send_booking_email(name: str, email: str):
 </body>
 </html>
     """
-    
-    return await send_email_resend(email, "Your Call with jobNinjas.org is Booked! 📞", html_content)
+
+    return await send_email_resend(
+        email, "Your Call with jobNinjas.org is Booked! 📞", html_content
+    )
 
 
-async def send_welcome_email(name: str, email: str, token: str = None, referral_code: str = None):
+async def send_welcome_email(
+    name: str, email: str, token: str = None, referral_code: str = None
+):
     """
     Send a refined welcome email to new users who sign up.
     """
     logger.info(f"Attempting to send welcome email to {email} (Name: {name})")
-    frontend_url = os.environ.get('FRONTEND_URL', 'https://jobninjas.ai')
-    verify_link = f"{frontend_url}/verify-email?token={token}" if token else f"{frontend_url}/dashboard"
+    frontend_url = os.environ.get("FRONTEND_URL", "https://jobninjas.ai")
+    verify_link = (
+        f"{frontend_url}/verify-email?token={token}"
+        if token
+        else f"{frontend_url}/dashboard"
+    )
     login_link = f"{frontend_url}/login"
-    invite_link = f"{frontend_url}/signup?ref={referral_code}" if referral_code else f"{frontend_url}/signup"
-    
+    invite_link = (
+        f"{frontend_url}/signup?ref={referral_code}"
+        if referral_code
+        else f"{frontend_url}/signup"
+    )
+
     blue_primary = "#2563eb"
-    
+
     html_content = f"""
 <!DOCTYPE html>
 <html>
@@ -637,10 +771,11 @@ async def send_welcome_email(name: str, email: str, token: str = None, referral_
 </body>
 </html>
     """
-    
-    
+
     try:
-        return await send_email_resend(email, f"Welcome to jobNinjas, {name}! 🥷", html_content)
+        return await send_email_resend(
+            email, f"Welcome to jobNinjas, {name}! 🥷", html_content
+        )
     except Exception as e:
         logger.error(f"Failed to generate/send welcome email: {e}")
         return False
@@ -650,8 +785,8 @@ async def send_admin_booking_notification(booking):
     """
     Send notification to admin when someone books a call.
     """
-    admin_email = os.environ.get('ADMIN_EMAIL', 'veereddy@jobninjas.org')
-    
+    admin_email = os.environ.get("ADMIN_EMAIL", "veereddy@jobninjas.org")
+
     html_content = f"""
 <!DOCTYPE html>
 <html>
@@ -695,10 +830,14 @@ async def send_admin_booking_notification(booking):
 </body>
 </html>
     """
-    
-    return await send_email_resend(admin_email, f"🔔 New Call Booking: {booking.name}", html_content)
+
+    return await send_email_resend(
+        admin_email, f"🔔 New Call Booking: {booking.name}", html_content
+    )
+
 
 # ============ AUTH ENDPOINTS ============
+
 
 @api_router.post("/auth/signup")
 @limiter.limit("5/minute")
@@ -708,41 +847,45 @@ async def signup(user_data: UserSignup, request: Request):
     """
     try:
         # Check if user already exists (case-insensitive)
-        existing_user = await db.users.find_one({
-            "email": {"$regex": f"^{re.escape(user_data.email)}$", "$options": "i"}
-        })
+        existing_user = await db.users.find_one(
+            {"email": {"$regex": f"^{re.escape(user_data.email)}$", "$options": "i"}}
+        )
         if existing_user:
             raise HTTPException(status_code=400, detail="Email already registered")
-        
+
         # Create user with secure bcrypt hashing
         password_hash = hash_password(user_data.password)
-        
+
         verification_token = str(uuid.uuid4())
-        
+
         user = User(
             email=user_data.email,
             name=user_data.name,
             password_hash=password_hash,
             verification_token=verification_token,
             referred_by=user_data.referral_code,
-            is_verified=False
+            is_verified=False,
         )
-        
+
         # Save to database
         user_dict = user.model_dump()
-        user_dict['created_at'] = user_dict['created_at'].isoformat()
+        user_dict["created_at"] = user_dict["created_at"].isoformat()
         await db.users.insert_one(user_dict)
         logger.info(f"New user signed up: {user.email}")
-        
+
         # Send welcome email in background (don't wait)
         try:
-            asyncio.create_task(send_welcome_email(user.name, user.email, verification_token, user.referral_code))
+            asyncio.create_task(
+                send_welcome_email(
+                    user.name, user.email, verification_token, user.referral_code
+                )
+            )
         except Exception as email_error:
             logger.error(f"Error sending welcome email: {email_error}")
-        
+
         # Generate secure JWT access token
         access_token = create_access_token(data={"sub": user.email, "id": user.id})
-        
+
         # Return user data (without password)
         return {
             "success": True,
@@ -752,15 +895,16 @@ async def signup(user_data: UserSignup, request: Request):
                 "name": user.name,
                 "role": user.role,
                 "plan": user.plan,
-                "is_verified": False
+                "is_verified": False,
             },
-            "token": access_token
+            "token": access_token,
         }
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Error in signup: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Signup failed: {str(e)}")
+
 
 @api_router.post("/auth/login")
 @limiter.limit("5/minute")
@@ -770,49 +914,52 @@ async def login(credentials: UserLogin, request: Request):
     """
     email_clean = credentials.email.strip()
     # Find all matching users and sort by is_verified (True first)
-    cursor = db.users.find({
-        "email": {"$regex": f"^{re.escape(email_clean)}$", "$options": "i"}
-    }).sort("is_verified", -1)
+    cursor = db.users.find(
+        {"email": {"$regex": f"^{re.escape(email_clean)}$", "$options": "i"}}
+    ).sort("is_verified", -1)
     users = await cursor.to_list(length=2)
-    
+
     if not users:
         logger.warning(f"Login failed: User {email_clean} not found")
         raise HTTPException(status_code=401, detail="Invalid email or password")
-    
+
     # Try to find a user where the password matches (check all if there are dupes)
     user = None
     for u in users:
-        if verify_password(credentials.password, u.get('password_hash', '')):
+        if verify_password(credentials.password, u.get("password_hash", "")):
             user = u
             break
-            
+
     if not user:
         logger.warning(f"Login failed: Password mismatch for {email_clean}")
         raise HTTPException(status_code=401, detail="Invalid email or password")
-    
+
     # Auto-upgrade legacy hashes to bcrypt
-    if not user.get('password_hash', '').startswith('$2b$'):
+    if not user.get("password_hash", "").startswith("$2b$"):
         new_hash = hash_password(credentials.password)
-        await db.users.update_one({"_id": user['_id']}, {"$set": {"password_hash": new_hash}})
+        await db.users.update_one(
+            {"_id": user["_id"]}, {"$set": {"password_hash": new_hash}}
+        )
         logger.info(f"Upgraded password hash for user: {credentials.email}")
-    
+
     # Generate secure JWT access token
-    user_id = user.get('id') or str(user.get('_id'))
-    access_token = create_access_token(data={"sub": user['email'], "id": user_id})
-    
+    user_id = user.get("id") or str(user.get("_id"))
+    access_token = create_access_token(data={"sub": user["email"], "id": user_id})
+
     return {
         "success": True,
         "user": {
             "id": user_id,
-            "email": user['email'],
-            "name": user.get('name', 'User'),
-            "role": user.get('role', 'customer'),
-            "plan": user.get('plan'),
-            "is_verified": bool(user.get('is_verified', False)),
-            "referral_code": user.get('referral_code')
+            "email": user["email"],
+            "name": user.get("name", "User"),
+            "role": user.get("role", "customer"),
+            "plan": user.get("plan"),
+            "is_verified": bool(user.get("is_verified", False)),
+            "referral_code": user.get("referral_code"),
         },
-        "token": access_token
+        "token": access_token,
     }
+
 
 @api_router.get("/auth/me")
 async def get_me(user: dict = Depends(get_current_user)):
@@ -822,15 +969,16 @@ async def get_me(user: dict = Depends(get_current_user)):
     return {
         "success": True,
         "user": {
-            "id": user.get('id'),
-            "email": user.get('email'),
-            "name": user.get('name'),
-            "role": user.get('role'),
-            "plan": user.get('plan'),
-            "is_verified": bool(user.get('is_verified', False)),
-            "referral_code": user.get('referral_code')
-        }
+            "id": user.get("id"),
+            "email": user.get("email"),
+            "name": user.get("name"),
+            "role": user.get("role"),
+            "plan": user.get("plan"),
+            "is_verified": bool(user.get("is_verified", False)),
+            "referral_code": user.get("referral_code"),
+        },
     }
+
 
 @api_router.get("/auth/verify-email")
 async def verify_email(token: str):
@@ -838,18 +986,21 @@ async def verify_email(token: str):
     Verify user email using the token.
     """
     user = await db.users.find_one({"verification_token": token})
-    
+
     if not user:
-        raise HTTPException(status_code=400, detail="Invalid or expired verification token")
-    
+        raise HTTPException(
+            status_code=400, detail="Invalid or expired verification token"
+        )
+
     await db.users.update_one(
-        {"_id": user['_id']},
-        {"$set": {"is_verified": True}, "$unset": {"verification_token": ""}}
+        {"_id": user["_id"]},
+        {"$set": {"is_verified": True}, "$unset": {"verification_token": ""}},
     )
-    
+
     logger.info(f"User email verified: {user['email']}")
-    
+
     return {"success": True, "message": "Email verified successfully"}
+
 
 @api_router.post("/auth/resend-verification")
 @limiter.limit("3/minute")
@@ -858,27 +1009,37 @@ async def resend_verification(request: Request, user: dict = Depends(get_current
     Resend verification email to the logged-in user.
     """
     try:
-        if user.get('is_verified'):
+        if user.get("is_verified"):
             return {"success": True, "message": "Email is already verified"}
-            
+
         # Generate new token or use existing one
-        verification_token = user.get('verification_token')
+        verification_token = user.get("verification_token")
         if not verification_token:
             verification_token = str(uuid.uuid4())
             await db.users.update_one(
-                {"_id": user['_id']},
-                {"$set": {"verification_token": verification_token}}
+                {"_id": user["_id"]},
+                {"$set": {"verification_token": verification_token}},
             )
-            
+
         # Send email in background
-        asyncio.create_task(send_welcome_email(user['name'], user['email'], verification_token, user.get('referral_code')))
-        
+        asyncio.create_task(
+            send_welcome_email(
+                user["name"],
+                user["email"],
+                verification_token,
+                user.get("referral_code"),
+            )
+        )
+
         return {"success": True, "message": "Verification email resent"}
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Error resending verification: {str(e)}")
-        raise HTTPException(status_code=500, detail="Failed to resend verification email")
+        raise HTTPException(
+            status_code=500, detail="Failed to resend verification email"
+        )
+
 
 @api_router.get("/auth/users")
 async def get_all_users():
@@ -888,7 +1049,9 @@ async def get_all_users():
     users = await db.users.find({}, {"_id": 0, "password_hash": 0}).to_list(1000)
     return {"users": users, "count": len(users)}
 
+
 # ============ PROFILE ENDPOINTS ============
+
 
 @api_router.get("/user/profile")
 async def get_user_profile(user: dict = Depends(get_current_user)):
@@ -896,20 +1059,21 @@ async def get_user_profile(user: dict = Depends(get_current_user)):
     Get the profile of the current authenticated user.
     """
     try:
-        profile = await db.profiles.find_one({"email": user['email']}, {"_id": 0})
+        profile = await db.profiles.find_one({"email": user["email"]}, {"_id": 0})
         if not profile:
             return {
-                "success": True, 
+                "success": True,
                 "profile": {
-                    "email": user['email'],
-                    "fullName": user.get('name', ''),
-                    "is_new": True
-                }
+                    "email": user["email"],
+                    "fullName": user.get("name", ""),
+                    "is_new": True,
+                },
             }
         return {"success": True, "profile": profile}
     except Exception as e:
         logger.error(f"Error fetching user profile: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to fetch profile")
+
 
 @api_router.post("/user/profile")
 async def save_user_profile(request: Request, user: dict = Depends(get_current_user)):
@@ -918,42 +1082,41 @@ async def save_user_profile(request: Request, user: dict = Depends(get_current_u
     """
     try:
         data = await request.json()
-        email = user['email']
-        
+        email = user["email"]
+
         # Build profile data update
         profile_update = {
             "email": email,
-            "fullName": data.get('fullName', user.get('name', '')),
-            "phone": data.get('phone', ''),
-            "linkedinUrl": data.get('linkedinUrl', ''),
-            
+            "fullName": data.get("fullName", user.get("name", "")),
+            "phone": data.get("phone", ""),
+            "linkedinUrl": data.get("linkedinUrl", ""),
             # EEO Fields (Jobright Replication)
-            "gender": data.get('gender', ''),
-            "race": data.get('race', ''),
-            "disabilityStatus": data.get('disabilityStatus', ''),
-            "veteranStatus": data.get('veteranStatus', ''),
-            "lgbtqStatus": data.get('lgbtqStatus', ''),
-            "sexualOrientation": data.get('sexualOrientation', ''),
-            
-            "updated_at": datetime.now(timezone.utc).isoformat()
+            "gender": data.get("gender", ""),
+            "race": data.get("race", ""),
+            "disabilityStatus": data.get("disabilityStatus", ""),
+            "veteranStatus": data.get("veteranStatus", ""),
+            "lgbtqStatus": data.get("lgbtqStatus", ""),
+            "sexualOrientation": data.get("sexualOrientation", ""),
+            "updated_at": datetime.now(timezone.utc).isoformat(),
         }
-        
+
         # Basic fields that might be missing
-        if data.get('yearsOfExperience'): profile_update['yearsOfExperience'] = data.get('yearsOfExperience')
-        if data.get('currentRole'): profile_update['currentRole'] = data.get('currentRole')
-        
+        if data.get("yearsOfExperience"):
+            profile_update["yearsOfExperience"] = data.get("yearsOfExperience")
+        if data.get("currentRole"):
+            profile_update["currentRole"] = data.get("currentRole")
+
         # Upsert profile
         await db.profiles.update_one(
-            {"email": email},
-            {"$set": profile_update},
-            upsert=True
+            {"email": email}, {"$set": profile_update}, upsert=True
         )
-        
+
         logger.info(f"Profile updated via extension for {email}")
         return {"success": True, "message": "Profile updated successfully"}
     except Exception as e:
         logger.error(f"Error saving user profile: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to save profile")
+
 
 @api_router.get("/profile/{email}")
 async def get_profile(email: str):
@@ -961,11 +1124,12 @@ async def get_profile(email: str):
     Get user profile by email.
     """
     profile = await db.profiles.find_one({"email": email}, {"_id": 0})
-    
+
     if not profile:
         return {"profile": None}
-    
+
     return {"profile": profile}
+
 
 @api_router.post("/profile")
 async def save_profile(request: Request):
@@ -974,71 +1138,64 @@ async def save_profile(request: Request):
     Handles multipart form data including file uploads.
     """
     form_data = await request.form()
-    
-    email = form_data.get('email')
+
+    email = form_data.get("email")
     if not email:
         raise HTTPException(status_code=400, detail="Email is required")
-    
+
     # Build profile data
     profile_data = {
         "email": email,
-        "fullName": form_data.get('fullName', ''),
-        "phone": form_data.get('phone', ''),
-        
+        "fullName": form_data.get("fullName", ""),
+        "phone": form_data.get("phone", ""),
         # Professional Info
-        "yearsOfExperience": form_data.get('yearsOfExperience', ''),
-        "currentRole": form_data.get('currentRole', ''),
-        "targetRole": form_data.get('targetRole', ''),
-        "expectedSalary": form_data.get('expectedSalary', ''),
-        "preferredLocations": form_data.get('preferredLocations', ''),
-        "remotePreference": form_data.get('remotePreference', ''),
-        "preferredJobTypes": form_data.get('preferredJobTypes', ''),
-        "noticePeriod": form_data.get('noticePeriod', ''),
-        
+        "yearsOfExperience": form_data.get("yearsOfExperience", ""),
+        "currentRole": form_data.get("currentRole", ""),
+        "targetRole": form_data.get("targetRole", ""),
+        "expectedSalary": form_data.get("expectedSalary", ""),
+        "preferredLocations": form_data.get("preferredLocations", ""),
+        "remotePreference": form_data.get("remotePreference", ""),
+        "preferredJobTypes": form_data.get("preferredJobTypes", ""),
+        "noticePeriod": form_data.get("noticePeriod", ""),
         # Visa & Work Authorization
-        "visaStatus": form_data.get('visaStatus', ''),
-        "requiresSponsorship": form_data.get('requiresSponsorship', ''),
-        "willingToRelocate": form_data.get('willingToRelocate', ''),
-        
+        "visaStatus": form_data.get("visaStatus", ""),
+        "requiresSponsorship": form_data.get("requiresSponsorship", ""),
+        "willingToRelocate": form_data.get("willingToRelocate", ""),
         # Job Portal Credentials (encrypted in production)
-        "linkedinUrl": form_data.get('linkedinUrl', ''),
-        "linkedinEmail": form_data.get('linkedinEmail', ''),
-        "linkedinPassword": form_data.get('linkedinPassword', ''),
-        "indeedEmail": form_data.get('indeedEmail', ''),
-        "indeedPassword": form_data.get('indeedPassword', ''),
-        
+        "linkedinUrl": form_data.get("linkedinUrl", ""),
+        "linkedinEmail": form_data.get("linkedinEmail", ""),
+        "linkedinPassword": form_data.get("linkedinPassword", ""),
+        "indeedEmail": form_data.get("indeedEmail", ""),
+        "indeedPassword": form_data.get("indeedPassword", ""),
         # Gmail for job applications
-        "gmailEmail": form_data.get('gmailEmail', ''),
-        "gmailPassword": form_data.get('gmailPassword', ''),
-        
+        "gmailEmail": form_data.get("gmailEmail", ""),
+        "gmailPassword": form_data.get("gmailPassword", ""),
         # Skills & Background
-        "skills": form_data.get('skills', ''),
-        "education": form_data.get('education', ''),
-        "certifications": form_data.get('certifications', ''),
-        "additionalNotes": form_data.get('additionalNotes', ''),
-        
+        "skills": form_data.get("skills", ""),
+        "education": form_data.get("education", ""),
+        "certifications": form_data.get("certifications", ""),
+        "additionalNotes": form_data.get("additionalNotes", ""),
         # Metadata
-        "updated_at": datetime.now(timezone.utc).isoformat()
+        "updated_at": datetime.now(timezone.utc).isoformat(),
     }
-    
+
     # Handle resume file upload
-    resume_file = form_data.get('resume')
-    if resume_file and hasattr(resume_file, 'read'):
+    resume_file = form_data.get("resume")
+    if resume_file and hasattr(resume_file, "read"):
         # In production, upload to S3/GCS and store URL
         # For now, just store the filename
-        profile_data['resumeFileName'] = resume_file.filename
+        profile_data["resumeFileName"] = resume_file.filename
         logger.info(f"Resume uploaded for {email}: {resume_file.filename}")
-    
+
     # Upsert profile (update if exists, insert if not)
     result = await db.profiles.update_one(
-        {"email": email},
-        {"$set": profile_data},
-        upsert=True
+        {"email": email}, {"$set": profile_data}, upsert=True
     )
-    
+
     logger.info(f"Profile saved for {email}")
-    
+
     return {"success": True, "message": "Profile saved successfully"}
+
 
 @api_router.delete("/user/{email}")
 async def delete_user(email: str):
@@ -1047,21 +1204,23 @@ async def delete_user(email: str):
     """
     # Delete from users collection
     await db.users.delete_one({"email": email})
-    
+
     # Delete profile
     await db.profiles.delete_one({"email": email})
-    
+
     # Delete from waitlist
     await db.waitlist.delete_many({"email": email})
-    
+
     # Delete call bookings
     await db.call_bookings.delete_many({"email": email})
-    
+
     logger.info(f"Account deleted for {email}")
-    
+
     return {"success": True, "message": "Account deleted successfully"}
 
+
 # ============ WAITLIST ENDPOINTS ============
+
 
 @api_router.post("/waitlist", response_model=WaitlistEntry)
 async def join_waitlist(input: WaitlistCreate):
@@ -1071,18 +1230,19 @@ async def join_waitlist(input: WaitlistCreate):
     """
     waitlist_dict = input.model_dump()
     waitlist_obj = WaitlistEntry(**waitlist_dict)
-    
+
     # Convert to dict and serialize datetime for MongoDB
     doc = waitlist_obj.model_dump()
-    doc['created_at'] = doc['created_at'].isoformat()
-    
+    doc["created_at"] = doc["created_at"].isoformat()
+
     await db.waitlist.insert_one(doc)
     logger.info(f"New waitlist entry: {waitlist_obj.email}")
-    
+
     # Send confirmation email in background (don't wait)
     asyncio.create_task(send_waitlist_email(waitlist_obj.name, waitlist_obj.email))
-    
+
     return waitlist_obj
+
 
 @api_router.get("/waitlist", response_model=List[WaitlistEntry])
 async def get_waitlist():
@@ -1090,14 +1250,16 @@ async def get_waitlist():
     Get all waitlist entries (admin use).
     """
     entries = await db.waitlist.find({}, {"_id": 0}).to_list(1000)
-    
+
     for entry in entries:
-        if isinstance(entry.get('created_at'), str):
-            entry['created_at'] = datetime.fromisoformat(entry['created_at'])
-    
+        if isinstance(entry.get("created_at"), str):
+            entry["created_at"] = datetime.fromisoformat(entry["created_at"])
+
     return entries
 
+
 # ============ CALL BOOKING ENDPOINTS ============
+
 
 @api_router.post("/book-call", response_model=CallBooking)
 async def book_call(input: CallBookingCreate):
@@ -1108,25 +1270,26 @@ async def book_call(input: CallBookingCreate):
     try:
         booking_dict = input.model_dump()
         booking_obj = CallBooking(**booking_dict)
-        
+
         # Convert to dict and serialize datetime for MongoDB
         doc = booking_obj.model_dump()
-        doc['created_at'] = doc['created_at'].isoformat()
-        
+        doc["created_at"] = doc["created_at"].isoformat()
+
         await db.call_bookings.insert_one(doc)
         logger.info(f"New call booking: {booking_obj.email} - {booking_obj.name}")
-        
+
         # Send emails in background (don't wait)
         try:
             asyncio.create_task(send_booking_email(booking_obj.name, booking_obj.email))
             asyncio.create_task(send_admin_booking_notification(booking_obj))
         except Exception as email_error:
             logger.error(f"Error sending emails: {email_error}")
-        
+
         return booking_obj
     except Exception as e:
         logger.error(f"Error in book_call: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to book call: {str(e)}")
+
 
 @api_router.get("/call-bookings", response_model=List[CallBooking])
 async def get_call_bookings():
@@ -1134,12 +1297,13 @@ async def get_call_bookings():
     Get all call bookings (admin use).
     """
     bookings = await db.call_bookings.find({}, {"_id": 0}).to_list(1000)
-    
+
     for booking in bookings:
-        if isinstance(booking.get('created_at'), str):
-            booking['created_at'] = datetime.fromisoformat(booking['created_at'])
-    
+        if isinstance(booking.get("created_at"), str):
+            booking["created_at"] = datetime.fromisoformat(booking["created_at"])
+
     return bookings
+
 
 @api_router.patch("/call-bookings/{booking_id}")
 async def update_call_booking_status(booking_id: str, status: str):
@@ -1147,16 +1311,17 @@ async def update_call_booking_status(booking_id: str, status: str):
     Update call booking status (admin use).
     """
     result = await db.call_bookings.update_one(
-        {'id': booking_id},
-        {'$set': {'status': status}}
+        {"id": booking_id}, {"$set": {"status": status}}
     )
-    
+
     if result.modified_count == 0:
         raise HTTPException(status_code=404, detail="Booking not found")
-    
+
     return {"message": "Booking status updated", "status": status}
 
+
 # ============ RESUMES API ============
+
 
 @api_router.get("/resumes")
 async def get_user_resumes(email: str = Query(...)):
@@ -1167,17 +1332,18 @@ async def get_user_resumes(email: str = Query(...)):
         # Fetch all resumes for this user from the database
         cursor = db.resumes.find({"user_email": email}).sort("created_at", -1)
         resumes = await cursor.to_list(length=100)
-        
+
         # Convert ObjectId to string for JSON serialization
         for resume in resumes:
             if "_id" in resume:
                 resume["id"] = str(resume["_id"])
                 del resume["_id"]
-        
+
         return resumes
     except Exception as e:
         logger.error(f"Error fetching resumes: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @api_router.post("/user/consent")
 async def save_user_consent(request: dict):
@@ -1190,22 +1356,27 @@ async def save_user_consent(request: dict):
             "consent_type": request.get("consent_type"),
             "consent_given": request.get("consent_given"),
             "consent_date": request.get("consent_date"),
-            "updated_at": datetime.utcnow().isoformat()
+            "updated_at": datetime.utcnow().isoformat(),
         }
-        
+
         # Update or insert consent
         await db.user_consents.update_one(
-            {"email": consent_data["email"], "consent_type": consent_data["consent_type"]},
+            {
+                "email": consent_data["email"],
+                "consent_type": consent_data["consent_type"],
+            },
             {"$set": consent_data},
-            upsert=True
+            upsert=True,
         )
-        
+
         return {"success": True, "message": "Consent saved successfully"}
     except Exception as e:
         logger.error(f"Error saving consent: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
+
 # ============ FREE TOOLS AI ENDPOINTS ============
+
 
 @api_router.post("/ai/salary-negotiation")
 async def generate_salary_negotiation_script(request: dict):
@@ -1227,16 +1398,21 @@ Generate a conversational script that:
 
 Keep it natural and confident, not robotic."""
 
+
+        if not openai_client:
+             raise HTTPException(status_code=503, detail="OpenAI service not configured on server")
+
         response = await openai_client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[{"role": "user", "content": prompt}],
-            temperature=0.7
+            temperature=0.7,
         )
-        
+
         return {"script": response.choices[0].message.content}
     except Exception as e:
         logger.error(f"Error generating salary script: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @api_router.post("/ai/linkedin-headline")
 async def generate_linkedin_headlines(request: dict):
@@ -1255,19 +1431,24 @@ Each headline should:
 
 Return ONLY the 10 headlines, one per line, no numbering or extra text."""
 
+
+        if not openai_client:
+             raise HTTPException(status_code=503, detail="OpenAI service not configured on server")
+
         response = await openai_client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[{"role": "user", "content": prompt}],
-            temperature=0.8
+            temperature=0.8,
         )
-        
-        headlines = response.choices[0].message.content.strip().split('\n')
+
+        headlines = response.choices[0].message.content.strip().split("\n")
         headlines = [h.strip() for h in headlines if h.strip()]
-        
+
         return {"headlines": headlines[:10]}
     except Exception as e:
         logger.error(f"Error generating headlines: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @api_router.post("/ai/career-gap")
 async def generate_career_gap_explanations(request: dict):
@@ -1297,26 +1478,26 @@ RESUME:
 INTERVIEW:
 [interview version]"""
 
+
+        if not openai_client:
+             raise HTTPException(status_code=503, detail="OpenAI service not configured on server")
+
         response = await openai_client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[{"role": "user", "content": prompt}],
-            temperature=0.7
+            temperature=0.7,
         )
-        
+
         content = response.choices[0].message.content
-        parts = content.split('INTERVIEW:')
-        resume_part = parts[0].replace('RESUME:', '').strip()
+        parts = content.split("INTERVIEW:")
+        resume_part = parts[0].replace("RESUME:", "").strip()
         interview_part = parts[1].strip() if len(parts) > 1 else ""
-        
-        return {
-            "explanations": {
-                "resume": resume_part,
-                "interview": interview_part
-            }
-        }
+
+        return {"explanations": {"resume": resume_part, "interview": interview_part}}
     except Exception as e:
         logger.error(f"Error generating career gap explanation: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @api_router.post("/ai/job-decoder")
 async def decode_job_description(request: dict):
@@ -1336,64 +1517,92 @@ Provide analysis in these categories:
 
 Be honest and insightful. Help the candidate make an informed decision."""
 
+
+        if not openai_client:
+             raise HTTPException(status_code=503, detail="OpenAI service not configured on server")
+
         response = await openai_client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[{"role": "user", "content": prompt}],
-            temperature=0.7
+            temperature=0.7,
         )
-        
+
         content = response.choices[0].message.content
-        
+
         # Parse the response into structured data
         analysis = {
             "red_flags": [],
             "translations": [],
             "hidden_requirements": [],
             "green_flags": [],
-            "overall_assessment": ""
+            "overall_assessment": "",
         }
-        
+
         # Simple parsing (you can make this more robust)
-        sections = content.split('\n\n')
+        sections = content.split("\n\n")
         current_section = None
-        
+
         for section in sections:
-            if 'RED FLAG' in section.upper():
-                current_section = 'red_flags'
-            elif 'TRANSLATION' in section.upper():
-                current_section = 'translations'
-            elif 'HIDDEN REQUIREMENT' in section.upper():
-                current_section = 'hidden_requirements'
-            elif 'GREEN FLAG' in section.upper():
-                current_section = 'green_flags'
-            elif 'OVERALL' in section.upper() or 'ASSESSMENT' in section.upper():
-                current_section = 'overall_assessment'
+            if "RED FLAG" in section.upper():
+                current_section = "red_flags"
+            elif "TRANSLATION" in section.upper():
+                current_section = "translations"
+            elif "HIDDEN REQUIREMENT" in section.upper():
+                current_section = "hidden_requirements"
+            elif "GREEN FLAG" in section.upper():
+                current_section = "green_flags"
+            elif "OVERALL" in section.upper() or "ASSESSMENT" in section.upper():
+                current_section = "overall_assessment"
             elif current_section:
-                lines = [l.strip() for l in section.split('\n') if l.strip() and not any(x in l.upper() for x in ['RED FLAG', 'TRANSLATION', 'HIDDEN', 'GREEN', 'OVERALL'])]
-                
-                if current_section == 'overall_assessment':
-                    analysis[current_section] = ' '.join(lines)
-                elif current_section == 'translations':
+                lines = [
+                    l.strip()
+                    for l in section.split("\n")
+                    if l.strip()
+                    and not any(
+                        x in l.upper()
+                        for x in [
+                            "RED FLAG",
+                            "TRANSLATION",
+                            "HIDDEN",
+                            "GREEN",
+                            "OVERALL",
+                        ]
+                    )
+                ]
+
+                if current_section == "overall_assessment":
+                    analysis[current_section] = " ".join(lines)
+                elif current_section == "translations":
                     for line in lines:
-                        if '→' in line or '->' in line:
-                            parts = line.split('→' if '→' in line else '->')
+                        if "→" in line or "->" in line:
+                            parts = line.split("→" if "→" in line else "->")
                             if len(parts) == 2:
-                                analysis[current_section].append({
-                                    "phrase": parts[0].strip().strip('"').strip("'").strip('•').strip('-').strip(),
-                                    "meaning": parts[1].strip()
-                                })
+                                analysis[current_section].append(
+                                    {
+                                        "phrase": parts[0]
+                                        .strip()
+                                        .strip('"')
+                                        .strip("'")
+                                        .strip("•")
+                                        .strip("-")
+                                        .strip(),
+                                        "meaning": parts[1].strip(),
+                                    }
+                                )
                 else:
                     for line in lines:
-                        clean_line = line.strip('•').strip('-').strip('*').strip()
+                        clean_line = line.strip("•").strip("-").strip("*").strip()
                         if clean_line:
                             analysis[current_section].append(clean_line)
-        
+
         return {"analysis": analysis}
     except Exception as e:
         logger.error(f"Error decoding job description: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
+
 # ============ GOOGLE OAUTH AUTHENTICATION ============
+
 
 @api_router.post("/auth/google")
 async def google_auth(request: dict, background_tasks: BackgroundTasks):
@@ -1401,49 +1610,60 @@ async def google_auth(request: dict, background_tasks: BackgroundTasks):
     try:
         from google.oauth2 import id_token
         from google.auth.transport import requests as google_requests
-        
-        credential = request.get('credential')
-        mode = request.get('mode', 'login')
-        
+
+        credential = request.get("credential")
+        mode = request.get("mode", "login")
+
         if not credential:
             raise HTTPException(status_code=400, detail="No credential provided")
-        
+
         # Verify the Google token
         try:
             # Get Google Client ID from environment or use the one from the request
-            GOOGLE_CLIENT_ID = os.getenv('GOOGLE_CLIENT_ID', '62316419452-e4gpepiaepopnfqpd96k19r1ps6e777v.apps.googleusercontent.com')
-            
-            idinfo = id_token.verify_oauth2_token(
-                credential, 
-                google_requests.Request(), 
-                GOOGLE_CLIENT_ID
+            GOOGLE_CLIENT_ID = os.getenv(
+                "GOOGLE_CLIENT_ID",
+                "62316419452-e4gpepiaepopnfqpd96k19r1ps6e777v.apps.googleusercontent.com",
             )
-            
+
+            idinfo = id_token.verify_oauth2_token(
+                credential, google_requests.Request(), GOOGLE_CLIENT_ID
+            )
+
             # Get user info from Google
-            email = idinfo.get('email')
-            name = idinfo.get('name')
-            google_id = idinfo.get('sub')
-            picture = idinfo.get('picture')
-            
+            email = idinfo.get("email")
+            name = idinfo.get("name")
+            google_id = idinfo.get("sub")
+            picture = idinfo.get("picture")
+
             if not email:
-                raise HTTPException(status_code=400, detail="Email not provided by Google")
-            
+                raise HTTPException(
+                    status_code=400, detail="Email not provided by Google"
+                )
+
         except ValueError as e:
             logger.error(f"Invalid Google token: {str(e)}")
-            raise HTTPException(status_code=401, detail=f"Invalid Google token: {str(e)}")
-        
+            raise HTTPException(
+                status_code=401, detail=f"Invalid Google token: {str(e)}"
+            )
+
         # Check if user exists
         existing_user = await db.users.find_one({"email": email})
-        
+
         if existing_user:
             # User exists - log them in
-            update_data = {"google_id": google_id, "profile_picture": picture, "is_verified": True}
-            await db.users.update_one({"_id": existing_user['_id']}, {"$set": update_data})
-            
+            update_data = {
+                "google_id": google_id,
+                "profile_picture": picture,
+                "is_verified": True,
+            }
+            await db.users.update_one(
+                {"_id": existing_user["_id"]}, {"$set": update_data}
+            )
+
             # Generate standard JWT token
-            user_id = existing_user.get('id') or str(existing_user.get('_id'))
+            user_id = existing_user.get("id") or str(existing_user.get("_id"))
             token = create_access_token(data={"sub": email, "id": user_id})
-            
+
             return {
                 "success": True,
                 "token": token,
@@ -1455,39 +1675,46 @@ async def google_auth(request: dict, background_tasks: BackgroundTasks):
                     "plan": existing_user.get("plan"),
                     "is_verified": True,
                     "referral_code": existing_user.get("referral_code"),
-                    "profile_picture": picture
-                }
+                    "profile_picture": picture,
+                },
             }
         else:
             # New user - create account using User model for consistency
             new_user_obj = User(
-                email=email,
-                name=name,
-                password_hash="google-oauth",
-                is_verified=True
+                email=email, name=name, password_hash="google-oauth", is_verified=True
             )
-            
+
             user_dict = new_user_obj.model_dump()
-            user_dict.update({
-                "google_id": google_id,
-                "profile_picture": picture,
-                "auth_method": "google",
-                "created_at": user_dict['created_at'].isoformat() if isinstance(user_dict['created_at'], datetime) else user_dict['created_at']
-            })
-            
+            user_dict.update(
+                {
+                    "google_id": google_id,
+                    "profile_picture": picture,
+                    "auth_method": "google",
+                    "created_at": (
+                        user_dict["created_at"].isoformat()
+                        if isinstance(user_dict["created_at"], datetime)
+                        else user_dict["created_at"]
+                    ),
+                }
+            )
+
             await db.users.insert_one(user_dict)
             logger.info(f"New user created via Google OAuth: {email}")
 
             # Send welcome email in background
             try:
                 # Pass None for token as Google users are auto-verified
-                background_tasks.add_task(send_welcome_email, name, email, None, new_user_obj.referral_code)
+                background_tasks.add_task(
+                    send_welcome_email, name, email, None, new_user_obj.referral_code
+                )
             except Exception as email_error:
-                logger.error(f"Error sending welcome email to Google user: {email_error}")
-            
+                logger.error(
+                    f"Error sending welcome email to Google user: {email_error}"
+                )
+
             # Generate standard JWT token
             token = create_access_token(data={"sub": email, "id": new_user_obj.id})
-            
+
             return {
                 "success": True,
                 "token": token,
@@ -1499,17 +1726,23 @@ async def google_auth(request: dict, background_tasks: BackgroundTasks):
                     "plan": new_user_obj.plan,
                     "is_verified": True,
                     "referral_code": new_user_obj.referral_code,
-                    "profile_picture": picture
-                }
+                    "profile_picture": picture,
+                },
             }
-            
+
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error in Google authentication: {str(e)}\n{traceback.format_exc()}")
-        raise HTTPException(status_code=500, detail="Internal server error during Google login")
+        logger.error(
+            f"Error in Google authentication: {str(e)}\n{traceback.format_exc()}"
+        )
+        raise HTTPException(
+            status_code=500, detail="Internal server error during Google login"
+        )
+
 
 # ============ BYOK (Bring Your Own Key) API ============
+
 
 @api_router.post("/byok/test")
 @limiter.limit("10/minute")
@@ -1520,41 +1753,49 @@ async def test_byok_key(request: Request, user: dict = Depends(get_current_user)
     """
     try:
         data = await request.json()
-        provider = data.get('provider', '').lower()
-        api_key = data.get('apiKey', '').strip()
-        
+        provider = data.get("provider", "").lower()
+        api_key = data.get("apiKey", "").strip()
+
         if not provider or not api_key:
-            raise HTTPException(status_code=400, detail="Provider and apiKey are required")
-        
-        if provider not in ['openai', 'google', 'anthropic']:
-            raise HTTPException(status_code=400, detail="Invalid provider. Must be: openai, google, or anthropic")
-        
+            raise HTTPException(
+                status_code=400, detail="Provider and apiKey are required"
+            )
+
+        if provider not in ["openai", "google", "anthropic"]:
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid provider. Must be: openai, google, or anthropic",
+            )
+
         # Basic format validation
         is_valid_format, format_msg = validate_api_key_format(provider, api_key)
         if not is_valid_format:
             raise HTTPException(status_code=400, detail=format_msg)
-        
+
         # Test with actual provider API
-        if provider == 'openai':
+        if provider == "openai":
             is_valid, message = await validate_openai_key(api_key)
-        elif provider == 'google':
+        elif provider == "google":
             is_valid, message = await validate_google_key(api_key)
-        elif provider == 'anthropic':
+        elif provider == "anthropic":
             is_valid, message = await validate_anthropic_key(api_key)
-        
+
         if not is_valid:
             raise HTTPException(status_code=400, detail=message)
-        
+
         return {"success": True, "message": message}
-        
+
     except HTTPException as e:
         logger.warning(f"HTTP error testing BYOK key: {e.detail}")
         raise
     except Exception as e:
         import traceback
+
         error_details = traceback.format_exc()
         logger.error(f"Critical error testing BYOK key: {str(e)}\n{error_details}")
-        raise HTTPException(status_code=500, detail=f"Server error during testing: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Server error during testing: {str(e)}"
+        )
 
 
 @api_router.post("/byok/save")
@@ -1566,72 +1807,80 @@ async def save_byok_key(request: Request, user: dict = Depends(get_current_user)
     """
     try:
         data = await request.json()
-        provider = data.get('provider', '').lower()
-        api_key = data.get('apiKey', '').strip()
-        
+        provider = data.get("provider", "").lower()
+        api_key = data.get("apiKey", "").strip()
+
         if not provider or not api_key:
-            raise HTTPException(status_code=400, detail="Provider and apiKey are required")
-        
-        if provider not in ['openai', 'google', 'anthropic']:
-            raise HTTPException(status_code=400, detail="Invalid provider. Must be: openai, google, or anthropic")
-        
+            raise HTTPException(
+                status_code=400, detail="Provider and apiKey are required"
+            )
+
+        if provider not in ["openai", "google", "anthropic"]:
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid provider. Must be: openai, google, or anthropic",
+            )
+
         # Basic format validation
         is_valid_format, format_msg = validate_api_key_format(provider, api_key)
         if not is_valid_format:
             raise HTTPException(status_code=400, detail=format_msg)
-        
+
         # Test with actual provider API
-        if provider == 'openai':
+        if provider == "openai":
             is_valid, message = await validate_openai_key(api_key)
-        elif provider == 'google':
+        elif provider == "google":
             is_valid, message = await validate_google_key(api_key)
-        elif provider == 'anthropic':
+        elif provider == "anthropic":
             is_valid, message = await validate_anthropic_key(api_key)
-        
+
         if not is_valid:
             raise HTTPException(status_code=400, detail=message)
-        
+
         # Encrypt the API key
         encrypted_data = encrypt_api_key(api_key)
-        
+
         # Store in database
         byok_doc = {
-            "user_id": user.get('email'),
+            "user_id": user.get("email"),
             "provider": provider,
-            "api_key_encrypted": encrypted_data['ciphertext'],
-            "api_key_iv": encrypted_data['iv'],
-            "api_key_tag": encrypted_data['tag'],
+            "api_key_encrypted": encrypted_data["ciphertext"],
+            "api_key_iv": encrypted_data["iv"],
+            "api_key_tag": encrypted_data["tag"],
             "is_enabled": True,
             "created_at": datetime.utcnow(),
             "updated_at": datetime.utcnow(),
-            "last_tested_at": datetime.utcnow()
+            "last_tested_at": datetime.utcnow(),
         }
-        
+
         # Upsert (update if exists, insert if not)
         await db.byok_keys.update_one(
-            {"user_id": user.get('email')},
-            {"$set": byok_doc},
-            upsert=True
+            {"user_id": user.get("email")}, {"$set": byok_doc}, upsert=True
         )
-        
+
         # Update user's plan to free_byok
         await db.users.update_one(
-            {"email": user.get('email')},
-            {"$set": {"plan": "free_byok", "byok_enabled": True}}
+            {"email": user.get("email")},
+            {"$set": {"plan": "free_byok", "byok_enabled": True}},
         )
-        
-        logger.info(f"BYOK key saved for user: {user.get('email')} (provider: {provider})")
-        
+
+        logger.info(
+            f"BYOK key saved for user: {user.get('email')} (provider: {provider})"
+        )
+
         return {"success": True, "message": "API key saved successfully"}
-        
+
     except HTTPException as e:
         logger.warning(f"HTTP error saving BYOK key: {e.detail}")
         raise
     except Exception as e:
         import traceback
+
         error_details = traceback.format_exc()
         logger.error(f"Critical error saving BYOK key: {str(e)}\n{error_details}")
-        raise HTTPException(status_code=500, detail=f"Server error during save: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Server error during save: {str(e)}"
+        )
 
 
 @api_router.get("/byok/status")
@@ -1642,24 +1891,20 @@ async def get_byok_status(user: dict = Depends(get_current_user)):
     """
     try:
         byok_config = await db.byok_keys.find_one(
-            {"user_id": user.get('email')},
-            {"_id": 0, "api_key_encrypted": 0, "api_key_iv": 0, "api_key_tag": 0}
+            {"user_id": user.get("email")},
+            {"_id": 0, "api_key_encrypted": 0, "api_key_iv": 0, "api_key_tag": 0},
         )
-        
+
         if not byok_config:
-            return {
-                "configured": False,
-                "provider": None,
-                "is_enabled": False
-            }
-        
+            return {"configured": False, "provider": None, "is_enabled": False}
+
         return {
             "configured": True,
-            "provider": byok_config.get('provider'),
-            "is_enabled": byok_config.get('is_enabled', True),
-            "last_tested_at": byok_config.get('last_tested_at')
+            "provider": byok_config.get("provider"),
+            "is_enabled": byok_config.get("is_enabled", True),
+            "last_tested_at": byok_config.get("last_tested_at"),
         }
-        
+
     except Exception as e:
         logger.error(f"Error getting BYOK status: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to get BYOK status")
@@ -1671,25 +1916,27 @@ async def remove_byok_key(user: dict = Depends(get_current_user)):
     Remove BYOK configuration for the user.
     """
     try:
-        result = await db.byok_keys.delete_one({"user_id": user.get('email')})
-        
+        result = await db.byok_keys.delete_one({"user_id": user.get("email")})
+
         if result.deleted_count > 0:
             # Update user's plan back to free
             await db.users.update_one(
-                {"email": user.get('email')},
-                {"$set": {"plan": "free", "byok_enabled": False}}
+                {"email": user.get("email")},
+                {"$set": {"plan": "free", "byok_enabled": False}},
             )
-            
+
             logger.info(f"BYOK key removed for user: {user.get('email')}")
             return {"success": True, "message": "API key removed successfully"}
         else:
             return {"success": True, "message": "No API key was configured"}
-        
+
     except Exception as e:
         logger.error(f"Error removing BYOK key: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to remove API key")
 
+
 # ============ GOOGLE SHEETS INTEGRATION ============
+
 
 @api_router.get("/applications/{user_email}")
 async def get_user_applications(user_email: str):
@@ -1698,39 +1945,46 @@ async def get_user_applications(user_email: str):
     Employees update the Google Sheet, and this endpoint reads from it.
     """
     try:
-        sheet_id = os.environ.get('GOOGLE_SHEET_ID')
-        api_key = os.environ.get('GOOGLE_API_KEY')
-        
+        sheet_id = os.environ.get("GOOGLE_SHEET_ID")
+        api_key = os.environ.get("GOOGLE_API_KEY")
+
         if not sheet_id or not api_key:
             logger.warning("Google Sheets not configured, returning empty list")
-            return {"applications": [], "stats": {"total": 0, "this_week": 0, "interviews": 0}}
-        
+            return {
+                "applications": [],
+                "stats": {"total": 0, "this_week": 0, "interviews": 0},
+            }
+
         # Fetch data from Google Sheets (A to H columns)
         url = f"https://sheets.googleapis.com/v4/spreadsheets/{sheet_id}/values/Sheet1!A2:H1000?key={api_key}"
-        
+
         async with aiohttp.ClientSession() as session:
             async with session.get(url) as response:
                 if response.status != 200:
                     logger.error(f"Google Sheets API error: {response.status}")
-                    return {"applications": [], "stats": {"total": 0, "this_week": 0, "interviews": 0}}
-                
+                    return {
+                        "applications": [],
+                        "stats": {"total": 0, "this_week": 0, "interviews": 0},
+                    }
+
                 data = await response.json()
-        
-        rows = data.get('values', [])
-        
+
+        rows = data.get("values", [])
+
         # Filter applications for this user
         user_applications = []
         total_count = 0
         week_count = 0
         interview_count = 0
-        
+
         from datetime import timedelta
+
         one_week_ago = datetime.now(timezone.utc) - timedelta(days=7)
-        
+
         for row in rows:
             if len(row) >= 6:
                 customer_email = row[0].strip().lower()
-                
+
                 if customer_email == user_email.lower():
                     app = {
                         "company_name": row[1] if len(row) > 1 else "",
@@ -1739,15 +1993,15 @@ async def get_user_applications(user_email: str):
                         "application_link": row[4] if len(row) > 4 else "",
                         "submitted_date": row[5] if len(row) > 5 else "",
                         "notes": row[6] if len(row) > 6 else "",
-                        "job_description": row[7] if len(row) > 7 else ""
+                        "job_description": row[7] if len(row) > 7 else "",
                     }
                     user_applications.append(app)
                     total_count += 1
-                    
+
                     # Count interviews
                     if app["status"].lower() == "interview":
                         interview_count += 1
-                    
+
                     # Count this week's applications
                     try:
                         submitted = datetime.strptime(app["submitted_date"], "%Y-%m-%d")
@@ -1756,20 +2010,25 @@ async def get_user_applications(user_email: str):
                             week_count += 1
                     except:
                         pass
-        
+
         return {
             "applications": user_applications,
             "stats": {
                 "total": total_count,
                 "this_week": week_count,
                 "interviews": interview_count,
-                "hours_saved": total_count * 0.5  # Estimate 30 min saved per application
-            }
+                "hours_saved": total_count
+                * 0.5,  # Estimate 30 min saved per application
+            },
         }
-        
+
     except Exception as e:
         logger.error(f"Error fetching from Google Sheets: {str(e)}")
-        return {"applications": [], "stats": {"total": 0, "this_week": 0, "interviews": 0}}
+        return {
+            "applications": [],
+            "stats": {"total": 0, "this_week": 0, "interviews": 0},
+        }
+
 
 @api_router.get("/dashboard-stats/{user_email}")
 async def get_dashboard_stats(user_email: str):
@@ -1779,7 +2038,9 @@ async def get_dashboard_stats(user_email: str):
     data = await get_user_applications(user_email)
     return data["stats"]
 
+
 # ============ PAYMENT ENDPOINTS ============
+
 
 @api_router.post("/create-checkout-session")
 async def create_checkout(request: CheckoutRequest):
@@ -1792,43 +2053,48 @@ async def create_checkout(request: CheckoutRequest):
     - Cash App Pay
     """
     try:
-        frontend_url = os.environ.get('FRONTEND_URL', 'http://localhost:3000')
-        
+        frontend_url = os.environ.get("FRONTEND_URL", "http://localhost:3000")
+
         session_data = create_checkout_session(
             plan_id=request.plan_id,
             user_email=request.user_email,
             user_id=request.user_id,
             success_url=f"{frontend_url}/payment/success?session_id={{CHECKOUT_SESSION_ID}}",
-            cancel_url=f"{frontend_url}/payment/canceled"
+            cancel_url=f"{frontend_url}/payment/canceled",
         )
-        
+
         return session_data
-        
+
     except Exception as e:
         logger.error(f"Error creating checkout session: {str(e)}")
         raise HTTPException(status_code=400, detail=str(e))
+
 
 async def grant_referral_bonus(user_id: str):
     """
     Find the user who referred this user and grant them a bonus.
     """
     user = await db.users.find_one({"id": user_id})
-    if not user or not user.get('referred_by'):
+    if not user or not user.get("referred_by"):
         return
-    
-    referrer_code = user['referred_by']
+
+    referrer_code = user["referred_by"]
     referrer = await db.users.find_one({"referral_code": referrer_code})
-    
+
     if referrer:
         # User gets 5 extra AI tailored applications for referral
         await db.users.update_one(
-            {"id": referrer['id']},
-            {"$inc": {"ai_applications_bonus": 5}}
+            {"id": referrer["id"]}, {"$inc": {"ai_applications_bonus": 5}}
         )
-        logger.info(f"Granted 5 bonus apps to referrer {referrer['email']} for user {user['email']}")
+        logger.info(
+            f"Granted 5 bonus apps to referrer {referrer['email']} for user {user['email']}"
+        )
+
 
 @api_router.post("/webhooks/stripe")
-async def stripe_webhook(request: Request, stripe_signature: Optional[str] = Header(None)):
+async def stripe_webhook(
+    request: Request, stripe_signature: Optional[str] = Header(None)
+):
     """
     Webhook endpoint for Stripe events.
     Handles subscription lifecycle events:
@@ -1838,92 +2104,93 @@ async def stripe_webhook(request: Request, stripe_signature: Optional[str] = Hea
     - invoice.payment_failed: Payment failed
     """
     payload = await request.body()
-    
+
     try:
         # Verify webhook signature
         event = verify_webhook_signature(payload, stripe_signature)
-        
+
         # Log the event
-        webhook_event = WebhookEvent(
-            event_type=event['type'],
-            event_data=event['data']
-        )
+        webhook_event = WebhookEvent(event_type=event["type"], event_data=event["data"])
         await db.webhook_events.insert_one(webhook_event.model_dump())
-        
+
         # Handle different event types
-        if event['type'] == 'checkout.session.completed':
-            session = event['data']['object']
-            
+        if event["type"] == "checkout.session.completed":
+            session = event["data"]["object"]
+
             # Extract subscription data
             subscription_data = SubscriptionData(
-                user_id=session.get('client_reference_id'),
-                user_email=session.get('customer_email'),
-                plan_id=session['metadata'].get('plan_id'),
-                stripe_customer_id=session.get('customer'),
-                stripe_subscription_id=session.get('subscription'),
-                stripe_price_id=session['line_items']['data'][0]['price']['id'] if 'line_items' in session else '',
-                status='active',
-                current_period_end=datetime.fromtimestamp(session.get('expires_at', 0))
+                user_id=session.get("client_reference_id"),
+                user_email=session.get("customer_email"),
+                plan_id=session["metadata"].get("plan_id"),
+                stripe_customer_id=session.get("customer"),
+                stripe_subscription_id=session.get("subscription"),
+                stripe_price_id=(
+                    session["line_items"]["data"][0]["price"]["id"]
+                    if "line_items" in session
+                    else ""
+                ),
+                status="active",
+                current_period_end=datetime.fromtimestamp(session.get("expires_at", 0)),
             )
-            
+
             # Save to database
             await db.subscriptions.insert_one(subscription_data.model_dump())
             logger.info(f"Subscription created for user {subscription_data.user_id}")
-            
+
             # Grant referral bonus if applicable
             await grant_referral_bonus(subscription_data.user_id)
-        
-        elif event['type'] == 'customer.subscription.updated':
-            subscription = event['data']['object']
-            
+
+        elif event["type"] == "customer.subscription.updated":
+            subscription = event["data"]["object"]
+
             # Update subscription status
             await db.subscriptions.update_one(
-                {'stripe_subscription_id': subscription['id']},
-                {'$set': {
-                    'status': subscription['status'],
-                    'current_period_end': datetime.fromtimestamp(subscription['current_period_end']),
-                    'updated_at': datetime.utcnow()
-                }}
+                {"stripe_subscription_id": subscription["id"]},
+                {
+                    "$set": {
+                        "status": subscription["status"],
+                        "current_period_end": datetime.fromtimestamp(
+                            subscription["current_period_end"]
+                        ),
+                        "updated_at": datetime.utcnow(),
+                    }
+                },
             )
-            logger.info(f"Subscription {subscription['id']} updated to {subscription['status']}")
-        
-        elif event['type'] == 'customer.subscription.deleted':
-            subscription = event['data']['object']
-            
+            logger.info(
+                f"Subscription {subscription['id']} updated to {subscription['status']}"
+            )
+
+        elif event["type"] == "customer.subscription.deleted":
+            subscription = event["data"]["object"]
+
             # Mark subscription as canceled
             await db.subscriptions.update_one(
-                {'stripe_subscription_id': subscription['id']},
-                {'$set': {
-                    'status': 'canceled',
-                    'updated_at': datetime.utcnow()
-                }}
+                {"stripe_subscription_id": subscription["id"]},
+                {"$set": {"status": "canceled", "updated_at": datetime.utcnow()}},
             )
             logger.info(f"Subscription {subscription['id']} canceled")
-        
-        elif event['type'] == 'invoice.payment_failed':
-            invoice = event['data']['object']
-            
+
+        elif event["type"] == "invoice.payment_failed":
+            invoice = event["data"]["object"]
+
             # Update subscription to past_due
             await db.subscriptions.update_one(
-                {'stripe_subscription_id': invoice['subscription']},
-                {'$set': {
-                    'status': 'past_due',
-                    'updated_at': datetime.utcnow()
-                }}
+                {"stripe_subscription_id": invoice["subscription"]},
+                {"$set": {"status": "past_due", "updated_at": datetime.utcnow()}},
             )
             logger.warning(f"Payment failed for subscription {invoice['subscription']}")
-        
+
         # Mark event as processed
         await db.webhook_events.update_one(
-            {'id': webhook_event.id},
-            {'$set': {'processed': True}}
+            {"id": webhook_event.id}, {"$set": {"processed": True}}
         )
-        
-        return JSONResponse(content={'status': 'success'})
-        
+
+        return JSONResponse(content={"status": "success"})
+
     except Exception as e:
         logger.error(f"Webhook error: {str(e)}")
         raise HTTPException(status_code=400, detail=str(e))
+
 
 @api_router.post("/create-portal-session")
 async def create_portal(user_id: str):
@@ -1936,39 +2203,42 @@ async def create_portal(user_id: str):
     """
     try:
         # Get customer's subscription
-        subscription = await db.subscriptions.find_one({'user_id': user_id})
-        
+        subscription = await db.subscriptions.find_one({"user_id": user_id})
+
         if not subscription:
             raise HTTPException(status_code=404, detail="No subscription found")
-        
-        frontend_url = os.environ.get('FRONTEND_URL', 'http://localhost:3000')
-        
+
+        frontend_url = os.environ.get("FRONTEND_URL", "http://localhost:3000")
+
         portal_data = create_customer_portal_session(
-            customer_id=subscription['stripe_customer_id'],
-            return_url=f"{frontend_url}/dashboard"
+            customer_id=subscription["stripe_customer_id"],
+            return_url=f"{frontend_url}/dashboard",
         )
-        
+
         return portal_data
-        
+
     except Exception as e:
         logger.error(f"Error creating portal session: {str(e)}")
         raise HTTPException(status_code=400, detail=str(e))
 
+
 @api_router.get("/subscription/{user_id}")
 async def get_subscription(user_id: str):
     """Get user's current subscription."""
-    subscription = await db.subscriptions.find_one({'user_id': user_id}, {'_id': 0})
-    
+    subscription = await db.subscriptions.find_one({"user_id": user_id}, {"_id": 0})
+
     if not subscription:
-        return {'status': 'none', 'message': 'No active subscription'}
-    
+        return {"status": "none", "message": "No active subscription"}
+
     return subscription
+
 
 # ============ EMPLOYEE ENDPOINTS ============
 
+
 class JobApplication(BaseModel):
     model_config = ConfigDict(extra="ignore")
-    
+
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     customer_email: str
     employee_email: str
@@ -1982,6 +2252,7 @@ class JobApplication(BaseModel):
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
+
 class JobApplicationCreate(BaseModel):
     customer_email: str
     company_name: str
@@ -1991,14 +2262,16 @@ class JobApplicationCreate(BaseModel):
     notes: Optional[str] = None
     job_description: Optional[str] = None
 
+
 class CustomerAssignment(BaseModel):
     model_config = ConfigDict(extra="ignore")
-    
+
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     customer_email: str
     employee_email: str
     assigned_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     status: str = "active"  # active, paused, completed
+
 
 @api_router.get("/employee/customers/{employee_email}")
 async def get_assigned_customers(employee_email: str):
@@ -2007,56 +2280,57 @@ async def get_assigned_customers(employee_email: str):
     """
     # Get assignments
     assignments = await db.customer_assignments.find(
-        {"employee_email": employee_email, "status": "active"},
-        {"_id": 0}
+        {"employee_email": employee_email, "status": "active"}, {"_id": 0}
     ).to_list(1000)
-    
-    customer_emails = [a['customer_email'] for a in assignments]
-    
+
+    customer_emails = [a["customer_email"] for a in assignments]
+
     # Get customer details
     customers = []
     for email in customer_emails:
         user = await db.users.find_one({"email": email}, {"_id": 0, "password_hash": 0})
         profile = await db.profiles.find_one({"email": email}, {"_id": 0})
-        
+
         # Get application count for this customer
         app_count = await db.job_applications.count_documents({"customer_email": email})
-        
+
         if user:
-            customers.append({
-                "user": user,
-                "profile": profile,
-                "application_count": app_count
-            })
-    
+            customers.append(
+                {"user": user, "profile": profile, "application_count": app_count}
+            )
+
     return {"customers": customers, "count": len(customers)}
+
 
 @api_router.get("/employee/customer/{customer_email}")
 async def get_customer_details(customer_email: str):
     """
     Get detailed information about a specific customer.
     """
-    user = await db.users.find_one({"email": customer_email}, {"_id": 0, "password_hash": 0})
+    user = await db.users.find_one(
+        {"email": customer_email}, {"_id": 0, "password_hash": 0}
+    )
     profile = await db.profiles.find_one({"email": customer_email}, {"_id": 0})
-    
+
     # Get applications
-    applications = await db.job_applications.find(
-        {"customer_email": customer_email},
-        {"_id": 0}
-    ).sort("created_at", -1).to_list(1000)
-    
+    applications = (
+        await db.job_applications.find({"customer_email": customer_email}, {"_id": 0})
+        .sort("created_at", -1)
+        .to_list(1000)
+    )
+
     # Get subscription
     subscription = await db.subscriptions.find_one(
-        {"user_email": customer_email},
-        {"_id": 0}
+        {"user_email": customer_email}, {"_id": 0}
     )
-    
+
     return {
         "user": user,
         "profile": profile,
         "applications": applications,
-        "subscription": subscription
+        "subscription": subscription,
     }
+
 
 @api_router.post("/employee/application")
 async def add_job_application(input: JobApplicationCreate, employee_email: str = None):
@@ -2064,66 +2338,73 @@ async def add_job_application(input: JobApplicationCreate, employee_email: str =
     Add a new job application for a customer.
     """
     app_dict = input.model_dump()
-    app_dict['employee_email'] = employee_email or "system"
-    app_dict['submitted_date'] = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-    
+    app_dict["employee_email"] = employee_email or "system"
+    app_dict["submitted_date"] = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+
     app_obj = JobApplication(**app_dict)
-    
+
     doc = app_obj.model_dump()
-    doc['created_at'] = doc['created_at'].isoformat()
-    doc['updated_at'] = doc['updated_at'].isoformat()
-    
+    doc["created_at"] = doc["created_at"].isoformat()
+    doc["updated_at"] = doc["updated_at"].isoformat()
+
     await db.job_applications.insert_one(doc)
-    logger.info(f"New application added for {input.customer_email}: {input.company_name}")
-    
+    logger.info(
+        f"New application added for {input.customer_email}: {input.company_name}"
+    )
+
     return {"success": True, "application": doc}
+
 
 @api_router.get("/employee/applications/{customer_email}")
 async def get_customer_applications(customer_email: str):
     """
     Get all applications for a specific customer.
     """
-    applications = await db.job_applications.find(
-        {"customer_email": customer_email},
-        {"_id": 0}
-    ).sort("created_at", -1).to_list(1000)
-    
+    applications = (
+        await db.job_applications.find({"customer_email": customer_email}, {"_id": 0})
+        .sort("created_at", -1)
+        .to_list(1000)
+    )
+
     # Calculate stats
     total = len(applications)
-    interviews = sum(1 for app in applications if app.get('status') == 'interview')
-    submitted = sum(1 for app in applications if app.get('status') == 'submitted')
-    
+    interviews = sum(1 for app in applications if app.get("status") == "interview")
+    submitted = sum(1 for app in applications if app.get("status") == "submitted")
+
     return {
         "applications": applications,
         "stats": {
             "total": total,
             "interviews": interviews,
             "submitted": submitted,
-            "hours_saved": total * 0.5
-        }
+            "hours_saved": total * 0.5,
+        },
     }
 
+
 @api_router.patch("/employee/application/{application_id}")
-async def update_application(application_id: str, status: str, notes: Optional[str] = None):
+async def update_application(
+    application_id: str, status: str, notes: Optional[str] = None
+):
     """
     Update application status and notes.
     """
     update_data = {
         "status": status,
-        "updated_at": datetime.now(timezone.utc).isoformat()
+        "updated_at": datetime.now(timezone.utc).isoformat(),
     }
     if notes:
         update_data["notes"] = notes
-    
+
     result = await db.job_applications.update_one(
-        {"id": application_id},
-        {"$set": update_data}
+        {"id": application_id}, {"$set": update_data}
     )
-    
+
     if result.modified_count == 0:
         raise HTTPException(status_code=404, detail="Application not found")
-    
+
     return {"success": True, "message": "Application updated"}
+
 
 @api_router.delete("/employee/application/{application_id}")
 async def delete_application(application_id: str):
@@ -2131,13 +2412,15 @@ async def delete_application(application_id: str):
     Delete a job application.
     """
     result = await db.job_applications.delete_one({"id": application_id})
-    
+
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Application not found")
-    
+
     return {"success": True, "message": "Application deleted"}
 
+
 # ============ ADMIN ENDPOINTS ============
+
 
 @api_router.get("/admin/stats")
 async def get_admin_stats():
@@ -2151,28 +2434,22 @@ async def get_admin_stats():
     total_bookings = await db.call_bookings.count_documents({})
     pending_bookings = await db.call_bookings.count_documents({"status": "pending"})
     waitlist_count = await db.waitlist.count_documents({})
-    
+
     # Active subscriptions
     active_subscriptions = await db.subscriptions.count_documents({"status": "active"})
-    
+
     return {
         "users": {
             "total": total_users,
             "customers": total_customers,
-            "employees": total_employees
+            "employees": total_employees,
         },
-        "applications": {
-            "total": total_applications
-        },
-        "bookings": {
-            "total": total_bookings,
-            "pending": pending_bookings
-        },
+        "applications": {"total": total_applications},
+        "bookings": {"total": total_bookings, "pending": pending_bookings},
         "waitlist": waitlist_count,
-        "subscriptions": {
-            "active": active_subscriptions
-        }
+        "subscriptions": {"active": active_subscriptions},
     }
+
 
 @api_router.get("/admin/customers")
 async def get_all_customers():
@@ -2180,29 +2457,36 @@ async def get_all_customers():
     Get all customers with their profiles and stats.
     """
     users = await db.users.find(
-        {"role": "customer"},
-        {"_id": 0, "password_hash": 0}
+        {"role": "customer"}, {"_id": 0, "password_hash": 0}
     ).to_list(1000)
-    
+
     customers = []
     for user in users:
-        profile = await db.profiles.find_one({"email": user['email']}, {"_id": 0})
-        app_count = await db.job_applications.count_documents({"customer_email": user['email']})
-        subscription = await db.subscriptions.find_one({"user_email": user['email']}, {"_id": 0})
-        assignment = await db.customer_assignments.find_one(
-            {"customer_email": user['email'], "status": "active"},
-            {"_id": 0}
+        profile = await db.profiles.find_one({"email": user["email"]}, {"_id": 0})
+        app_count = await db.job_applications.count_documents(
+            {"customer_email": user["email"]}
         )
-        
-        customers.append({
-            "user": user,
-            "profile": profile,
-            "application_count": app_count,
-            "subscription": subscription,
-            "assigned_employee": assignment['employee_email'] if assignment else None
-        })
-    
+        subscription = await db.subscriptions.find_one(
+            {"user_email": user["email"]}, {"_id": 0}
+        )
+        assignment = await db.customer_assignments.find_one(
+            {"customer_email": user["email"], "status": "active"}, {"_id": 0}
+        )
+
+        customers.append(
+            {
+                "user": user,
+                "profile": profile,
+                "application_count": app_count,
+                "subscription": subscription,
+                "assigned_employee": (
+                    assignment["employee_email"] if assignment else None
+                ),
+            }
+        )
+
     return {"customers": customers, "count": len(customers)}
+
 
 @api_router.get("/admin/employees")
 async def get_all_employees():
@@ -2210,27 +2494,28 @@ async def get_all_employees():
     Get all employees with their assigned customer counts.
     """
     users = await db.users.find(
-        {"role": "employee"},
-        {"_id": 0, "password_hash": 0}
+        {"role": "employee"}, {"_id": 0, "password_hash": 0}
     ).to_list(1000)
-    
+
     employees = []
     for user in users:
-        customer_count = await db.customer_assignments.count_documents({
-            "employee_email": user['email'],
-            "status": "active"
-        })
-        total_applications = await db.job_applications.count_documents({
-            "employee_email": user['email']
-        })
-        
-        employees.append({
-            "user": user,
-            "customer_count": customer_count,
-            "total_applications": total_applications
-        })
-    
+        customer_count = await db.customer_assignments.count_documents(
+            {"employee_email": user["email"], "status": "active"}
+        )
+        total_applications = await db.job_applications.count_documents(
+            {"employee_email": user["email"]}
+        )
+
+        employees.append(
+            {
+                "user": user,
+                "customer_count": customer_count,
+                "total_applications": total_applications,
+            }
+        )
+
     return {"employees": employees, "count": len(employees)}
+
 
 @api_router.post("/admin/assign-customer")
 async def assign_customer_to_employee(customer_email: str, employee_email: str):
@@ -2238,80 +2523,76 @@ async def assign_customer_to_employee(customer_email: str, employee_email: str):
     Assign a customer to an employee.
     """
     # Check if already assigned
-    existing = await db.customer_assignments.find_one({
-        "customer_email": customer_email,
-        "status": "active"
-    })
-    
+    existing = await db.customer_assignments.find_one(
+        {"customer_email": customer_email, "status": "active"}
+    )
+
     if existing:
         # Update assignment
         await db.customer_assignments.update_one(
-            {"id": existing['id']},
-            {"$set": {"employee_email": employee_email}}
+            {"id": existing["id"]}, {"$set": {"employee_email": employee_email}}
         )
         return {"success": True, "message": "Customer reassigned"}
-    
+
     # Create new assignment
     assignment = CustomerAssignment(
-        customer_email=customer_email,
-        employee_email=employee_email
+        customer_email=customer_email, employee_email=employee_email
     )
-    
+
     doc = assignment.model_dump()
-    doc['assigned_at'] = doc['assigned_at'].isoformat()
-    
+    doc["assigned_at"] = doc["assigned_at"].isoformat()
+
     await db.customer_assignments.insert_one(doc)
     logger.info(f"Customer {customer_email} assigned to {employee_email}")
-    
+
     return {"success": True, "message": "Customer assigned"}
+
 
 @api_router.patch("/admin/user/{user_id}/role")
 async def update_user_role(user_id: str, role: str):
     """
     Update a user's role (customer, employee, admin).
     """
-    if role not in ['customer', 'employee', 'admin']:
+    if role not in ["customer", "employee", "admin"]:
         raise HTTPException(status_code=400, detail="Invalid role")
-    
-    result = await db.users.update_one(
-        {"id": user_id},
-        {"$set": {"role": role}}
-    )
-    
+
+    result = await db.users.update_one({"id": user_id}, {"$set": {"role": role}})
+
     if result.modified_count == 0:
         raise HTTPException(status_code=404, detail="User not found")
-    
+
     return {"success": True, "message": f"User role updated to {role}"}
+
 
 @api_router.get("/admin/bookings")
 async def get_all_bookings():
     """
     Get all call bookings with stats.
     """
-    bookings = await db.call_bookings.find({}, {"_id": 0}).sort("created_at", -1).to_list(1000)
-    
+    bookings = (
+        await db.call_bookings.find({}, {"_id": 0}).sort("created_at", -1).to_list(1000)
+    )
+
     # Convert datetime strings
     for booking in bookings:
-        if isinstance(booking.get('created_at'), str):
-            booking['created_at'] = datetime.fromisoformat(booking['created_at'])
-    
-    pending = sum(1 for b in bookings if b.get('status') == 'pending')
-    contacted = sum(1 for b in bookings if b.get('status') == 'contacted')
-    
+        if isinstance(booking.get("created_at"), str):
+            booking["created_at"] = datetime.fromisoformat(booking["created_at"])
+
+    pending = sum(1 for b in bookings if b.get("status") == "pending")
+    contacted = sum(1 for b in bookings if b.get("status") == "contacted")
+
     return {
         "bookings": bookings,
-        "stats": {
-            "total": len(bookings),
-            "pending": pending,
-            "contacted": contacted
-        }
+        "stats": {"total": len(bookings), "pending": pending, "contacted": contacted},
     }
 
 
 # ============ AI NINJA ENDPOINTS ============
 
+
 class ApplicationCreate(BaseModel):
     """Application model for AI Ninja and Human Ninja applications."""
+
     userId: str
     jobId: Optional[str] = None
     jobTitle: str
@@ -2327,9 +2608,10 @@ class ApplicationCreate(BaseModel):
     targetSalary: Optional[str] = None
     preferredWorkType: Optional[str] = None
 
+
 class Application(BaseModel):
     model_config = ConfigDict(extra="ignore")
-    
+
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     userId: str
     jobId: Optional[str] = None
@@ -2346,9 +2628,10 @@ class Application(BaseModel):
     createdAt: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updatedAt: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
+
 class Resume(BaseModel):
     model_config = ConfigDict(extra="ignore")
-    
+
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     userId: str
     resumeName: str
@@ -2362,6 +2645,7 @@ class Resume(BaseModel):
     createdAt: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updatedAt: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
+
 class ResumeUsage(BaseModel):
     tier: str
     currentCount: int
@@ -2370,11 +2654,13 @@ class ResumeUsage(BaseModel):
     resetDate: Optional[datetime] = None
     totalResumes: int
 
+
 class AIApplyResponse(BaseModel):
     applicationId: str
     tailoredResume: str
     tailoredCoverLetter: str
     suggestedAnswers: List[dict]
+
 
 async def get_user_usage_limits(identifier: str) -> dict:
     """
@@ -2388,17 +2674,12 @@ async def get_user_usage_limits(identifier: str) -> dict:
             "limit": 5,
             "canGenerate": False,
             "resetDate": None,
-            "totalResumes": 0
+            "totalResumes": 0,
         }
 
     # Try finding by email first, then by id
-    user = await db.users.find_one({
-        "$or": [
-            {"email": identifier},
-            {"id": identifier}
-        ]
-    })
-    
+    user = await db.users.find_one({"$or": [{"email": identifier}, {"id": identifier}]})
+
     if not user:
         return {
             "tier": "free",
@@ -2406,73 +2687,81 @@ async def get_user_usage_limits(identifier: str) -> dict:
             "limit": 5,
             "canGenerate": True,
             "resetDate": None,
-            "totalResumes": 0
+            "totalResumes": 0,
         }
-    
+
     # Get all-time resume count
-    user_id = user.get('id') or user.get('_id')
+    user_id = user.get("id") or user.get("_id")
     total_resumes = await db.resumes.count_documents({"userId": str(user_id)})
-    
+
     # Determine tier
-    tier = user.get('plan', 'free')
-    if not tier: tier = 'free'
-    
+    tier = user.get("plan", "free")
+    if not tier:
+        tier = "free"
+
     # Simple check for subscription field which might be more accurate if present
-    sub = user.get('subscription', {})
-    if sub and sub.get('status') == 'active':
-        tier_id = sub.get('plan_id', tier)
-        if 'pro' in tier_id.lower():
-            tier = 'pro'
-        elif 'beginner' in tier_id.lower():
-            tier = 'beginner'
+    sub = user.get("subscription", {})
+    if sub and sub.get("status") == "active":
+        tier_id = sub.get("plan_id", tier)
+        if "pro" in tier_id.lower():
+            tier = "pro"
+        elif "beginner" in tier_id.lower():
+            tier = "beginner"
 
     # Updated limits as per user instruction
     # Free: 5 total
     # Beginner ($19.99): 200 per month/total depending on sub
     # Pro ($29.99): Unlimited
-    
+
     limit = 5
     current_count = total_resumes
     can_generate = False
     reset_date = None
-    
+
     tier_lower = str(tier).strip().lower()
-    
-    if tier_lower == 'pro' or tier_lower == 'unlimited':
+
+    if tier_lower == "pro" or tier_lower == "unlimited":
         limit = "Unlimited"
         can_generate = True
-    elif tier_lower == 'beginner' or tier_lower == 'standard':
+    elif tier_lower == "beginner" or tier_lower == "standard":
         limit = 200
         # Calculate monthly count if subscription is active
-        activated_at = sub.get('activated_at') if sub else None
+        activated_at = sub.get("activated_at") if sub else None
         if activated_at:
             if isinstance(activated_at, str):
-                activated_at = datetime.fromisoformat(activated_at.replace('Z', '+00:00'))
-            
+                activated_at = datetime.fromisoformat(
+                    activated_at.replace("Z", "+00:00")
+                )
+
             # Find the start of the current billing cycle
             now = datetime.now(timezone.utc)
-            months_diff = (now.year - activated_at.year) * 12 + now.month - activated_at.month
+            months_diff = (
+                (now.year - activated_at.year) * 12 + now.month - activated_at.month
+            )
             if now.day < activated_at.day:
                 months_diff -= 1
-            
+
             from dateutil.relativedelta import relativedelta
+
             cycle_start = activated_at + relativedelta(months=months_diff)
             cycle_end = cycle_start + relativedelta(months=1)
             reset_date = cycle_end
-            
-            current_count = await db.resumes.count_documents({
-                "$or": [{"userId": str(user_id)}, {"userEmail": user.get('email')}],
-                "createdAt": {"$gte": cycle_start}
-            })
+
+            current_count = await db.resumes.count_documents(
+                {
+                    "$or": [{"userId": str(user_id)}, {"userEmail": user.get("email")}],
+                    "createdAt": {"$gte": cycle_start},
+                }
+            )
         else:
             current_count = total_resumes
-            
+
         can_generate = current_count < limit
-    elif tier_lower == 'free_byok' or user.get('byok_enabled'):
+    elif tier_lower == "free_byok" or user.get("byok_enabled"):
         limit = "Unlimited (BYOK)"
         can_generate = True
-    else: # free
-        limit = 100 # Increased to 100 for beta
+    else:  # free
+        limit = 100  # Increased to 100 for beta
         can_generate = total_resumes < limit
     return {
         "limit": limit,
@@ -2480,28 +2769,27 @@ async def get_user_usage_limits(identifier: str) -> dict:
         "canGenerate": can_generate,
         "resetDate": reset_date,
         "totalResumes": total_resumes,
-        "byokEnabled": user.get('byok_enabled', False)
+        "byokEnabled": user.get("byok_enabled", False),
     }
+
 
 async def get_decrypted_byok_key(user_email: str):
     """Retrieve and decrypt a user's BYOK key if available"""
     try:
         byok_config = await db.byok_keys.find_one({"user_id": user_email})
-        if not byok_config or not byok_config.get('is_enabled', True):
+        if not byok_config or not byok_config.get("is_enabled", True):
             return None
-            
+
         decrypted_key = decrypt_api_key(
-            byok_config['api_key_encrypted'],
-            byok_config['api_key_iv'],
-            byok_config['api_key_tag']
+            byok_config["api_key_encrypted"],
+            byok_config["api_key_iv"],
+            byok_config["api_key_tag"],
         )
-        return {
-            "provider": byok_config['provider'],
-            "api_key": decrypted_key
-        }
+        return {"provider": byok_config["provider"], "api_key": decrypted_key}
     except Exception as e:
         logger.error(f"Error decrypting BYOK key for {user_email}: {e}")
         return None
+
 
 @api_router.get("/usage/limits")
 async def get_usage_limits(email: str = Query(...)):
@@ -2515,22 +2803,36 @@ async def get_usage_limits(email: str = Query(...)):
         logger.error(f"Error getting usage limits: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+
 @api_router.post("/fetch-job-description")
 async def fetch_job_desc(request: JobUrlFetchRequest):
     """
     Fetch and extract job description from a URL.
     """
     try:
+        # SAFETY PATCH: Define user to prevent NameError from ghost code/corruption
+        user = None 
+        
         url = request.url.strip()
         if not url:
             raise HTTPException(status_code=400, detail="URL is required")
-        
+
+        logger.info(f"Fetching job description for URL: {url}")
         result = await scrape_job_description(url)
         return result
+    except NameError as ne:
+        # Catch specific NameError
+        logger.error(f"NameError in fetch_job_desc: {ne}")
+        if "user" in str(ne):
+             logger.error("Caught 'user' NameError. Suppressing...")
+             # Retry or fail gracefully?
+             raise HTTPException(status_code=500, detail=f"Server Configuration Error: {str(ne)}")
+        raise
     except Exception as e:
         error_details = traceback.format_exc()
         logger.error(f"Error in fetch_job_desc: {e}\n{error_details}")
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @api_router.get("/resumes")
 async def get_resumes(email: str = Query(...)):
@@ -2538,21 +2840,21 @@ async def get_resumes(email: str = Query(...)):
     Get all resumes for the user from saved_resumes.
     """
     try:
-        resumes = await db.saved_resumes.find(
-            {"userEmail": email}
-        ).sort("updatedAt", -1).to_list(10)
-        
+        resumes = (
+            await db.saved_resumes.find({"userEmail": email})
+            .sort("updatedAt", -1)
+            .to_list(10)
+        )
+
         for resume in resumes:
             resume["id"] = str(resume.pop("_id"))
             resume["textPreview"] = resume.get("resumeText", "")[:200] + "..."
-        
-        return {
-            "success": True,
-            "resumes": resumes
-        }
+
+        return {"success": True, "resumes": resumes}
     except Exception as e:
         logger.error(f"Error getting resumes: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @api_router.post("/ai-ninja/apply")
 async def ai_ninja_apply(request: Request):
@@ -2562,76 +2864,98 @@ async def ai_ninja_apply(request: Request):
     """
     try:
         form = await request.form()
-        
-        userId = form.get('userId')
-        if not userId or userId == 'guest':
-            raise HTTPException(status_code=401, detail="Authentication required to use AI Ninja")
-            
+
+        userId = form.get("userId")
+        if not userId or userId == "guest":
+            raise HTTPException(
+                status_code=401, detail="Authentication required to use AI Ninja"
+            )
+
         # Get user to verify tier and usage
         user = await db.users.find_one({"id": userId})
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
-            
+
         # Enforce email verification
         ensure_verified(user)
-            
+
         # Check usage limits
-        usage = await get_user_usage_limits(user['email'])
-        if not usage['canGenerate']:
+        usage = await get_user_usage_limits(user["email"])
+        if not usage["canGenerate"]:
             raise HTTPException(
-                status_code=403, 
-                detail=f"Usage limit reached ({usage['limit']} resumes). Please upgrade to continue."
+                status_code=403,
+                detail=f"Usage limit reached ({usage['limit']} resumes). Please upgrade to continue.",
             )
 
-        jobId = form.get('jobId', '')
-        jobTitle = form.get('jobTitle', '')
-        company = form.get('company', '')
+        jobId = form.get("jobId", "")
+        jobTitle = form.get("jobTitle", "")
+        company = form.get("company", "")
         if not company:
             raise HTTPException(status_code=400, detail="Company name is required")
-            
-        jobDescription = form.get('jobDescription', '')
-        jobUrl = form.get('jobUrl', '')
-        yearsOfExperience = form.get('yearsOfExperience', '')
-        primarySkills = form.get('primarySkills', '')
-        visaStatus = form.get('visaStatus', '')
-        targetSalary = form.get('targetSalary', '')
-        preferredWorkType = form.get('preferredWorkType', '')
-        
+
+        jobDescription = form.get("jobDescription", "")
+        jobUrl = form.get("jobUrl", "")
+        yearsOfExperience = form.get("yearsOfExperience", "")
+        primarySkills = form.get("primarySkills", "")
+        visaStatus = form.get("visaStatus", "")
+        targetSalary = form.get("targetSalary", "")
+        preferredWorkType = form.get("preferredWorkType", "")
+
+        # New selective tailoring parameters
+        selectedSections = form.get("selectedSections")
+        if selectedSections and isinstance(selectedSections, str):
+            selectedSections = json.loads(selectedSections)
+
+        selectedKeywords = form.get("selectedKeywords")
+        if selectedKeywords and isinstance(selectedKeywords, str):
+            selectedKeywords = json.loads(selectedKeywords)
+
         # Get resume file if uploaded or text provided
-        resumeFile = form.get('resume')
-        resumeText = form.get('resumeText', '')
-        
+        resumeFile = form.get("resume")
+        resumeText = form.get("resumeText", "")
+
         if resumeFile and not isinstance(resumeFile, str):
             from resume_parser import parse_resume
+
             file_content = await resumeFile.read()
             resumeText = await parse_resume(file_content, resumeFile.filename)
         elif not resumeText and resumeFile:
             resumeText = str(resumeFile)
-            
+
         if not resumeText:
-            raise HTTPException(status_code=400, detail="Resume content is missing. Please upload a resume.")
-            
+            raise HTTPException(
+                status_code=400,
+                detail="Resume content is missing. Please upload a resume.",
+            )
+
         # Generate application ID
         applicationId = str(uuid.uuid4())
-        
+
         # Call Expert AI Ninja for tailored documents with HARD TIMEOUT
         logger.info(f"Generating expert documents for {company} - {jobTitle}")
-        
+
         # Check for BYOK
-        byok_config = await get_decrypted_byok_key(user.get('email', ''))
-        
+        byok_config = await get_decrypted_byok_key(user.get("email", ""))
+
         expert_docs = None
         try:
             # 30 second hard timeout to prevent infinite spinning
             async with asyncio.timeout(30):
-                expert_docs = await generate_expert_documents(resumeText, jobDescription, user_info=user, byok_config=byok_config)
+                expert_docs = await generate_expert_documents(
+                    resumeText,
+                    jobDescription,
+                    user_info=user,
+                    byok_config=byok_config,
+                    selected_sections=selectedSections,
+                    selected_keywords=selectedKeywords,
+                )
         except asyncio.TimeoutError:
             logger.warning(f"Expert AI generation timed out after 30s for {company}")
             expert_docs = None
         except Exception as e:
             logger.error(f"Expert AI generation failed: {e}")
             expert_docs = None
-        
+
         if not expert_docs or "ats_resume" not in expert_docs:
             logger.warning("Expert AI failed or timed out - using immediate fallback")
             # Immediate fallback - give user SOMETHING right now
@@ -2678,26 +3002,26 @@ Sincerely,
                         )
                 except:
                     tailoredCoverLetter = None
-        
+
         if not tailoredCoverLetter:
             tailoredCoverLetter = f"Dear Hiring Manager,\n\nI am excited to apply for the {jobTitle} at {company}..."
-        
+
         suggestedAnswers = [
             {
                 "question": "Why are you interested in this role?",
-                "answer": f"I'm drawn to the {jobTitle} role at {company} because it perfectly aligns with my professional background and career goals. The opportunity to work on innovative solutions while contributing to a dynamic team is exactly what I'm looking for."
+                "answer": f"I'm drawn to the {jobTitle} role at {company} because it perfectly aligns with my professional background and career goals. The opportunity to work on innovative solutions while contributing to a dynamic team is exactly what I'm looking for.",
             },
             {
                 "question": "Why do you want to work at this company?",
-                "answer": f"{company} stands out for its reputation for innovation and commitment to excellence. The company's focus on impactful work and collaborative culture makes it an ideal environment where I can contribute meaningfully."
-            }
+                "answer": f"{company} stands out for its reputation for innovation and commitment to excellence. The company's focus on impactful work and collaborative culture makes it an ideal environment where I can contribute meaningfully.",
+            },
         ]
         # Save resume to record library and for usage tracking
         resume_id = str(uuid.uuid4())
         resume_doc = {
             "id": resume_id,
             "userId": userId,
-            "userEmail": user['email'],
+            "userEmail": user["email"],
             "resumeName": f"AI Tailored: {company}",
             "jobTitle": jobTitle,
             "companyName": company,
@@ -2706,14 +3030,14 @@ Sincerely,
             "isBase": False,
             "createdAt": datetime.now(timezone.utc).isoformat(),
             "updatedAt": datetime.now(timezone.utc).isoformat(),
-            "origin": "ai-ninja"
+            "origin": "ai-ninja",
         }
-        
-        # Insert into BOTH collections: 
+
+        # Insert into BOTH collections:
         # db.resumes for tracking usage, db.saved_resumes for the "My Resumes" list
         await db.resumes.insert_one(resume_doc)
         await db.saved_resumes.insert_one(resume_doc)
-        
+
         # Save application to database
         application = Application(
             id=applicationId,
@@ -2723,20 +3047,22 @@ Sincerely,
             company=company,
             workType=preferredWorkType,
             resumeId=resume_id,
-            status="applied"
+            status="applied",
         )
-        
+
         doc = application.model_dump()
-        doc['createdAt'] = doc['createdAt'].isoformat()
-        doc['updatedAt'] = doc['updatedAt'].isoformat()
-        
+        doc["createdAt"] = doc["createdAt"].isoformat()
+        doc["updatedAt"] = doc["updatedAt"].isoformat()
+
         await db.applications.insert_one(doc)
-        
-        logger.info(f"AI Ninja application and resume created: {applicationId} for {jobTitle} at {company}")
-        
+
+        logger.info(
+            f"AI Ninja application and resume created: {applicationId} for {jobTitle} at {company}"
+        )
+
         # Get updated usage
-        new_usage = await get_user_usage_limits(user['email'])
-        
+        new_usage = await get_user_usage_limits(user["email"])
+
         return {
             "applicationId": applicationId,
             "resumeId": resume_id,
@@ -2744,12 +3070,13 @@ Sincerely,
             "detailedCv": detailedCv,
             "tailoredCoverLetter": tailoredCoverLetter,
             "suggestedAnswers": suggestedAnswers,
-            "usage": new_usage
+            "usage": new_usage,
         }
-        
+
     except Exception as e:
         logger.error(f"Error in AI Ninja apply: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @api_router.get("/applications/{user_id}")
 async def get_user_applications(user_id: str):
@@ -2763,50 +3090,63 @@ async def get_user_applications(user_id: str):
         if "@" in user_id:
             user = await db.users.find_one({"email": user_id})
             if user:
-                query = {"userId": user['id']}
-        
-        applications = await db.applications.find(
-            query,
-            {"_id": 0}
-        ).sort("createdAt", -1).to_list(1000)
-        
+                query = {"userId": user["id"]}
+
+        applications = (
+            await db.applications.find(query, {"_id": 0})
+            .sort("createdAt", -1)
+            .to_list(1000)
+        )
+
         # Convert datetime strings
         for app in applications:
-            if isinstance(app.get('createdAt'), str):
+            if isinstance(app.get("createdAt"), str):
                 try:
-                    app['createdAt'] = datetime.fromisoformat(app['createdAt'].replace('Z', '+00:00'))
-                except: pass
-            if isinstance(app.get('updatedAt'), str):
+                    app["createdAt"] = datetime.fromisoformat(
+                        app["createdAt"].replace("Z", "+00:00")
+                    )
+                except:
+                    pass
+            if isinstance(app.get("updatedAt"), str):
                 try:
-                    app['updatedAt'] = datetime.fromisoformat(app['updatedAt'].replace('Z', '+00:00'))
-                except: pass
-        
-        return {
-            "applications": applications,
-            "total": len(applications)
-        }
+                    app["updatedAt"] = datetime.fromisoformat(
+                        app["updatedAt"].replace("Z", "+00:00")
+                    )
+                except:
+                    pass
+
+        return {"applications": applications, "total": len(applications)}
     except Exception as e:
         logger.error(f"Error fetching applications: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @api_router.patch("/applications/{application_id}/status")
 async def update_application_status(application_id: str, status: str):
     """
     Update application status.
     """
-    valid_statuses = ['applied', 'interview', 'rejected', 'offer', 'on_hold']
+    valid_statuses = ["applied", "interview", "rejected", "offer", "on_hold"]
     if status not in valid_statuses:
-        raise HTTPException(status_code=400, detail=f"Invalid status. Must be one of: {valid_statuses}")
-    
+        raise HTTPException(
+            status_code=400, detail=f"Invalid status. Must be one of: {valid_statuses}"
+        )
+
     result = await db.applications.update_one(
         {"id": application_id},
-        {"$set": {"status": status, "updatedAt": datetime.now(timezone.utc).isoformat()}}
+        {
+            "$set": {
+                "status": status,
+                "updatedAt": datetime.now(timezone.utc).isoformat(),
+            }
+        },
     )
-    
+
     if result.modified_count == 0:
         raise HTTPException(status_code=404, detail="Application not found")
-    
+
     return {"success": True, "status": status}
+
 
 # Include the router in the main app
 app.include_router(api_router)
@@ -2816,7 +3156,7 @@ app.add_middleware(
     allow_credentials=True,
     allow_origins=[
         "http://localhost:3000",
-        "http://localhost:5173", # Vite default
+        "http://localhost:5173",  # Vite default
         "https://jobninjas.org",
         "https://www.jobninjas.org",
         "https://jobninjas.ai",
@@ -2824,16 +3164,17 @@ app.add_middleware(
         "https://novaninjas.com",
         "https://www.novaninjas.com",
         "https://novaninjas.vercel.app",
-        "https://nova-ninjas-production.up.railway.app" # Production backend URL as origin if needed
+        "https://nova-ninjas-production.up.railway.app",  # Production backend URL as origin if needed
     ],
     allow_methods=["*"],
     allow_headers=["*"],
-    expose_headers=["Content-Disposition"]
+    expose_headers=["Content-Disposition"],
 )
 
 # ============================================
 # JOB BOARD API ENDPOINTS
 # ============================================
+
 
 @app.get("/api/jobs")
 async def get_jobs(
@@ -2851,12 +3192,12 @@ async def get_jobs(
     try:
         # Build query - show all jobs (active check removed for now)
         query = {}
-        
+
         if country:
             country_lower = country.lower()
-            if country_lower == 'usa' or country_lower == 'us':
+            if country_lower == "usa" or country_lower == "us":
                 # Strictly USA: Use both Whitelist AND Blacklist
-                
+
                 # 1. Whitelist: Must match US state codes or country name
                 us_pattern = (
                     r"\b("
@@ -2865,7 +3206,7 @@ async def get_jobs(
                     r"United States|USA|US"
                     r")\b"
                 )
-                
+
                 # 2. Blacklist: Explicitly exclude international major cities/countries to be safe
                 international_keywords = (
                     "israel|europe|india|uk|london|canada|germany|france|australia|asia|berlin|paris|toronto|sydney|"
@@ -2884,9 +3225,13 @@ async def get_jobs(
                     # Must match US pattern (case insensitive)
                     {"location": {"$regex": us_pattern, "$options": "i"}},
                     # Must NOT match international pattern
-                    {"location": {"$not": {"$regex": international_keywords, "$options": "i"}}}
+                    {
+                        "location": {
+                            "$not": {"$regex": international_keywords, "$options": "i"}
+                        }
+                    },
                 ]
-            elif country_lower == 'international':
+            elif country_lower == "international":
                 query["country"] = {"$ne": "us"}
             else:
                 query["country"] = country_lower
@@ -2895,33 +3240,33 @@ async def get_jobs(
             query["$or"] = [
                 {"title": {"$regex": search, "$options": "i"}},
                 {"company": {"$regex": search, "$options": "i"}},
-                {"description": {"$regex": search, "$options": "i"}}
+                {"description": {"$regex": search, "$options": "i"}},
             ]
-        
+
         if type:
             query["type"] = type
-        
+
         if visa:
             query["visaTags"] = {"$in": ["visa-sponsoring"]}
-        
+
         if high_pay:
             query["highPay"] = True
-        
+
         # Get total count
         total = await db.jobs.count_documents(query)
-        
+
         # Get paginated results
         skip = (page - 1) * limit
         cursor = db.jobs.find(query).sort("createdAt", -1).skip(skip).limit(limit)
         jobs = await cursor.to_list(length=limit)
-        
+
         # Convert ObjectId to string and ensure id field exists
         for job in jobs:
             if "_id" in job:
                 job["id"] = str(job.pop("_id"))
             elif "externalId" in job and "id" not in job:
                 job["id"] = job["externalId"]
-        
+
         return {
             "success": True,
             "jobs": jobs,
@@ -2930,10 +3275,10 @@ async def get_jobs(
                 "page": page,
                 "limit": limit,
                 "total": total,
-                "pages": (total + limit - 1) // limit
-            }
+                "pages": (total + limit - 1) // limit,
+            },
         }
-        
+
     except Exception as e:
         logger.error(f"Error fetching jobs: {e}")
         raise HTTPException(status_code=500, detail="Failed to fetch jobs")
@@ -2946,30 +3291,30 @@ async def get_job_by_id(job_id: str):
     """
     try:
         from bson import ObjectId
-        
+
         job = None
-        
+
         # Try to find by MongoDB ObjectId first
         try:
             job = await db.jobs.find_one({"_id": ObjectId(job_id)})
         except Exception:
             pass  # Invalid ObjectId format, try externalId
-        
+
         # If not found, try by externalId
         if not job:
             job = await db.jobs.find_one({"externalId": job_id})
-        
+
         # Also try by string id
         if not job:
             job = await db.jobs.find_one({"id": job_id})
-        
+
         if not job:
             raise HTTPException(status_code=404, detail="Job not found")
-        
+
         job["id"] = str(job.pop("_id"))
-        
+
         return {"success": True, "job": job}
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -2984,12 +3329,12 @@ async def get_jobs_stats():
     """
     try:
         # Use impressive marketing numbers as requested
-        total_jobs = 5248192 # 5M+ jobs
-        daily_new = 10452     # 10k+ daily
+        total_jobs = 5248192  # 5M+ jobs
+        daily_new = 10452  # 10k+ daily
         visa_jobs = 142381
         remote_jobs = 824190
         high_pay_jobs = 245190
-        
+
         return {
             "success": True,
             "stats": {
@@ -2997,10 +3342,10 @@ async def get_jobs_stats():
                 "dailyNew": daily_new,
                 "visaJobs": visa_jobs,
                 "remoteJobs": remote_jobs,
-                "highPayJobs": high_pay_jobs
-            }
+                "highPayJobs": high_pay_jobs,
+            },
         }
-        
+
     except Exception as e:
         logger.error(f"Error fetching job stats: {e}")
         raise HTTPException(status_code=500, detail="Failed to fetch job stats")
@@ -3013,11 +3358,7 @@ async def refresh_jobs():
     """
     try:
         count = await scheduled_job_fetch(db)
-        return {
-            "success": True,
-            "message": f"Refreshed {count} jobs",
-            "count": count
-        }
+        return {"success": True, "message": f"Refreshed {count} jobs", "count": count}
     except Exception as e:
         logger.error(f"Error refreshing jobs: {e}")
         raise HTTPException(status_code=500, detail="Failed to refresh jobs")
@@ -3028,9 +3369,13 @@ async def aggregate_jobs_from_apis(
     use_adzuna: bool = Query(True, description="Fetch from Adzuna API"),
     use_jsearch: bool = Query(True, description="Fetch from JSearch API"),
     use_usajobs: bool = Query(True, description="Fetch from USAJobs.gov"),
-    use_rss: bool = Query(True, description="Fetch from RSS feeds (Indeed/SimplyHired)"),
+    use_rss: bool = Query(
+        True, description="Fetch from RSS feeds (Indeed/SimplyHired)"
+    ),
     max_adzuna_pages: int = Query(20, ge=1, le=100, description="Max Adzuna pages"),
-    max_jsearch_queries: int = Query(10, ge=1, le=20, description="Number of JSearch queries")
+    max_jsearch_queries: int = Query(
+        10, ge=1, le=20, description="Number of JSearch queries"
+    ),
 ):
     """
     Aggregate jobs from free APIs: Adzuna, JSearch, USAJobs, and RSS feeds
@@ -3044,18 +3389,20 @@ async def aggregate_jobs_from_apis(
             use_usajobs=use_usajobs,
             use_rss=use_rss,
             max_adzuna_pages=max_adzuna_pages,
-            max_jsearch_queries=max_jsearch_queries
+            max_jsearch_queries=max_jsearch_queries,
         )
-        
+
         return {
             "success": True,
             "message": f"Aggregated {stats['total_stored']} unique USA jobs",
-            "stats": stats
+            "stats": stats,
         }
     except Exception as e:
         logger.error(f"Error aggregating jobs: {e}")
         logger.error(traceback.format_exc())
-        raise HTTPException(status_code=500, detail=f"Failed to aggregate jobs: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to aggregate jobs: {str(e)}"
+        )
 
 
 @app.get("/api/jobs/aggregator-stats")
@@ -3066,11 +3413,8 @@ async def get_aggregator_stats():
     try:
         aggregator = JobAggregator(db)
         stats = await aggregator.get_job_stats()
-        
-        return {
-            "success": True,
-            "stats": stats
-        }
+
+        return {"success": True, "stats": stats}
     except Exception as e:
         logger.error(f"Error fetching aggregator stats: {e}")
         raise HTTPException(status_code=500, detail="Failed to fetch aggregator stats")
@@ -3080,10 +3424,12 @@ async def get_aggregator_stats():
 # RAZORPAY PAYMENT ENDPOINTS
 # ============================================
 
+
 class RazorpayOrderRequest(BaseModel):
     plan_id: str
     user_email: str
-    currency: str = 'INR'  # 'INR' or 'USD'
+    currency: str = "INR"  # 'INR' or 'USD'
+
 
 class RazorpayVerifyRequest(BaseModel):
     razorpay_order_id: str
@@ -3102,24 +3448,21 @@ async def create_razorpay_order_endpoint(request: RazorpayOrderRequest):
         order = create_razorpay_order(
             plan_id=request.plan_id,
             user_email=request.user_email,
-            currency=request.currency
+            currency=request.currency,
         )
-        
+
         if not order:
             raise HTTPException(status_code=400, detail="Failed to create order")
-        
-        if order.get('free'):
+
+        if order.get("free"):
             return {
                 "success": True,
                 "free": True,
-                "message": "Free plan - no payment required"
+                "message": "Free plan - no payment required",
             }
-        
-        return {
-            "success": True,
-            "order": order
-        }
-        
+
+        return {"success": True, "order": order}
+
     except Exception as e:
         logger.error(f"Error creating Razorpay order: {e}")
         raise HTTPException(status_code=500, detail="Failed to create payment order")
@@ -3135,15 +3478,15 @@ async def verify_razorpay_payment_endpoint(request: RazorpayVerifyRequest):
         is_valid = verify_razorpay_payment(
             order_id=request.razorpay_order_id,
             payment_id=request.razorpay_payment_id,
-            signature=request.razorpay_signature
+            signature=request.razorpay_signature,
         )
-        
+
         if not is_valid:
             raise HTTPException(status_code=400, detail="Payment verification failed")
-        
+
         # Get payment details
         payment = get_payment_details(request.razorpay_payment_id)
-        
+
         # Update user subscription in database
         await db.users.update_one(
             {"email": request.user_email},
@@ -3154,36 +3497,42 @@ async def verify_razorpay_payment_endpoint(request: RazorpayVerifyRequest):
                         "payment_id": request.razorpay_payment_id,
                         "order_id": request.razorpay_order_id,
                         "status": "active",
-                        "amount": payment.get('amount', 0) if payment else 0,
-                        "currency": payment.get('currency', 'INR') if payment else 'INR',
+                        "amount": payment.get("amount", 0) if payment else 0,
+                        "currency": (
+                            payment.get("currency", "INR") if payment else "INR"
+                        ),
                         "activated_at": datetime.now(timezone.utc),
-                        "provider": "razorpay"
+                        "provider": "razorpay",
                     }
                 }
+            },
+        )
+
+        # Log the payment
+        await db.payments.insert_one(
+            {
+                "user_email": request.user_email,
+                "plan_id": request.plan_id,
+                "payment_id": request.razorpay_payment_id,
+                "order_id": request.razorpay_order_id,
+                "amount": payment.get("amount", 0) if payment else 0,
+                "currency": payment.get("currency", "INR") if payment else "INR",
+                "status": "success",
+                "provider": "razorpay",
+                "created_at": datetime.now(timezone.utc),
             }
         )
-        
-        # Log the payment
-        await db.payments.insert_one({
-            "user_email": request.user_email,
-            "plan_id": request.plan_id,
-            "payment_id": request.razorpay_payment_id,
-            "order_id": request.razorpay_order_id,
-            "amount": payment.get('amount', 0) if payment else 0,
-            "currency": payment.get('currency', 'INR') if payment else 'INR',
-            "status": "success",
-            "provider": "razorpay",
-            "created_at": datetime.now(timezone.utc)
-        })
-        
-        logger.info(f"Payment successful for {request.user_email}, plan: {request.plan_id}")
-        
+
+        logger.info(
+            f"Payment successful for {request.user_email}, plan: {request.plan_id}"
+        )
+
         return {
             "success": True,
             "message": "Payment verified and subscription activated",
-            "plan_id": request.plan_id
+            "plan_id": request.plan_id,
         }
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -3192,21 +3541,18 @@ async def verify_razorpay_payment_endpoint(request: RazorpayVerifyRequest):
 
 
 @app.get("/api/razorpay/plans")
-async def get_razorpay_plans(currency: str = 'INR'):
+async def get_razorpay_plans(currency: str = "INR"):
     """
     Get available plans with pricing
     """
-    plans = RAZORPAY_PLANS_USD if currency == 'USD' else RAZORPAY_PLANS
-    return {
-        "success": True,
-        "plans": plans,
-        "currency": currency
-    }
+    plans = RAZORPAY_PLANS_USD if currency == "USD" else RAZORPAY_PLANS
+    return {"success": True, "plans": plans, "currency": currency}
 
 
 # ============================================
 # SCHEDULER SETUP
 # ============================================
+
 
 # Background task to fetch jobs periodically
 async def job_fetch_background_task():
@@ -3217,11 +3563,11 @@ async def job_fetch_background_task():
         await scheduled_job_fetch(db)
     except Exception as e:
         logger.error(f"Initial job fetch error: {e}")
-    
+
     while True:
         # Wait 6 hours before next fetch
         await asyncio.sleep(6 * 60 * 60)  # 6 hours in seconds
-        
+
         try:
             logger.info("🔄 Running scheduled job fetch...")
             await scheduled_job_fetch(db)
@@ -3241,7 +3587,7 @@ from document_generator import (
     generate_expert_documents,
     create_resume_docx,
     create_cover_letter_docx,
-    create_text_docx
+    create_text_docx,
 )
 from fastapi.responses import StreamingResponse
 
@@ -3249,12 +3595,16 @@ from fastapi.responses import StreamingResponse
 # AI GENERATION ENDPOINT FOR TOOLS
 # ============================================
 
+
 class AIGenerateRequest(BaseModel):
     prompt: str
     max_tokens: int = 1000
 
+
 @app.post("/api/ai/generate")
-async def generate_ai_content(request: AIGenerateRequest, user: dict = Depends(get_current_user)):
+async def generate_ai_content(
+    request: AIGenerateRequest, user: dict = Depends(get_current_user)
+):
     """
     General-purpose AI text generation endpoint for tools like
     Bullet Points Generator, Summary Generator, LinkedIn Optimizer.
@@ -3262,26 +3612,23 @@ async def generate_ai_content(request: AIGenerateRequest, user: dict = Depends(g
     try:
         # Enforce email verification
         ensure_verified(user)
-        
+
         from resume_analyzer import unified_api_call
-        
+
         # Check for BYOK
-        byok_config = await get_decrypted_byok_key(user.get('email'))
-        
+        byok_config = await get_decrypted_byok_key(user.get("email"))
+
         response = await unified_api_call(
-            request.prompt, 
+            request.prompt,
             byok_config=byok_config,
             max_tokens=request.max_tokens,
-            model="llama-3.1-8b-instant"
+            model="llama-3.1-8b-instant",
         )
-        
+
         if not response:
             raise HTTPException(status_code=500, detail="AI generation failed")
-        
-        return {
-            "success": True,
-            "response": response
-        }
+
+        return {"success": True, "response": response}
     except Exception as e:
         logger.error(f"AI generation error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -3290,44 +3637,52 @@ async def generate_ai_content(request: AIGenerateRequest, user: dict = Depends(g
 @app.post("/api/scan/analyze")
 async def scan_resume(
     resume: UploadFile = File(...),
-    job_description: str = Form(...)
+    job_description: str = Form(...),
+    email: str = Form(None),
 ):
     """
     Analyze a resume against a job description
     Returns match score and detailed analysis
     """
     try:
+        # SAFETY PATCH: Define user to prevent NameError
+        user = None
+        logger.info("SERVER VERSION SCAN PATCHED: Starting resume scan...")
+
         # Validate file
         file_content = await resume.read()
         validation_error = validate_resume_file(resume.filename, len(file_content))
         if validation_error:
             raise HTTPException(status_code=400, detail=validation_error)
-        
+
         # Parse resume
         resume_text = await parse_resume(file_content, resume.filename)
         if not resume_text.strip():
             raise HTTPException(
-                status_code=400, 
-                detail="Could not extract text from resume. Please ensure it's not an image-based PDF."
+                status_code=400,
+                detail="Could not extract text from resume. Please ensure it's not an image-based PDF.",
             )
-        
-        # Check for BYOK
-        byok_config = await get_decrypted_byok_key(user.get('email', ''))
-        
+
+        # Check for BYOK - safely handle if email is missing
+        byok_config = await get_decrypted_byok_key(email or "")
+
         # Analyze with Gemini / BYOK
         from resume_analyzer import analyze_resume
-        analysis = await analyze_resume(resume_text, job_description, byok_config=byok_config)
-        
+
+        analysis = await analyze_resume(
+            resume_text, job_description, byok_config=byok_config
+        )
+
         if "error" in analysis:
             raise HTTPException(status_code=500, detail=analysis["error"])
-        
+
         return {
             "success": True,
             "analysis": analysis,
             "resumeText": resume_text,  # Return for document generation
-            "resumeTextLength": len(resume_text)
+            "resumeTextLength": len(resume_text),
         }
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -3337,7 +3692,7 @@ async def scan_resume(
 
 @app.post("/api/scan/parse")
 async def parse_resume_endpoint(
-    resume: UploadFile = File(...)
+    resume: UploadFile = File(...), email: str = Form(None)
 ):
     """
     Parse a resume and extract structured data
@@ -3348,28 +3703,28 @@ async def parse_resume_endpoint(
         validation_error = validate_resume_file(resume.filename, len(file_content))
         if validation_error:
             raise HTTPException(status_code=400, detail=validation_error)
-        
+
         # Parse resume text
         resume_text = await parse_resume(file_content, resume.filename)
         if not resume_text.strip():
             raise HTTPException(
-                status_code=400, 
-                detail="Could not extract text from resume"
+                status_code=400, detail="Could not extract text from resume"
             )
-        
-        # Check for BYOK
-        byok_config = await get_decrypted_byok_key(user.get('email', ''))
-        
+
+        # Check for BYOK - safely handle if email is missing
+        byok_config = await get_decrypted_byok_key(email or "")
+
         # Extract structured data with Gemini / BYOK
         from resume_analyzer import extract_resume_data
+
         parsed_data = await extract_resume_data(resume_text, byok_config=byok_config)
-        
+
         return {
             "success": True,
             "data": parsed_data,
-            "resumeText": resume_text  # Changed from rawText to match frontend
+            "resumeText": resume_text,  # Changed from rawText to match frontend
         }
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -3392,86 +3747,110 @@ async def generate_resume_docx(request: GenerateResumeRequest):
     """
     Generate an optimized resume as a Word document
     """
-    safe_company = request.company.replace(' ', '_').replace('"', '').replace("'", "")
+    safe_company = request.company.replace(" ", "_").replace('"', "").replace("'", "")
     try:
         # Get user to verify status
         user = await db.users.find_one({"id": request.userId})
         if user:
             ensure_verified(user)
-        
+
         # Check if we should use raw text or structured data
-        if hasattr(request, 'resume_text') and not request.resume_text.startswith('{') and request.is_already_tailored:
+        if (
+            hasattr(request, "resume_text")
+            and not request.resume_text.startswith("{")
+            and request.is_already_tailored
+        ):
             # It's raw text from Expert AI that is already tailored
             docx_file = create_text_docx(request.resume_text, "ATS_Resume")
-        elif not request.resume_text.startswith('{'):
             # Check for BYOK
-            byok_config = await get_decrypted_byok_key(user.get('email', ''))
-            
-            from document_generator import generate_expert_documents, generate_optimized_resume_content
-            expert_docs = await generate_expert_documents(request.resume_text, request.job_description, user_info=user_info, byok_config=byok_config)
-            
-            if expert_docs and expert_docs.get('ats_resume'):
-                docx_file = create_text_docx(expert_docs['ats_resume'], "Optimized_Resume")
+            user_email = user.get("email", "") if user else ""
+            byok_config = await get_decrypted_byok_key(user_email)
+
+            from document_generator import (
+                generate_expert_documents,
+                generate_optimized_resume_content,
+            )
+
+            expert_docs = await generate_expert_documents(
+                request.resume_text,
+                request.job_description,
+                user_info=user,
+                byok_config=byok_config,
+            )
+
+            if expert_docs and expert_docs.get("ats_resume"):
+                docx_file = create_text_docx(
+                    expert_docs["ats_resume"], "Optimized_Resume"
+                )
             else:
                 # Fallback to standard optimization if expert fails
                 resume_data = await generate_optimized_resume_content(
                     request.resume_text,
                     request.job_description,
                     request.analysis,
-                    byok_config=byok_config
+                    byok_config=byok_config,
                 )
                 if not resume_data:
-                    raise HTTPException(status_code=500, detail="Failed to generate resume content")
+                    raise HTTPException(
+                        status_code=500, detail="Failed to generate resume content"
+                    )
                 docx_file = create_resume_docx(resume_data)
         else:
             # Check for BYOK
-            byok_config = await get_decrypted_byok_key(user.get('email', ''))
-            
+            byok_config = await get_decrypted_byok_key(
+                user.get("email", "") if user else ""
+            )
+
             # Generate optimized content from structured data (original flow)
             from document_generator import generate_optimized_resume_content
+
             resume_data = await generate_optimized_resume_content(
                 request.resume_text,
                 request.job_description,
                 request.analysis,
-                byok_config=byok_config
+                byok_config=byok_config,
             )
-            
+
             if not resume_data:
-                raise HTTPException(status_code=500, detail="Failed to generate resume content")
-            
+                raise HTTPException(
+                    status_code=500, detail="Failed to generate resume content"
+                )
+
             # Create Word document
             docx_file = create_resume_docx(resume_data)
-        
+
         # Track this generation for usage limits
         if user:
             resume_track_doc = {
                 "id": str(uuid.uuid4()),
                 "userId": request.userId,
-                "userEmail": user.get('email'),
+                "userEmail": user.get("email"),
                 "type": "generation",
-                "createdAt": datetime.now(timezone.utc)
+                "createdAt": datetime.now(timezone.utc),
             }
             await db.resumes.insert_one(resume_track_doc)
-            
+
             # Also save to "My Resumes" library so user can see it
             try:
                 # We content is tailored or expert docs, use that text
                 saved_text = ""
-                if expert_docs and expert_docs.get('ats_resume'):
-                    saved_text = expert_docs['ats_resume']
-                elif 'resume_data' in locals() and resume_data:
-                    saved_text = str(resume_data) # Simplification
-                
+                if expert_docs and expert_docs.get("ats_resume"):
+                    saved_text = expert_docs["ats_resume"]
+                elif "resume_data" in locals() and resume_data:
+                    saved_text = str(resume_data)  # Simplification
+
                 if saved_text:
-                    await db.saved_resumes.insert_one({
-                        "userEmail": user.get('email'),
-                        "resumeName": f"Generated: {request.company}",
-                        "resumeText": saved_text,
-                        "fileName": f"Optimized_Resume_{safe_company}.docx",
-                        "createdAt": datetime.now(timezone.utc).isoformat(),
-                        "updatedAt": datetime.now(timezone.utc).isoformat(),
-                        "isSystemGenerated": True
-                    })
+                    await db.saved_resumes.insert_one(
+                        {
+                            "userEmail": user.get("email"),
+                            "resumeName": f"Generated: {request.company}",
+                            "resumeText": saved_text,
+                            "fileName": f"Optimized_Resume_{safe_company}.docx",
+                            "createdAt": datetime.now(timezone.utc).isoformat(),
+                            "updatedAt": datetime.now(timezone.utc).isoformat(),
+                            "isSystemGenerated": True,
+                        }
+                    )
             except Exception as e:
                 logger.error(f"Failed to auto-save generated resume to library: {e}")
 
@@ -3481,9 +3860,9 @@ async def generate_resume_docx(request: GenerateResumeRequest):
             media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
             headers={
                 "Content-Disposition": f'attachment; filename="Optimized_Resume_{safe_company}.docx"'
-            }
+            },
         )
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -3501,25 +3880,25 @@ async def generate_cv_docx(request: GenerateResumeRequest):
         user = await db.users.find_one({"id": request.userId})
         if user:
             ensure_verified(user)
-            
+
         if not request.resume_text:
-             raise HTTPException(status_code=400, detail="CV text is missing")
-             
+            raise HTTPException(status_code=400, detail="CV text is missing")
+
         # Create Word document from the detailed CV text
         docx_file = create_text_docx(request.resume_text, "Detailed_CV")
-        
+
         # Sanitize company name for header
-        safe_company = request.company.replace(' ', '_').replace('"', '')
-        
+        safe_company = request.company.replace(" ", "_").replace('"', "")
+
         # Return as downloadable file
         return StreamingResponse(
             docx_file,
             media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
             headers={
                 "Content-Disposition": f'attachment; filename="Detailed_CV_{safe_company}.docx"'
-            }
+            },
         )
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -3545,14 +3924,14 @@ async def generate_cover_letter_docx(request: GenerateCoverLetterRequest):
         user = await db.users.find_one({"id": request.userId})
         if user:
             ensure_verified(user)
-            
+
         # Check usage limits (optional if we don't want to limit cover letters, but good for consistency)
         # For now, let's keep cover letters unlimited or tied to the same check?
         # User said "Resume generation limit", but usually they go together.
         # Let's just do it for resumes for now to be strict about the request.
-        
+
         # Check for BYOK
-        byok_config = await get_decrypted_byok_key(user.get('email', ''))
+        byok_config = await get_decrypted_byok_key(user.get("email", ""))
 
         # Generate cover letter content
         cover_letter_text = await generate_cover_letter_content(
@@ -3560,27 +3939,31 @@ async def generate_cover_letter_docx(request: GenerateCoverLetterRequest):
             request.job_description,
             request.job_title,
             request.company,
-            byok_config=byok_config
+            byok_config=byok_config,
         )
-        
+
         if not cover_letter_text:
-            raise HTTPException(status_code=500, detail="Failed to generate cover letter")
-        
+            raise HTTPException(
+                status_code=500, detail="Failed to generate cover letter"
+            )
+
         # Create Word document
-        docx_file = create_cover_letter_docx(cover_letter_text, request.job_title, request.company)
-        
+        docx_file = create_cover_letter_docx(
+            cover_letter_text, request.job_title, request.company
+        )
+
         # Sanitize company name for header
-        safe_company = request.company.replace(' ', '_').replace('"', '')
-        
+        safe_company = request.company.replace(" ", "_").replace('"', "")
+
         # Return as downloadable file
         return StreamingResponse(
             docx_file,
             media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
             headers={
                 "Content-Disposition": f'attachment; filename="Cover_Letter_{safe_company}.docx"'
-            }
+            },
         )
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -3610,27 +3993,37 @@ async def save_user_resume(request: SaveResumeRequest):
     """
     try:
         # Check if resume with same name exists
-        existing = await db.saved_resumes.find_one({
-            "userEmail": request.user_email,
-            "resumeName": request.resume_name
-        })
-        
+        existing = await db.saved_resumes.find_one(
+            {"userEmail": request.user_email, "resumeName": request.resume_name}
+        )
+
         if existing:
             # Update existing - does not count towards limit
             await db.saved_resumes.update_one(
                 {"_id": existing["_id"]},
-                {"$set": {
-                    "resumeText": request.resume_text,
-                    "fileName": request.file_name,
-                    "updatedAt": datetime.now(timezone.utc).isoformat()
-                }}
+                {
+                    "$set": {
+                        "resumeText": request.resume_text,
+                        "fileName": request.file_name,
+                        "updatedAt": datetime.now(timezone.utc).isoformat(),
+                    }
+                },
             )
-            return {"success": True, "message": "Resume updated", "id": str(existing["_id"])}
-        
+            return {
+                "success": True,
+                "message": "Resume updated",
+                "id": str(existing["_id"]),
+            }
+
         # Check limit only for new resumes
-        count = await db.saved_resumes.count_documents({"userEmail": request.user_email})
+        count = await db.saved_resumes.count_documents(
+            {"userEmail": request.user_email}
+        )
         if count >= 3:
-             raise HTTPException(status_code=400, detail="You can only save up to 3 resumes. Please delete one to add a new one.")
+            raise HTTPException(
+                status_code=400,
+                detail="You can only save up to 3 resumes. Please delete one to add a new one.",
+            )
 
         # Create new
         resume_doc = {
@@ -3639,15 +4032,15 @@ async def save_user_resume(request: SaveResumeRequest):
             "resumeText": request.resume_text,
             "fileName": request.file_name,
             "createdAt": datetime.now(timezone.utc).isoformat(),
-            "updatedAt": datetime.now(timezone.utc).isoformat()
+            "updatedAt": datetime.now(timezone.utc).isoformat(),
         }
-        
+
         result = await db.saved_resumes.insert_one(resume_doc)
-        
+
         return {
             "success": True,
             "message": "Resume saved",
-            "id": str(result.inserted_id)
+            "id": str(result.inserted_id),
         }
     except HTTPException:
         raise
@@ -3662,20 +4055,19 @@ async def get_user_resumes(user_email: str):
     Get all saved resumes for a user
     """
     try:
-        resumes = await db.saved_resumes.find(
-            {"userEmail": user_email}
-        ).sort("updatedAt", -1).to_list(length=20)
-        
+        resumes = (
+            await db.saved_resumes.find({"userEmail": user_email})
+            .sort("updatedAt", -1)
+            .to_list(length=20)
+        )
+
         for resume in resumes:
             resume["id"] = str(resume.pop("_id"))
             # Keep resumeText so frontend can use it when selected
             resume["textPreview"] = resume.get("resumeText", "")[:200] + "..."
-        
-        return {
-            "success": True,
-            "resumes": resumes
-        }
-        
+
+        return {"success": True, "resumes": resumes}
+
     except Exception as e:
         logger.error(f"Get resumes error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -3688,19 +4080,16 @@ async def get_resume_detail(resume_id: str):
     """
     try:
         from bson import ObjectId
-        
+
         resume = await db.saved_resumes.find_one({"_id": ObjectId(resume_id)})
-        
+
         if not resume:
             raise HTTPException(status_code=404, detail="Resume not found")
-        
+
         resume["id"] = str(resume.pop("_id"))
-        
-        return {
-            "success": True,
-            "resume": resume
-        }
-        
+
+        return {"success": True, "resume": resume}
+
     except HTTPException:
         raise
     except Exception as e:
@@ -3715,14 +4104,14 @@ async def delete_saved_resume(resume_id: str):
     """
     try:
         from bson import ObjectId
-        
+
         result = await db.saved_resumes.delete_one({"_id": ObjectId(resume_id)})
-        
+
         if result.deleted_count == 0:
             raise HTTPException(status_code=404, detail="Resume not found")
-        
+
         return {"success": True, "message": "Resume deleted"}
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -3743,16 +4132,13 @@ async def save_scan(request: ScanSaveRequest):
             "jobDescription": request.job_description[:5000],  # Limit size
             "analysis": request.analysis,
             "matchScore": request.analysis.get("matchScore", 0),
-            "createdAt": datetime.now(timezone.utc).isoformat()
+            "createdAt": datetime.now(timezone.utc).isoformat(),
         }
-        
+
         result = await db.scans.insert_one(scan_doc)
-        
-        return {
-            "success": True,
-            "scanId": str(result.inserted_id)
-        }
-        
+
+        return {"success": True, "scanId": str(result.inserted_id)}
+
     except Exception as e:
         logger.error(f"Save scan error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -3764,18 +4150,18 @@ async def get_user_scans(user_email: str, limit: int = 20):
     Get user's scan history
     """
     try:
-        scans = await db.scans.find(
-            {"userEmail": user_email}
-        ).sort("createdAt", -1).limit(limit).to_list(length=limit)
-        
+        scans = (
+            await db.scans.find({"userEmail": user_email})
+            .sort("createdAt", -1)
+            .limit(limit)
+            .to_list(length=limit)
+        )
+
         for scan in scans:
             scan["id"] = str(scan.pop("_id"))
-        
-        return {
-            "success": True,
-            "scans": scans
-        }
-        
+
+        return {"success": True, "scans": scans}
+
     except Exception as e:
         logger.error(f"Get scans error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -3788,19 +4174,16 @@ async def get_scan_by_id(scan_id: str):
     """
     try:
         from bson import ObjectId
-        
+
         scan = await db.scans.find_one({"_id": ObjectId(scan_id)})
-        
+
         if not scan:
             raise HTTPException(status_code=404, detail="Scan not found")
-        
+
         scan["id"] = str(scan.pop("_id"))
-        
-        return {
-            "success": True,
-            "scan": scan
-        }
-        
+
+        return {"success": True, "scan": scan}
+
     except HTTPException:
         raise
     except Exception as e:
@@ -3812,6 +4195,7 @@ async def get_scan_by_id(scan_id: str):
 # APPLICATION TRACKER
 # ============================================
 
+
 class ApplicationData(BaseModel):
     userEmail: str
     jobId: Optional[str] = None
@@ -3822,10 +4206,13 @@ class ApplicationData(BaseModel):
     sourceUrl: Optional[str] = ""
     salaryRange: Optional[str] = ""
     matchScore: Optional[int] = 0
-    status: Optional[str] = "materials_ready"  # materials_ready, applied, interviewing, offered, rejected
+    status: Optional[str] = (
+        "materials_ready"  # materials_ready, applied, interviewing, offered, rejected
+    )
     createdAt: Optional[str] = None
     appliedAt: Optional[str] = None
     notes: Optional[str] = ""
+
 
 @app.post("/api/applications")
 async def save_application(application: ApplicationData):
@@ -3839,32 +4226,37 @@ async def save_application(application: ApplicationData):
             "jobTitle": application.jobTitle,
             "company": application.company,
             "location": application.location,
-            "jobDescription": application.jobDescription[:5000] if application.jobDescription else "",
+            "jobDescription": (
+                application.jobDescription[:5000] if application.jobDescription else ""
+            ),
             "sourceUrl": application.sourceUrl,
             "salaryRange": application.salaryRange,
             "matchScore": application.matchScore,
             "status": application.status,
-            "createdAt": application.createdAt or datetime.now(timezone.utc).isoformat(),
+            "createdAt": application.createdAt
+            or datetime.now(timezone.utc).isoformat(),
             "appliedAt": application.appliedAt,
             "notes": application.notes,
-            "updatedAt": datetime.now(timezone.utc).isoformat()
+            "updatedAt": datetime.now(timezone.utc).isoformat(),
         }
-        
+
         result = await db.applications.insert_one(app_doc)
-        
+
         return {
             "success": True,
             "applicationId": str(result.inserted_id),
-            "message": "Application saved to tracker"
+            "message": "Application saved to tracker",
         }
-        
+
     except Exception as e:
         logger.error(f"Save application error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/api/applications/{user_email}")
-async def get_user_applications(user_email: str, status: Optional[str] = None, limit: int = 50):
+async def get_user_applications(
+    user_email: str, status: Optional[str] = None, limit: int = 50
+):
     """
     Get all applications for a user
     """
@@ -3872,40 +4264,47 @@ async def get_user_applications(user_email: str, status: Optional[str] = None, l
         query = {"userEmail": user_email}
         if status:
             query["status"] = status
-        
-        applications = await db.applications.find(query).sort("createdAt", -1).limit(limit).to_list(length=limit)
-        
+
+        applications = (
+            await db.applications.find(query)
+            .sort("createdAt", -1)
+            .limit(limit)
+            .to_list(length=limit)
+        )
+
         for app in applications:
             app["id"] = str(app.pop("_id"))
-        
+
         # Get stats
         total = await db.applications.count_documents({"userEmail": user_email})
-        applied = await db.applications.count_documents({"userEmail": user_email, "status": "applied"})
-        interviewing = await db.applications.count_documents({"userEmail": user_email, "status": "interviewing"})
-        
+        applied = await db.applications.count_documents(
+            {"userEmail": user_email, "status": "applied"}
+        )
+        interviewing = await db.applications.count_documents(
+            {"userEmail": user_email, "status": "interviewing"}
+        )
+
         return {
             "success": True,
             "applications": applications,
-            "stats": {
-                "total": total,
-                "applied": applied,
-                "interviewing": interviewing
-            }
+            "stats": {"total": total, "applied": applied, "interviewing": interviewing},
         }
-        
+
     except Exception as e:
         logger.error(f"Get applications error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.put("/api/applications/{application_id}")
-async def update_application(application_id: str, status: str = None, notes: str = None, appliedAt: str = None):
+async def update_application(
+    application_id: str, status: str = None, notes: str = None, appliedAt: str = None
+):
     """
     Update an application status
     """
     try:
         from bson import ObjectId
-        
+
         update_data = {"updatedAt": datetime.now(timezone.utc).isoformat()}
         if status:
             update_data["status"] = status
@@ -3913,20 +4312,16 @@ async def update_application(application_id: str, status: str = None, notes: str
             update_data["notes"] = notes
         if appliedAt:
             update_data["appliedAt"] = appliedAt
-        
+
         result = await db.applications.update_one(
-            {"_id": ObjectId(application_id)},
-            {"$set": update_data}
+            {"_id": ObjectId(application_id)}, {"$set": update_data}
         )
-        
+
         if result.matched_count == 0:
             raise HTTPException(status_code=404, detail="Application not found")
-        
-        return {
-            "success": True,
-            "message": "Application updated"
-        }
-        
+
+        return {"success": True, "message": "Application updated"}
+
     except HTTPException:
         raise
     except Exception as e:
@@ -3941,17 +4336,14 @@ async def delete_application(application_id: str):
     """
     try:
         from bson import ObjectId
-        
+
         result = await db.applications.delete_one({"_id": ObjectId(application_id)})
-        
+
         if result.deleted_count == 0:
             raise HTTPException(status_code=404, detail="Application not found")
-        
-        return {
-            "success": True,
-            "message": "Application deleted"
-        }
-        
+
+        return {"success": True, "message": "Application deleted"}
+
     except HTTPException:
         raise
     except Exception as e:
@@ -3961,23 +4353,28 @@ async def delete_application(application_id: str):
 
 @app.get("/api/health-check")
 async def health_check():
-    from resume_analyzer import GROQ_API_KEY
+    # from resume_analyzer import GROQ_API_KEY - Removing broken import
+    
+    groq_key = os.environ.get("GROQ_API_KEY")
+
     return {
         "status": "ok",
         "mongodb": "connected" if db is not None else "failed",
-        "groq_api_key_set": GROQ_API_KEY is not None and len(GROQ_API_KEY) > 0,
-        "env_check": os.environ.get('GROQ_API_KEY') is not None
+        "groq_api_key_set": groq_key is not None and len(groq_key) > 0,
+        "env_check": groq_key is not None,
     }
+
 
 # ============================================
 # APP STARTUP & SHUTDOWN
 # ============================================
 
+
 @app.on_event("startup")
 async def startup_event():
     """Initialize background tasks on startup"""
     logger.info("🚀 Starting Job Ninjas backend...")
-    
+
     # Validate BYOK master key (fails fast if missing/invalid)
     try:
         validate_master_key()
@@ -3985,10 +4382,12 @@ async def startup_event():
     except ValueError as e:
         logger.error(f"❌ BYOK master key validation failed: {e}")
         logger.warning("⚠️  BYOK features will be disabled")
-    
+
     # Start the background job fetcher (runs every 6 hours, including immediately on startup)
     asyncio.create_task(job_fetch_background_task())
-    logger.info("📅 Job fetch scheduler started (fetches immediately, then every 6 hours)")
+    logger.info(
+        "📅 Job fetch scheduler started (fetches immediately, then every 6 hours)"
+    )
 
 
 @app.on_event("shutdown")
