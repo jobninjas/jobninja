@@ -167,7 +167,7 @@ def render_ats_resume_from_json(r: ResumeDataSchema) -> str:
 
 
 async def generate_simple_tailored_resume(resume_text: str, job_description: str, job_title: str, company: str, byok_config: Optional[Dict] = None) -> str:
-    """Rescue function that generates tailored resume text in a single robust call"""
+    """Rescue function that generates tailored resume text in a single robust call with strict 'old format' structure"""
     
     prompt = f"""
 SYSTEM:
@@ -184,18 +184,52 @@ JOB DESCRIPTION:
 CANDIDATE BASE RESUME:
 {resume_text}
 
-ABSOLUTE REQUIREMENTS:
-1. EVERYTHING from the base resume must be preserved (Jobs, Education, Projects).
-2. Rewrite bullets to use high-impact ACTION VERBS and include JD keywords naturally.
-3. Quantify achievements (%, $, numbers) where they make sense.
-4. Keep the output as clear, professional text structured for an ATS.
-5. Do NOT provide preamble or conversational text. Start directly with the resume.
+=== ABSOLUTE FORMATTING RULES (THE 'OLD FORMAT') ===
+1. You must output the resume in the following EXACT structure. Do NOT use markdown bolding (**) or italics.
+2. Section Headings MUST be uppercase and on their own line.
 
-OUTPUT:
-The FULL Tailored Resume Text.
+[STRUCTURE]
+Line 1: FULL NAME (e.g. SAIRAM KUMAR)
+Line 2: Location | Phone | Email | LinkedIn (e.g. Dallas, TX | 555-0199 | sairam@email.com | linkedin.com/in/sai)
+Line 3-4: EMPTY LINES
+
+PROFESSIONAL SUMMARY
+A few sentences highlighting JD-alignment and target title: {job_title}.
+
+CORE SKILLS
+- List relevant technical and soft skills from the base resume and JD.
+- Use bullet points (-).
+
+PROFESSIONAL EXPERIENCE
+- For each job: 
+  [Company Name] — [Job Title] | [Location]
+  [Start Date] – [End Date]
+  - Bullet 1 (Quantified impact and JD keywords)
+  - Bullet 2
+  - ... (Preserve all key facts, just rewrite for impact)
+
+PROJECTS
+- Include all projects from the base resume.
+- [Project Name]
+  - Detail 1
+  - Detail 2
+
+EDUCATION
+- Include all degrees from base resume.
+- [Degree] | [University] | [Graduation Year]
+
+CERTIFICATIONS (If any)
+- List certifications.
+
+=== CONTENT RULES ===
+1. NEVER delete content. If education/projects exist in BASE, they MUST be in OUTPUT.
+2. Rewriting bullets is REQUIRED. Use action verbs and include JD keywords.
+3. Start directly with the name. No "Here is your resume" preamble.
+
+OUTPUT THE FULL RESUME IN THE OLD FORMAT NOW:
 """
     try:
-        logger.info(f"Running simple tailoring rescue for {company}")
+        logger.info(f"Running robust 'Old Format' tailoring for {company}")
         response = await unified_api_call(prompt, byok_config=byok_config, max_tokens=6000, model="llama-3.3-70b-versatile")
         
         if response and len(response.strip()) > 500:
