@@ -582,7 +582,7 @@ def create_resume_docx(resume_data: Dict) -> io.BytesIO:
     name_run.bold = True
     name_run.font.size = Pt(20)
     name_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    name_para.paragraph_format.space_after = Pt(4)
+    name_para.paragraph_format.space_after = Pt(2)
     
     # Contact details - First line (email, phone, location)
     contact_line1 = []
@@ -596,7 +596,7 @@ def create_resume_docx(resume_data: Dict) -> io.BytesIO:
     if contact_line1:
         contact_para1 = doc.add_paragraph(" | ".join(contact_line1))
         contact_para1.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        contact_para1.paragraph_format.space_after = Pt(2)
+        contact_para1.paragraph_format.space_after = Pt(0)
     
     # Contact details - Second line (linkedin, website)
     contact_line2 = []
@@ -608,14 +608,14 @@ def create_resume_docx(resume_data: Dict) -> io.BytesIO:
     if contact_line2:
         contact_para2 = doc.add_paragraph(" | ".join(contact_line2))
         contact_para2.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        contact_para2.paragraph_format.space_after = Pt(8)
+        contact_para2.paragraph_format.space_after = Pt(4)
     
     # Professional Summary
     if resume_data.get("summary"):
         heading = doc.add_heading("PROFESSIONAL SUMMARY", level=1)
         heading.runs[0].font.size = Pt(12)
         summary_para = doc.add_paragraph(resume_data["summary"])
-        summary_para.paragraph_format.space_after = Pt(12)
+        summary_para.paragraph_format.space_after = Pt(6)
     
     # Professional Experience
     if resume_data.get("experience"):
@@ -633,25 +633,25 @@ def create_resume_docx(resume_data: Dict) -> io.BytesIO:
             if exp.get("location"):
                 company_text += f", {exp['location']}"
             exp_header.add_run(company_text)
-            exp_header.paragraph_format.space_after = Pt(2)
+            exp_header.paragraph_format.space_after = Pt(0)
             
             # Dates
             if exp.get("dates"):
                 dates_para = doc.add_paragraph()
                 dates_run = dates_para.add_run(exp["dates"])
                 dates_run.italic = True
-                dates_para.paragraph_format.space_after = Pt(4)
+                dates_para.paragraph_format.space_after = Pt(2)
             
             # Bullets - all of them
             bullets = exp.get("bullets", [])
             for bullet in bullets:
                 if bullet and bullet.strip():
                     bullet_para = doc.add_paragraph(bullet, style='List Bullet')
-                    bullet_para.paragraph_format.space_after = Pt(2)
+                    bullet_para.paragraph_format.space_after = Pt(1)
             
             # Add space between experiences
             if i < len(resume_data["experience"]) - 1:
-                doc.add_paragraph().paragraph_format.space_after = Pt(6)
+                doc.add_paragraph().paragraph_format.space_after = Pt(2)
     
     # Projects Section
     if resume_data.get("projects"):

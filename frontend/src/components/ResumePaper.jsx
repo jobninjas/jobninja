@@ -62,6 +62,17 @@ const ResumePaper = ({ content, scale = 1, onContentChange }) => {
             sections[currentSection] = sections[currentSection] + (sections[currentSection] ? '\n' : '') + buffer.join('\n');
         }
 
+        // Final cleanup: trim all section content and remove redundant newlines
+        Object.keys(sections).forEach(key => {
+            if (typeof sections[key] === 'string') {
+                sections[key] = sections[key]
+                    .split('\n')
+                    .map(line => line.trim())
+                    .filter(line => line.length > 0) // Remove empty lines inside sections
+                    .join('\n');
+            }
+        });
+
         // Process Header
         const headerLines = sections.header.split('\n').filter(l => l.trim());
         let name = headerLines[0] || '';
@@ -102,7 +113,7 @@ const ResumePaper = ({ content, scale = 1, onContentChange }) => {
             </div>
 
             {/* Render Document */}
-            <div className="space-y-6" contentEditable suppressContentEditableWarning>
+            <div className="space-y-3" contentEditable suppressContentEditableWarning>
 
                 {parsed.isRaw ? (
                     /* Raw Fallback View */
@@ -129,7 +140,7 @@ const ResumePaper = ({ content, scale = 1, onContentChange }) => {
                                 <h2 className="text-sm font-bold uppercase border-b border-black mb-2 tracking-wider">Skills</h2>
                                 <div className="text-sm leading-relaxed">
                                     {parsed.skills.split('\n').filter(l => l.trim()).map((skillLine, i) => (
-                                        <div key={i} className="mb-1">• {skillLine.replace(/^([•\-\*]|#+)\s*/, '')}</div>
+                                        <div key={i} className="mb-0.5">• {skillLine.replace(/^([•\-\*]|#+)\s*/, '')}</div>
                                     ))}
                                 </div>
                             </div>
