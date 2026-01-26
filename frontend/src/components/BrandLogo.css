@@ -1,5 +1,5 @@
 .brand-logo-container {
-    display: flex;
+    display: inline-flex;
     align-items: baseline;
     font-weight: 700;
     font-size: 1.25rem;
@@ -11,43 +11,10 @@
     white-space: nowrap;
 }
 
-.tld-roller-window {
-    height: 1.25em;
-    overflow: hidden;
-    position: relative;
-    /* Adjusted width and nudge down for perfect baseline alignment */
-    width: 4.5ch;
-    margin-left: -0.05ch;
-    display: inline-flex;
-    align-items: flex-end;
-    transform: translateY(0.1em);
-}
-
-.tld-roller-track {
-    display: flex;
-    flex-direction: column;
-    transition: transform 0.6s cubic-bezier(0.65, 0, 0.35, 1);
-    height: 100%;
-}
-
-.tld-item {
-    height: 100%;
-    display: flex;
-    align-items: baseline;
+.brand-suffix-animating {
     color: #10b981;
-    /* Brand green for the rolling part */
-}
-
-.tld-roller-track.show-org {
-    transform: translateY(0);
-}
-
-.tld-roller-track.show-ai {
-    transform: translateY(-100%);
-}
-
-.tld-roller-track.show-io {
-    transform: translateY(-200%);
+    margin-left: 0.05em;
+    display: inline-block;
 }
 
 /* Side Menu / Footer adjustments if needed */
