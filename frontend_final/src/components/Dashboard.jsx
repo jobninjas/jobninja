@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Card, CardHeader, CardContent, CardTitle, CardDescription } from './ui/card';
 import Navbar from './Navbar';
 import { Button } from './ui/button';
@@ -25,6 +25,7 @@ import {
 const Dashboard = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [activeTab, setActiveTab] = useState('tracker');
   const [applications, setApplications] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -99,6 +100,7 @@ const Dashboard = () => {
     employment_history: [],
     education: [],
     certifications: [],
+    certifications_text: '',
     projects: [],
     references: [],
 
@@ -131,7 +133,7 @@ const Dashboard = () => {
   // Fetch applications from Google Sheets via backend
   useEffect(() => {
     // Set active tab from URL if present
-    const params = new URLSearchParams(window.location.search);
+    const params = new URLSearchParams(location.search);
     const tab = params.get('tab');
     if (tab && ['tracker', 'pipeline', 'profile', 'queue', 'billing', 'referrals', 'settings'].includes(tab)) {
       setActiveTab(tab);
@@ -178,7 +180,7 @@ const Dashboard = () => {
     // Refresh data every 2 minutes
     const interval = setInterval(fetchApplications, 120000);
     return () => clearInterval(interval);
-  }, [user?.email]);
+  }, [user?.email, location.search]);
 
   // Fetch user profile
   useEffect(() => {
