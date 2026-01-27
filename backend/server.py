@@ -1093,39 +1093,21 @@ async def save_user_profile(request: Request, user: dict = Depends(get_current_u
         data = await request.json()
         email = user["email"]
 
-        # Build profile data update
-        profile_update = {
-            "email": email,
-            "fullName": data.get("fullName", user.get("name", "")),
-            "phone": data.get("phone", ""),
-            "address": data.get("address", ""),
-            "city": data.get("city", ""),
-            "state": data.get("state", ""),
-            "zip": data.get("zip", ""),
-            "linkedinUrl": data.get("linkedinUrl", ""),
-            "country": data.get("country", ""),
-            # EEO Fields (Jobright Replication)
-            "gender": data.get("gender", ""),
-            "race": data.get("race", ""),
-            "disabilityStatus": data.get("disabilityStatus", ""),
-            "veteranStatus": data.get("veteranStatus", ""),
-            "lgbtqStatus": data.get("lgbtqStatus", ""),
-            "sexualOrientation": data.get("sexualOrientation", ""),
-            "updated_at": datetime.now(timezone.utc).isoformat(),
-        }
+        # Basic identification and metadata
+        profile_update = data
+        profile_update["email"] = email
+        profile_update["updated_at"] = datetime.now(timezone.utc).isoformat()
 
-        # Basic fields that might be missing
-        if data.get("yearsOfExperience"):
-            profile_update["yearsOfExperience"] = data.get("yearsOfExperience")
-        if data.get("currentRole"):
-            profile_update["currentRole"] = data.get("currentRole")
+        # Ensure fullName is present if name was provided in original user object
+        if "fullName" not in profile_update:
+            profile_update["fullName"] = user.get("name", "")
 
         # Upsert profile
         await db.profiles.update_one(
             {"email": email}, {"$set": profile_update}, upsert=True
         )
 
-        logger.info(f"Profile updated via extension for {email}")
+        logger.info(f"Full Universal Profile updated for {email}")
         return {"success": True, "message": "Profile updated successfully"}
     except Exception as e:
         logger.error(f"Error saving user profile: {str(e)}")

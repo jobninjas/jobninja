@@ -47,38 +47,92 @@ async function performAutofill(userData) {
 
         // Smart Mapping Logic
         if (isField(context, ['first name', 'given name', 'firstName'])) {
-            filled = fillField(input, userData.name.split(' ')[0], 'First Name');
+            filled = fillField(input, userData.person?.fullName?.split(' ')[0] || userData.firstName || '', 'First Name');
         } else if (isField(context, ['last name', 'family name', 'surname', 'lastName'])) {
-            const parts = userData.name.trim().split(/\s+/);
-            filled = fillField(input, parts.length > 1 ? parts.slice(1).join(' ') : parts[0], 'Last Name');
+            const parts = (userData.person?.fullName || userData.name || '').trim().split(/\s+/);
+            filled = fillField(input, parts.length > 1 ? parts.slice(1).join(' ') : userData.lastName || '', 'Last Name');
+        } else if (isField(context, ['middle name'])) {
+            filled = fillField(input, userData.person?.middleName || '', 'Middle Name');
+        } else if (isField(context, ['preferred name', 'nickname'])) {
+            filled = fillField(input, userData.person?.preferredName || '', 'Preferred Name');
         } else if (isField(context, ['email'])) {
-            filled = fillField(input, userData.email, 'Email Address');
+            filled = fillField(input, userData.person?.email || userData.email, 'Email Address');
         } else if (isField(context, ['phone', 'mobile'])) {
-            filled = fillField(input, userData.phone, 'Phone Number');
-        } else if (isField(context, ['linkedin', 'social', 'website', 'portfolio'])) {
-            filled = fillField(input, userData.linkedin, 'LinkedIn URL');
-        } else if (isField(context, ['gender'])) {
-            filled = selectSmart(input, userData.gender || 'Decline', 'Gender');
-        } else if (isField(context, ['race', 'ethnicity'])) {
-            filled = selectSmart(input, userData.race || 'Decline', 'Race/Ethnicity');
-        } else if (isField(context, ['disability'])) {
-            filled = selectSmart(input, userData.disabilityStatus || 'No', 'Disability');
-        } else if (isField(context, ['veteran'])) {
-            filled = selectSmart(input, userData.veteranStatus || 'No', 'Veteran');
-        } else if (isField(context, ['authorization', 'authorized', 'sponsorship', 'right to work'])) {
-            filled = selectSmart(input, 'Yes', 'Work Authorization');
-        } else if (isField(context, ['address line', 'street'])) {
-            filled = fillField(input, userData.address || '', 'Address');
-        } else if (isField(context, ['city', 'location'])) {
-            filled = fillField(input, userData.city || '', 'City/Location');
-        } else if (isField(context, ['state', 'province'])) {
-            filled = selectSmart(input, userData.state || '', 'State');
-        } else if (isField(context, ['zip', 'postal'])) {
-            filled = fillField(input, userData.zip || '', 'Postal Code');
-        } else if (isField(context, ['country'])) {
-            filled = selectSmart(input, userData.country || '', 'Country');
+            filled = fillField(input, userData.person?.phone || userData.phone, 'Phone Number');
+        } else if (isField(context, ['linkedin'])) {
+            filled = fillField(input, userData.person?.linkedinUrl || userData.linkedin, 'LinkedIn URL');
+        } else if (isField(context, ['github'])) {
+            filled = fillField(input, userData.person?.githubUrl || '', 'GitHub URL');
+        } else if (isField(context, ['portfolio', 'website'])) {
+            filled = fillField(input, userData.person?.portfolioUrl || '', 'Portfolio/Website');
         }
 
+        // Address Details
+        else if (isField(context, ['address line 1', 'street address'])) {
+            filled = fillField(input, userData.address?.line1 || userData.address || '', 'Address Line 1');
+        } else if (isField(context, ['address line 2', 'apartment', 'suite', 'unit'])) {
+            filled = fillField(input, userData.address?.line2 || '', 'Address Line 2');
+        } else if (isField(context, ['city', 'location'])) {
+            filled = fillField(input, userData.address?.city || userData.city || '', 'City/Location');
+        } else if (isField(context, ['state', 'province'])) {
+            filled = selectSmart(input, userData.address?.state || userData.state || '', 'State');
+        } else if (isField(context, ['zip', 'postal'])) {
+            filled = fillField(input, userData.address?.zip || userData.zip || '', 'Postal Code');
+        } else if (isField(context, ['country'])) {
+            filled = selectSmart(input, userData.address?.country || userData.country || '', 'Country');
+        }
+
+        // Work Authorization & Sponsorship
+        else if (isField(context, ['authorized to work', 'right to work', 'legally authorized'])) {
+            filled = selectSmart(input, userData.work_authorization?.authorized_to_work || 'Yes', 'Work Authorization');
+        } else if (isField(context, ['require sponsorship', 'require visa', 'need sponsorship'])) {
+            filled = selectSmart(input, userData.work_authorization?.requires_sponsorship_now || 'No', 'Sponsorship Needs');
+        } else if (isField(context, ['future sponsorship', 'will you require'])) {
+            filled = selectSmart(input, userData.work_authorization?.requires_sponsorship_future || 'No', 'Future Sponsorship');
+        }
+
+        // Preferences & Salary
+        else if (isField(context, ['desired salary', 'expected salary', 'compensation', 'pay expectation'])) {
+            filled = fillField(input, userData.preferences?.expected_salary || '', 'Expected Salary');
+        } else if (isField(context, ['notice period', 'start date'])) {
+            filled = fillField(input, userData.preferences?.notice_period || '', 'Notice Period');
+        }
+
+        // Screening Answer Bank
+        else if (isField(context, ['why our company', 'why do you want to work here', 'interest in this company'])) {
+            filled = fillField(input, userData.screening_questions?.why_this_company || '', 'Interest Pitch');
+        } else if (isField(context, ['challenging project', 'example of a project'])) {
+            filled = fillField(input, userData.screening_questions?.project_example || '', 'Project Example');
+        }
+
+        // Diversity / EEO
+        else if (isField(context, ['gender', 'sex'])) {
+            filled = selectSmart(input, userData.sensitive?.gender || 'Decline', 'Gender');
+        } else if (isField(context, ['race', 'ethnicity'])) {
+            filled = selectSmart(input, userData.sensitive?.race || 'Decline', 'Race/Ethnicity');
+        } else if (isField(context, ['disability'])) {
+            filled = selectSmart(input, userData.sensitive?.disability || 'No', 'Disability');
+        } else if (isField(context, ['veteran'])) {
+            filled = selectSmart(input, userData.sensitive?.veteran || 'No', 'Veteran');
+        }
+
+        // Education & Experience Fallbacks
+        else if (isField(context, ['school', 'university', 'college', 'institution'])) {
+            const edu = userData.education?.[0];
+            filled = fillField(input, edu?.school || '', 'School');
+        } else if (isField(context, ['degree'])) {
+            const edu = userData.education?.[0];
+            filled = fillField(input, edu?.degree || '', 'Degree');
+        } else if (isField(context, ['major', 'field of study'])) {
+            const edu = userData.education?.[0];
+            filled = fillField(input, edu?.major || '', 'Major');
+        } else if (isField(context, ['most recent job', 'current title', 'previous title', 'job title'])) {
+            const job = userData.employment_history?.[0];
+            filled = fillField(input, job?.title || '', 'Job Title');
+        } else if (isField(context, ['most recent company', 'current company', 'previous company', 'employer'])) {
+            const job = userData.employment_history?.[0];
+            filled = fillField(input, job?.company || '', 'Company');
+        }
         if (filled) {
             filledCount++;
             await new Promise(r => setTimeout(r, 100)); // Human-like delay

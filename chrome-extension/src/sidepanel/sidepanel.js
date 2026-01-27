@@ -146,19 +146,19 @@ function startAutofill() {
         chrome.tabs.sendMessage(tabs[0].id, {
             type: 'START_AUTOFILL',
             data: {
-                name: currentUser.name || currentUser.fullName || 'User Name',
-                email: currentUser.email || 'user@example.com',
-                phone: currentUser.phone || '',
-                linkedin: currentUser.linkedinUrl || '',
-                address: currentUser.address || currentUser.street || '',
-                city: currentUser.city || '',
-                state: currentUser.state || '',
-                zip: currentUser.zip || currentUser.postalCode || '',
-                country: currentUser.country || '',
-                gender: currentUser.gender,
-                race: currentUser.race,
-                disabilityStatus: currentUser.disabilityStatus,
-                veteranStatus: currentUser.veteranStatus
+                ...currentUser,
+                // Ensure top-level mappings for backward compatibility in content script
+                name: currentUser.person?.fullName || currentUser.name || currentUser.fullName || '',
+                firstName: (currentUser.person?.fullName || currentUser.name || '').split(' ')[0],
+                lastName: (currentUser.person?.fullName || currentUser.name || '').split(' ').slice(1).join(' '),
+                email: currentUser.person?.email || currentUser.email || '',
+                phone: currentUser.person?.phone || currentUser.phone || '',
+                linkedin: currentUser.person?.linkedinUrl || currentUser.linkedinUrl || '',
+                address: currentUser.address?.line1 || currentUser.address || '',
+                city: currentUser.address?.city || currentUser.city || '',
+                state: currentUser.address?.state || currentUser.state || '',
+                zip: currentUser.address?.zip || currentUser.zip || '',
+                country: currentUser.address?.country || currentUser.country || '',
             }
         }, (response) => {
             isAutofilling = false;
