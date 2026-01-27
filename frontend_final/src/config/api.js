@@ -4,7 +4,7 @@
 // Production API URL (Railway deployed backend)
 // Production API URL (Railway deployed backend)
 // Production API URL (Railway deployed backend)
-const PRODUCTION_API_URL = 'https://nova-ninjas-backend-production.up.railway.app';
+const PRODUCTION_API_URL = 'https://nova-ninjas-production.up.railway.app';
 
 // Development API URL
 const DEVELOPMENT_API_URL = 'http://localhost:8000';
