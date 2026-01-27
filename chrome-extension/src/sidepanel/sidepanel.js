@@ -154,6 +154,7 @@ function startAutofill() {
                 city: currentUser.city || '',
                 state: currentUser.state || '',
                 zip: currentUser.zip || currentUser.postalCode || '',
+                country: currentUser.country || '',
                 gender: currentUser.gender,
                 race: currentUser.race,
                 disabilityStatus: currentUser.disabilityStatus,

@@ -1103,6 +1103,7 @@ async def save_user_profile(request: Request, user: dict = Depends(get_current_u
             "state": data.get("state", ""),
             "zip": data.get("zip", ""),
             "linkedinUrl": data.get("linkedinUrl", ""),
+            "country": data.get("country", ""),
             # EEO Fields (Jobright Replication)
             "gender": data.get("gender", ""),
             "race": data.get("race", ""),
@@ -1165,6 +1166,7 @@ async def save_profile(request: Request):
         "city": form_data.get("city", ""),
         "state": form_data.get("state", ""),
         "zip": form_data.get("zip", ""),
+        "country": form_data.get("country", ""),
         # Professional Info
         "yearsOfExperience": form_data.get("yearsOfExperience", ""),
         "currentRole": form_data.get("currentRole", ""),

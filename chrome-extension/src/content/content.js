@@ -69,12 +69,14 @@ async function performAutofill(userData) {
             filled = selectSmart(input, 'Yes', 'Work Authorization');
         } else if (isField(context, ['address line', 'street'])) {
             filled = fillField(input, userData.address || '', 'Address');
-        } else if (isField(context, ['city'])) {
-            filled = fillField(input, userData.city || '', 'City');
+        } else if (isField(context, ['city', 'location'])) {
+            filled = fillField(input, userData.city || '', 'City/Location');
         } else if (isField(context, ['state', 'province'])) {
             filled = selectSmart(input, userData.state || '', 'State');
         } else if (isField(context, ['zip', 'postal'])) {
             filled = fillField(input, userData.zip || '', 'Postal Code');
+        } else if (isField(context, ['country'])) {
+            filled = selectSmart(input, userData.country || '', 'Country');
         }
 
         if (filled) {

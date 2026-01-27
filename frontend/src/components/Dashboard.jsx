@@ -61,6 +61,7 @@ const Dashboard = () => {
     city: '',
     state: '',
     zip: '',
+    country: '',
 
     // Professional Info
     yearsOfExperience: '',
@@ -909,6 +910,14 @@ const Dashboard = () => {
                         value={profile.zip}
                         onChange={(e) => handleProfileChange('zip', e.target.value)}
                         placeholder="10001"
+                      />
+                    </div>
+                    <div>
+                      <Label>Country</Label>
+                      <Input
+                        value={profile.country}
+                        onChange={(e) => handleProfileChange('country', e.target.value)}
+                        placeholder="United States"
                       />
                     </div>
                   </CardContent>
