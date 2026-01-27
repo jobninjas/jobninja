@@ -4,7 +4,7 @@
 // Production API URL (Railway deployed backend)
 // Production API URL (Railway deployed backend)
 // Production API URL (Railway deployed backend)
-const PRODUCTION_API_URL = 'https://nova-ninjas-production.up.railway.app';
+const PRODUCTION_API_URL = 'https://nova-ninjas-backend-production-64b0.up.railway.app';
 
 // Development API URL
 const DEVELOPMENT_API_URL = 'http://localhost:8000';
@@ -14,9 +14,9 @@ const isProduction = window.location.hostname !== 'localhost' &&
   window.location.hostname !== '127.0.0.1';
 
 // Always use production backend for now (has real job data)
-// Change to: isProduction ? PRODUCTION_API_URL : DEVELOPMENT_API_URL
-// when you want to use local backend
-export const API_URL = process.env.REACT_APP_API_URL || PRODUCTION_API_URL;
+const rawApiUrl = process.env.REACT_APP_API_URL || PRODUCTION_API_URL;
+// Ensure URL has protocol to avoid relative path resolution in browser
+export const API_URL = rawApiUrl.startsWith('http') ? rawApiUrl : `https://${rawApiUrl}`;
 
 // Helper function to make API calls with proper error handling
 export const apiCall = async (endpoint, options = {}) => {
