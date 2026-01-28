@@ -2909,6 +2909,44 @@ async def ai_ninja_apply(request: Request):
                 detail="Resume content is missing. Please upload a resume.",
             )
 
+        # PROACTIVE PROFILE SYNC: Extract details for Universal Profile on first run
+        try:
+            profile_email = user.get("email")
+            existing_profile = await db.profiles.find_one({"email": profile_email})
+            
+            # If profile doesn't exist or is marked as new, extract from resume
+            if not existing_profile or existing_profile.get("is_new"):
+                from resume_analyzer import extract_resume_data
+                logger.info(f"Proactively extracting profile data from resume for {profile_email}")
+                # Use decrypted BYOK if available
+                byok_config = await get_decrypted_byok_key(profile_email)
+                extracted_data = await extract_resume_data(resumeText, byok_config=byok_config)
+                
+                if extracted_data and not extracted_data.get("error"):
+                    # Add metadata
+                    extracted_data["email"] = profile_email
+                    extracted_data["updated_at"] = datetime.now(timezone.utc).isoformat()
+                    # Ensure name matches user account if not found in resume
+                    if not extracted_data.get("person", {}).get("fullName"):
+                        if "person" not in extracted_data: extracted_data["person"] = {}
+                        extracted_data["person"]["fullName"] = user.get("name", "")
+                    
+                    # Remove is_new flag if it was there
+                    if "is_new" in extracted_data:
+                        del extracted_data["is_new"]
+                        
+                    # Upsert to profiles collection
+                    await db.profiles.update_one(
+                        {"email": profile_email}, 
+                        {"$set": extracted_data}, 
+                        upsert=True
+                    )
+                    logger.info(f"Successfully auto-filled profile for {profile_email}")
+        except Exception as profile_err:
+            logger.error(f"Failed to proactive sync profile: {profile_err}")
+            # Don't fail the whole application generation if profile sync fails
+            pass
+
         # Generate application ID
         applicationId = str(uuid.uuid4())
 

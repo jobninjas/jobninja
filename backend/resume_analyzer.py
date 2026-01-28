@@ -415,43 +415,65 @@ async def extract_resume_data(resume_text: str, byok_config: Optional[Dict] = No
         return {"error": "GROQ_API_KEY not configured"}
     
     prompt = f"""
-Extract structured data from this resume text. Return ONLY valid JSON.
+Extract structured data from this resume text for a professional profile. Return ONLY valid JSON.
 
 RESUME TEXT:
 {resume_text}
 
-Return this JSON structure:
+Return this EXACT JSON structure (Universal Profile Format):
 {{
-    "contactInfo": {{
-        "name": "<full name>",
+    "person": {{
+        "fullName": "<full name>",
         "email": "<email or null>",
         "phone": "<phone or null>",
-        "linkedin": "<linkedin url or null>",
+        "linkedinUrl": "<linkedin url or null>",
+        "githubUrl": "<github url or null>",
+        "portfolioUrl": "<portfolio url or null>",
         "location": "<city, state or null>"
     }},
-    "summary": "<professional summary if present, or null>",
-    "experience": [
+    "address": {{
+        "line1": "<street address or null>",
+        "city": "<city or null>",
+        "state": "<state or null>",
+        "zip": "<postal code or null>",
+        "country": "<country or null>"
+    }},
+    "education": [
+        {{
+            "school": "<school name>",
+            "degree": "<degree classification e.g. Bachelors>",
+            "major": "<field of study>",
+            "graduationDate": "<date or null>",
+            "gpa": "<gpa or null>"
+        }}
+    ],
+    "employment_history": [
         {{
             "title": "<job title>",
             "company": "<company name>",
             "location": "<location or null>",
             "startDate": "<start date>",
             "endDate": "<end date or 'Present'>",
-            "bullets": ["<achievement 1>", "<achievement 2>"]
-        }}
-    ],
-    "education": [
-        {{
-            "degree": "<degree>",
-            "school": "<school name>",
-            "graduationDate": "<date or null>",
-            "gpa": "<gpa or null>"
+            "description": "<brief description of responsibilities>",
+            "highlights": ["<achievement 1>", "<achievement 2>"]
         }}
     ],
     "skills": {{
         "technical": ["<skill1>", "<skill2>"],
         "soft": ["<skill1>", "<skill2>"],
         "certifications": ["<cert1>", "<cert2>"]
+    }},
+    "work_authorization": {{
+        "authorized_to_work": "Yes",
+        "requires_sponsorship_now": "No",
+        "requires_sponsorship_future": "No",
+        "visa_status": "<extracted status or 'None'>"
+    }},
+    "preferences": {{
+        "target_role": "<extracted goal or primary title>",
+        "expected_salary": "Not specified",
+        "remote_preference": "Flexible",
+        "notice_period": "Immediate"
     }}
 }}
 
