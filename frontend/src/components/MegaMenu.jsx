@@ -39,6 +39,14 @@ const MegaMenu = () => {
             label: 'Products',
             sections: [
                 {
+                    title: 'AI Tools',
+                    items: [
+                        { icon: "/tool-icons/interview-prep.png", label: 'Interview Prep', desc: 'AI mock interviews', path: '/landing/interview-prep', color: '#14b8a6' },
+                        { icon: "/tool-icons/chatgpt-resume.png", label: 'Resume AI', desc: 'AI resume builder', path: '/landing/resume-ai', color: '#10b981' },
+                        { icon: "/tool-icons/chatgpt-cover-letter.png", label: 'Cover Letter', desc: 'AI-powered letters', path: '/landing/cover-letter', color: '#10b981' }
+                    ]
+                },
+                {
                     title: 'Resume Tools',
                     items: [
                         { icon: "/tool-icons/resume-scanner.png", label: 'Resume Scanner', desc: 'ATS score & insights', path: '/scanner', color: '#3b82f6' },
@@ -48,17 +56,10 @@ const MegaMenu = () => {
                     ]
                 },
                 {
-                    title: 'Cover Letter',
-                    items: [
-                        { icon: "/tool-icons/chatgpt-cover-letter.png", label: 'ChatGPT Cover Letter', desc: 'AI-powered letters', path: '/chatgpt-cover-letter', color: '#10b981' },
-                        { icon: "/tool-icons/cover-letter-templates.png", label: 'Cover Letter Templates', desc: 'Ready-to-use templates', path: '/cover-letter-templates', color: '#06b6d4' }
-                    ]
-                },
-                {
                     title: 'Career Tools',
                     items: [
                         { icon: "/tool-icons/career-change.png", label: 'Career Change Tool', desc: 'Find your path', path: '/career-change', color: '#6366f1' },
-                        { icon: "/tool-icons/interview-prep.png", label: 'Interview Prep', desc: 'AI mock interviews', path: '/interview-prep', color: '#14b8a6' }
+                        { icon: "/tool-icons/cover-letter-templates.png", label: 'Cover Letter Templates', desc: 'Ready-to-use templates', path: '/cover-letter-templates', color: '#06b6d4' }
                     ]
                 }
             ]
