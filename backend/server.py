@@ -58,6 +58,7 @@ from razorpay_service import (
 )
 from scraper_service import scrape_job_description
 from byok_crypto import validate_master_key, encrypt_api_key, decrypt_api_key
+from interview_service import InterviewOrchestrator, resumes_collection, sessions_collection, reports_collection
 from byok_validators import (
     validate_openai_key,
     validate_google_key,
@@ -4364,10 +4365,6 @@ async def delete_application(application_id: str):
 # INTERVIEW PREP API
 # ============================================
 
-from interview_service import InterviewOrchestrator, resumes_collection, sessions_collection
-from bson import ObjectId
-import io
-
 class InterviewAnswerRequest(BaseModel):
     answerText: str
 
@@ -4473,8 +4470,6 @@ async def finalize_interview(session_id: str):
 async def get_interview_report(session_id: str):
     """Get interview report for a session"""
     try:
-        from interview_service import reports_collection
-        
         report = reports_collection.find_one({"sessionId": session_id})
         if not report:
             raise HTTPException(status_code=404, detail="Report not found")
