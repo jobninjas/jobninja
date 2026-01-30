@@ -138,23 +138,12 @@ const AIApplyFlow = () => {
   const [selectedKeywords, setSelectedKeywords] = useState([]);
   const [matchImprovement, setMatchImprovement] = useState(0);
 
-  // Styling state
-  const [selectedFont, setSelectedFont] = useState('Times New Roman');
-  const [selectedTemplate, setSelectedTemplate] = useState('standard');
-
   // Redirect to login if not authenticated
   useEffect(() => {
     if (!isAuthenticated) {
       navigate('/login?redirect=' + encodeURIComponent(location.pathname));
     }
   }, [isAuthenticated, navigate, location.pathname]);
-
-  // Auto-save application when results are ready
-  useEffect(() => {
-    if (currentStep === 5 && !applicationSaved && (tailoredResume || detailedCv) && isAuthenticated) {
-      handleSaveApplication();
-    }
-  }, [currentStep, applicationSaved, tailoredResume, detailedCv, isAuthenticated]);
 
   // Fetch usage and resumes on mount
   useEffect(() => {
@@ -416,11 +405,9 @@ const AIApplyFlow = () => {
       setDetailedCv(applyData.detailedCv || '');
       setTailoredCoverLetter(applyData.tailoredCoverLetter);
       setSuggestedAnswers(applyData.suggestedAnswers);
-
-      // We know background save worked because generation succeeded
       setApplicationSaved(true);
 
-      // Estimate match improvement
+      // Estimate match improvement (mock for now, could be calculated if we run analysis again)
       setMatchImprovement(Math.floor(Math.random() * 15) + 10);
 
       setGenerationProgress('Done! Your application materials are ready.');
@@ -444,29 +431,24 @@ const AIApplyFlow = () => {
 
   const handleSaveApplication = async () => {
     if (!isAuthenticated || !user?.email) {
+      navigate('/login');
       return;
     }
 
     setIsSavingApplication(true);
 
     try {
-      // Calculate final score: original + improvement (clamped at 99)
-      const baseScore = analysisResult?.matchScore || 75;
-      const finalScore = Math.min(99, baseScore + matchImprovement);
-
       const applicationData = {
         userEmail: user.email,
         jobId: jobData.jobId || null,
-        jobTitle: customJobTitle || jobData.jobTitle,
-        company: companyName || jobData.company,
+        jobTitle: jobData.jobTitle,
+        company: jobData.company,
         location: jobData.location || '',
-        jobDescription: customJobDescription || jobData.description,
-        sourceUrl: jobUrl || jobData.sourceUrl || '',
+        jobDescription: jobData.description,
+        sourceUrl: jobData.sourceUrl || '',
         salaryRange: jobData.salaryRange || '',
-        matchScore: finalScore,
+        matchScore: analysisResult?.matchScore || 0,
         status: 'materials_ready',
-        resumeText: tailoredResume || '',
-        coverLetterText: tailoredCoverLetter || '',
         createdAt: new Date().toISOString()
       };
 
@@ -560,9 +542,7 @@ const AIApplyFlow = () => {
           company: companyName,
           job_description: customJobDescription,
           analysis: {},
-          is_already_tailored: true,
-          fontFamily: selectedFont,
-          template: selectedTemplate
+          is_already_tailored: true
         };
         fileName = sanitizeFileName('Optimized_Resume', companyName, 'docx');
       } else if (type === 'cv') {
@@ -573,9 +553,7 @@ const AIApplyFlow = () => {
           company: companyName,
           job_description: customJobDescription,
           analysis: {},
-          is_already_tailored: true,
-          fontFamily: selectedFont,
-          template: selectedTemplate
+          is_already_tailored: true
         };
         fileName = sanitizeFileName('Detailed_CV', companyName, 'docx');
       } else if (type === 'cover') {
@@ -585,11 +563,7 @@ const AIApplyFlow = () => {
           resume_text: tailoredResume, // Base resume for context
           job_description: customJobDescription,
           job_title: customJobTitle,
-          company: companyName,
-          cover_letter_text: tailoredCoverLetter,
-          is_already_tailored: !!tailoredCoverLetter,
-          fontFamily: selectedFont,
-          template: selectedTemplate
+          company: companyName
         };
         fileName = sanitizeFileName('Cover_Letter', companyName, 'docx');
       }
@@ -1089,20 +1063,7 @@ const AIApplyFlow = () => {
                 <div className="transition-all duration-300 origin-top" style={{ transform: 'scale(1)', paddingBottom: '40px' }}>
                   <div className="scale-[0.5] sm:scale-[0.6] md:scale-[0.7] lg:scale-[0.8] xl:scale-[0.9] 2xl:scale-[1.0] origin-top">
                     {detailedCv || tailoredResume ? (
-                      <ResumePaper
-                        content={detailedCv || tailoredResume}
-                        scale={1}
-                        fontFamily={selectedFont}
-                        template={selectedTemplate}
-                        onContentChange={(newText) => {
-                          setApplicationSaved(false);
-                          if (activeTab === 'resume') {
-                            setTailoredResume(newText);
-                          } else {
-                            setDetailedCv(newText);
-                          }
-                        }}
-                      />
+                      <ResumePaper content={detailedCv || tailoredResume} scale={1} />
                     ) : (
                       <div className="bg-white shadow-2xl w-[816px] min-h-[1056px] flex flex-col items-center justify-center py-20 text-slate-400 rounded-lg">
                         <FileText className="w-16 h-16 mb-4 opacity-10" />
@@ -1113,6 +1074,14 @@ const AIApplyFlow = () => {
                 </div>
               </div>
 
+              {/* Floating Action Bar */}
+              <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 flex items-center gap-2 bg-white/90 backdrop-blur-md p-2 rounded-full shadow-2xl border border-white/50 z-20">
+                <Button variant="ghost" size="icon" className="rounded-full hover:bg-slate-100" onClick={() => handleDownload('resume')}><Download className="w-5 h-5 text-slate-600" /></Button>
+                <div className="w-px h-6 bg-slate-200 mx-1"></div>
+                <Button className="rounded-full bg-slate-900 hover:bg-black text-white px-8 font-bold shadow-lg" onClick={() => handleDownload('resume')}>
+                  <Download className="w-4 h-4 mr-2" /> Download Document
+                </Button>
+              </div>
             </div>
 
             {/* Right Pane: Sidebar Tools (The Control Center) */}
@@ -1122,7 +1091,7 @@ const AIApplyFlow = () => {
             >
               {/* Tabs */}
               <div className="flex items-center p-2 bg-slate-50 border-b border-slate-100">
-                {['Report', 'Editor', 'Style', 'Letter'].map(tab => (
+                {['Report', 'Editor', 'Style'].map(tab => (
                   <button
                     key={tab}
                     onClick={() => setActiveTab(tab.toLowerCase())}
@@ -1131,7 +1100,7 @@ const AIApplyFlow = () => {
                       : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100/50'
                       }`}
                   >
-                    {tab === 'Letter' ? 'Cover Letter' : tab}
+                    {tab}
                   </button>
                 ))}
               </div>
@@ -1174,37 +1143,19 @@ const AIApplyFlow = () => {
                     <div>
                       <h3 className="font-bold text-slate-900 mb-4">Template</h3>
                       <div className="grid grid-cols-2 gap-4">
-                        <button
-                          onClick={() => setSelectedTemplate('standard')}
-                          className={`rounded-xl p-3 text-center transition-all ${selectedTemplate === 'standard'
-                            ? 'border-2 border-green-500 bg-green-50 text-green-600 font-bold'
-                            : 'border border-slate-200 text-slate-400'}`}
-                        >
-                          <span className="text-xs uppercase">Standard</span>
-                        </button>
-                        <button
-                          onClick={() => setSelectedTemplate('modern')}
-                          className={`rounded-xl p-3 text-center transition-all ${selectedTemplate === 'modern'
-                            ? 'border-2 border-green-500 bg-green-50 text-green-600 font-bold'
-                            : 'border border-slate-200 text-slate-400'}`}
-                        >
-                          <span className="text-xs uppercase">Modern</span>
-                        </button>
+                        <div className="border-2 border-green-500 rounded-xl p-3 text-center bg-green-50">
+                          <span className="font-bold text-xs uppercase text-green-600">Standard</span>
+                        </div>
+                        <div className="border border-slate-200 rounded-xl p-3 text-center opacity-50">
+                          <span className="font-bold text-xs uppercase">Modern</span>
+                        </div>
                       </div>
                     </div>
                     <div>
                       <h3 className="font-bold text-slate-900 mb-4">Font Family</h3>
                       <div className="space-y-2">
                         {['Times New Roman', 'Arial', 'Georgia'].map(f => (
-                          <button
-                            key={f}
-                            onClick={() => setSelectedFont(f)}
-                            className={`w-full text-left p-3 border rounded-xl text-sm font-medium transition-all ${selectedFont === f
-                              ? 'border-indigo-600 bg-indigo-50 text-indigo-700'
-                              : 'border-slate-100 hover:border-slate-200 text-slate-600'}`}
-                          >
-                            {f}
-                          </button>
+                          <div key={f} className="p-3 border border-slate-100 rounded-xl text-sm font-medium">{f}</div>
                         ))}
                       </div>
                     </div>
@@ -1226,48 +1177,14 @@ const AIApplyFlow = () => {
                     ))}
                   </div>
                 )}
-
-                {/* COVER LETTER TAB */}
-                {activeTab === 'letter' && (
-                  <div className="space-y-4">
-                    <div className="bg-green-50 p-4 rounded-xl border border-green-100 flex gap-3">
-                      <CheckCircle className="w-5 h-5 text-green-600" />
-                      <p className="text-xs text-green-800 leading-snug">Your tailored cover letter is ready! You can download it as a Word document below.</p>
-                    </div>
-                    <div className="p-4 border border-slate-100 rounded-xl bg-white shadow-sm">
-                      <div className="text-[11px] text-slate-600 font-sans whitespace-pre-wrap leading-relaxed max-h-[450px] overflow-y-auto custom-scrollbar p-2">
-                        {tailoredCoverLetter || "Generating your cover letter..."}
-                      </div>
-                    </div>
-                  </div>
-                )}
               </div>
 
               <div className="p-4 border-t border-slate-100 bg-white grid grid-cols-2 gap-3">
-                <Button
-                  variant="outline"
-                  className="h-12 rounded-xl font-bold"
-                  onClick={() => handleDownload(activeTab === 'letter' ? 'cover' : 'resume')}
-                  disabled={activeTab === 'letter' ? !tailoredCoverLetter : (!tailoredResume && !detailedCv)}
-                >
-                  <Download className="w-4 h-4 mr-2" /> {activeTab === 'letter' ? 'Download Letter' : 'Download Resume'}
+                <Button variant="outline" className="h-12 rounded-xl font-bold" onClick={() => handleDownload('resume')}>
+                  <Download className="w-4 h-4 mr-2" /> Download
                 </Button>
-                <Button
-                  className={`h-12 rounded-xl font-bold transition-all ${applicationSaved ? 'bg-green-600 hover:bg-green-700' : 'bg-slate-900'}`}
-                  onClick={handleSaveApplication}
-                  disabled={isSavingApplication}
-                >
-                  {isSavingApplication ? (
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  ) : applicationSaved ? (
-                    <>
-                      <CheckCircle className="w-4 h-4 mr-2" /> SAVED TO TRACKER
-                    </>
-                  ) : (
-                    <>
-                      <Zap className="w-4 h-4 mr-2 text-yellow-500 fill-yellow-500" /> APPLY NOW
-                    </>
-                  )}
+                <Button className="h-12 rounded-xl bg-slate-900 text-white font-bold" onClick={handleSaveApplication}>
+                  <Zap className="w-4 h-4 mr-2 text-yellow-500 fill-yellow-500" /> APPLY NOW
                 </Button>
               </div>
             </div>
@@ -1276,44 +1193,40 @@ const AIApplyFlow = () => {
       </div>
 
       {/* Save Prompt Modal */}
-      {
-        showSaveResumePrompt && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
-            <Card className="w-full max-w-md bg-white rounded-[32px] shadow-2xl overflow-hidden p-8 animate-in zoom-in-95 duration-300">
-              <div className="flex justify-center mb-6">
-                <div className="p-4 bg-indigo-50 rounded-2xl">
-                  <Save className="w-10 h-10 text-indigo-600" />
-                </div>
+      {showSaveResumePrompt && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
+          <Card className="w-full max-w-md bg-white rounded-[32px] shadow-2xl overflow-hidden p-8 animate-in zoom-in-95 duration-300">
+            <div className="flex justify-center mb-6">
+              <div className="p-4 bg-indigo-50 rounded-2xl">
+                <Save className="w-10 h-10 text-indigo-600" />
               </div>
-              <h2 className="text-2xl font-black text-slate-900 text-center mb-2">Save This Resume?</h2>
-              <p className="text-slate-500 text-center mb-8 font-medium">Add this to your library for future application ninjas.</p>
+            </div>
+            <h2 className="text-2xl font-black text-slate-900 text-center mb-2">Save This Resume?</h2>
+            <p className="text-slate-500 text-center mb-8 font-medium">Add this to your library for future application ninjas.</p>
 
-              <div className="space-y-4 mb-8">
-                <Label className="text-xs font-bold text-slate-400 uppercase tracking-widest pl-1">Resume Name</Label>
-                <Input
-                  value={resumeName}
-                  onChange={(e) => setResumeName(e.target.value)}
-                  className="h-12 bg-slate-50 border-slate-100 rounded-xl font-bold"
-                />
-              </div>
+            <div className="space-y-4 mb-8">
+              <Label className="text-xs font-bold text-slate-400 uppercase tracking-widest pl-1">Resume Name</Label>
+              <Input
+                value={resumeName}
+                onChange={(e) => setResumeName(e.target.value)}
+                className="h-12 bg-slate-50 border-slate-100 rounded-xl font-bold"
+              />
+            </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <Button variant="ghost" className="h-12 rounded-xl font-bold text-slate-500" onClick={() => setShowSaveResumePrompt(false)}>Later</Button>
-                <Button className="h-12 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold shadow-lg" onClick={handleSaveResume} disabled={isSavingResume}>
-                  {isSavingResume ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save Now'}
-                </Button>
-              </div>
-            </Card>
-          </div>
-        )
-      }
+            <div className="grid grid-cols-2 gap-4">
+              <Button variant="ghost" className="h-12 rounded-xl font-bold text-slate-500" onClick={() => setShowSaveResumePrompt(false)}>Later</Button>
+              <Button className="h-12 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold shadow-lg" onClick={handleSaveResume} disabled={isSavingResume}>
+                {isSavingResume ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save Now'}
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
 
-      {
-        showUpgradeModal && usageLimits && (
-          <UpgradeModal tier={usageLimits.tier} limit={usageLimits.limit} resetDate={usageLimits.resetDate} onClose={() => setShowUpgradeModal(false)} />
-        )
-      }
-    </div >
+      {showUpgradeModal && usageLimits && (
+        <UpgradeModal tier={usageLimits.tier} limit={usageLimits.limit} resetDate={usageLimits.resetDate} onClose={() => setShowUpgradeModal(false)} />
+      )}
+    </div>
   );
 };
 

@@ -2,18 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Button } from './ui/button';
 import { Maximize2, Edit3, Loader2 } from 'lucide-react';
 
-const ResumePaper = ({ content, scale = 1, onContentChange, fontFamily = '"Times New Roman", Times, serif', template = 'standard' }) => {
+const ResumePaper = ({ content, scale = 1, onContentChange }) => {
     const [parsed, setParsed] = useState(null);
     const containerRef = useRef(null);
-
-    // Map font family names to actual CSS values
-    const fontMap = {
-        'Times New Roman': '"Times New Roman", Times, serif',
-        'Arial': 'Arial, Helvetica, sans-serif',
-        'Georgia': 'Georgia, serif'
-    };
-
-    const actualFont = fontMap[fontFamily] || fontFamily;
 
     // Simple Regex-based Resume Parser
     const parseResumeContent = (text) => {
@@ -112,8 +103,6 @@ const ResumePaper = ({ content, scale = 1, onContentChange, fontFamily = '"Times
 
     if (!parsed) return <div className="p-10 text-center">Loading document...</div>;
 
-    const isModern = template === 'modern';
-
     return (
         <div
             className="bg-white shadow-2xl origin-top transition-transform duration-300 relative"
@@ -122,7 +111,7 @@ const ResumePaper = ({ content, scale = 1, onContentChange, fontFamily = '"Times
                 minHeight: '1056px', // A4 height
                 transform: `scale(${scale})`,
                 padding: '48px',
-                fontFamily: actualFont,
+                fontFamily: '"Times New Roman", Times, serif',
                 color: '#000'
             }}
         >
@@ -137,16 +126,7 @@ const ResumePaper = ({ content, scale = 1, onContentChange, fontFamily = '"Times
             </div>
 
             {/* Render Document */}
-            <div
-                className="space-y-1 outline-none"
-                contentEditable
-                suppressContentEditableWarning
-                onInput={(e) => {
-                    if (onContentChange) {
-                        onContentChange(e.currentTarget.innerText);
-                    }
-                }}
-            >
+            <div className="space-y-3" contentEditable suppressContentEditableWarning>
 
                 {parsed.isRaw ? (
                     /* Raw Fallback View */
@@ -156,50 +136,49 @@ const ResumePaper = ({ content, scale = 1, onContentChange, fontFamily = '"Times
                 ) : (
                     /* Structured View */
                     <>
-                        <div style={{ textAlign: isModern ? 'left' : 'center', marginBottom: '8px' }}>
-                            <h1 style={{ fontSize: '24pt', fontWeight: 'bold', textTransform: 'uppercase', margin: 0, padding: 0, color: isModern ? '#1e293b' : '#000' }}>{parsed.name}</h1>
-                            <p style={{ fontSize: '10pt', margin: '2px 0 0 0', padding: 0, color: isModern ? '#64748b' : '#000' }}>{parsed.contact}</p>
-                            {isModern && <div style={{ height: '4px', background: '#3b82f6', width: '60px', marginTop: '12px' }}></div>}
+                        <div className="text-center mb-6">
+                            <h1 className="text-4xl font-bold uppercase tracking-wide mb-2 text-slate-900 border-none outline-none">{parsed.name}</h1>
+                            <p className="text-sm text-slate-700">{parsed.contact}</p>
                         </div>
 
                         {parsed.summary && (
-                            <div style={{ margin: '8px 0 0 0', padding: 0 }}>
-                                <h2 style={{ fontSize: '11pt', fontWeight: 'bold', textTransform: 'uppercase', borderBottom: isModern ? 'none' : '1px solid black', margin: 0, padding: 0, color: isModern ? '#3b82f6' : '#000' }}>Professional Summary</h2>
-                                <p style={{ fontSize: '10pt', lineHeight: '1.2', textAlign: 'justify', margin: '2px 0 0 0', padding: 0 }}>{parsed.summary.trim()}</p>
+                            <div className="section">
+                                <h2 className="text-sm font-bold uppercase border-b border-black mb-2 tracking-wider">Professional Summary</h2>
+                                <p className="text-sm leading-relaxed text-justify">{parsed.summary.trim()}</p>
                             </div>
                         )}
 
                         {parsed.skills && (
-                            <div style={{ margin: '8px 0 0 0', padding: 0 }}>
-                                <h2 style={{ fontSize: '11pt', fontWeight: 'bold', textTransform: 'uppercase', borderBottom: isModern ? 'none' : '1px solid black', margin: 0, padding: 0, color: isModern ? '#3b82f6' : '#000' }}>Skills</h2>
-                                <div style={{ fontSize: '10pt', lineHeight: '1.2', margin: '2px 0 0 0', padding: 0 }}>
+                            <div className="section">
+                                <h2 className="text-sm font-bold uppercase border-b border-black mb-2 tracking-wider">Skills</h2>
+                                <div className="text-sm leading-relaxed">
                                     {parsed.skills.split('\n').filter(l => l.trim()).map((skillLine, i) => (
-                                        <div key={i} style={{ margin: 0, padding: 0 }}>• {skillLine.replace(/^([•\-\*]|#+)\s*/, '')}</div>
+                                        <div key={i} className="mb-0.5">• {skillLine.replace(/^([•\-\*]|#+)\s*/, '')}</div>
                                     ))}
                                 </div>
                             </div>
                         )}
 
                         {parsed.experience && (
-                            <div style={{ margin: '8px 0 0 0', padding: 0 }}>
-                                <h2 style={{ fontSize: '11pt', fontWeight: 'bold', textTransform: 'uppercase', borderBottom: isModern ? 'none' : '1px solid black', margin: 0, padding: 0, color: isModern ? '#3b82f6' : '#000' }}>Experience</h2>
-                                <div style={{ fontSize: '10pt', lineHeight: '1.2', whiteSpace: 'pre-wrap', margin: '2px 0 0 0', padding: 0 }}>
+                            <div className="section">
+                                <h2 className="text-sm font-bold uppercase border-b border-black mb-2 tracking-wider">Experience</h2>
+                                <div className="text-sm leading-relaxed whitespace-pre-wrap">
                                     {parsed.experience.trim()}
                                 </div>
                             </div>
                         )}
 
                         {parsed.projects && (
-                            <div style={{ margin: '8px 0 0 0', padding: 0 }}>
-                                <h2 style={{ fontSize: '11pt', fontWeight: 'bold', textTransform: 'uppercase', borderBottom: isModern ? 'none' : '1px solid black', margin: 0, padding: 0, color: isModern ? '#3b82f6' : '#000' }}>Projects</h2>
-                                <div style={{ fontSize: '10pt', lineHeight: '1.2', whiteSpace: 'pre-wrap', margin: '2px 0 0 0', padding: 0 }}>{parsed.projects.trim()}</div>
+                            <div className="section">
+                                <h2 className="text-sm font-bold uppercase border-b border-black mb-2 tracking-wider">Projects</h2>
+                                <div className="text-sm leading-relaxed whitespace-pre-wrap">{parsed.projects.trim()}</div>
                             </div>
                         )}
 
                         {parsed.education && (
-                            <div style={{ margin: '8px 0 0 0', padding: 0 }}>
-                                <h2 style={{ fontSize: '11pt', fontWeight: 'bold', textTransform: 'uppercase', borderBottom: isModern ? 'none' : '1px solid black', margin: 0, padding: 0, color: isModern ? '#3b82f6' : '#000' }}>Education</h2>
-                                <div style={{ fontSize: '10pt', lineHeight: '1.2', whiteSpace: 'pre-wrap', margin: '2px 0 0 0', padding: 0 }}>{parsed.education.trim()}</div>
+                            <div className="section">
+                                <h2 className="text-sm font-bold uppercase border-b border-black mb-2 tracking-wider">Education</h2>
+                                <div className="text-sm leading-relaxed whitespace-pre-wrap">{parsed.education.trim()}</div>
                             </div>
                         )}
                     </>
@@ -210,7 +189,7 @@ const ResumePaper = ({ content, scale = 1, onContentChange, fontFamily = '"Times
             <div className="absolute bottom-4 left-0 right-0 text-center no-print">
                 <span className="bg-black text-white text-xs font-bold px-3 py-1 rounded-full opacity-80">1/1</span>
             </div>
-        </div >
+        </div>
     );
 };
 
