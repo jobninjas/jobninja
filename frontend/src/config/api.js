@@ -11,9 +11,16 @@ const DEVELOPMENT_API_URL = 'http://localhost:8000';
 const isProduction = window.location.hostname !== 'localhost' &&
   window.location.hostname !== '127.0.0.1';
 
-// Always use production API for now (backend is on Railway)
+// Production API URL for Interview Service (Next.js)
+const PRODUCTION_INTERVIEW_API_URL = ''; // Default to relative if hosted together
+
 // Use local backend for localhost, production for everything else
 export const API_URL = isProduction ? PRODUCTION_API_URL : DEVELOPMENT_API_URL;
+
+// Interview API URL (Next.js saas-app)
+export const INTERVIEW_API_URL = isProduction
+  ? (PRODUCTION_INTERVIEW_API_URL || '')
+  : 'http://localhost:3001';
 
 // Helper function to make API calls with proper error handling
 export const apiCall = async (endpoint, options = {}) => {

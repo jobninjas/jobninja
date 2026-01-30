@@ -1,6 +1,10 @@
 {
     "rewrites": [
         {
+            "source": "/api/interview/:path*",
+            "destination": "/api/interview/:path*"
+        },
+        {
             "source": "/api/:path*",
             "destination": "https://nova-ninjas-production.up.railway.app/api/:path*"
         }

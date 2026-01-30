@@ -14,6 +14,7 @@ import {
   Loader2
 } from 'lucide-react';
 import { BRAND } from '../config/branding';
+import { INTERVIEW_API_URL } from '../config/api';
 import SideMenu from './SideMenu';
 import './SideMenu.css';
 
@@ -26,10 +27,8 @@ const InterviewPrep = () => {
   const [roleTitle, setRoleTitle] = useState('');
   const [isCreating, setIsCreating] = useState(false);
 
-  // In production, this should point to the Next.js app URL or be proxied
-  const INTERVIEW_API_BASE = window.location.hostname === 'localhost'
-    ? 'http://localhost:3001'
-    : ''; // Assume same origin for production if hosted together
+  // use centralized config
+  const INTERVIEW_API_BASE = INTERVIEW_API_URL;
 
   const handleFileChange = (e) => {
     if (e.target.files?.[0]) {
