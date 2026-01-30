@@ -13,8 +13,11 @@
 
 .brand-suffix-animating {
     color: #10b981;
-    margin-left: 0.05em;
+    margin-left: 0.1em;
     display: inline-block;
+    min-width: 1.85em;
+    /* Enough to fit .org without shifting when it switches to .ai */
+    text-align: left;
 }
 
 /* Side Menu / Footer adjustments if needed */

@@ -17,7 +17,7 @@ import {
   User, Upload, Briefcase, Linkedin, Mail, Shield, Trash2, Save, CheckCircle,
   AlertCircle, Eye, EyeOff, FileText, ExternalLink, Download, Bot, UserCheck,
   ClipboardList, Menu, Share2, Gift, Settings, LogOut, TrendingUp, Target,
-  Users, Clock, CreditCard, Loader2, Key
+  Users, Clock, CreditCard, Loader2, Key, MapPin, Plus, GraduationCap, Code, MessageSquare
 } from 'lucide-react';
 
 const Dashboard = () => {
@@ -53,53 +53,79 @@ const Dashboard = () => {
 
   // Profile state
   const [profile, setProfile] = useState({
-    // Personal Info
-    fullName: user?.name || '',
-    email: user?.email || '',
-    phone: '',
+    // Identity & Contact (Person)
+    person: {
+      fullName: user?.name || '',
+      email: user?.email || '',
+      phone: '',
+      linkedinUrl: '',
+      githubUrl: '',
+      portfolioUrl: '',
+      preferredName: '',
+      middleName: '',
+    },
 
-    // Professional Info
-    yearsOfExperience: '',
-    currentRole: '',
-    targetRole: '',
-    expectedSalary: '',
-    preferredLocations: '',
-    remotePreference: '',
+    // Address
+    address: {
+      line1: '',
+      line2: '',
+      city: '',
+      state: '',
+      zip: '',
+      country: ''
+    },
 
-    // Visa & Work Authorization
-    visaStatus: '',
-    workAuthorization: '',
-    requiresSponsorship: '',
+    // Work Authorization
+    work_authorization: {
+      authorized_to_work: 'yes',
+      requires_sponsorship_now: 'no',
+      requires_sponsorship_future: 'no',
+      visa_type: '',
+      relocation_ok: 'no',
+    },
 
-    // Job Portal Credentials
-    linkedinUrl: '',
-    linkedinEmail: '',
-    linkedinPassword: '',
+    // Role Preferences
+    preferences: {
+      desired_titles: '',
+      work_mode: 'remote',
+      preferred_locations: '',
+      start_date: '',
+      expected_salary: '',
+      notice_period: '',
+      preferred_job_types: 'fulltime',
+    },
 
-    // Additional portals
-    indeedEmail: '',
-    indeedPassword: '',
+    // Professional History (Arrays)
+    employment_history: [],
+    education: [],
+    certifications: [],
+    certifications_text: '',
+    projects: [],
+    references: [],
 
-    // Gmail for applications
-    gmailEmail: '',
-    gmailPassword: '',
+    // Skills & Background
+    skills: {
+      primary: '',
+      languages: '',
+    },
+
+    // Screening Answer Bank
+    screening_questions: {
+      why_this_company: '',
+      project_example: '',
+    },
+
+    // Sensitive / EEO
+    sensitive: {
+      gender: '',
+      race: '',
+      veteran: '',
+      disability: ''
+    },
 
     // Resume & Documents
     resumeFile: null,
     resumeFileName: '',
-
-    // Skills & Background
-    skills: '',
-    education: '',
-    certifications: '',
-
-    // Additional Info
-    willingToRelocate: '',
-    noticePeriod: '',
-    availableStartDate: '',
-    preferredJobTypes: '',
-
-    // Notes
     additionalNotes: ''
   });
 
@@ -134,7 +160,9 @@ const Dashboard = () => {
             location: app.location || '',
             matchScore: app.matchScore || 0,
             notes: app.notes || '',
-            resumeId: app.resumeId || null
+            resumeId: app.resumeId || null,
+            resumeText: app.resumeText || '',
+            coverLetterText: app.coverLetterText || ''
           }));
 
           setApplications(formattedApps);
@@ -164,7 +192,7 @@ const Dashboard = () => {
     // Refresh data every 2 minutes
     const interval = setInterval(fetchApplications, 120000);
     return () => clearInterval(interval);
-  }, [user?.email]);
+  }, [user?.email, location.search]);
 
   // Fetch user profile
   useEffect(() => {
@@ -177,7 +205,32 @@ const Dashboard = () => {
         if (response.ok) {
           const data = await response.json();
           if (data.profile) {
-            setProfile(prev => ({ ...prev, ...data.profile }));
+            // Map structured data if available, otherwise handle legacy flat data
+            setProfile(prev => {
+              const newProfile = { ...prev };
+
+              // If it's the new nested structure, merge it
+              if (data.profile.person || data.profile.address) {
+                return { ...prev, ...data.profile };
+              }
+
+              // Legacy flat profile mapping
+              if (data.profile.fullName) newProfile.person.fullName = data.profile.fullName;
+              if (data.profile.phone) newProfile.person.phone = data.profile.phone;
+              if (data.profile.linkedinUrl) newProfile.person.linkedinUrl = data.profile.linkedinUrl;
+
+              if (data.profile.address) newProfile.address.line1 = data.profile.address;
+              if (data.profile.city) newProfile.address.city = data.profile.city;
+              if (data.profile.state) newProfile.address.state = data.profile.state;
+              if (data.profile.zip) newProfile.address.zip = data.profile.zip;
+              if (data.profile.country) newProfile.address.country = data.profile.country;
+
+              if (data.profile.yearsOfExperience) newProfile.preferences.notice_period = data.profile.yearsOfExperience;
+              if (data.profile.targetRole) newProfile.preferences.desired_titles = data.profile.targetRole;
+              if (data.profile.expectedSalary) newProfile.preferences.expected_salary = data.profile.expectedSalary;
+
+              return newProfile;
+            });
           }
         }
       } catch (error) {
@@ -214,8 +267,37 @@ const Dashboard = () => {
     navigate('/');
   };
 
-  const handleProfileChange = (field, value) => {
-    setProfile(prev => ({ ...prev, [field]: value }));
+  const handleProfileChange = (section, field, value) => {
+    if (section) {
+      setProfile(prev => ({
+        ...prev,
+        [section]: { ...prev[section], [field]: value }
+      }));
+    } else {
+      setProfile(prev => ({ ...prev, [field]: value }));
+    }
+  };
+
+  const handleArrayChange = (section, index, field, value) => {
+    setProfile(prev => {
+      const newArray = [...prev[section]];
+      newArray[index] = { ...newArray[index], [field]: value };
+      return { ...prev, [section]: newArray };
+    });
+  };
+
+  const addArrayItem = (section, defaultItem) => {
+    setProfile(prev => ({
+      ...prev,
+      [section]: [...prev[section], defaultItem]
+    }));
+  };
+
+  const removeArrayItem = (section, index) => {
+    setProfile(prev => ({
+      ...prev,
+      [section]: prev[section].filter((_, i) => i !== index)
+    }));
   };
 
   const handleFileUpload = (e) => {
@@ -242,7 +324,12 @@ const Dashboard = () => {
         if (key === 'resumeFile' && profile.resumeFile) {
           formData.append('resume', profile.resumeFile);
         } else if (key !== 'resumeFile') {
-          formData.append(key, profile[key] || '');
+          const value = profile[key];
+          if (typeof value === 'object' && value !== null) {
+            formData.append(key, JSON.stringify(value));
+          } else {
+            formData.append(key, value || '');
+          }
         }
       });
       formData.append('email', user?.email);
@@ -365,6 +452,50 @@ const Dashboard = () => {
           alert('Failed to delete account. Please contact support.');
         }
       }
+    }
+  };
+
+  const handleDownloadResume = async (app) => {
+    if (!app.resumeText) return;
+
+    try {
+      const endpoint = `${API_URL}/api/generate/resume`;
+      const payload = {
+        userId: user.id,
+        resume_text: app.resumeText,
+        company: app.company,
+        job_description: app.jobDescription || '',
+        analysis: {},
+        is_already_tailored: true
+      };
+
+      const safeCompany = (app.company || 'Company').trim().replace(/[^a-z0-9]/gi, '_').replace(/_+/g, '_');
+      const fileName = `Tailored_Resume_${safeCompany}.docx`;
+
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) throw new Error(`Failed to generate resume`);
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+
+      setTimeout(() => {
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+      }, 100);
+    } catch (error) {
+      console.error(`Download failed:`, error);
+      alert('Failed to download resume. Please try again.');
     }
   };
 
@@ -656,12 +787,19 @@ const Dashboard = () => {
                                   ) : '-'}
                                 </td>
                                 <td className="py-3 px-4">
-                                  {app.resumeId ? (
+                                  {app.resumeText ? (
+                                    <button
+                                      onClick={() => handleDownloadResume(app)}
+                                      className="text-primary hover:underline flex items-center gap-1"
+                                    >
+                                      <Download className="w-4 h-4" /> Download
+                                    </button>
+                                  ) : app.resumeId ? (
                                     <button
                                       onClick={() => navigate('/resumes')}
                                       className="text-primary hover:underline flex items-center gap-1"
                                     >
-                                      <FileText className="w-4 h-4" /> Resume
+                                      <FileText className="w-4 h-4" /> View
                                     </button>
                                   ) : (
                                     <span className="text-gray-400 text-xs italic">No resume</span>
@@ -801,15 +939,31 @@ const Dashboard = () => {
                     <div>
                       <Label>Full Name</Label>
                       <Input
-                        value={profile.fullName}
-                        onChange={(e) => handleProfileChange('fullName', e.target.value)}
+                        value={profile.person.fullName}
+                        onChange={(e) => handleProfileChange('person', 'fullName', e.target.value)}
                         placeholder="John Doe"
+                      />
+                    </div>
+                    <div>
+                      <Label>Preferred Name</Label>
+                      <Input
+                        value={profile.person.preferredName}
+                        onChange={(e) => handleProfileChange('person', 'preferredName', e.target.value)}
+                        placeholder="Johnny"
+                      />
+                    </div>
+                    <div>
+                      <Label>Middle Name</Label>
+                      <Input
+                        value={profile.person.middleName}
+                        onChange={(e) => handleProfileChange('person', 'middleName', e.target.value)}
+                        placeholder="Quincy"
                       />
                     </div>
                     <div>
                       <Label>Email</Label>
                       <Input
-                        value={profile.email}
+                        value={profile.person.email}
                         disabled
                         className="bg-gray-100"
                       />
@@ -817,75 +971,120 @@ const Dashboard = () => {
                     <div>
                       <Label>Phone Number</Label>
                       <Input
-                        value={profile.phone}
-                        onChange={(e) => handleProfileChange('phone', e.target.value)}
+                        value={profile.person.phone}
+                        onChange={(e) => handleProfileChange('person', 'phone', e.target.value)}
                         placeholder="+1 (555) 123-4567"
+                      />
+                    </div>
+                    <div>
+                      <Label>LinkedIn URL</Label>
+                      <Input
+                        value={profile.person.linkedinUrl}
+                        onChange={(e) => handleProfileChange('person', 'linkedinUrl', e.target.value)}
+                        placeholder="https://linkedin.com/in/username"
+                      />
+                    </div>
+                    <div>
+                      <Label>GitHub URL</Label>
+                      <Input
+                        value={profile.person.githubUrl}
+                        onChange={(e) => handleProfileChange('person', 'githubUrl', e.target.value)}
+                        placeholder="https://github.com/username"
+                      />
+                    </div>
+                    <div>
+                      <Label>Portfolio URL</Label>
+                      <Input
+                        value={profile.person.portfolioUrl}
+                        onChange={(e) => handleProfileChange('person', 'portfolioUrl', e.target.value)}
+                        placeholder="https://portfolio.com"
                       />
                     </div>
                   </CardContent>
                 </Card>
 
-                {/* Professional Information */}
+                {/* Address Information */}
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                      <Briefcase className="w-5 h-5" />
-                      Professional Information
+                      <MapPin className="w-5 h-5" />
+                      Address Information
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="md:col-span-2">
+                      <Label>Street Address</Label>
+                      <Input
+                        value={profile.address.line1}
+                        onChange={(e) => handleProfileChange('address', 'line1', e.target.value)}
+                        placeholder="123 Main St"
+                      />
+                    </div>
+                    <div className="md:col-span-2">
+                      <Label>Apt, Suite, etc. (Optional)</Label>
+                      <Input
+                        value={profile.address.line2}
+                        onChange={(e) => handleProfileChange('address', 'line2', e.target.value)}
+                        placeholder="Apt 4B"
+                      />
+                    </div>
+                    <div>
+                      <Label>City</Label>
+                      <Input
+                        value={profile.address.city}
+                        onChange={(e) => handleProfileChange('address', 'city', e.target.value)}
+                        placeholder="New York"
+                      />
+                    </div>
+                    <div>
+                      <Label>State / Province</Label>
+                      <Input
+                        value={profile.address.state}
+                        onChange={(e) => handleProfileChange('address', 'state', e.target.value)}
+                        placeholder="NY"
+                      />
+                    </div>
+                    <div>
+                      <Label>Zip / Postal Code</Label>
+                      <Input
+                        value={profile.address.zip}
+                        onChange={(e) => handleProfileChange('address', 'zip', e.target.value)}
+                        placeholder="10001"
+                      />
+                    </div>
+                    <div>
+                      <Label>Country</Label>
+                      <Input
+                        value={profile.address.country}
+                        onChange={(e) => handleProfileChange('address', 'country', e.target.value)}
+                        placeholder="United States"
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Role Preferences */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Target className="w-5 h-5" />
+                      Role Preferences
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <Label>Years of Experience</Label>
-                      <Select value={profile.yearsOfExperience} onValueChange={(v) => handleProfileChange('yearsOfExperience', v)}>
+                      <Label>Desired Job Titles</Label>
+                      <Input
+                        value={profile.preferences.desired_titles}
+                        onChange={(e) => handleProfileChange('preferences', 'desired_titles', e.target.value)}
+                        placeholder="e.g., Software Engineer, Tech Lead"
+                      />
+                    </div>
+                    <div>
+                      <Label>Work Mode</Label>
+                      <Select value={profile.preferences.work_mode} onValueChange={(v) => handleProfileChange('preferences', 'work_mode', v)}>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select experience" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="0-1">0-1 years</SelectItem>
-                          <SelectItem value="1-3">1-3 years</SelectItem>
-                          <SelectItem value="3-5">3-5 years</SelectItem>
-                          <SelectItem value="5-10">5-10 years</SelectItem>
-                          <SelectItem value="10+">10+ years</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label>Current Role</Label>
-                      <Input
-                        value={profile.currentRole}
-                        onChange={(e) => handleProfileChange('currentRole', e.target.value)}
-                        placeholder="e.g., Software Engineer"
-                      />
-                    </div>
-                    <div>
-                      <Label>Target Role</Label>
-                      <Input
-                        value={profile.targetRole}
-                        onChange={(e) => handleProfileChange('targetRole', e.target.value)}
-                        placeholder="e.g., Senior Software Engineer"
-                      />
-                    </div>
-                    <div>
-                      <Label>Expected Salary</Label>
-                      <Input
-                        value={profile.expectedSalary}
-                        onChange={(e) => handleProfileChange('expectedSalary', e.target.value)}
-                        placeholder="e.g., $120,000 - $150,000"
-                      />
-                    </div>
-                    <div>
-                      <Label>Preferred Locations</Label>
-                      <Input
-                        value={profile.preferredLocations}
-                        onChange={(e) => handleProfileChange('preferredLocations', e.target.value)}
-                        placeholder="e.g., San Francisco, New York, Remote"
-                      />
-                    </div>
-                    <div>
-                      <Label>Remote Preference</Label>
-                      <Select value={profile.remotePreference} onValueChange={(v) => handleProfileChange('remotePreference', v)}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select preference" />
+                          <SelectValue placeholder="Select mode" />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="remote">Remote Only</SelectItem>
@@ -896,31 +1095,40 @@ const Dashboard = () => {
                       </Select>
                     </div>
                     <div>
-                      <Label>Preferred Job Types</Label>
-                      <Select value={profile.preferredJobTypes} onValueChange={(v) => handleProfileChange('preferredJobTypes', v)}>
+                      <Label>Expected Salary / Compensation</Label>
+                      <Input
+                        value={profile.preferences.expected_salary}
+                        onChange={(e) => handleProfileChange('preferences', 'expected_salary', e.target.value)}
+                        placeholder="e.g., $150k - $200k"
+                      />
+                    </div>
+                    <div>
+                      <Label>Preferred Locations</Label>
+                      <Input
+                        value={profile.preferences.preferred_locations}
+                        onChange={(e) => handleProfileChange('preferences', 'preferred_locations', e.target.value)}
+                        placeholder="New York, San Francisco, Remote"
+                      />
+                    </div>
+                    <div>
+                      <Label>Start Date / Notice Period</Label>
+                      <Input
+                        value={profile.preferences.notice_period}
+                        onChange={(e) => handleProfileChange('preferences', 'notice_period', e.target.value)}
+                        placeholder="e.g., 2 weeks"
+                      />
+                    </div>
+                    <div>
+                      <Label>Employment Type</Label>
+                      <Select value={profile.preferences.preferred_job_types} onValueChange={(v) => handleProfileChange('preferences', 'preferred_job_types', v)}>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select job type" />
+                          <SelectValue placeholder="Select type" />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="fulltime">Full-time</SelectItem>
                           <SelectItem value="contract">Contract</SelectItem>
                           <SelectItem value="parttime">Part-time</SelectItem>
-                          <SelectItem value="any">Any</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label>Notice Period</Label>
-                      <Select value={profile.noticePeriod} onValueChange={(v) => handleProfileChange('noticePeriod', v)}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select notice period" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="immediate">Immediate</SelectItem>
-                          <SelectItem value="1week">1 Week</SelectItem>
-                          <SelectItem value="2weeks">2 Weeks</SelectItem>
-                          <SelectItem value="1month">1 Month</SelectItem>
-                          <SelectItem value="2months">2 Months</SelectItem>
+                          <SelectItem value="internship">Internship</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -937,54 +1145,405 @@ const Dashboard = () => {
                   </CardHeader>
                   <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <Label>Visa Status</Label>
-                      <Select value={profile.visaStatus} onValueChange={(v) => handleProfileChange('visaStatus', v)}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select visa status" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="f1">F1 (Student Visa)</SelectItem>
-                          <SelectItem value="opt">OPT</SelectItem>
-                          <SelectItem value="stem-opt">STEM-OPT</SelectItem>
-                          <SelectItem value="h1b">H1B</SelectItem>
-                          <SelectItem value="h4-ead">H4 EAD</SelectItem>
-                          <SelectItem value="l1">L1</SelectItem>
-                          <SelectItem value="gc">Green Card</SelectItem>
-                          <SelectItem value="citizen">US Citizen</SelectItem>
-                          <SelectItem value="other">Other</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label>Requires Sponsorship?</Label>
-                      <Select value={profile.requiresSponsorship} onValueChange={(v) => handleProfileChange('requiresSponsorship', v)}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select option" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="yes">Yes, I need sponsorship</SelectItem>
-                          <SelectItem value="no">No, I don't need sponsorship</SelectItem>
-                          <SelectItem value="future">Will need in future</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label>Willing to Relocate?</Label>
-                      <Select value={profile.willingToRelocate} onValueChange={(v) => handleProfileChange('willingToRelocate', v)}>
+                      <Label>Authorized to work in target country?</Label>
+                      <Select value={profile.work_authorization.authorized_to_work} onValueChange={(v) => handleProfileChange('work_authorization', 'authorized_to_work', v)}>
                         <SelectTrigger>
                           <SelectValue placeholder="Select option" />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="yes">Yes</SelectItem>
                           <SelectItem value="no">No</SelectItem>
-                          <SelectItem value="depends">Depends on location</SelectItem>
                         </SelectContent>
                       </Select>
+                    </div>
+                    <div>
+                      <Label>Requires Sponsorship Now?</Label>
+                      <Select value={profile.work_authorization.requires_sponsorship_now} onValueChange={(v) => handleProfileChange('work_authorization', 'requires_sponsorship_now', v)}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select option" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="yes">Yes</SelectItem>
+                          <SelectItem value="no">No</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label>Requires Sponsorship Future?</Label>
+                      <Select value={profile.work_authorization.requires_sponsorship_future} onValueChange={(v) => handleProfileChange('work_authorization', 'requires_sponsorship_future', v)}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select option" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="yes">Yes</SelectItem>
+                          <SelectItem value="no">No</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label>Visa Type (If applicable)</Label>
+                      <Input
+                        value={profile.work_authorization.visa_type}
+                        onChange={(e) => handleProfileChange('work_authorization', 'visa_type', e.target.value)}
+                        placeholder="H1B, F1-OPT, etc."
+                      />
                     </div>
                   </CardContent>
                 </Card>
 
 
+
+                {/* Employment History */}
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between">
+                    <CardTitle className="flex items-center gap-2">
+                      <Briefcase className="w-5 h-5" />
+                      Employment History
+                    </CardTitle>
+                    <Button variant="outline" size="sm" onClick={() => addArrayItem('employment_history', { company: '', title: '', location: '', start_date: '', end_date: '', is_current: false, summary: '' })}>
+                      <Plus className="w-4 h-4 mr-1" /> Add Job
+                    </Button>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    {profile.employment_history.map((job, index) => (
+                      <div key={index} className="p-4 border rounded-lg relative space-y-4">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="absolute top-2 right-2 text-red-500 hover:text-red-700"
+                          onClick={() => removeArrayItem('employment_history', index)}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <Label>Company Name</Label>
+                            <Input
+                              value={job.company}
+                              onChange={(e) => handleArrayChange('employment_history', index, 'company', e.target.value)}
+                              placeholder="Google"
+                            />
+                          </div>
+                          <div>
+                            <Label>Job Title</Label>
+                            <Input
+                              value={job.title}
+                              onChange={(e) => handleArrayChange('employment_history', index, 'title', e.target.value)}
+                              placeholder="Software Engineer"
+                            />
+                          </div>
+                          <div>
+                            <Label>Location</Label>
+                            <Input
+                              value={job.location}
+                              onChange={(e) => handleArrayChange('employment_history', index, 'location', e.target.value)}
+                              placeholder="Mountain View, CA"
+                            />
+                          </div>
+                          <div className="flex gap-4">
+                            <div className="flex-1">
+                              <Label>Start Date</Label>
+                              <Input
+                                value={job.start_date}
+                                onChange={(e) => handleArrayChange('employment_history', index, 'start_date', e.target.value)}
+                                placeholder="MM/YYYY"
+                              />
+                            </div>
+                            <div className="flex-1">
+                              <Label>End Date</Label>
+                              <Input
+                                value={job.end_date}
+                                onChange={(e) => handleArrayChange('employment_history', index, 'end_date', e.target.value)}
+                                placeholder="Present"
+                                disabled={job.is_current}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                        <div>
+                          <Label>Responsibilities Summary</Label>
+                          <Textarea
+                            value={job.summary}
+                            onChange={(e) => handleArrayChange('employment_history', index, 'summary', e.target.value)}
+                            placeholder="Describe your key achievements and responsibilities..."
+                            rows={3}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                    {profile.employment_history.length === 0 && (
+                      <p className="text-center text-gray-500 py-4">No work experience added yet.</p>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Education */}
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between">
+                    <CardTitle className="flex items-center gap-2">
+                      <GraduationCap className="w-5 h-5" />
+                      Education
+                    </CardTitle>
+                    <Button variant="outline" size="sm" onClick={() => addArrayItem('education', { school: '', degree: '', major: '', location: '', end_date: '', gpa: '' })}>
+                      <Plus className="w-4 h-4 mr-1" /> Add Education
+                    </Button>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    {profile.education.map((edu, index) => (
+                      <div key={index} className="p-4 border rounded-lg relative space-y-4">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="absolute top-2 right-2 text-red-500 hover:text-red-700"
+                          onClick={() => removeArrayItem('education', index)}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="md:col-span-2">
+                            <Label>School Name</Label>
+                            <Input
+                              value={edu.school}
+                              onChange={(e) => handleArrayChange('education', index, 'school', e.target.value)}
+                              placeholder="Stanford University"
+                            />
+                          </div>
+                          <div>
+                            <Label>Degree Type</Label>
+                            <Input
+                              value={edu.degree}
+                              onChange={(e) => handleArrayChange('education', index, 'degree', e.target.value)}
+                              placeholder="Master of Science"
+                            />
+                          </div>
+                          <div>
+                            <Label>Major / Field of Study</Label>
+                            <Input
+                              value={edu.major}
+                              onChange={(e) => handleArrayChange('education', index, 'major', e.target.value)}
+                              placeholder="Computer Science"
+                            />
+                          </div>
+                          <div>
+                            <Label>Graduation Date (or expected)</Label>
+                            <Input
+                              value={edu.end_date}
+                              onChange={(e) => handleArrayChange('education', index, 'end_date', e.target.value)}
+                              placeholder="06/2023"
+                            />
+                          </div>
+                          <div>
+                            <Label>GPA (Optional)</Label>
+                            <Input
+                              value={edu.gpa}
+                              onChange={(e) => handleArrayChange('education', index, 'gpa', e.target.value)}
+                              placeholder="3.9/4.0"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    {profile.education.length === 0 && (
+                      <p className="text-center text-gray-500 py-4">No education history added yet.</p>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Skills & Background */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Skills & Background</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <Label>Key Skills (Comma separated)</Label>
+                      <Textarea
+                        value={profile.skills.primary}
+                        onChange={(e) => handleProfileChange('skills', 'primary', e.target.value)}
+                        placeholder="e.g., JavaScript, React, Node.js, Python, AWS, etc."
+                        rows={3}
+                      />
+                    </div>
+                    <div>
+                      <Label>Languages & Proficiency</Label>
+                      <Textarea
+                        value={profile.skills.languages}
+                        onChange={(e) => handleProfileChange('skills', 'languages', e.target.value)}
+                        placeholder="e.g., English (Native), Spanish (Conversational)"
+                        rows={2}
+                      />
+                    </div>
+                    <div>
+                      <Label>Certifications</Label>
+                      <Textarea
+                        value={profile.certifications_text} // Combined for now
+                        onChange={(e) => handleProfileChange(null, 'certifications_text', e.target.value)}
+                        placeholder="e.g., AWS Solutions Architect, Google Cloud Professional"
+                        rows={2}
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Projects */}
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between">
+                    <CardTitle className="flex items-center gap-2">
+                      <Code className="w-5 h-5 text-indigo-500" />
+                      Projects
+                    </CardTitle>
+                    <Button variant="outline" size="sm" onClick={() => addArrayItem('projects', { name: '', description: '', tech_stack: '', links: '' })}>
+                      <Plus className="w-4 h-4 mr-1" /> Add Project
+                    </Button>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    {profile.projects.map((proj, index) => (
+                      <div key={index} className="p-4 border rounded-lg relative space-y-4">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="absolute top-2 right-2 text-red-500 hover:text-red-700"
+                          onClick={() => removeArrayItem('projects', index)}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <Label>Project Name</Label>
+                            <Input
+                              value={proj.name}
+                              onChange={(e) => handleArrayChange('projects', index, 'name', e.target.value)}
+                              placeholder="AI Job Assistant"
+                            />
+                          </div>
+                          <div>
+                            <Label>Tech Stack</Label>
+                            <Input
+                              value={proj.tech_stack}
+                              onChange={(e) => handleArrayChange('projects', index, 'tech_stack', e.target.value)}
+                              placeholder="React, Node.js, OpenAI"
+                            />
+                          </div>
+                          <div className="md:col-span-2">
+                            <Label>Links (GitHub / Demo)</Label>
+                            <Input
+                              value={proj.links}
+                              onChange={(e) => handleArrayChange('projects', index, 'links', e.target.value)}
+                              placeholder="https://github.com/user/project"
+                            />
+                          </div>
+                          <div className="md:col-span-2">
+                            <Label>Description & Impact</Label>
+                            <Textarea
+                              value={proj.description}
+                              onChange={(e) => handleArrayChange('projects', index, 'description', e.target.value)}
+                              placeholder="Describe what you built and the impact it had..."
+                              rows={2}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    {profile.projects.length === 0 && (
+                      <p className="text-center text-gray-500 py-4">No projects added yet.</p>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* References */}
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between">
+                    <CardTitle className="flex items-center gap-2">
+                      <Users className="w-5 h-5 text-green-500" />
+                      Professional References
+                    </CardTitle>
+                    <Button variant="outline" size="sm" onClick={() => addArrayItem('references', { name: '', company: '', title: '', email: '', phone: '', relationship: '' })}>
+                      <Plus className="w-4 h-4 mr-1" /> Add Reference
+                    </Button>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    {profile.references.map((ref, index) => (
+                      <div key={index} className="p-4 border rounded-lg relative space-y-4">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="absolute top-2 right-2 text-red-500 hover:text-red-700"
+                          onClick={() => removeArrayItem('references', index)}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <Label>Reference Name</Label>
+                            <Input
+                              value={ref.name}
+                              onChange={(e) => handleArrayChange('references', index, 'name', e.target.value)}
+                              placeholder="Jane Smith"
+                            />
+                          </div>
+                          <div>
+                            <Label>Relationship</Label>
+                            <Input
+                              value={ref.relationship}
+                              onChange={(e) => handleArrayChange('references', index, 'relationship', e.target.value)}
+                              placeholder="Former Manager"
+                            />
+                          </div>
+                          <div>
+                            <Label>Company & Title</Label>
+                            <Input
+                              value={ref.title}
+                              onChange={(e) => handleArrayChange('references', index, 'title', e.target.value)}
+                              placeholder="Technical Lead at Google"
+                            />
+                          </div>
+                          <div>
+                            <Label>Email</Label>
+                            <Input
+                              value={ref.email}
+                              onChange={(e) => handleArrayChange('references', index, 'email', e.target.value)}
+                              placeholder="jane@example.com"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    {profile.references.length === 0 && (
+                      <p className="text-center text-gray-500 py-4">No references added yet.</p>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Screening Answer Bank */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <MessageSquare className="w-5 h-5 text-blue-500" />
+                      Screening Answer Bank
+                    </CardTitle>
+                    <p className="text-xs text-gray-500">Save common answers to speed up applications.</p>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <Label>Why are you interested in this company? (General)</Label>
+                      <Textarea
+                        value={profile.screening_questions.why_this_company}
+                        onChange={(e) => handleProfileChange('screening_questions', 'why_this_company', e.target.value)}
+                        placeholder="Your general 'Why us' pitch..."
+                        rows={3}
+                      />
+                    </div>
+                    <div>
+                      <Label>Describe a challenging project you've worked on.</Label>
+                      <Textarea
+                        value={profile.screening_questions.project_example}
+                        onChange={(e) => handleProfileChange('screening_questions', 'project_example', e.target.value)}
+                        placeholder="S.T.A.R. method answer..."
+                        rows={3}
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
 
                 {/* Resume & Documents */}
                 <Card>
@@ -1012,51 +1571,17 @@ const Dashboard = () => {
                         {profile.resumeFileName ? 'Change File' : 'Select File'}
                       </Button>
                     </div>
-                  </CardContent>
-                </Card>
-
-                {/* Skills & Background */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Skills & Background</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div>
-                      <Label>Key Skills</Label>
-                      <Textarea
-                        value={profile.skills}
-                        onChange={(e) => handleProfileChange('skills', e.target.value)}
-                        placeholder="e.g., JavaScript, React, Node.js, Python, AWS, etc."
-                        rows={3}
-                      />
-                    </div>
-                    <div>
-                      <Label>Education</Label>
-                      <Textarea
-                        value={profile.education}
-                        onChange={(e) => handleProfileChange('education', e.target.value)}
-                        placeholder="e.g., M.S. Computer Science, Stanford University, 2023"
-                        rows={2}
-                      />
-                    </div>
-                    <div>
-                      <Label>Certifications</Label>
-                      <Textarea
-                        value={profile.certifications}
-                        onChange={(e) => handleProfileChange('certifications', e.target.value)}
-                        placeholder="e.g., AWS Solutions Architect, Google Cloud Professional"
-                        rows={2}
-                      />
-                    </div>
-                    <div>
-                      <Label>Additional Notes for Your Ninja</Label>
-                      <Textarea
-                        value={profile.additionalNotes}
-                        onChange={(e) => handleProfileChange('additionalNotes', e.target.value)}
-                        placeholder="Any specific preferences, companies to avoid, or other instructions for your Ninja..."
-                        rows={3}
-                      />
-                    </div>
+                    {profile.additionalNotes && (
+                      <div className="mt-6">
+                        <Label>Additional Notes for Your Ninja</Label>
+                        <Textarea
+                          value={profile.additionalNotes}
+                          onChange={(e) => handleProfileChange(null, 'additionalNotes', e.target.value)}
+                          placeholder="Any specific preferences..."
+                          rows={3}
+                        />
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
 

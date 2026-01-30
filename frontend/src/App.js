@@ -22,6 +22,8 @@ import HumanNinja from "./components/HumanNinja";
 import Jobs from "./components/Jobs";
 import MyResumes from "./components/MyResumes";
 import InterviewPrep from "./components/InterviewPrep";
+import InterviewRoom from "./components/InterviewRoom";
+import InterviewReport from "./components/InterviewReport";
 import Checkout from "./components/Checkout";
 import ResumeScanner from "./components/ResumeScanner";
 import AIApplyFlow from "./components/AIApplyFlow";
@@ -109,6 +111,8 @@ function App() {
 
             {/* Interview Prep Route */}
             <Route path="/interview-prep" element={<InterviewPrep />} />
+            <Route path="/interview-prep/:sessionId" element={<InterviewRoom />} />
+            <Route path="/interview-prep/:sessionId/report" element={<InterviewReport />} />
 
             {/* Phase 1 Tools Routes */}
             <Route

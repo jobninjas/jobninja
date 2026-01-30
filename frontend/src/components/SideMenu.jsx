@@ -46,7 +46,7 @@ const SideMenu = ({ isOpen, onClose }) => {
     { icon: FileText, label: 'My Resumes', path: '/resumes', requiresAuth: true },
     { icon: Mic, label: 'Interview Prep', path: '/interview-prep' },
     { icon: Sparkles, label: 'Free Tools', path: '/free-tools', highlight: true },
-    { icon: MousePointerClick, label: 'Auto-Fill Applications', path: '/auto-fill' },
+    { icon: MousePointerClick, label: 'Auto-Fill Applications', path: '/dashboard?tab=profile', requiresAuth: true },
     { icon: CreditCard, label: 'Pricing', path: '/pricing' },
   ];
 
@@ -95,9 +95,6 @@ const SideMenu = ({ isOpen, onClose }) => {
                     <item.icon className="side-menu-icon" />
                   )}
                   <span>{item.label}</span>
-                  {(item.label === 'Interview Prep' || item.label === 'Auto-Fill Applications') && (
-                    <span className="side-menu-badge">Soon</span>
-                  )}
                 </button>
               );
             })}
