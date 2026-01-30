@@ -2607,6 +2607,8 @@ class Application(BaseModel):
     coverLetterText: Optional[str] = None
     matchScore: Optional[float] = None
     applicationLink: Optional[str] = None
+    sourceUrl: Optional[str] = None
+    appliedAt: Optional[str] = None
     status: str = "applied"  # applied, interview, rejected, offer, on_hold
     createdAt: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updatedAt: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
@@ -2917,6 +2919,7 @@ async def ai_ninja_apply(request: Request):
             existing_profile = await db.profiles.find_one({"email": profile_email})
             
             # If profile doesn't exist or is marked as new, extract from resume
+            extracted_data = {}
             if not existing_profile or existing_profile.get("is_new"):
                 from resume_analyzer import extract_resume_data
                 logger.info(f"Proactively extracting profile data from resume for {profile_email}")
@@ -2928,22 +2931,39 @@ async def ai_ninja_apply(request: Request):
                     # Add metadata
                     extracted_data["email"] = profile_email
                     extracted_data["updated_at"] = datetime.now(timezone.utc).isoformat()
-                    # Ensure name matches user account if not found in resume
-                    if not extracted_data.get("person", {}).get("fullName"):
-                        if "person" not in extracted_data: extracted_data["person"] = {}
-                        extracted_data["person"]["fullName"] = user.get("name") or ""
                     
-                    # Remove is_new flag if it was there
-                    if "is_new" in extracted_data:
-                        del extracted_data["is_new"]
-                        
-                    # Upsert to profiles collection
-                    await db.profiles.update_one(
-                        {"email": profile_email}, 
-                        {"$set": extracted_data}, 
-                        upsert=True
-                    )
-                    logger.info(f"Successfully auto-filled profile for {profile_email}")
+                    update_fields = {}
+                    # Correctly map fullName to name field
+                    new_name = extracted_data.get("person", {}).get("fullName")
+                    if new_name and new_name != "Your Name":
+                        update_fields["name"] = new_name
+
+                    # Sync headline/summary
+                    if not user.get("headline") and extracted_data.get("person", {}).get("headline"):
+                        update_fields["headline"] = extracted_data.get("person", {}).get("headline")
+                    
+                    if update_fields:
+                        await db.users.update_one({"id": userId}, {"$set": update_fields})
+            
+            # Add updated_at to extracted_data
+            extracted_data["updated_at"] = datetime.now(timezone.utc).isoformat()
+            
+            # Ensure name matches user account if not found in resume
+            if not extracted_data.get("person", {}).get("fullName"):
+                if "person" not in extracted_data: extracted_data["person"] = {}
+                extracted_data["person"]["fullName"] = user.get("name") or ""
+            
+            # Remove is_new flag if it was there
+            if "is_new" in extracted_data:
+                del extracted_data["is_new"]
+                
+            # Upsert to profiles collection
+            await db.profiles.update_one(
+                {"email": profile_email}, 
+                {"$set": extracted_data}, 
+                upsert=True
+            )
+            logger.info(f"Successfully auto-filled profile for {profile_email}")
         except Exception as profile_err:
             logger.error(f"Failed to proactive sync profile: {profile_err}")
             # Don't fail the whole application generation if profile sync fails
@@ -2951,6 +2971,7 @@ async def ai_ninja_apply(request: Request):
 
         # Generate application ID
         applicationId = str(uuid.uuid4())
+
 
         # Call Expert AI Ninja for tailored documents with HARD TIMEOUT
         logger.info(f"Generating expert documents for {company} - {jobTitle}")
@@ -3038,6 +3059,7 @@ async def ai_ninja_apply(request: Request):
             "isBase": False,
             "createdAt": datetime.now(timezone.utc).isoformat(),
             "updatedAt": datetime.now(timezone.utc).isoformat(),
+            "appliedAt": datetime.now(timezone.utc).isoformat(),
             "origin": "ai-ninja",
         }
 
@@ -3049,7 +3071,7 @@ async def ai_ninja_apply(request: Request):
         # Save application to database
         application = Application(
             id=applicationId,
-            userId=userId,
+            userId=user.get("id") or userId, # Ensure we use the user's stable ID
             userEmail=user.get("email"),
             jobId=jobId,
             jobTitle=jobTitle,
@@ -3058,13 +3080,19 @@ async def ai_ninja_apply(request: Request):
             resumeId=resume_id,
             resumeText=tailoredResume,
             coverLetterText=tailoredCoverLetter,
+            applicationLink=form.get("jobUrl", ""),
+            sourceUrl=form.get("jobUrl", ""),
+            appliedAt=datetime.now(timezone.utc).isoformat(),
             matchScore=92.0,  # Optimistic match score as shown in frontend
             status="applied",
         )
 
         doc = application.model_dump()
-        doc["createdAt"] = doc["createdAt"].isoformat()
-        doc["updatedAt"] = doc["updatedAt"].isoformat()
+        # Safety check for datetime serialization
+        if doc.get("createdAt") and not isinstance(doc["createdAt"], str):
+            doc["createdAt"] = doc["createdAt"].isoformat()
+        if doc.get("updatedAt") and not isinstance(doc["updatedAt"], str):
+            doc["updatedAt"] = doc["updatedAt"].isoformat()
 
         await db.applications.insert_one(doc)
 
@@ -3090,19 +3118,26 @@ async def ai_ninja_apply(request: Request):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@api_router.get("/applications/{user_id}")
-async def get_user_applications(user_id: str):
+@api_router.get("/applications/{user_id_or_email}")
+async def get_user_applications(user_id_or_email: str):
     """
     Get all applications for a user (both AI Ninja and Human Ninja).
-    Supports either UUID or email as user_id.
+    Supports either UUID or email as user_id_or_email.
     """
     try:
-        # Check if user_id is an email or UUID
-        query = {"userId": user_id}
-        if "@" in user_id:
-            user = await db.users.find_one({"email": user_id})
-            if user:
-                query = {"userId": user["id"]}
+        # Query by both to be safe during transition
+        query = {
+            "$or": [
+                {"userId": user_id_or_email},
+                {"userEmail": user_id_or_email}
+            ]
+        }
+        
+        # If it's an email, also try to find the user's ID
+        if "@" in user_id_or_email:
+            user = await db.users.find_one({"email": user_id_or_email})
+            if user and user.get("id"):
+                query["$or"].append({"userId": user["id"]})
 
         applications = (
             await db.applications.find(query, {"_id": 0})
@@ -3110,24 +3145,16 @@ async def get_user_applications(user_id: str):
             .to_list(1000)
         )
 
-        # Convert datetime strings
-        for app in applications:
-            if isinstance(app.get("createdAt"), str):
-                try:
-                    app["createdAt"] = datetime.fromisoformat(
-                        app["createdAt"].replace("Z", "+00:00")
-                    )
-                except:
-                    pass
-            if isinstance(app.get("updatedAt"), str):
-                try:
-                    app["updatedAt"] = datetime.fromisoformat(
-                        app["updatedAt"].replace("Z", "+00:00")
-                    )
-                except:
-                    pass
-
-        return {"applications": applications, "total": len(applications)}
+        return {
+            "success": True,
+            "applications": applications, 
+            "total": len(applications),
+            "stats": {
+                "total": len(applications),
+                "applied": len([a for a in applications if a.get("status") == "applied"]),
+                "interviewing": len([a for a in applications if a.get("status") in ["interview", "interviewing"]])
+            }
+        }
     except Exception as e:
         logger.error(f"Error fetching applications: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -4275,46 +4302,6 @@ async def save_application(application: ApplicationData):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/api/applications/{user_email}")
-async def get_user_applications(
-    user_email: str, status: Optional[str] = None, limit: int = 50
-):
-    """
-    Get all applications for a user
-    """
-    try:
-        query = {"userEmail": user_email}
-        if status:
-            query["status"] = status
-
-        applications = (
-            await db.applications.find(query)
-            .sort("createdAt", -1)
-            .limit(limit)
-            .to_list(length=limit)
-        )
-
-        for app in applications:
-            app["id"] = str(app.pop("_id"))
-
-        # Get stats
-        total = await db.applications.count_documents({"userEmail": user_email})
-        applied = await db.applications.count_documents(
-            {"userEmail": user_email, "status": "applied"}
-        )
-        interviewing = await db.applications.count_documents(
-            {"userEmail": user_email, "status": "interviewing"}
-        )
-
-        return {
-            "success": True,
-            "applications": applications,
-            "stats": {"total": total, "applied": applied, "interviewing": interviewing},
-        }
-
-    except Exception as e:
-        logger.error(f"Get applications error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.put("/api/applications/{application_id}")

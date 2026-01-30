@@ -82,15 +82,47 @@ async def fetch_url_content(url: str) -> Tuple[Optional[str], int]:
 def extract_main_text(html: str) -> str:
     """Extract readable text from HTML, removing scripts and styles"""
     soup = BeautifulSoup(html, 'html.parser')
-    
-    # Remove script and style elements, but also code blocks (common in LinkedIn for JS metadata)
-    # and unnecessary visual elements
+    # PRE-CLEANING: Look for JSON-LD data which often survives even when main HTML is obfuscated
+    json_ld_data = []
+    for script in soup.find_all("script", type="application/ld+json"):
+        try:
+            data = json.loads(script.string)
+            if isinstance(data, dict):
+                json_ld_data.append(data)
+            elif isinstance(data, list):
+                json_ld_data.extend([d for d in data if isinstance(d, dict)])
+        except:
+            continue
+
+    # Extract info from JSON-LD if found
+    json_ld_text = ""
+    for data in json_ld_data:
+        # Looking for JobPosting or similar
+        types = [data.get("@type", "")]
+        if isinstance(data.get("@graph"), list):
+            for item in data["@graph"]:
+                if isinstance(item, dict): json_ld_data.append(item)
+        
+        if any(t in str(types) for t in ["JobPosting", "Job"]):
+            title = data.get("title", "")
+            company = data.get("hiringOrganization", {}).get("name", "") if isinstance(data.get("hiringOrganization"), dict) else data.get("hiringOrganization", "")
+            desc = data.get("description", "")
+            if desc:
+                # Clean HTML tags from JSON-LD description if present
+                desc = BeautifulSoup(desc, "html.parser").get_text(separator="\n")
+                json_ld_text += f"TITLE: {title}\nCOMPANY: {company}\nDESCRIPTION: {desc}\n\n"
+
+    # Remove script and style elements
     for element in soup(["script", "style", "nav", "footer", "header", "aside", "code", "svg", "button", "input"]):
         element.decompose()
 
     # Get text
     text = soup.get_text(separator=' ')
     
+    # Prepend JSON-LD text if we found it
+    if json_ld_text:
+        text = json_ld_text + "\n--- RAW PAGE TEXT ---\n" + text
+
     # Break into lines and remove leading/trailing whitespace
     lines = (line.strip() for line in text.splitlines())
     # Break multi-headlines into a line each
@@ -126,24 +158,33 @@ async def scrape_job_description(url: str) -> Dict[str, Any]:
     """
     processed_url = url
     
+    # Handle shortened LinkedIn URLs
+    if "lnkd.in" in url.lower():
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.head(url, allow_redirects=True, timeout=5) as resp:
+                    processed_url = str(resp.url)
+                    logger.info(f"Resolved shortened URL {url} to {processed_url}")
+        except:
+            logger.warning(f"Failed to resolve shortened URL: {url}")
+
     # Specific handling for Monster.com search results with specific IDs
-    if "monster.com/jobs/search" in url.lower() and "id=" in url.lower():
-        match = re.search(r'id=([a-f0-9-]+)', url.lower())
+    if "monster.com/jobs/search" in processed_url.lower() and "id=" in processed_url.lower():
+        match = re.search(r'id=([a-f0-9-]+)', processed_url.lower())
         if match:
             job_id = match.group(1)
-            # Try to construct a more direct URL if it's a search page pointing to an ID
             processed_url = f"https://www.monster.com/job-openings/job-description--{job_id}"
             logger.info(f"Targeting direct Monster job link: {processed_url}")
 
     # Specific handling for LinkedIn URLs - try to use the guest API which is more stable
-    elif "linkedin.com/jobs" in url.lower():
+    elif "linkedin.com/jobs" in processed_url.lower() or "linkedin.com/mwlite/jobs" in processed_url.lower():
         job_id = None
         # Pattern 1: /jobs/view/12345
-        view_match = re.search(r'/jobs/view/(\d+)', url)
+        view_match = re.search(r'/jobs/(?:view|view/|search/\?currentJobId=)(\d+)', processed_url)
         # Pattern 2: ?currentJobId=12345
-        query_match = re.search(r'currentJobId=(\d+)', url)
+        query_match = re.search(r'currentJobId=(\d+)', processed_url)
         # Pattern 3: jobs/view/some-title-12345
-        slug_match = re.search(r'-(\d+)(?:/|\?|$)', url)
+        slug_match = re.search(r'-(\d+)(?:/|\?|$)', processed_url)
         
         if view_match:
             job_id = view_match.group(1)
@@ -153,19 +194,29 @@ async def scrape_job_description(url: str) -> Dict[str, Any]:
             job_id = slug_match.group(1)
             
         if job_id:
-            # LinkedIn has multiple guest API endpoints, let's try the most common one first
-            processed_url = f"https://www.linkedin.com/jobs-guest/jobs/api/jobListing/{job_id}"
-            logger.info(f"Targeting LinkedIn guest API: {processed_url}")
-            # We'll also try a direct approach if this fails in the fallback logic below
-
+            # LinkedIn has multiple guest API endpoints
+            guest_api_url = f"https://www.linkedin.com/jobs-guest/jobs/api/jobListing/{job_id}"
+            logger.info(f"Targeting LinkedIn guest API: {guest_api_url}")
+            html, status = await fetch_url_content(guest_api_url)
+            
+            # If guest API failed (e.g. 404), maybe it's an older link format, try public page
+            if not html or status == 404:
+                logger.info(f"LinkedIn Guest API failed ({status}), trying public page view for {job_id}")
+                processed_url = f"https://www.linkedin.com/jobs/view/{job_id}"
+                html, status = await fetch_url_content(processed_url)
+        else:
+            # No ID found, just fetch the URL as is
+            html, status = await fetch_url_content(processed_url)
+    
     # Specific handling for Workday URLs - they are almost always JS-heavy and block simple scraping
-    if "myworkdayjobs.com" in url.lower():
+    elif "myworkdayjobs.com" in processed_url.lower():
         return {
             "success": False,
             "error": "Workday job links are protected and require manual entry. Please click 'Enter Manually' below and paste the job description text."
         }
-
-    html, status = await fetch_url_content(processed_url)
+    else:
+        # Standard fetch for other sites
+        html, status = await fetch_url_content(processed_url)
     
     # If the direct link failed, try the original URL as fallback
     if not html and processed_url != url:
