@@ -95,6 +95,12 @@ const LandingPage = () => {
     daily: 1000
   });
 
+  const stats = [
+    { number: jobStats.total.toLocaleString(), label: "Jobs Scanned" },
+    { number: applicationCount.toLocaleString(), label: "Applications Sent" },
+    { number: interviewCount.toLocaleString(), label: "Interviews Booked" }
+  ];
+
   useEffect(() => {
     // Increment total jobs slightly every few seconds for a "live" feel
     const interval = setInterval(() => {
