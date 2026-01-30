@@ -46,15 +46,15 @@ const InterviewPrep = () => {
       formData.append('jd', jd);
       formData.append('roleTitle', roleTitle);
 
-      const response = await fetch(`${INTERVIEW_API_BASE}/api/interview/create-session`, {
+      const response = await fetch(`${API_URL}/api/interview/create-session`, {
         method: 'POST',
         body: formData,
       });
 
       const data = await response.json();
       if (data.sessionId) {
-        // Redirect to the Next.js interview room
-        window.location.href = `${INTERVIEW_API_BASE}/interview-prep/${data.sessionId}`;
+        // Navigate to React interview room
+        navigate(`/interview-prep/${data.sessionId}`);
       } else {
         alert('Failed to create session. Please try again.');
       }
