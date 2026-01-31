@@ -261,8 +261,8 @@ const LandingPage = () => {
             </p>
 
             <div className="hero-cta-group">
-              <Button className="btn-cta-primary" onClick={() => navigate('/ai-ninja')}>
-                <Bot className="w-5 h-5" /> Try AI Ninja Free
+              <Button className="btn-cta-primary" onClick={() => navigate(isAuthenticated ? '/scanner' : '/ai-ninja')}>
+                <Bot className="w-5 h-5" /> {isAuthenticated ? "Let's Start Applying" : "Try AI Ninja Free"}
               </Button>
               <Button variant="outline" className="btn-cta-secondary" onClick={() => navigate('/human-ninja')}>
                 <UserCheck className="w-5 h-5" /> Let Humans Apply For Me
