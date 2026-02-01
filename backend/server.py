@@ -3171,6 +3171,7 @@ async def ai_ninja_apply(request: Request):
             appliedAt=datetime.now(timezone.utc).isoformat(),
             matchScore=92.0,  # Optimistic match score as shown in frontend
             status="applied",
+            origin="ai-ninja",
         )
 
         doc = application.model_dump()
@@ -4115,6 +4116,7 @@ class SaveResumeRequest(BaseModel):
     resume_name: str
     resume_text: str
     file_name: str = ""
+    replace_id: Optional[str] = None
 
 
 @app.post("/api/resumes/save")
@@ -4123,6 +4125,16 @@ async def save_user_resume(request: SaveResumeRequest):
     Save a user's resume for future use (Limit: 3)
     """
     try:
+        # If replace_id is provided, delete that resume first
+        if request.replace_id:
+            try:
+                from bson import ObjectId
+                await db.saved_resumes.delete_one(
+                    {"_id": ObjectId(request.replace_id), "userEmail": request.user_email}
+                )
+            except Exception as e:
+                logger.warning(f"Failed to delete resume for replacement: {e}")
+
         # Check if resume with same name exists
         existing = await db.saved_resumes.find_one(
             {"userEmail": request.user_email, "resumeName": request.resume_name}

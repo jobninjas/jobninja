@@ -131,6 +131,8 @@ const AIApplyFlow = () => {
   const [customJobTitle, setCustomJobTitle] = useState(jobData.jobTitle || jobData.title || '');
   const [usageLimits, setUsageLimits] = useState(null);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [showReplaceModal, setShowReplaceModal] = useState(false);
+  const [isReplacing, setIsReplacing] = useState(false);
 
   // New Jobright Flow state
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -468,7 +470,8 @@ const AIApplyFlow = () => {
         user_email: user.email,
         resume_name: resumeName || `Resume_${new Date().toLocaleDateString().replace(/\//g, '-')}`,
         resume_text: textToSave,
-        file_name: resumeFile?.name || ''
+        file_name: resumeFile?.name || '',
+        replace_id: resumeToReplace?.id || null
       };
 
       console.log('Saving resume:', { ...resumeData, resume_text: `[${textToSave.length} chars]` });
@@ -487,17 +490,56 @@ const AIApplyFlow = () => {
       if (response.ok || responseData.success) {
         setResumeSaved(true);
         setShowSaveResumePrompt(false);
+        setShowReplaceModal(false);
         // Refresh saved resumes list
         fetchSavedResumes();
+      } else if (response.status === 400 && responseData.detail?.includes('delete one')) {
+        // Show replace modal if limit reached
+        setShowReplaceModal(true);
       } else {
         alert(responseData.detail || 'Failed to save resume. Please try again.');
       }
-    } catch (error) {
-      console.error('Failed to save resume:', error);
-      alert('Network error: ' + error.message);
     } finally {
       console.log('Save complete, stopping loading');
       setIsSavingResume(false);
+      setIsReplacing(false);
+    }
+  };
+
+  const handleReplaceResume = async (oldResumeId) => {
+    setIsReplacing(true);
+    // Use the current resume text, or fall back to any available text
+    const textToSave = resumeText || selectedResume?.resumeText || '';
+
+    try {
+      const resumeData = {
+        user_email: user.email,
+        resume_name: resumeName || `Resume_${new Date().toLocaleDateString().replace(/\//g, '-')}`,
+        resume_text: textToSave,
+        file_name: resumeFile?.name || '',
+        replace_id: oldResumeId
+      };
+
+      const response = await fetch(`${API_URL}/api/resumes/save`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(resumeData)
+      });
+
+      const responseData = await response.json();
+
+      if (response.ok || responseData.success) {
+        setResumeSaved(true);
+        setShowReplaceModal(false);
+        setShowSaveResumePrompt(false);
+        fetchSavedResumes();
+      } else {
+        alert(responseData.detail || 'Failed to replace resume.');
+      }
+    } catch (error) {
+      console.error('Failed to replace resume:', error);
+    } finally {
+      setIsReplacing(false);
     }
   };
 
@@ -1230,7 +1272,7 @@ const AIApplyFlow = () => {
 
       {/* Save Prompt Modal */}
       {
-        showSaveResumePrompt && (
+        showSaveResumePrompt && !showReplaceModal && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
             <Card className="w-full max-w-md bg-white rounded-[32px] shadow-2xl overflow-hidden p-8 animate-in zoom-in-95 duration-300">
               <div className="flex justify-center mb-6">
@@ -1256,6 +1298,56 @@ const AIApplyFlow = () => {
                   {isSavingResume ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save Now'}
                 </Button>
               </div>
+            </Card>
+          </div>
+        )
+      }
+
+      {/* Replace Resume Modal */}
+      {
+        showReplaceModal && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+            <Card className="w-full max-w-md bg-white rounded-[32px] shadow-2xl overflow-hidden p-8 animate-in zoom-in-95 duration-300">
+              <div className="flex justify-center mb-6">
+                <div className="p-4 bg-orange-50 rounded-2xl">
+                  <RotateCcw className="w-10 h-10 text-orange-600" />
+                </div>
+              </div>
+              <h2 className="text-2xl font-black text-slate-900 text-center mb-2">Resume Limit Reached</h2>
+              <p className="text-slate-500 text-center mb-8 font-medium">You already have 3 resumes. Select one to replace with this new version:</p>
+
+              <div className="space-y-3 mb-8 max-h-[300px] overflow-y-auto pr-2">
+                {savedResumes.map(resume => (
+                  <button
+                    key={resume.id}
+                    onClick={() => handleReplaceResume(resume.id)}
+                    disabled={isReplacing}
+                    className="w-full flex items-center gap-4 p-4 rounded-2xl border-2 border-slate-100 hover:border-indigo-500 hover:bg-indigo-50/50 transition-all text-left group"
+                  >
+                    <div className="p-2 bg-slate-100 group-hover:bg-indigo-100 rounded-xl transition-colors">
+                      <FileText className="w-6 h-6 text-slate-500 group-hover:text-indigo-600" />
+                    </div>
+                    <div className="flex-grow overflow-hidden">
+                      <div className="font-bold text-slate-900 truncate">{resume.resumeName || resume.fileName || 'Resume'}</div>
+                      <div className="text-xs text-slate-400 capitalize">{resume.origin || 'saved'} • {resume.updatedAt ? new Date(resume.updatedAt).toLocaleDateString() : 'Recent'}</div>
+                    </div>
+                    {isReplacing ? (
+                      <Loader2 className="w-5 h-5 animate-spin text-slate-300" />
+                    ) : (
+                      <ArrowRight className="w-5 h-5 text-slate-300 group-hover:text-indigo-600" />
+                    )}
+                  </button>
+                ))}
+              </div>
+
+              <Button
+                variant="ghost"
+                className="w-full h-12 rounded-xl font-bold text-slate-500"
+                onClick={() => setShowReplaceModal(false)}
+                disabled={isReplacing}
+              >
+                Cancel
+              </Button>
             </Card>
           </div>
         )

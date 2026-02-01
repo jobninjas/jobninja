@@ -162,7 +162,8 @@ const Dashboard = () => {
             notes: app.notes || '',
             resumeId: app.resumeId || null,
             resumeText: app.resumeText || '',
-            coverLetterText: app.coverLetterText || ''
+            coverLetterText: app.coverLetterText || '',
+            origin: app.origin || 'ai-ninja' // Default to ai-ninja for safety
           }));
 
           setApplications(formattedApps);
@@ -890,7 +891,7 @@ const Dashboard = () => {
                             </td>
                           </tr>
                         ) : (
-                          applications.map((app) => (
+                          applications.filter(app => app.origin !== 'ai-ninja').map((app) => (
                             <tr key={app.id} className="border-b hover:bg-gray-50">
                               <td className="py-3 px-4 font-medium">{app.company}</td>
                               <td className="py-3 px-4">{app.role}</td>
