@@ -179,12 +179,21 @@ const AIApplyFlow = () => {
   };
 
   const fetchSavedResumes = async () => {
+    if (!user?.email) {
+      console.warn('Cannot fetch resumes: user email is missing');
+      return;
+    }
+
     setIsLoadingResumes(true);
     try {
-      const response = await fetch(`${API_URL}/api/resumes?email=${encodeURIComponent(user.email)}`);
+      console.log(`Fetching resumes from: ${API_URL}/api/resumes/${encodeURIComponent(user.email)}`);
+      const response = await fetch(`${API_URL}/api/resumes/${encodeURIComponent(user.email)}`);
       if (response.ok) {
         const data = await response.json();
+        console.log(`Fetched ${data.resumes?.length || 0} resumes`);
         setSavedResumes(data.resumes || []);
+      } else {
+        console.error('Failed to fetch resumes:', response.status);
       }
     } catch (error) {
       console.error('Failed to fetch resumes:', error);
@@ -715,45 +724,65 @@ const AIApplyFlow = () => {
               </p>
 
               {/* Saved Resumes Section */}
-              {isAuthenticated && savedResumes.length > 0 && (
+              {isAuthenticated && (
                 <div className="saved-resumes-section">
                   <h3>
                     <FileText className="w-5 h-5" />
-                    Your Saved Resumes <span className="text-slate-400 font-normal ml-2">({savedResumes.length}/3)</span>
+                    Your Saved Resumes
+                    {!isLoadingResumes && (
+                      <span className="text-slate-400 font-normal ml-2">({savedResumes.length}/3)</span>
+                    )}
                   </h3>
-                  <div className="saved-resumes-grid">
-                    {savedResumes.map(resume => (
-                      <div
-                        key={resume.id}
-                        className={`saved-resume-item ${selectedResume?.id === resume.id ? 'selected' : ''}`}
-                        onClick={() => handleSelectSavedResume(resume)}
-                      >
-                        <div className="resume-icon-wrapper">
-                          <FileText className="w-8 h-8 text-indigo-500" />
+
+                  {isLoadingResumes ? (
+                    <div className="flex items-center justify-center p-8 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-100">
+                      <Loader2 className="w-6 h-6 animate-spin text-indigo-500 mr-2" />
+                      <span className="text-slate-400 font-medium">Loading your resumes...</span>
+                    </div>
+                  ) : savedResumes.length > 0 ? (
+                    <div className="saved-resumes-grid">
+                      {savedResumes.map(resume => (
+                        <div
+                          key={resume.id}
+                          className={`saved-resume-item ${selectedResume?.id === resume.id ? 'selected' : ''}`}
+                          onClick={() => handleSelectSavedResume(resume)}
+                        >
+                          <div className="resume-icon-wrapper">
+                            <FileText className="w-8 h-8 text-indigo-500" />
+                          </div>
+                          <div className="resume-info">
+                            <span className="resume-name text-truncate" title={resume.resumeName || resume.fileName}>
+                              {resume.resumeName || resume.fileName || 'Resume'}
+                            </span>
+                            <span className="resume-date">
+                              <Clock className="w-3 h-3" />
+                              {resume.updatedAt ? new Date(resume.updatedAt).toLocaleDateString() : 'Recent'}
+                            </span>
+                          </div>
+                          <div className="resume-actions-overlay">
+                            <button
+                              className="delete-resume-btn"
+                              onClick={(e) => handleDeleteResume(resume.id, e)}
+                              title="Delete Resume"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                          {selectedResume?.id === resume.id && <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 relative z-10" />}
                         </div>
-                        <div className="resume-info">
-                          <span className="resume-name text-truncate">{resume.resumeName || resume.fileName || 'Resume'}</span>
-                          <span className="resume-date">
-                            <Clock className="w-3 h-3" />
-                            {resume.updatedAt ? new Date(resume.updatedAt).toLocaleDateString() : 'Recent'}
-                          </span>
-                        </div>
-                        <div className="resume-actions-overlay">
-                          <button
-                            className="delete-resume-btn"
-                            onClick={(e) => handleDeleteResume(resume.id, e)}
-                            title="Delete Resume"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                        {selectedResume?.id === resume.id && <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 relative z-10" />}
-                      </div>
-                    ))}
-                  </div>
-                  <div className="divider-or">
-                    <span>or upload a new resume</span>
-                  </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="p-4 bg-slate-50 rounded-xl border border-dashed border-slate-200 text-center">
+                      <p className="text-sm text-slate-400">No saved resumes found. Upload one below to get started!</p>
+                    </div>
+                  )}
+
+                  {savedResumes.length > 0 && !isLoadingResumes && (
+                    <div className="divider-or">
+                      <span>or upload a new resume</span>
+                    </div>
+                  )}
                 </div>
               )}
 

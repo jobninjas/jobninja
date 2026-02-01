@@ -1357,25 +1357,9 @@ async def update_call_booking_status(booking_id: str, status: str):
 
 
 @api_router.get("/resumes")
-async def get_user_resumes(email: str = Query(...)):
-    """
-    Get all resumes for a user
-    """
-    try:
-        # Fetch all resumes for this user from the database
-        cursor = db.resumes.find({"user_email": email}).sort("created_at", -1)
-        resumes = await cursor.to_list(length=100)
-
-        # Convert ObjectId to string for JSON serialization
-        for resume in resumes:
-            if "_id" in resume:
-                resume["id"] = str(resume["_id"])
-                del resume["_id"]
-
-        return resumes
-    except Exception as e:
-        logger.error(f"Error fetching resumes: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+async def get_resumes_query(email: str = Query(...)):
+    """Aggregation endpoint for all user resumes using query param."""
+    return await get_unified_resumes(email)
 
 
 @api_router.post("/user/consent")
@@ -2902,26 +2886,10 @@ async def fetch_job_desc(request: JobUrlFetchRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@api_router.get("/resumes")
-async def get_resumes(email: str = Query(...)):
-    """
-    Get all resumes for the user from saved_resumes.
-    """
-    try:
-        resumes = (
-            await db.saved_resumes.find({"userEmail": email})
-            .sort("updatedAt", -1)
-            .to_list(10)
-        )
-
-        for resume in resumes:
-            resume["id"] = str(resume.pop("_id"))
-            resume["textPreview"] = resume.get("resumeText", "")[:200] + "..."
-
-        return {"success": True, "resumes": resumes}
-    except Exception as e:
-        logger.error(f"Error getting resumes: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+@api_router.get("/resumes/legacy")
+async def get_resumes_legacy(email: str = Query(...)):
+    """Legacy endpoint redirecting to unified logic."""
+    return await get_unified_resumes(email)
 
 
 @api_router.post("/ai-ninja/apply")
@@ -4119,6 +4087,42 @@ class SaveResumeRequest(BaseModel):
     replace_id: Optional[str] = None
 
 
+@app.get("/api/resumes/{email}")
+async def get_unified_resumes(email: str):
+    """
+    Get all saved resumes for a user, aggregated from multiple collections.
+    """
+    try:
+        # Pull from both collections to fix fragmentation
+        resumes1 = await db.resumes.find({"user_email": email}).to_list(length=50)
+        resumes2 = await db.saved_resumes.find({"userEmail": email}).to_list(length=50)
+        
+        merged = []
+        seen_ids = set()
+        
+        for r in (resumes1 + resumes2):
+            rid = str(r.pop("_id"))
+            if rid in seen_ids:
+                continue
+            seen_ids.add(rid)
+            
+            # Standardize fields for frontend
+            r["id"] = rid
+            r["resumeName"] = r.get("resumeName") or r.get("resume_name") or r.get("fileName") or "Resume"
+            r["resumeText"] = r.get("resumeText") or r.get("resume_text") or ""
+            r["updatedAt"] = r.get("updatedAt") or r.get("updated_at") or r.get("createdAt") or r.get("created_at")
+            r["textPreview"] = r["resumeText"][:200] + "..." if r["resumeText"] else ""
+            
+            merged.append(r)
+            
+        merged.sort(key=lambda x: str(x.get("updatedAt", "")), reverse=True)
+        
+        return {"success": True, "resumes": merged}
+    except Exception as e:
+        logger.error(f"Unified resume fetch error: {e}")
+        return {"success": False, "error": str(e), "resumes": []}
+
+
 @app.post("/api/resumes/save")
 async def save_user_resume(request: SaveResumeRequest):
     """
@@ -4129,9 +4133,9 @@ async def save_user_resume(request: SaveResumeRequest):
         if request.replace_id:
             try:
                 from bson import ObjectId
-                await db.saved_resumes.delete_one(
-                    {"_id": ObjectId(request.replace_id), "userEmail": request.user_email}
-                )
+                oid = ObjectId(request.replace_id)
+                await db.saved_resumes.delete_one({"_id": oid, "userEmail": request.user_email})
+                await db.resumes.delete_one({"_id": oid, "user_email": request.user_email})
             except Exception as e:
                 logger.warning(f"Failed to delete resume for replacement: {e}")
 
@@ -4192,28 +4196,9 @@ async def save_user_resume(request: SaveResumeRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/api/resumes/{user_email}")
-async def get_user_resumes(user_email: str):
-    """
-    Get all saved resumes for a user
-    """
-    try:
-        resumes = (
-            await db.saved_resumes.find({"userEmail": user_email})
-            .sort("updatedAt", -1)
-            .to_list(length=20)
-        )
-
-        for resume in resumes:
-            resume["id"] = str(resume.pop("_id"))
-            # Keep resumeText so frontend can use it when selected
-            resume["textPreview"] = resume.get("resumeText", "")[:200] + "..."
-
-        return {"success": True, "resumes": resumes}
-
-    except Exception as e:
-        logger.error(f"Get resumes error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+@app.get("/api/resumes/alias/{email}")
+async def get_resumes_alias(email: str):
+    return await get_unified_resumes(email)
 
 
 @app.get("/api/resumes/detail/{resume_id}")
