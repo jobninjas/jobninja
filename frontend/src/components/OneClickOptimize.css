@@ -248,9 +248,68 @@
     cursor: not-allowed;
 }
 
-/* Results Card */
+/* Results Card Layout */
+.results-card {
+    background: white;
+    border-radius: 1.5rem;
+    padding: 2.5rem;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+    margin-bottom: 2rem;
+    width: 100%;
+    max-width: 1200px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.results-content-layout {
+    display: flex;
+    gap: 3rem;
+    align-items: flex-start;
+}
+
+.analysis-sidebar {
+    flex: 1;
+    min-width: 350px;
+}
+
+.resume-preview-panel {
+    flex: 1.5;
+    background: #f1f5f9;
+    border-radius: 1.25rem;
+    padding: 1.5rem;
+    border: 1px solid #e2e8f0;
+    height: 700px;
+    display: flex;
+    flex-direction: column;
+}
+
+.resume-preview-panel h3 {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 1rem;
+}
+
+.preview-scroll-area {
+    flex: 1;
+    background: #cbd5e1;
+    border-radius: 0.75rem;
+    overflow: auto;
+    padding: 2rem;
+    display: flex;
+    justify-content: center;
+    box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.preview-scale-wrapper {
+    transform-origin: top center;
+}
+
 .results-header {
-    text-align: center;
+    text-align: left;
     margin-bottom: 2rem;
 }
 
@@ -266,46 +325,32 @@
 }
 
 .score-display {
-    text-align: center;
+    text-align: left;
     margin: 2rem 0;
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
 }
 
 .score-circle {
-    width: 150px;
-    height: 150px;
-    border-radius: 50%;
-    background: conic-gradient(#10b981 calc(var(--score) * 1%), #e2e8f0 0);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0 auto 1rem;
-    position: relative;
+    width: 100px;
+    height: 100px;
+    margin: 0;
 }
 
 .score-circle::before {
-    content: '';
-    position: absolute;
-    width: 120px;
-    height: 120px;
-    background: white;
-    border-radius: 50%;
+    width: 80px;
+    height: 80px;
 }
 
 .score-number {
-    position: relative;
-    font-size: 2rem;
-    font-weight: 800;
-    color: #10b981;
-}
-
-.score-display p {
-    color: #64748b;
-    font-weight: 600;
+    font-size: 1.5rem;
 }
 
 .action-buttons {
     display: flex;
-    gap: 1rem;
+    flex-direction: column;
+    gap: 0.75rem;
     margin-bottom: 1rem;
 }
 
@@ -319,6 +364,10 @@
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
+    border-radius: 0.75rem;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
 }
 
 .download-btn:hover {
@@ -445,6 +494,18 @@
 .feature-card p {
     color: #64748b;
     font-size: 0.875rem;
+}
+
+@media (max-width: 1024px) {
+    .results-content-layout {
+        flex-direction: column;
+    }
+
+    .analysis-sidebar,
+    .resume-preview-panel {
+        width: 100%;
+        min-width: 100%;
+    }
 }
 
 @media (max-width: 768px) {

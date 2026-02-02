@@ -1415,17 +1415,18 @@ Generate a conversational script that:
 
 Keep it natural and confident, not robotic."""
 
-
-        if not openai_client:
-             raise HTTPException(status_code=503, detail="OpenAI service not configured on server")
-
-        response = await openai_client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.7,
+        from resume_analyzer import unified_api_call
+        
+        response = await unified_api_call(
+            prompt,
+            max_tokens=1000,
+            model="llama-3.1-8b-instant"
         )
 
-        return {"script": response.choices[0].message.content}
+        if not response:
+            raise HTTPException(status_code=500, detail="Failed to generate AI response")
+
+        return {"script": response}
     except Exception as e:
         logger.error(f"Error generating salary script: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -1448,17 +1449,18 @@ Each headline should:
 
 Return ONLY the 10 headlines, one per line, no numbering or extra text."""
 
-
-        if not openai_client:
-             raise HTTPException(status_code=503, detail="OpenAI service not configured on server")
-
-        response = await openai_client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.8,
+        from resume_analyzer import unified_api_call
+        
+        response = await unified_api_call(
+            prompt,
+            max_tokens=1000,
+            model="llama-3.1-8b-instant"
         )
 
-        headlines = response.choices[0].message.content.strip().split("\n")
+        if not response:
+            raise HTTPException(status_code=500, detail="Failed to generate AI response")
+
+        headlines = response.strip().split("\n")
         headlines = [h.strip() for h in headlines if h.strip()]
 
         return {"headlines": headlines[:10]}
@@ -1495,17 +1497,18 @@ RESUME:
 INTERVIEW:
 [interview version]"""
 
-
-        if not openai_client:
-             raise HTTPException(status_code=503, detail="OpenAI service not configured on server")
-
-        response = await openai_client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.7,
+        from resume_analyzer import unified_api_call
+        
+        response = await unified_api_call(
+            prompt,
+            max_tokens=1000,
+            model="llama-3.1-8b-instant"
         )
 
-        content = response.choices[0].message.content
+        if not response:
+            raise HTTPException(status_code=500, detail="Failed to generate AI response")
+
+        content = response
         parts = content.split("INTERVIEW:")
         resume_part = parts[0].replace("RESUME:", "").strip()
         interview_part = parts[1].strip() if len(parts) > 1 else ""
@@ -1534,17 +1537,18 @@ Provide analysis in these categories:
 
 Be honest and insightful. Help the candidate make an informed decision."""
 
-
-        if not openai_client:
-             raise HTTPException(status_code=503, detail="OpenAI service not configured on server")
-
-        response = await openai_client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.7,
+        from resume_analyzer import unified_api_call
+        
+        response = await unified_api_call(
+            prompt,
+            max_tokens=2000,
+            model="llama-3.1-8b-instant"
         )
 
-        content = response.choices[0].message.content
+        if not response:
+            raise HTTPException(status_code=500, detail="Failed to generate AI response")
+
+        content = response
 
         # Parse the response into structured data
         analysis = {
@@ -3769,6 +3773,7 @@ async def scan_resume(
 
         # Analyze with Gemini / BYOK
         from resume_analyzer import analyze_resume
+        from document_generator import generate_optimized_resume_content
 
         analysis = await analyze_resume(
             resume_text, job_description, byok_config=byok_config, target_score=target_score
@@ -3777,10 +3782,25 @@ async def scan_resume(
         if "error" in analysis:
             raise HTTPException(status_code=500, detail=analysis["error"])
 
+        # Generate optimized text for preview
+        optimized_data = await generate_optimized_resume_content(
+            resume_text, 
+            job_description, 
+            analysis,
+            byok_config=byok_config,
+            target_score=target_score
+        )
+        
+        # Convert structured data back to text for ResumePaper
+        from document_generator import render_preview_text_from_json
+        optimized_text = render_preview_text_from_json(optimized_data)
+        
         return {
             "success": True,
             "analysis": analysis,
-            "resumeText": resume_text,  # Return for document generation
+            "resumeText": resume_text,
+            "optimizedText": optimized_text,
+            "optimizedData": optimized_data,
             "resumeTextLength": len(resume_text),
         }
 

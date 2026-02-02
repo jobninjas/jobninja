@@ -20,6 +20,7 @@ import { BRAND } from '../config/branding';
 import { API_URL } from '../config/api';
 import SideMenu from './SideMenu';
 import Header from './Header';
+import ResumePaper from './ResumePaper';
 import './OneClickOptimize.css';
 
 const OneClickOptimize = () => {
@@ -85,8 +86,8 @@ const OneClickOptimize = () => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     userId: user?.id || 'guest',
-                    resume_text: optimizedResume?.resumeText || '',
-                    is_already_tailored: true,
+                    resume_text: optimizedResume?.optimizedText || optimizedResume?.resumeText || '',
+                    is_already_tailored: !!optimizedResume?.optimizedText,
                     job_description: jobDescription,
                     analysis: optimizedResume?.analysis,
                     fontFamily: selectedFont,
@@ -223,65 +224,83 @@ const OneClickOptimize = () => {
                     </Card>
                 ) : (
                     <Card className="results-card">
-                        <div className="results-header">
-                            <CheckCircle className="w-12 h-12 text-green-500" />
-                            <h2>Resume Optimized!</h2>
-                            <p>Your resume has been optimized for ATS systems</p>
-                        </div>
+                        <div className="results-content-layout">
+                            <div className="analysis-sidebar">
+                                <div className="results-header">
+                                    <CheckCircle className="w-12 h-12 text-green-500" />
+                                    <h2>Resume Optimized!</h2>
+                                    <p>Your resume has been optimized for ATS systems</p>
+                                </div>
 
-                        <div className="score-display">
-                            <div className="score-circle" style={{ '--score': optimizedResume.analysis?.matchScore || 85 }}>
-                                <span className="score-number">{optimizedResume.analysis?.matchScore || 85}%</span>
+                                <div className="score-display">
+                                    <div className="score-circle" style={{ '--score': optimizedResume.analysis?.matchScore || 85 }}>
+                                        <span className="score-number">{optimizedResume.analysis?.matchScore || 85}%</span>
+                                    </div>
+                                    <p>ATS Compatibility Score</p>
+                                </div>
+
+                                <div className="style-options">
+                                    <h3><Palette className="w-4 h-4" /> Export Style</h3>
+                                    <div className="style-grid">
+                                        <button
+                                            className={`style-btn ${selectedTemplate === 'standard' ? 'active' : ''}`}
+                                            onClick={() => setSelectedTemplate('standard')}
+                                        >
+                                            Standard
+                                        </button>
+                                        <button
+                                            className={`style-btn ${selectedTemplate === 'modern' ? 'active' : ''}`}
+                                            onClick={() => setSelectedTemplate('modern')}
+                                        >
+                                            Modern
+                                        </button>
+                                    </div>
+
+                                    <h3><Type className="w-4 h-4" /> Font Family</h3>
+                                    <div className="font-list">
+                                        {['Times New Roman', 'Arial', 'Georgia'].map(font => (
+                                            <button
+                                                key={font}
+                                                className={`font-btn ${selectedFont === font ? 'active' : ''}`}
+                                                onClick={() => setSelectedFont(font)}
+                                                style={{ fontFamily: font }}
+                                            >
+                                                {font}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="action-buttons">
+                                    <Button className="download-btn" onClick={downloadOptimizedResume}>
+                                        <Download className="w-5 h-5" />
+                                        Download Optimized Resume
+                                    </Button>
+                                    <Button variant="outline" onClick={() => navigate('/scanner')}>
+                                        <ArrowRight className="w-5 h-5" />
+                                        View Detailed Analysis
+                                    </Button>
+                                </div>
+
+                                <Button variant="ghost" className="w-full mt-4" onClick={() => { setOptimizedResume(null); setResumeFile(null); }}>
+                                    Optimize Another Resume
+                                </Button>
                             </div>
-                            <p>ATS Compatibility Score</p>
-                        </div>
 
-                        <div className="style-options">
-                            <h3><Palette className="w-4 h-4" /> Export Style</h3>
-                            <div className="style-grid">
-                                <button
-                                    className={`style-btn ${selectedTemplate === 'standard' ? 'active' : ''}`}
-                                    onClick={() => setSelectedTemplate('standard')}
-                                >
-                                    Standard
-                                </button>
-                                <button
-                                    className={`style-btn ${selectedTemplate === 'modern' ? 'active' : ''}`}
-                                    onClick={() => setSelectedTemplate('modern')}
-                                >
-                                    Modern
-                                </button>
-                            </div>
-
-                            <h3><Type className="w-4 h-4" /> Font Family</h3>
-                            <div className="font-list">
-                                {['Times New Roman', 'Arial', 'Georgia'].map(font => (
-                                    <button
-                                        key={font}
-                                        className={`font-btn ${selectedFont === font ? 'active' : ''}`}
-                                        onClick={() => setSelectedFont(font)}
-                                        style={{ fontFamily: font }}
-                                    >
-                                        {font}
-                                    </button>
-                                ))}
+                            <div className="resume-preview-panel">
+                                <h3><FileText className="w-5 h-5" /> Live Preview</h3>
+                                <div className="preview-scroll-area">
+                                    <div className="preview-scale-wrapper">
+                                        <ResumePaper
+                                            content={optimizedResume.optimizedText || optimizedResume.resumeText}
+                                            scale={0.6}
+                                            fontFamily={selectedFont}
+                                            template={selectedTemplate}
+                                        />
+                                    </div>
+                                </div>
                             </div>
                         </div>
-
-                        <div className="action-buttons">
-                            <Button className="download-btn" onClick={downloadOptimizedResume}>
-                                <Download className="w-5 h-5" />
-                                Download Optimized Resume
-                            </Button>
-                            <Button variant="outline" onClick={() => navigate('/scanner')}>
-                                <ArrowRight className="w-5 h-5" />
-                                View Detailed Analysis
-                            </Button>
-                        </div>
-
-                        <Button variant="ghost" onClick={() => { setOptimizedResume(null); setResumeFile(null); }}>
-                            Optimize Another Resume
-                        </Button>
                     </Card>
                 )}
 
