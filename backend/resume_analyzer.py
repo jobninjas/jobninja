@@ -254,7 +254,7 @@ def clean_json_response(text: str) -> str:
     return text
 
 
-async def analyze_resume(resume_text: str, job_description: str, byok_config: Optional[Dict] = None) -> Dict[str, Any]:
+async def analyze_resume(resume_text: str, job_description: str, byok_config: Optional[Dict] = None, target_score: int = 85) -> Dict[str, Any]:
     """
     Analyze a resume against a job description using Groq AI or BYOK
     
@@ -262,6 +262,7 @@ async def analyze_resume(resume_text: str, job_description: str, byok_config: Op
         resume_text: The extracted text from the resume
         job_description: The job description text
         byok_config: Optional user API key configuration
+        target_score: User's desired ATS score (e.g. 90, 95, 100)
         
     Returns:
         Analysis results including match score, skills comparison, and suggestions
@@ -275,6 +276,9 @@ async def analyze_resume(resume_text: str, job_description: str, byok_config: Op
     prompt = f"""
 You are an expert ATS (Applicant Tracking System) and resume analyst. Analyze this resume against the job description and provide a detailed assessment.
 
+TARGET ATS SCORE: {target_score}%
+(Important: Your analysis and suggestions should reflect what is needed to reach this target score in a real-world ATS environment.)
+
 RESUME:
 {resume_text}
 
@@ -283,7 +287,7 @@ JOB DESCRIPTION:
 
 Analyze and return ONLY valid JSON (no markdown, no explanation) with this exact structure:
 {{
-    "matchScore": <number 0-100>,
+    "matchScore": <number 0-100, aiming for {target_score} if plausible while remaining realistic>,
     "summary": "<brief 2-sentence assessment>",
     "searchability": {{
         "score": <number 0-100>,
@@ -291,6 +295,7 @@ Analyze and return ONLY valid JSON (no markdown, no explanation) with this exact
         "hasPhone": <boolean>,
         "hasLinkedIn": <boolean>,
         "hasSummary": <boolean>,
+        "hasEmail": <boolean>,
         "hasEducation": <boolean>,
         "hasExperience": <boolean>,
         "issues": ["<issue1>", "<issue2>"]
@@ -350,19 +355,19 @@ Analyze and return ONLY valid JSON (no markdown, no explanation) with this exact
         }}
     }},
     "suggestions": [
-        "<actionable suggestion 1>",
-        "<actionable suggestion 2>",
-        "<actionable suggestion 3>",
+        "<actionable suggestion 1 to reach target score>",
+        "<actionable suggestion 2 to reach target score>",
+        "<actionable suggestion 3 to reach target score>",
         "<actionable suggestion 4>",
         "<actionable suggestion 5>"
     ],
-    "keywordsToAdd": ["<keyword1>", "<keyword2>", "<keyword3>"]
+    "keywordsToAdd": ["<market standard keyword 1>", "<market standard keyword 2>", "<high impact keyword 3>", "<specific tech keyword 4>", "<action keyword 5>"]
 }}
 
 Important:
 - Be accurate with skill matching - only mark as matched if truly present
-- Provide specific, actionable suggestions
-- Score should reflect realistic ATS pass probability
+- Provide specific, actionable suggestions to improve the resume toward the {target_score}% target
+- Select "market-standard" high-impact keywords that will actually flip ATS scoring switches
 - Return ONLY the JSON, no other text
 """
 

@@ -33,6 +33,7 @@ const OneClickOptimize = () => {
     const [optimizedResume, setOptimizedResume] = useState(null);
     const [selectedFont, setSelectedFont] = useState('Times New Roman');
     const [selectedTemplate, setSelectedTemplate] = useState('standard');
+    const [targetScore, setTargetScore] = useState(95);
     const [error, setError] = useState(null);
 
     const handleFileUpload = (e) => {
@@ -56,6 +57,7 @@ const OneClickOptimize = () => {
             const formData = new FormData();
             formData.append('resume', resumeFile);
             formData.append('job_description', jobDescription || 'General optimization for ATS systems');
+            formData.append('target_score', targetScore);
 
             const response = await fetch(`${API_URL}/api/scan/analyze`, {
                 method: 'POST',
@@ -88,7 +90,8 @@ const OneClickOptimize = () => {
                     job_description: jobDescription,
                     analysis: optimizedResume?.analysis,
                     fontFamily: selectedFont,
-                    template: selectedTemplate
+                    template: selectedTemplate,
+                    targetScore: targetScore
                 })
             });
 
@@ -176,6 +179,22 @@ const OneClickOptimize = () => {
                                 onChange={(e) => setJobDescription(e.target.value)}
                                 rows={6}
                             />
+                        </div>
+
+                        <div className="score-selector-section">
+                            <h3><Zap className="w-5 h-5" /> Target ATS Score</h3>
+                            <p>Choose your desired optimization level</p>
+                            <div className="score-options">
+                                {[90, 95, 100].map(score => (
+                                    <button
+                                        key={score}
+                                        className={`score-option-btn ${targetScore === score ? 'active' : ''}`}
+                                        onClick={() => setTargetScore(score)}
+                                    >
+                                        {score}% {score === 100 ? ' (Perfect)' : score === 95 ? ' (Recommended)' : ' (Fast)'}
+                                    </button>
+                                ))}
+                            </div>
                         </div>
 
                         {error && (

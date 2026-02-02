@@ -3739,6 +3739,7 @@ async def scan_resume(
     resume: UploadFile = File(...),
     job_description: str = Form(...),
     email: str = Form(None),
+    target_score: int = Form(85),
 ):
     """
     Analyze a resume against a job description
@@ -3770,7 +3771,7 @@ async def scan_resume(
         from resume_analyzer import analyze_resume
 
         analysis = await analyze_resume(
-            resume_text, job_description, byok_config=byok_config
+            resume_text, job_description, byok_config=byok_config, target_score=target_score
         )
 
         if "error" in analysis:
@@ -3842,6 +3843,7 @@ class GenerateResumeRequest(BaseModel):
     is_already_tailored: bool = False
     fontFamily: Optional[str] = "Times New Roman"
     template: Optional[str] = "standard"
+    targetScore: Optional[int] = 85
 
 
 @app.post("/api/generate/resume")
@@ -3900,11 +3902,13 @@ async def generate_resume_docx(request: GenerateResumeRequest):
                 )
             else:
                 # Fallback to standard optimization if expert fails
+                # Stage 1 optimization - preserves all original content
                 resume_data = await generate_optimized_resume_content(
                     request.resume_text,
                     request.job_description,
                     request.analysis,
                     byok_config=byok_config,
+                    target_score=request.targetScore
                 )
                 if not resume_data:
                     raise HTTPException(

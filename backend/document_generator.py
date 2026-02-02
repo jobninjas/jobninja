@@ -244,8 +244,8 @@ Now generate the resume from RAW_INPUT:
         return resume_text
 
 
-async def generate_optimized_resume_content(resume_text: str, job_description: str, analysis: Dict, byok_config: Optional[Dict] = None) -> Optional[Dict]:
-    """Generate optimized resume content using AI - preserves ALL original content"""
+async def generate_optimized_resume_content(resume_text: str, job_description: str, analysis: Dict, byok_config: Optional[Dict] = None, target_score: int = 85) -> Optional[Dict]:
+    """Generate optimized resume content using AI - achieves target ATS score while preserving authenticity"""
     
     missing_skills = []
     if analysis.get("hardSkills", {}).get("missing"):
@@ -259,31 +259,29 @@ async def generate_optimized_resume_content(resume_text: str, job_description: s
         matched_skills.extend([s.get("skill", s) if isinstance(s, dict) else s for s in analysis["hardSkills"]["matched"]])
     
     prompt = f"""
-You are a resume ENHANCER, not a summarizer. Your job is to EXPAND and IMPROVE the resume, NOT shorten it.
+You are an Elite Resume Architect and ATS Optimization Expert. Your goal is to rewrite/enhance the resume to achieve a {target_score}% ATS match score.
 
 === ABSOLUTE RULES - VIOLATION = FAILURE ===
 1. EVERY job position in the original MUST appear in output (count them!)
-2. EVERY bullet point MUST be preserved - you can ONLY add more, never remove
+2. EVERY bullet point MUST be preserved - you can ONLY add more or enhance existing ones, never remove
 3. EVERY project MUST be included with ALL its details
-4. The output MUST be LONGER than the input
+4. Output MUST be professional, high-signal, and achieve {target_score}% ATS compatibility
 5. Copy the EXACT job titles, company names, dates - do NOT paraphrase
 6. Keep the original professional summary structure but enhance it with keywords
 
 === YOUR TASK ===
 Take each bullet point and ENHANCE it by:
-- Adding specific metrics/numbers where logical (e.g., "improved by X%", "reduced X hours")
-- Weaving in relevant keywords from the job description
-- Making the action verbs stronger
-- BUT keeping the original meaning and all details intact
+- Naturally weaving in target keywords: {', '.join(missing_skills[:15] + keywords[:10])}
+- Adding market-standard industry keywords that recruiters and ATS systems look for
+- Adding specific metrics/numbers where logical (e.g., "improved efficiency by 20%", "led 5+ cross-functional teams")
+- Using powerful action verbs (e.g., "orchestrated", "pioneered", "leveraged")
+- Ensure the resulting content is dense with keywords relevant to: {job_description[:500]}
 
 === ORIGINAL RESUME (COPY ALL CONTENT - DO NOT SKIP ANY SECTION) ===
 {resume_text}
 
 === TARGET JOB DESCRIPTION ===
 {job_description}
-
-=== KEYWORDS TO WEAVE INTO EXISTING BULLETS ===
-Add naturally: {', '.join(missing_skills[:15] + keywords[:10])}
 
 === OUTPUT FORMAT (JSON) ===
 Return ONLY valid JSON, no markdown:
@@ -297,7 +295,7 @@ Return ONLY valid JSON, no markdown:
         "linkedin": "COPY IF EXISTS",
         "website": "COPY IF EXISTS"
     }},
-    "summary": "ENHANCE the original summary - keep same length or longer, add keywords naturally. Do NOT shorten.",
+    "summary": "ENHANCE the original summary to be 3-5 lines dense with high-impact keywords and your core value prop. Target {target_score}% alignment.",
     "experience": [
         {{
             "title": "COPY EXACT TITLE",
@@ -305,25 +303,22 @@ Return ONLY valid JSON, no markdown:
             "location": "COPY EXACT LOCATION",
             "dates": "COPY EXACT DATES",
             "bullets": [
-                "ENHANCED version of original bullet 1 - add metrics and keywords",
+                "ENHANCED version of original bullet 1 - integrate keywords and metrics",
                 "ENHANCED version of original bullet 2",
                 "ENHANCED version of original bullet 3",
-                "... INCLUDE EVERY ORIGINAL BULLET ...",
-                "You may ADD 1-2 extra bullets per job if relevant to target role"
+                "... INCLUDE AND ENHANCE EVERY ORIGINAL BULLET ...",
+                "ADD 1-2 extra high-impact bullets focusing on market-standard skills missed in original"
             ]
         }}
-        // INCLUDE EVERY JOB FROM ORIGINAL - DO NOT SKIP ANY
     ],
     "projects": [
         {{
             "name": "COPY EXACT PROJECT NAME",
-            "subtitle": "Brief description or tech stack",
+            "subtitle": "Brief description or tech stack - enhance with keywords",
             "bullets": [
-                "COPY and enhance all project details",
-                "Include the Impact section if present"
+                "COPY and enhance all project details with impact metrics"
             ]
         }}
-        // INCLUDE ALL PROJECTS
     ],
     "education": [
         {{
@@ -333,19 +328,17 @@ Return ONLY valid JSON, no markdown:
             "date": "COPY DATE"
         }}
     ],
-    "skills": ["COPY ALL ORIGINAL SKILLS", "ADD relevant missing keywords at the end"]
+    "skills": ["COPY ALL ORIGINAL SKILLS", "ADD market-standard technical and soft skills to reach {target_score}% match"]
 }}
 
-=== VERIFICATION CHECKLIST (You must pass all) ===
-[ ] All job positions from original are included
-[ ] All bullet points preserved and enhanced (not shortened!)
-[ ] All projects included with full details
-[ ] Education section complete
-[ ] All skills preserved + new keywords added
-[ ] Contact info complete with location
-[ ] Output is LONGER than input
+=== VERIFICATION CHECKLIST ===
+- All positions included
+- All bullets enhanced and preserved
+- {target_score}% ATS optimization target met via keyword density
+- Industry-standard terminology used throughout
+- Metrics added to at least 50% of bullets
 
-GENERATE THE ENHANCED RESUME JSON NOW:
+GENERATE THE {target_score}% OPTIMIZED RESUME JSON NOW:
 """
 
     try:
