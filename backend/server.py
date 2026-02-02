@@ -4731,6 +4731,83 @@ async def startup_event():
         logger.error(f"❌ Failed to create database indexes: {e}")
 
 
+# ==================== ADMIN ANALYTICS ====================
+@app.get("/api/admin/analytics")
+async def get_admin_analytics(user: dict = Depends(get_current_user)):
+    """
+    Get platform analytics for admin dashboard
+    Requires authentication
+    """
+    try:
+        if not db:
+            raise HTTPException(status_code=500, detail="Database not initialized")
+        
+        # Total users count
+        total_users = await db.users.count_documents({})
+        
+        # Users created in last 30 days
+        thirty_days_ago = datetime.now(timezone.utc) - timedelta(days=30)
+        recent_users = await db.users.count_documents({
+            "created_at": {"$gte": thirty_days_ago}
+        })
+        
+        # Total applications
+        total_applications = await db.applications.count_documents({})
+        
+        # Applications in last 30 days
+        recent_applications = await db.applications.count_documents({
+            "created_at": {"$gte": thirty_days_ago}
+        })
+        
+        # Interview sessions
+        total_interview_sessions = await db.interview_sessions.count_documents({})
+        recent_interview_sessions = await db.interview_sessions.count_documents({
+            "created_at": {"$gte": thirty_days_ago}
+        })
+        
+        # Application statuses breakdown
+        status_pipeline = [
+            {"$group": {"_id": "$status", "count": {"$sum": 1}}}
+        ]
+        status_breakdown = {}
+        async for doc in db.applications.aggregate(status_pipeline):
+            status_breakdown[doc["_id"] or "pending"] = doc["count"]
+        
+        # Daily active users (last 30 days)
+        daily_usage_pipeline = [
+            {"$match": {"date": {"$gte": thirty_days_ago.isoformat()[:10]}}},
+            {"$group": {"_id": "$email"}},
+            {"$count": "total"}
+        ]
+        active_users_result = await db.daily_usage.aggregate(daily_usage_pipeline).to_list(length=1)
+        active_users = active_users_result[0]["total"] if active_users_result else 0
+        
+        return {
+            "success": True,
+            "data": {
+                "users": {
+                    "total": total_users,
+                    "recent_30d": recent_users
+                },
+                "applications": {
+                    "total": total_applications,
+                    "recent_30d": recent_applications,
+                    "by_status": status_breakdown
+                },
+                "interviews": {
+                    "total_sessions": total_interview_sessions,
+                    "recent_30d": recent_interview_sessions
+                },
+                "engagement": {
+                    "active_users_30d": active_users
+                }
+            }
+        }
+    except Exception as e:
+        logger.error(f"Admin analytics error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.on_event("shutdown")
 async def shutdown_db_client():
     client.close()

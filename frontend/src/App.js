@@ -24,6 +24,7 @@ import MyResumes from "./components/MyResumes";
 import InterviewPrep from "./components/InterviewPrep";
 import InterviewRoom from "./components/InterviewRoom";
 import InterviewReport from "./components/InterviewReport";
+import AdminAnalytics from "./components/AdminAnalytics";
 import Checkout from "./components/Checkout";
 import ResumeScanner from "./components/ResumeScanner";
 import AIApplyFlow from "./components/AIApplyFlow";
@@ -114,6 +115,16 @@ function App() {
             <Route path="/interview-prep" element={<InterviewPrep />} />
             <Route path="/interview-prep/:sessionId" element={<InterviewRoom />} />
             <Route path="/interview-prep/:sessionId/report" element={<InterviewReport />} />
+
+            {/* Admin Analytics Route */}
+            <Route
+              path="/admin/analytics"
+              element={
+                <ProtectedRoute allowedRoles={['customer']} requireVerification={false}>
+                  <AdminAnalytics />
+                </ProtectedRoute>
+              }
+            />
 
             {/* Phase 1 Tools Routes */}
             <Route
