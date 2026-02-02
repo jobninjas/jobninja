@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Card, CardHeader, CardContent, CardTitle } from './ui/card';
@@ -129,6 +129,9 @@ const Dashboard = () => {
     resumeFileName: '',
     additionalNotes: ''
   });
+
+  const [isSyncing, setIsSyncing] = useState(false);
+  const resumeSyncInputRef = useRef(null);
 
   // Fetch applications from Google Sheets via backend
   useEffect(() => {
@@ -364,6 +367,99 @@ const Dashboard = () => {
         resumeFile: file,
         resumeFileName: file.name
       }));
+    }
+  };
+
+  const handleResumeSync = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (!window.confirm("This will overwrite existing profile fields with information found in your resume. Proceed?")) {
+      return;
+    }
+
+    setIsSyncing(true);
+    setSaveMessage('Syncing profile with resume...');
+
+    try {
+      const formData = new FormData();
+      formData.append('resume', file);
+      formData.append('email', user?.email);
+
+      // We use the existing scan/parse endpoint which returns structured data
+      const response = await fetch(`${API_URL}/api/scan/parse`, {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!response.ok) throw new Error('Failed to parse resume');
+
+      const result = await response.json();
+      if (result.success && result.data) {
+        const data = result.data;
+
+        // Map backend structure to frontend profile state
+        setProfile(prev => ({
+          ...prev,
+          person: {
+            ...prev.person,
+            fullName: data.person?.fullName || prev.person.fullName,
+            phone: data.person?.phone || prev.person.phone,
+            linkedinUrl: data.person?.linkedinUrl || prev.person.linkedinUrl,
+            githubUrl: data.person?.githubUrl || prev.person.githubUrl,
+            portfolioUrl: data.person?.portfolioUrl || prev.person.portfolioUrl,
+            location: data.person?.location || prev.person.location,
+          },
+          address: {
+            ...prev.address,
+            line1: data.address?.line1 || prev.address.line1,
+            city: data.address?.city || prev.address.city,
+            state: data.address?.state || prev.address.state,
+            zip: data.address?.zip || prev.address.zip,
+            country: data.address?.country || prev.address.country,
+          },
+          employment_history: (data.employment_history || []).map(job => ({
+            company: job.company || '',
+            title: job.title || '',
+            location: job.location || '',
+            start_date: job.startDate || '',
+            end_date: job.endDate || '',
+            is_current: job.endDate === 'Present',
+            summary: job.description || job.summary || ''
+          })),
+          education: (data.education || []).map(edu => ({
+            school: edu.school || '',
+            degree: edu.degree || '',
+            major: edu.major || '',
+            location: edu.location || '',
+            end_date: edu.graduationDate || edu.endDate || '',
+            gpa: edu.gpa || ''
+          })),
+          skills: {
+            ...prev.skills,
+            primary: data.skills?.technical?.join(', ') || prev.skills.primary,
+            languages: data.skills?.languages?.join(', ') || prev.skills.languages,
+          },
+          work_authorization: {
+            ...prev.work_authorization,
+            authorized_to_work: (data.work_authorization?.authorized_to_work?.toLowerCase() === 'yes' ? 'yes' : 'no'),
+            requires_sponsorship_now: (data.work_authorization?.requires_sponsorship_now?.toLowerCase() === 'yes' ? 'yes' : 'no'),
+            visa_type: data.work_authorization?.visa_status || '',
+          }
+        }));
+
+        setSaveMessage('Profile synced successfully! Don\'t forget to Save Changes.');
+        setTimeout(() => setSaveMessage(''), 5000);
+      } else {
+        throw new Error(result.error || 'Failed to extract data');
+      }
+    } catch (error) {
+      console.error('Resume Sync Error:', error);
+      setSaveMessage('Error syncing with resume: ' + error.message);
+    } finally {
+      setIsSyncing(false);
+      // Reset input so same file can be selected again
+      if (resumeSyncInputRef.current) resumeSyncInputRef.current.value = '';
     }
   };
 
@@ -1000,13 +1096,34 @@ const Dashboard = () => {
                     <h2 className="text-2xl font-bold">Universal Profile</h2>
                     <p className="text-sm text-gray-500">Keep your info updated for better AI tailoring and auto-fill.</p>
                   </div>
-                  <Button onClick={handleSaveProfile} disabled={isSaving} className="shadow-md">
-                    {isSaving ? (
-                      <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Saving...</>
-                    ) : (
-                      <><Save className="w-4 h-4 mr-2" /> Save Changes</>
-                    )}
-                  </Button>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="file"
+                      ref={resumeSyncInputRef}
+                      onChange={handleResumeSync}
+                      className="hidden"
+                      accept=".pdf,.docx,.doc,.txt"
+                    />
+                    <Button
+                      variant="outline"
+                      onClick={() => resumeSyncInputRef.current?.click()}
+                      disabled={isSyncing}
+                      className="shadow-sm border-primary/20 hover:bg-primary/5 text-primary"
+                    >
+                      {isSyncing ? (
+                        <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Syncing...</>
+                      ) : (
+                        <><Upload className="w-4 h-4 mr-2" /> Sync from Resume</>
+                      )}
+                    </Button>
+                    <Button onClick={handleSaveProfile} disabled={isSaving} className="shadow-md">
+                      {isSaving ? (
+                        <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Saving...</>
+                      ) : (
+                        <><Save className="w-4 h-4 mr-2" /> Save Changes</>
+                      )}
+                    </Button>
+                  </div>
                 </div>
 
                 {/* Personal Information */}

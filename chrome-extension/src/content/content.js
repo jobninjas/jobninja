@@ -98,6 +98,27 @@ async function performAutofill(userData) {
             filled = fillField(input, getStr(userData.address?.zip || userData.zip || userData.postalCode), label);
         }
 
+        // Social / Profile URLs
+        else if (isField(context, ['linkedin', 'linked-in', 'linkedin profile', 'linkedin url'])) {
+            label = 'LinkedIn';
+            filled = fillField(input, getStr(userData.person?.linkedinUrl || userData.linkedinUrl), label);
+        } else if (isField(context, ['github', 'git-hub', 'github profile', 'github url'])) {
+            label = 'GitHub';
+            filled = fillField(input, getStr(userData.person?.githubUrl || userData.githubUrl), label);
+        } else if (isField(context, ['portfolio', 'personal website', 'website', 'portfolio url'])) {
+            label = 'Portfolio';
+            filled = fillField(input, getStr(userData.person?.portfolioUrl || userData.portfolioUrl), label);
+        }
+
+        // Skills & Summary
+        else if (isField(context, ['skills', 'technical skills', 'stack', 'technologies'])) {
+            label = 'Skills';
+            filled = fillField(input, getStr(userData.skills?.primary || userData.skills), label);
+        } else if (isField(context, ['summary', 'about you', 'professional summary', 'bio', 'objective'])) {
+            label = 'Summary';
+            filled = fillField(input, getStr(userData.summary || (userData.employment_history && userData.employment_history[0]?.summary)), label);
+        }
+
         if (filled) {
             filledCount++;
             filledLabels.push(label);
