@@ -278,6 +278,42 @@ const InterviewRoom = () => {
                     </CardContent>
                 </Card>
 
+                {/* Recording Button - Centered between Question and Answer */}
+                <div className="recording-button-container">
+                    {!isRecording ? (
+                        <div className="flex flex-col items-center gap-3">
+                            <Button
+                                onClick={startRecording}
+                                disabled={isSubmitting || isTranscribing}
+                                className="mic-button-large"
+                            >
+                                <Mic className="w-8 h-8" />
+                            </Button>
+                            <span className="text-gray-400 text-sm font-medium">
+                                Click to record your answer
+                            </span>
+                        </div>
+                    ) : (
+                        <div className="flex flex-col items-center gap-3">
+                            <Button
+                                onClick={stopRecording}
+                                className="mic-button-large mic-button-recording"
+                            >
+                                <Square className="w-8 h-8" />
+                            </Button>
+                            <span className="text-red-500 font-medium animate-pulse">
+                                Recording... Click to stop
+                            </span>
+                        </div>
+                    )}
+                    {isTranscribing && (
+                        <div className="flex items-center justify-center gap-2 text-blue-400 text-sm mt-2">
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            Converting speech to text...
+                        </div>
+                    )}
+                </div>
+
                 {/* Answer Input */}
                 <Card className="answer-card">
                     <CardContent className="p-6">
@@ -297,7 +333,7 @@ const InterviewRoom = () => {
                                 rows={8}
                                 value={answer}
                                 onChange={(e) => setAnswer(e.target.value)}
-                                placeholder={isRecording ? "Listening..." : isTranscribing ? "Converting speech to text..." : "Click the button below to record your answer..."}
+                                placeholder={isRecording ? "Listening..." : isTranscribing ? "Converting speech to text..." : "Your transcribed answer will appear here..."}
                                 disabled={isSubmitting || isTranscribing}
                                 readOnly={!canEdit}
                             />
@@ -309,38 +345,7 @@ const InterviewRoom = () => {
                             )}
                         </div>
 
-                        <div className="answer-actions flex items-center justify-between mt-4">
-                            <div className="recording-controls flex items-center gap-3">
-                                {!isRecording ? (
-                                    <Button
-                                        onClick={startRecording}
-                                        disabled={isSubmitting || isTranscribing}
-                                        className="btn-secondary rounded-full w-12 h-12 p-0 flex items-center justify-center bg-blue-600/20 hover:bg-blue-600/30 text-blue-500 border-blue-500/50"
-                                    >
-                                        <Mic className="w-6 h-6" />
-                                    </Button>
-                                ) : (
-                                    <Button
-                                        onClick={stopRecording}
-                                        className="btn-danger rounded-full w-12 h-12 p-0 flex items-center justify-center animate-pulse"
-                                    >
-                                        <Square className="w-6 h-6" />
-                                    </Button>
-                                )}
-
-                                {isRecording && (
-                                    <span className="text-red-500 font-medium animate-pulse text-sm">
-                                        Recording...
-                                    </span>
-                                )}
-                                {isTranscribing && (
-                                    <div className="flex items-center gap-2 text-blue-400 text-sm">
-                                        <Loader2 className="w-4 h-4 animate-spin" />
-                                        Processing...
-                                    </div>
-                                )}
-                            </div>
-
+                        <div className="answer-actions flex items-center justify-end mt-4">
                             <Button
                                 onClick={handleSubmitAnswer}
                                 disabled={isSubmitting || !answer.trim() || isRecording || isTranscribing}
