@@ -52,36 +52,39 @@ async function performAutofill(userData) {
         // Helper to get string value safely
         const getStr = (val) => (typeof val === 'object' && val !== null) ? (val.line1 || val.name || val.text || JSON.stringify(val)) : (val || '');
 
-        if (isField(context, ['first name', 'given name', 'firstName', 'legalNameSection_firstName'])) {
+        if (isField(context, ['first name', 'given name', 'firstName', 'legalNameSection_firstName', '_firstName'])) {
             label = 'First Name';
-            filled = fillField(input, getStr(userData.person?.fullName?.split(' ')[0] || userData.firstName || userData.name?.split(' ')[0]), label);
-        } else if (isField(context, ['last name', 'family name', 'surname', 'lastName', 'legalNameSection_lastName'])) {
+            const val = getStr(userData.firstName || userData.person?.fullName?.split(' ')[0] || userData.name?.split(' ')[0]);
+            filled = fillField(input, val, label);
+        } else if (isField(context, ['last name', 'family name', 'surname', 'lastName', 'legalNameSection_lastName', '_lastName'])) {
             label = 'Last Name';
-            const parts = getStr(userData.person?.fullName || userData.fullName || userData.name).trim().split(/\s+/);
-            filled = fillField(input, parts.length > 1 ? parts.slice(1).join(' ') : getStr(userData.lastName), label);
-        } else if (isField(context, ['email', 'email address', 'user_email', 'contactInformation_email'])) {
+            const full = getStr(userData.person?.fullName || userData.fullName || userData.name);
+            const parts = full.trim().split(/\s+/);
+            const val = parts.length > 1 ? parts.slice(1).join(' ') : getStr(userData.lastName || '');
+            filled = fillField(input, val, label);
+        } else if (isField(context, ['email', 'email address', 'user_email', 'contactInformation_email', '_email'])) {
             label = 'Email';
             filled = fillField(input, getStr(userData.person?.email || userData.email), label);
-        } else if (isField(context, ['phone', 'mobile', 'telephone', 'contact number', 'phone-number'])) {
+        } else if (isField(context, ['phone', 'mobile', 'telephone', 'contact number', 'phone-number', '_phone'])) {
             label = 'Phone';
             filled = fillField(input, getStr(userData.person?.phone || userData.phone), label);
         }
-        else if (isField(context, ['address line 1', 'street address', 'mailing address', 'addressSection_addressLine1'])) {
+        else if (isField(context, ['address line 1', 'street address', 'mailing address', 'addressSection_addressLine1', '_address'])) {
             label = 'Address Line 1';
             filled = fillField(input, getStr(userData.address?.line1 || userData.line1 || userData.address), label);
         } else if (isField(context, ['address line 2', 'apartment', 'suite', 'unit', 'addressSection_addressLine2'])) {
             label = 'Address Line 2';
             filled = fillField(input, getStr(userData.address?.line2 || userData.line2), label);
-        } else if (isField(context, ['city', 'location', 'town', 'addressSection_city'])) {
+        } else if (isField(context, ['city', 'location', 'town', 'addressSection_city', '_city'])) {
             label = 'City';
             filled = fillField(input, getStr(userData.address?.city || userData.city), label);
-        } else if (isField(context, ['state', 'province', 'region', 'addressSection_state'])) {
+        } else if (isField(context, ['state', 'province', 'region', 'addressSection_state', '_state'])) {
             label = 'State';
             filled = selectSmart(input, getStr(userData.address?.state || userData.state), label);
-        } else if (isField(context, ['zip', 'postal', 'zipcode', 'postcode', 'addressSection_postalCode'])) {
+        } else if (isField(context, ['zip', 'postal', 'zipcode', 'postcode', 'addressSection_postalCode', 'postal-code'])) {
             label = 'Postal Code';
             filled = fillField(input, getStr(userData.address?.zip || userData.zip || userData.postalCode), label);
-        } else if (isField(context, ['country', 'nation', 'addressSection_country'])) {
+        } else if (isField(context, ['country', 'nation', 'addressSection_country', '_country'])) {
             label = 'Country';
             filled = selectSmart(input, getStr(userData.address?.country || userData.country), label);
         }
@@ -139,8 +142,12 @@ function findLabelText(input) {
         if (el) return el.innerText;
     }
 
-    // 5. Check placeholder as a last resort for label context
+    // 5. Check placeholder
     if (input.placeholder) return input.placeholder;
+
+    // 6. Check aria-label directly
+    const ariaLabel = input.getAttribute('aria-label');
+    if (ariaLabel) return ariaLabel;
 
     return '';
 }
