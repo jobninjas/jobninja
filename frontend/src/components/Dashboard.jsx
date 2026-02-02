@@ -160,7 +160,7 @@ const Dashboard = () => {
 
           // Transform applications to match component format
           const formattedApps = (data.applications || []).map((app, index) => ({
-            id: app.id || index + 1,
+            id: app.id || app._id || index + 1, // Prioritize backend id
             company: app.company || app.company_name || 'Unknown',
             role: app.jobTitle || app.job_title || 'Unknown',
             status: app.status || 'materials_ready',
@@ -244,11 +244,42 @@ const Dashboard = () => {
         if (response.ok) {
           const data = await response.json();
           if (data.success && data.profile) {
-            setProfile(prev => ({
-              ...prev,
-              ...data.profile,
-              person: { ...prev.person, ...data.profile.person, email: user.email }
-            }));
+            setProfile(prev => {
+              const newProfile = { ...prev };
+
+              // If it's the new nested structure, merge it
+              if (data.profile.person || data.profile.address || data.profile.preferences) {
+                return {
+                  ...prev,
+                  ...data.profile,
+                  person: { ...prev.person, ...data.profile.person, email: user.email }
+                };
+              }
+
+              // Legacy flat profile mapping (restore this to prevent data loss for old users)
+              if (data.profile.fullName) newProfile.person.fullName = data.profile.fullName;
+              if (data.profile.phone) newProfile.person.phone = data.profile.phone;
+              if (data.profile.linkedinUrl) newProfile.person.linkedinUrl = data.profile.linkedinUrl;
+              if (data.profile.githubUrl) newProfile.person.githubUrl = data.profile.githubUrl;
+              if (data.profile.portfolioUrl) newProfile.person.portfolioUrl = data.profile.portfolioUrl;
+
+              if (data.profile.address) newProfile.address.line1 = data.profile.address;
+              if (data.profile.city) newProfile.address.city = data.profile.city;
+              if (data.profile.state) newProfile.address.state = data.profile.state;
+              if (data.profile.zip) newProfile.address.zip = data.profile.zip;
+              if (data.profile.country) newProfile.address.country = data.profile.country;
+
+              if (data.profile.yearsOfExperience) newProfile.preferences.notice_period = data.profile.yearsOfExperience;
+              if (data.profile.targetRole) newProfile.preferences.desired_titles = data.profile.targetRole;
+              if (data.profile.expectedSalary) newProfile.preferences.expected_salary = data.profile.expectedSalary;
+              if (data.profile.notice_period) newProfile.preferences.notice_period = data.profile.notice_period;
+
+              if (data.profile.skills) newProfile.skills.primary = data.profile.skills;
+              if (data.profile.certifications_text) newProfile.certifications_text = data.profile.certifications_text;
+
+              newProfile.person.email = user.email;
+              return newProfile;
+            });
           }
         }
       } catch (error) {
@@ -957,12 +988,26 @@ const Dashboard = () => {
               <div className="space-y-6">
                 {/* Save Message */}
                 {saveMessage && (
-                  <div className={`p-4 rounded-md flex items-center gap-2 ${saveMessage.includes('success') ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
+                  <div className={`p-4 rounded-md flex items-center gap-2 mb-6 ${saveMessage.includes('success') ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
                     }`}>
                     {saveMessage.includes('success') ? <CheckCircle className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
                     {saveMessage}
                   </div>
                 )}
+
+                <div className="flex justify-between items-center mb-6">
+                  <div>
+                    <h2 className="text-2xl font-bold">Universal Profile</h2>
+                    <p className="text-sm text-gray-500">Keep your info updated for better AI tailoring and auto-fill.</p>
+                  </div>
+                  <Button onClick={handleSaveProfile} disabled={isSaving} className="shadow-md">
+                    {isSaving ? (
+                      <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Saving...</>
+                    ) : (
+                      <><Save className="w-4 h-4 mr-2" /> Save Changes</>
+                    )}
+                  </Button>
+                </div>
 
                 {/* Personal Information */}
                 <Card>

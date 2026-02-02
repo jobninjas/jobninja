@@ -3199,10 +3199,14 @@ async def get_user_applications(user_id_or_email: str):
                 query["$or"].append({"userId": user["id"]})
 
         applications = (
-            await db.applications.find(query, {"_id": 0})
+            await db.applications.find(query)
             .sort("createdAt", -1)
             .to_list(1000)
         )
+
+        # Convert ObjectId to string for frontend
+        for app in applications:
+            app["id"] = str(app.pop("_id"))
 
         return {
             "success": True,
@@ -4428,10 +4432,14 @@ async def update_application(
     """
     try:
         from bson import ObjectId
-
-        # Handle status as query param if provided (for legacy compatibility)
-        # But prioritize JSON body if present
         
+        # Robust ID handling
+        query = {}
+        try:
+            query = {"_id": ObjectId(application_id)}
+        except:
+            query = {"id": application_id}
+
         update_data = {"updatedAt": datetime.now(timezone.utc).isoformat()}
         if status:
             update_data["status"] = status
@@ -4440,15 +4448,15 @@ async def update_application(
         if appliedAt:
             update_data["appliedAt"] = appliedAt
 
-        result = await db.applications.update_one(
-            {"_id": ObjectId(application_id)}, {"$set": update_data}
-        )
+        result = await db.applications.update_one(query, {"$set": update_data})
 
+        # Fallback if first query didn't match
         if result.matched_count == 0:
-            # Try by string ID just in case
-            result = await db.applications.update_one(
-                {"id": application_id}, {"$set": update_data}
-            )
+            alt_query = {"id": application_id} if "_id" in query else {"_id": application_id}
+            try:
+                result = await db.applications.update_one(alt_query, {"$set": update_data})
+            except:
+                pass
 
         if result.matched_count == 0:
             raise HTTPException(status_code=404, detail="Application not found")
