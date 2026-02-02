@@ -198,7 +198,7 @@ const LandingPage = () => {
 
   const stats = [
     { number: applicationCount.toLocaleString() + '+', label: 'Applications Submitted', live: true },
-    { number: interviewCount.toLocaleString() + '+', label: 'Interviews Cracked', live: true },
+    { number: interviewCount.toLocaleString() + '+', label: 'Interviews Secured', live: true },
     { number: '3x', label: 'More Responses' },
     { number: '20hrs', label: 'Saved Per Week' }
   ];
