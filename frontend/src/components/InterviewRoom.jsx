@@ -33,6 +33,9 @@ const InterviewRoom = () => {
         try {
             const response = await fetch(`${API_URL}/api/interview/start/${sessionId}`, {
                 method: 'POST',
+                headers: {
+                    'token': localStorage.getItem('auth_token')
+                }
             });
 
             if (!response.ok) {
@@ -55,7 +58,11 @@ const InterviewRoom = () => {
 
     const fetchSessionDetails = async () => {
         try {
-            const response = await fetch(`${API_URL}/api/interview/session/${sessionId}`);
+            const response = await fetch(`${API_URL}/api/interview/session/${sessionId}`, {
+                headers: {
+                    'token': localStorage.getItem('auth_token')
+                }
+            });
             if (response.ok) {
                 const data = await response.json();
                 if (data.targetQuestions) {
@@ -107,6 +114,9 @@ const InterviewRoom = () => {
 
             const response = await fetch(`${API_URL}/api/interview/transcribe`, {
                 method: 'POST',
+                headers: {
+                    'token': localStorage.getItem('auth_token')
+                },
                 body: formData,
             });
 
@@ -135,6 +145,7 @@ const InterviewRoom = () => {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'token': localStorage.getItem('auth_token')
                 },
                 body: JSON.stringify({ answerText: answer }),
             });
@@ -168,6 +179,9 @@ const InterviewRoom = () => {
         try {
             const response = await fetch(`${API_URL}/api/interview/finalize/${sessionId}`, {
                 method: 'POST',
+                headers: {
+                    'token': localStorage.getItem('auth_token')
+                }
             });
 
             if (!response.ok) {

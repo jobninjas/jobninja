@@ -4505,16 +4505,16 @@ async def delete_application(application_id: str):
 class InterviewAnswerRequest(BaseModel):
     answerText: str
 
-@app.post("/api/interview/create-session")
+@api_router.post("/interview/create-session")
 async def create_interview_session(
     resume: UploadFile = File(...),
     jd: str = Form(...),
     roleTitle: str = Form(...),
-    userId: Optional[str] = Form(None)
+    user: dict = Depends(get_current_user)
 ):
     """Create a new interview session"""
     try:
-        user_id = userId or "default-user"
+        user_id = str(user.get("_id")) or user.get("email") or "default-user"
         
         # Read and parse resume
         file_content = await resume.read()
@@ -4561,8 +4561,8 @@ async def create_interview_session(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.post("/api/interview/start/{session_id}")
-async def start_interview(session_id: str):
+@api_router.post("/interview/start/{session_id}")
+async def start_interview(session_id: str, user: dict = Depends(get_current_user)):
     """Start interview and get first question"""
     try:
         orchestrator = InterviewOrchestrator(session_id)
@@ -4575,8 +4575,8 @@ async def start_interview(session_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.post("/api/interview/answer/{session_id}")
-async def submit_answer(session_id: str, request: InterviewAnswerRequest):
+@api_router.post("/interview/answer/{session_id}")
+async def submit_answer(session_id: str, request: InterviewAnswerRequest, user: dict = Depends(get_current_user)):
     """Submit answer and get next question"""
     try:
         orchestrator = InterviewOrchestrator(session_id)
@@ -4589,8 +4589,8 @@ async def submit_answer(session_id: str, request: InterviewAnswerRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.post("/api/interview/finalize/{session_id}")
-async def finalize_interview(session_id: str):
+@api_router.post("/interview/finalize/{session_id}")
+async def finalize_interview(session_id: str, user: dict = Depends(get_current_user)):
     """Finalize interview and generate report"""
     try:
         orchestrator = InterviewOrchestrator(session_id)
@@ -4603,8 +4603,8 @@ async def finalize_interview(session_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.post("/api/interview/transcribe")
-async def transcribe_audio(audio: UploadFile = File(...)):
+@api_router.post("/interview/transcribe")
+async def transcribe_audio(audio: UploadFile = File(...), user: dict = Depends(get_current_user)):
     """Transcribe audio to text using Groq Whisper"""
     try:
         from interview_service import AIService
@@ -4626,8 +4626,8 @@ async def transcribe_audio(audio: UploadFile = File(...)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/api/interview/session/{session_id}")
-async def get_interview_session(session_id: str):
+@api_router.get("/interview/session/{session_id}")
+async def get_interview_session(session_id: str, user: dict = Depends(get_current_user)):
     """Get interview session details"""
     try:
         from bson import ObjectId
@@ -4643,8 +4643,8 @@ async def get_interview_session(session_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/api/interview/report/{session_id}")
-async def get_interview_report(session_id: str):
+@api_router.get("/interview/report/{session_id}")
+async def get_interview_report(session_id: str, user: dict = Depends(get_current_user)):
     """Get interview report for a session"""
     try:
         report = reports_collection.find_one({"sessionId": session_id})

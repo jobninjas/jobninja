@@ -15,10 +15,12 @@ import {
 } from 'lucide-react';
 import { BRAND } from '../config/branding';
 import { API_URL } from '../config/api';
+import { useAuth } from '../contexts/AuthContext';
 import SideMenu from './SideMenu';
 import './SideMenu.css';
 
 const InterviewPrep = () => {
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [sideMenuOpen, setSideMenuOpen] = useState(false);
   const [step, setStep] = useState('setup'); // 'setup' or 'active'
@@ -45,6 +47,9 @@ const InterviewPrep = () => {
 
       const response = await fetch(`${API_URL}/api/interview/create-session`, {
         method: 'POST',
+        headers: {
+          'token': localStorage.getItem('auth_token')
+        },
         body: formData,
       });
 

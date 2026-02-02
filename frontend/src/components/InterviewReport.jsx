@@ -20,7 +20,11 @@ const InterviewReport = () => {
 
     const fetchReport = async () => {
         try {
-            const response = await fetch(`${API_URL}/api/interview/report/${sessionId}`);
+            const response = await fetch(`${API_URL}/api/interview/report/${sessionId}`, {
+                headers: {
+                    'token': localStorage.getItem('auth_token')
+                }
+            });
 
             if (!response.ok) {
                 throw new Error('Failed to fetch report');
