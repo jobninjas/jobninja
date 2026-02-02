@@ -15,7 +15,7 @@ import './SideMenu.css';
 import VerificationBanner from './VerificationBanner';
 import {
   User, Upload, Briefcase, Linkedin, Mail, Shield, Trash2, Save, CheckCircle,
-  AlertCircle, Eye, EyeOff, FileText, ExternalLink, Download, Bot, UserCheck,
+  AlertCircle, Eye, EyeOff, FileText, ExternalLink, Download, Bot, UserCheck, Search,
   ClipboardList, Menu, Share2, Gift, Settings, LogOut, TrendingUp, Target,
   Users, Clock, CreditCard, Loader2, Key, MapPin, Plus, GraduationCap, Code, MessageSquare
 } from 'lucide-react';
@@ -31,6 +31,7 @@ const Dashboard = () => {
   const [saveMessage, setSaveMessage] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [sideMenuOpen, setSideMenuOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
 
   // BYOK state
   const [byokProvider, setByokProvider] = useState('openai');
@@ -177,8 +178,8 @@ const Dashboard = () => {
               return new Date(a.date) >= weekAgo;
             }).length || 0,
             totalJobsApplied: stats.total || formattedApps.length || 0,
-            interviews: stats.interviews || stats.interviewing || 0,
-            hoursSaved: Math.round(stats.hours_saved || formattedApps.length * 0.5 || 0)
+            interviews: stats.interviews || stats.interviewing || formattedApps.filter(a => a.status === 'interviewing').length || 0,
+            hoursSaved: Math.round(stats.hours_saved || formattedApps.length * 0.25 || 0)
           });
         }
       } catch (error) {
@@ -194,6 +195,18 @@ const Dashboard = () => {
     const interval = setInterval(fetchApplications, 120000);
     return () => clearInterval(interval);
   }, [user?.email, location.search]);
+
+  // Update KPIs when applications change (e.g., status update)
+  useEffect(() => {
+    if (applications.length > 0) {
+      setKpis(prev => ({
+        ...prev,
+        totalJobsApplied: applications.length,
+        interviews: applications.filter(a => a.status === 'interviewing').length,
+        hoursSaved: Math.round(applications.length * 0.25)
+      }));
+    }
+  }, [applications]);
 
   // Fetch user profile
   useEffect(() => {
@@ -736,7 +749,16 @@ const Dashboard = () => {
                       <ClipboardList className="w-5 h-5" />
                       Application Tracker
                     </CardTitle>
-                    <p className="text-sm text-gray-600 mt-1">
+                    <div className="relative mt-4">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      <Input
+                        placeholder="Search by company or role..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="pl-10"
+                      />
+                    </div>
+                    <p className="text-sm text-gray-600 mt-4">
                       Every time you use AI Ninja or Human Ninja to prepare an application, we log it here so you can see your entire job search in one place.
                     </p>
                   </CardHeader>
@@ -748,7 +770,6 @@ const Dashboard = () => {
                             <th className="text-left py-3 px-4 font-medium text-sm text-gray-600">Date</th>
                             <th className="text-left py-3 px-4 font-medium text-sm text-gray-600">Company</th>
                             <th className="text-left py-3 px-4 font-medium text-sm text-gray-600">Role</th>
-                            <th className="text-left py-3 px-4 font-medium text-sm text-gray-600">Location</th>
                             <th className="text-left py-3 px-4 font-medium text-sm text-gray-600">Match</th>
                             <th className="text-left py-3 px-4 font-medium text-sm text-gray-600">Resume</th>
                             <th className="text-left py-3 px-4 font-medium text-sm text-gray-600">Job Link</th>
@@ -774,81 +795,85 @@ const Dashboard = () => {
                               </td>
                             </tr>
                           ) : (
-                            applications.map((app) => (
-                              <tr key={app.id} className="border-b hover:bg-gray-50">
-                                <td className="py-3 px-4 text-sm text-gray-600">{app.date || '-'}</td>
-                                <td className="py-3 px-4 font-medium">{app.company}</td>
-                                <td className="py-3 px-4">{app.role}</td>
-                                <td className="py-3 px-4 text-sm">{app.location || '-'}</td>
-                                <td className="py-3 px-4">
-                                  {app.matchScore ? (
-                                    <Badge variant={app.matchScore >= 70 ? 'success' : app.matchScore >= 50 ? 'warning' : 'secondary'}>
-                                      {app.matchScore}%
-                                    </Badge>
-                                  ) : '-'}
-                                </td>
-                                <td className="py-3 px-4">
-                                  {app.resumeText ? (
-                                    <button
-                                      onClick={() => handleDownloadResume(app)}
-                                      className="text-primary hover:underline flex items-center gap-1"
+                            applications
+                              .filter(app =>
+                                app.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                app.role.toLowerCase().includes(searchTerm.toLowerCase())
+                              )
+                              .map((app) => (
+                                <tr key={app.id} className="border-b hover:bg-gray-50">
+                                  <td className="py-3 px-4 text-sm text-gray-600">{app.date || '-'}</td>
+                                  <td className="py-3 px-4 font-medium">{app.company}</td>
+                                  <td className="py-3 px-4">{app.role}</td>
+                                  <td className="py-3 px-4">
+                                    {app.matchScore ? (
+                                      <Badge variant={app.matchScore >= 70 ? 'success' : app.matchScore >= 50 ? 'warning' : 'secondary'}>
+                                        {app.matchScore}%
+                                      </Badge>
+                                    ) : '-'}
+                                  </td>
+                                  <td className="py-3 px-4">
+                                    {app.resumeText ? (
+                                      <button
+                                        onClick={() => handleDownloadResume(app)}
+                                        className="text-primary hover:underline flex items-center gap-1"
+                                      >
+                                        <Download className="w-4 h-4" /> Download
+                                      </button>
+                                    ) : app.resumeId ? (
+                                      <button
+                                        onClick={() => navigate('/resumes')}
+                                        className="text-primary hover:underline flex items-center gap-1"
+                                      >
+                                        <FileText className="w-4 h-4" /> View
+                                      </button>
+                                    ) : (
+                                      <span className="text-gray-400 text-xs italic">No resume</span>
+                                    )}
+                                  </td>
+                                  <td className="py-3 px-4">
+                                    {app.applicationLink ? (
+                                      <a
+                                        href={app.applicationLink}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-primary hover:underline flex items-center gap-1"
+                                      >
+                                        <ExternalLink className="w-4 h-4" /> View
+                                      </a>
+                                    ) : '-'}
+                                  </td>
+                                  <td className="py-3 px-4">
+                                    <Select
+                                      value={app.status}
+                                      onValueChange={async (value) => {
+                                        try {
+                                          await fetch(`${API_URL}/api/applications/${app.id}?status=${value}`, {
+                                            method: 'PUT'
+                                          });
+                                          // Update local state
+                                          setApplications(prev => prev.map(a =>
+                                            a.id === app.id ? { ...a, status: value } : a
+                                          ));
+                                        } catch (e) {
+                                          console.error('Failed to update status:', e);
+                                        }
+                                      }}
                                     >
-                                      <Download className="w-4 h-4" /> Download
-                                    </button>
-                                  ) : app.resumeId ? (
-                                    <button
-                                      onClick={() => navigate('/resumes')}
-                                      className="text-primary hover:underline flex items-center gap-1"
-                                    >
-                                      <FileText className="w-4 h-4" /> View
-                                    </button>
-                                  ) : (
-                                    <span className="text-gray-400 text-xs italic">No resume</span>
-                                  )}
-                                </td>
-                                <td className="py-3 px-4">
-                                  {app.applicationLink ? (
-                                    <a
-                                      href={app.applicationLink}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="text-primary hover:underline flex items-center gap-1"
-                                    >
-                                      <ExternalLink className="w-4 h-4" /> View
-                                    </a>
-                                  ) : '-'}
-                                </td>
-                                <td className="py-3 px-4">
-                                  <Select
-                                    value={app.status}
-                                    onValueChange={async (value) => {
-                                      try {
-                                        await fetch(`${API_URL}/api/applications/${app.id}?status=${value}`, {
-                                          method: 'PUT'
-                                        });
-                                        // Update local state
-                                        setApplications(prev => prev.map(a =>
-                                          a.id === app.id ? { ...a, status: value } : a
-                                        ));
-                                      } catch (e) {
-                                        console.error('Failed to update status:', e);
-                                      }
-                                    }}
-                                  >
-                                    <SelectTrigger className="w-32 h-8 text-xs">
-                                      <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="materials_ready">📝 Ready</SelectItem>
-                                      <SelectItem value="applied">✅ Applied</SelectItem>
-                                      <SelectItem value="interviewing">📞 Interview</SelectItem>
-                                      <SelectItem value="offered">🎉 Offered</SelectItem>
-                                      <SelectItem value="rejected">❌ Rejected</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                </td>
-                              </tr>
-                            ))
+                                      <SelectTrigger className="w-32 h-8 text-xs">
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="materials_ready">📝 Ready</SelectItem>
+                                        <SelectItem value="applied">✅ Applied</SelectItem>
+                                        <SelectItem value="interviewing">📞 Interview</SelectItem>
+                                        <SelectItem value="offered">🎉 Offered</SelectItem>
+                                        <SelectItem value="rejected">❌ Rejected</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  </td>
+                                </tr>
+                              ))
                           )}
                         </tbody>
                       </table>
