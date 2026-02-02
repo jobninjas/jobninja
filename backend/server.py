@@ -4696,10 +4696,31 @@ async def startup_event():
     # Add database indexes for better performance
     try:
         if db is not None:
+            # Users collection
+            await db.users.create_index([("email", 1)], unique=True)
+            await db.users.create_index([("id", 1)], unique=True)
+            
+            # Profiles collection
+            await db.profiles.create_index([("email", 1)])
+            
+            # Applications collection
             await db.applications.create_index([("userId", 1)])
             await db.applications.create_index([("userEmail", 1)])
             await db.applications.create_index([("createdAt", -1)])
-            logger.info("✅ Database indexes created for applications collection")
+            
+            # Resumes & Saved Resumes (Handles fragmentation)
+            await db.resumes.create_index([("user_email", 1)])
+            await db.resumes.create_index([("userId", 1)])
+            await db.saved_resumes.create_index([("userEmail", 1)])
+            
+            # Usage tracking (Critical for limit checks)
+            await db.daily_usage.create_index([("email", 1), ("date", 1)])
+            
+            # Scans history
+            await db.scans.create_index([("userEmail", 1)])
+            await db.scans.create_index([("createdAt", -1)])
+            
+            logger.info("✅ Database indexes created/verified for all critical collections")
     except Exception as e:
         logger.error(f"❌ Failed to create database indexes: {e}")
 
