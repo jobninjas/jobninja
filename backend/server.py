@@ -4505,7 +4505,7 @@ async def delete_application(application_id: str):
 class InterviewAnswerRequest(BaseModel):
     answerText: str
 
-@api_router.post("/interview/create-session")
+@app.post("/api/interview/create-session")
 async def create_interview_session(
     resume: UploadFile = File(...),
     jd: str = Form(...),
@@ -4561,7 +4561,7 @@ async def create_interview_session(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@api_router.post("/interview/start/{session_id}")
+@app.post("/api/interview/start/{session_id}")
 async def start_interview(session_id: str, user: dict = Depends(get_current_user)):
     """Start interview and get first question"""
     try:
@@ -4575,7 +4575,7 @@ async def start_interview(session_id: str, user: dict = Depends(get_current_user
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@api_router.post("/interview/answer/{session_id}")
+@app.post("/api/interview/answer/{session_id}")
 async def submit_answer(session_id: str, request: InterviewAnswerRequest, user: dict = Depends(get_current_user)):
     """Submit answer and get next question"""
     try:
@@ -4589,7 +4589,7 @@ async def submit_answer(session_id: str, request: InterviewAnswerRequest, user: 
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@api_router.post("/interview/finalize/{session_id}")
+@app.post("/api/interview/finalize/{session_id}")
 async def finalize_interview(session_id: str, user: dict = Depends(get_current_user)):
     """Finalize interview and generate report"""
     try:
@@ -4603,7 +4603,7 @@ async def finalize_interview(session_id: str, user: dict = Depends(get_current_u
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@api_router.post("/interview/transcribe")
+@app.post("/api/interview/transcribe")
 async def transcribe_audio(audio: UploadFile = File(...), user: dict = Depends(get_current_user)):
     """Transcribe audio to text using Groq Whisper"""
     try:
@@ -4626,7 +4626,7 @@ async def transcribe_audio(audio: UploadFile = File(...), user: dict = Depends(g
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@api_router.get("/interview/session/{session_id}")
+@app.get("/api/interview/session/{session_id}")
 async def get_interview_session(session_id: str, user: dict = Depends(get_current_user)):
     """Get interview session details"""
     try:
@@ -4643,7 +4643,7 @@ async def get_interview_session(session_id: str, user: dict = Depends(get_curren
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@api_router.get("/interview/report/{session_id}")
+@app.get("/api/interview/report/{session_id}")
 async def get_interview_report(session_id: str, user: dict = Depends(get_current_user)):
     """Get interview report for a session"""
     try:
