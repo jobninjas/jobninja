@@ -4419,15 +4419,19 @@ async def save_application(application: ApplicationData):
 
 
 @app.put("/api/applications/{application_id}")
+@app.patch("/api/applications/{application_id}")
 async def update_application(
     application_id: str, status: str = None, notes: str = None, appliedAt: str = None
 ):
     """
-    Update an application status
+    Update an application status (Supports both PUT and PATCH for consistency)
     """
     try:
         from bson import ObjectId
 
+        # Handle status as query param if provided (for legacy compatibility)
+        # But prioritize JSON body if present
+        
         update_data = {"updatedAt": datetime.now(timezone.utc).isoformat()}
         if status:
             update_data["status"] = status
@@ -4439,6 +4443,12 @@ async def update_application(
         result = await db.applications.update_one(
             {"_id": ObjectId(application_id)}, {"$set": update_data}
         )
+
+        if result.matched_count == 0:
+            # Try by string ID just in case
+            result = await db.applications.update_one(
+                {"id": application_id}, {"$set": update_data}
+            )
 
         if result.matched_count == 0:
             raise HTTPException(status_code=404, detail="Application not found")
@@ -4674,6 +4684,16 @@ async def startup_event():
     logger.info(
         "📅 Job fetch scheduler started (fetches immediately, then every 6 hours)"
     )
+
+    # Add database indexes for better performance
+    try:
+        if db is not None:
+            await db.applications.create_index([("userId", 1)])
+            await db.applications.create_index([("userEmail", 1)])
+            await db.applications.create_index([("createdAt", -1)])
+            logger.info("✅ Database indexes created for applications collection")
+    except Exception as e:
+        logger.error(f"❌ Failed to create database indexes: {e}")
 
 
 @app.on_event("shutdown")

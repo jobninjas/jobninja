@@ -140,12 +140,20 @@ const Dashboard = () => {
     }
 
     const fetchApplications = async () => {
-      if (!user?.email) return;
+      if (!user?.email) {
+        setIsLoading(false);
+        return;
+      }
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
 
       try {
         setIsLoading(true);
 
-        const response = await fetch(`${API_URL}/api/applications/${encodeURIComponent(user.email)}`);
+        const response = await fetch(`${API_URL}/api/applications/${encodeURIComponent(user.email)}`, {
+          signal: controller.signal
+        });
 
         if (response.ok) {
           const data = await response.json();
@@ -183,8 +191,13 @@ const Dashboard = () => {
           });
         }
       } catch (error) {
-        console.error('Error fetching applications:', error);
+        if (error.name === 'AbortError') {
+          console.error('Fetch applications timed out');
+        } else {
+          console.error('Error fetching applications:', error);
+        }
       } finally {
+        clearTimeout(timeoutId);
         setIsLoading(false);
       }
     };
@@ -211,44 +224,42 @@ const Dashboard = () => {
   // Fetch user profile
   useEffect(() => {
     const fetchProfile = async () => {
-      if (!user?.email) return;
+      if (!user?.email) {
+        setIsLoading(false);
+        return;
+      }
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
 
       try {
-        const response = await fetch(`${API_URL}/api/profile/${encodeURIComponent(user.email)}`);
+        setIsLoading(true);
+        const response = await fetch(`${API_URL}/api/user/profile`, {
+          headers: {
+            'token': localStorage.getItem('token')
+          },
+          signal: controller.signal
+        });
 
         if (response.ok) {
           const data = await response.json();
-          if (data.profile) {
-            // Map structured data if available, otherwise handle legacy flat data
-            setProfile(prev => {
-              const newProfile = { ...prev };
-
-              // If it's the new nested structure, merge it
-              if (data.profile.person || data.profile.address) {
-                return { ...prev, ...data.profile };
-              }
-
-              // Legacy flat profile mapping
-              if (data.profile.fullName) newProfile.person.fullName = data.profile.fullName;
-              if (data.profile.phone) newProfile.person.phone = data.profile.phone;
-              if (data.profile.linkedinUrl) newProfile.person.linkedinUrl = data.profile.linkedinUrl;
-
-              if (data.profile.address) newProfile.address.line1 = data.profile.address;
-              if (data.profile.city) newProfile.address.city = data.profile.city;
-              if (data.profile.state) newProfile.address.state = data.profile.state;
-              if (data.profile.zip) newProfile.address.zip = data.profile.zip;
-              if (data.profile.country) newProfile.address.country = data.profile.country;
-
-              if (data.profile.yearsOfExperience) newProfile.preferences.notice_period = data.profile.yearsOfExperience;
-              if (data.profile.targetRole) newProfile.preferences.desired_titles = data.profile.targetRole;
-              if (data.profile.expectedSalary) newProfile.preferences.expected_salary = data.profile.expectedSalary;
-
-              return newProfile;
-            });
+          if (data.success && data.profile) {
+            setProfile(prev => ({
+              ...prev,
+              ...data.profile,
+              person: { ...prev.person, ...data.profile.person, email: user.email }
+            }));
           }
         }
       } catch (error) {
-        console.error('Error fetching profile:', error);
+        if (error.name === 'AbortError') {
+          console.error('Fetch profile timed out');
+        } else {
+          console.error('Error fetching profile:', error);
+        }
+      } finally {
+        clearTimeout(timeoutId);
+        setIsLoading(false);
       }
     };
 
@@ -779,14 +790,14 @@ const Dashboard = () => {
                         <tbody>
                           {isLoading ? (
                             <tr>
-                              <td colSpan="8" className="py-8 text-center">
+                              <td colSpan="7" className="py-8 text-center">
                                 <Loader2 className="w-6 h-6 animate-spin mx-auto text-primary" />
                                 <p className="text-sm text-gray-500 mt-2">Loading applications...</p>
                               </td>
                             </tr>
                           ) : applications.length === 0 ? (
                             <tr>
-                              <td colSpan="8" className="py-8 text-center">
+                              <td colSpan="7" className="py-8 text-center">
                                 <ClipboardList className="w-12 h-12 mx-auto text-gray-300 mb-4" />
                                 <p className="text-gray-500 font-medium">No applications yet</p>
                                 <p className="text-sm text-gray-400 mt-1">
