@@ -1180,16 +1180,17 @@ async def get_profile(email: str):
 
 
 @api_router.post("/profile")
-async def save_profile(request: Request):
+async def save_profile(request: Request, user: dict = Depends(get_current_user)):
     """
     Save or update user profile.
     Handles multipart form data including file uploads.
     """
     form_data = await request.form()
 
-    email = form_data.get("email")
+    # Use authenticated user email instead of relying on form data
+    email = user.get("email")
     if not email:
-        raise HTTPException(status_code=400, detail="Email is required")
+        raise HTTPException(status_code=400, detail="Authentication failed: email missing")
 
     # Build profile data dynamically from form data
     profile_data = {
@@ -1204,10 +1205,15 @@ async def save_profile(request: Request):
             
         # Try to parse as JSON if it's a string (which it will be in FormData)
         # But only if it looks like an object or array
-        if isinstance(value, str) and (value.startswith('{') or value.startswith('[')):
-            try:
-                profile_data[key] = json.loads(value)
-            except:
+        if isinstance(value, str):
+            stripped_val = value.strip()
+            if stripped_val.startswith('{') or stripped_val.startswith('['):
+                try:
+                    profile_data[key] = json.loads(stripped_val)
+                except Exception as je:
+                    logger.warning(f"Failed to parse field {key} as JSON: {je}")
+                    profile_data[key] = value
+            else:
                 profile_data[key] = value
         else:
             profile_data[key] = value

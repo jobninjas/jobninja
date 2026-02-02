@@ -255,11 +255,16 @@ const Dashboard = () => {
               const newProfile = { ...prev };
 
               // If it's the new nested structure, merge it
-              if (data.profile.person || data.profile.address || data.profile.preferences) {
+              if (data.profile.person || data.profile.address || data.profile.preferences || data.profile.sensitive) {
                 return {
                   ...prev,
                   ...data.profile,
-                  person: { ...prev.person, ...data.profile.person, email: user.email }
+                  person: { ...prev.person, ...data.profile.person, email: user.email },
+                  address: { ...prev.address, ...data.profile.address },
+                  work_authorization: { ...prev.work_authorization, ...data.profile.work_authorization },
+                  preferences: { ...prev.preferences, ...data.profile.preferences },
+                  skills: { ...prev.skills, ...data.profile.skills },
+                  sensitive: { ...prev.sensitive, ...data.profile.sensitive },
                 };
               }
 
@@ -504,6 +509,9 @@ const Dashboard = () => {
 
       const response = await fetch(`${API_URL}/api/profile`, {
         method: 'POST',
+        headers: {
+          'token': localStorage.getItem('token')
+        },
         body: formData
       });
 
@@ -1132,7 +1140,7 @@ const Dashboard = () => {
                         <><Upload className="w-4 h-4 mr-2" /> Sync from Resume</>
                       )}
                     </Button>
-                    <Button onClick={handleSaveProfile} disabled={isSaving} className="shadow-md">
+                    <Button onClick={handleSaveProfile} disabled={isSaving} variant="default" className="shadow-md bg-primary text-white hover:bg-primary/90">
                       {isSaving ? (
                         <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Saving...</>
                       ) : (
