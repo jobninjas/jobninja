@@ -14,7 +14,7 @@ const AllUsersExport = () => {
     const fetchAllUsers = async () => {
         try {
             setLoading(true);
-            const response = await fetch(`${API_URL}/api/admin/all-users-export`);
+            const response = await fetch(`${API_URL}/api/admin/all-users-export?admin_key=jobninjas2025admin`);
             if (!response.ok) throw new Error('Failed to fetch user data');
             const data = await response.json();
             setUserData(data);
@@ -206,8 +206,8 @@ const AllUsersExport = () => {
                                         <td className="px-4 py-3 text-sm text-gray-900">{user.years_experience}</td>
                                         <td className="px-4 py-3">
                                             <span className={`inline-flex px-2 py-1 rounded text-xs font-medium ${user.has_resume === 'Yes'
-                                                    ? 'bg-green-100 text-green-800'
-                                                    : 'bg-gray-100 text-gray-600'
+                                                ? 'bg-green-100 text-green-800'
+                                                : 'bg-gray-100 text-gray-600'
                                                 }`}>
                                                 {user.has_resume}
                                             </span>
