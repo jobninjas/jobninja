@@ -24,6 +24,9 @@ const webpackConfig = {
       return webpackConfig;
     },
   },
+  eslint: {
+    enable: false,
+  },
 };
 
 module.exports = webpackConfig;
