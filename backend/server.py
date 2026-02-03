@@ -3077,9 +3077,19 @@ async def get_user_usage_limits(identifier: str) -> dict:
 
         can_generate = current_count < limit
     elif tier_lower == "free_byok" or user.get("byok_enabled"):
-        limit = "Unlimited (BYOK)"
-        autofills_limit = "Unlimited"
-        can_generate = True
+        # Check if they actually have a key configured
+        has_key = await db.byok_keys.find_one({"user_id": user.get("email"), "is_enabled": True})
+        
+        if has_key:
+            limit = "Unlimited (BYOK)"
+            autofills_limit = "Unlimited"
+            can_generate = True
+        else:
+            # No key configured? Fall back to Free limits
+            limit = 10
+            autofills_limit = 5
+            current_count = current_daily_apps
+            can_generate = current_count < limit
     else:  # free or ai-free
         limit = 10
         autofills_limit = 5
