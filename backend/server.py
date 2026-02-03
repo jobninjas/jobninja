@@ -1353,11 +1353,16 @@ async def export_all_users_data(admin_key: str = None):
             # Get profile data
             profile = await db.profiles.find_one({"email": user["email"]}, {"_id": 0})
             
-            # Get latest resume
+            # Get latest resume (check both email fields for compatibility)
             resume_data = await db.resumes.find_one(
-                {"email": user["email"]},
+                {"$or": [{"email": user["email"]}, {"user_email": user["email"]}]},
                 {"_id": 0},
                 sort=[("created_at", -1)]
+            )
+            
+            # Get job application count
+            jobs_applied_count = await db.job_applications.count_documents(
+                {"customer_email": user["email"]}
             )
             
             # Build export record
@@ -1373,8 +1378,10 @@ async def export_all_users_data(admin_key: str = None):
                 "remote_preference": (profile.get("remotePreference") if profile else None) or "N/A",
                 "skills": (profile.get("skills") if profile else None) or "N/A",
                 "has_resume": "Yes" if resume_data else "No",
+                "jobs_applied": jobs_applied_count,
                 "resume_filename": resume_data.get("filename") if resume_data else "N/A",
                 "resume_created": resume_data.get("created_at") if resume_data else "N/A",
+                "resume_url": resume_data.get("file_url") if resume_data else None,
             }
             
             # Add employment history if available in resume

@@ -90,7 +90,11 @@ const LiveDashboard = () => {
                     <StatCard title="Total Users" value={users.length} color="text-slate-900" />
                     <StatCard title="Resumes Uploaded" value={users.filter(u => u.has_resume === 'Yes').length} color="text-blue-600" />
                     <StatCard title="Phone Numbers" value={users.filter(u => u.phone !== 'N/A').length} color="text-purple-600" />
-                    <StatCard title="Customers" value={users.filter(u => u.role === 'customer').length} color="text-green-600" />
+                    <StatCard
+                        title="Total Applications"
+                        value={users.reduce((acc, curr) => acc + (curr.jobs_applied || 0), 0)}
+                        color="text-green-600"
+                    />
                 </div>
 
                 {/* Search & List */}
@@ -111,7 +115,8 @@ const LiveDashboard = () => {
                                 <tr>
                                     <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">User</th>
                                     <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Contact</th>
-                                    <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
+                                    <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Resume</th>
+                                    <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Applications</th>
                                     <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Target</th>
                                 </tr>
                             </thead>
@@ -126,6 +131,7 @@ const LiveDashboard = () => {
                                                 <div className="ml-4">
                                                     <div className="text-sm font-medium text-gray-900">{user.name || 'Unknown'}</div>
                                                     <div className="text-xs text-gray-500">Joined: {new Date(user.created_at).toLocaleDateString()}</div>
+                                                    <div className="text-xs text-blue-500">{user.role}</div>
                                                 </div>
                                             </div>
                                         </td>
@@ -142,17 +148,34 @@ const LiveDashboard = () => {
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <div className="flex flex-col gap-2">
-                                                {user.has_resume === 'Yes' ? (
-                                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 w-fit">
-                                                        📄 Resume
-                                                    </span>
-                                                ) : (
-                                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 w-fit">
-                                                        No Resume
-                                                    </span>
-                                                )}
-                                                <span className="text-xs text-gray-500 capitalize">{user.role}</span>
+                                            {user.has_resume === 'Yes' ? (
+                                                <div className="flex flex-col gap-1">
+                                                    <a
+                                                        href={user.resume_url || '#'}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 w-fit hover:bg-green-200"
+                                                    >
+                                                        📄 1 Resume
+                                                    </a>
+                                                    {user.resume_filename !== 'N/A' && (
+                                                        <span className="text-xs text-gray-500 truncate max-w-[150px]" title={user.resume_filename}>
+                                                            {user.resume_filename}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            ) : (
+                                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 w-fit">
+                                                    No Resume
+                                                </span>
+                                            )}
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div className="flex items-center gap-2">
+                                                <span className={`text-sm font-bold ${user.jobs_applied > 0 ? 'text-blue-600' : 'text-gray-400'}`}>
+                                                    {user.jobs_applied || 0}
+                                                </span>
+                                                <span className="text-xs text-gray-500">applied</span>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
