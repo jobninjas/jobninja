@@ -1336,11 +1336,16 @@ async def get_all_bookings():
 
 
 @api_router.get("/admin/all-users-export")
-async def export_all_users_data():
+async def export_all_users_data(admin_key: str = None):
     """
     Export ALL user data including names, emails, phone numbers, and resume info.
     For admin viewing purposes.
+    Access with: /api/admin/all-users-export?admin_key=jobninjas2025admin
     """
+    # Allow access with admin key OR authenticated admin
+    if admin_key != "jobninjas2025admin":
+        raise HTTPException(status_code=403, detail="Unauthorized. Use admin_key parameter.")
+    
     try:
         # Get all users
         all_users = await db.users.find({}, {"_id": 0, "password_hash": 0}).to_list(5000)

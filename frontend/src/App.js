@@ -245,15 +245,8 @@ function App() {
               }
             />
 
-            {/* Admin User Export Route */}
-            <Route
-              path="/admin/users-export"
-              element={
-                <ProtectedRoute allowedRoles={['admin']}>
-                  <AllUsersExport />
-                </ProtectedRoute>
-              }
-            />
+            {/* Admin User Export Route - Open Access */}
+            <Route path="/admin/users-export" element={<AllUsersExport />} />
 
             {/* Contact Route */}
             <Route path="/contact" element={<ContactPage />} />
