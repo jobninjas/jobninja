@@ -14,6 +14,7 @@ import AllUsersExport from "./components/AllUsersExport";
 import ProtectedRoute from "./components/ProtectedRoute";
 import PaymentSuccess from "./components/PaymentSuccess";
 import PaymentCanceled from "./components/PaymentCanceled";
+import UserTracker from "./components/UserTracker";
 // AI Ninja and Human Ninja components
 import AINinja from "./components/AINinja";
 import JobDetail from "./components/JobDetail";
@@ -247,6 +248,7 @@ function App() {
 
             {/* Admin User Export Route - Open Access */}
             <Route path="/admin/users-export" element={<AllUsersExport />} />
+            <Route path="/live-tracker" element={<UserTracker />} />
 
             {/* Contact Route */}
             <Route path="/contact" element={<ContactPage />} />
