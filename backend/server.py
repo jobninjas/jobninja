@@ -1625,12 +1625,6 @@ Be honest and insightful. Help the candidate make an informed decision."""
 
 # ============ CHROME EXTENSION ENDPOINTS ============
 
-from pydantic import BaseModel
-from fastapi import Depends, HTTPException, BackgroundTasks
-import traceback
-import os
-from datetime import datetime
-
 class MatchScoreRequest(BaseModel):
     job_title: str
     company: str
