@@ -41,10 +41,21 @@
                 "<all_urls>"
             ],
             "js": [
+                "src/content/autofill-engine-v2.js",
                 "src/content/content.js"
             ],
             "run_at": "document_end",
             "all_frames": true
+        },
+        {
+            "matches": [
+                "https://*.linkedin.com/*"
+            ],
+            "js": [
+                "src/content/linkedin-matcher.js"
+            ],
+            "run_at": "document_end",
+            "all_frames": false
         }
     ],
     "icons": {

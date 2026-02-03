@@ -1,6 +1,6 @@
 :root {
-    --primary-blue: #0066ff;
-    --primary-gradient: linear-gradient(135deg, #0066ff 0%, #0052cc 100%);
+    --primary-blue: #00ced1;
+    --primary-gradient: linear-gradient(135deg, #00ced1 0%, #008b8b 100%);
     --bg-light: #f8f9fa;
     --card-white: #ffffff;
     --text-main: #000000;
@@ -155,8 +155,13 @@ main {
     font-size: 1.1rem;
     cursor: pointer;
     width: 100%;
-    box-shadow: 0 4px 12px rgba(0, 102, 255, 0.2);
-    transition: all 0.2s;
+    box-shadow: 0 4px 12px rgba(0, 206, 209, 0.3);
+    transition: all 0.2s cubic-bezier(0.19, 1, 0.22, 1);
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 206, 209, 0.4);
 }
 
 .btn-primary:active {

@@ -40,7 +40,16 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 });
 
 async function performAutofill(userData) {
-    console.log('[jobNinjas] Starting smarter autofill...', userData);
+    console.log('[jobNinjas] Starting two-phase smart autofill...', userData);
+
+    // Use new AutofillEngineV2 if available
+    if (window.AutofillEngineV2) {
+        const engine = new window.AutofillEngineV2();
+        return await engine.performAutofill(userData);
+    }
+
+    // Fallback to old autofill if engine not loaded
+    console.warn('[jobNinjas] AutofillEngineV2 not loaded, using legacy autofill');
     const inputs = document.querySelectorAll('input:not([type="hidden"]), select, textarea, [role="checkbox"], [role="radio"]');
     const itemsToFill = [];
     const filledLabels = [];
