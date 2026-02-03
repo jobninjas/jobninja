@@ -1325,6 +1325,8 @@ async def book_call(input: CallBookingCreate):
             logger.error(f"Error sending emails: {email_error}")
 
         return booking_obj
+    except Exception as e:
+        logger.error(f"Error in book_call: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to book call: {str(e)}")
 
 
