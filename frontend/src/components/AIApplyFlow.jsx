@@ -1076,8 +1076,8 @@ const AIApplyFlow = () => {
             <div className="flex justify-center mb-8">
               <div className="relative">
                 <div className="absolute inset-0 bg-indigo-600 rounded-3xl animate-ping opacity-10"></div>
-                <div className="relative bg-indigo-50 p-8 rounded-[32px] border-2 border-indigo-100">
-                  <img src="/ninjasface.png" alt="AI Ninja" className="w-16 h-16 object-contain" />
+                <div className="relative bg-indigo-50 p-1 rounded-[32px] border-2 border-indigo-100">
+                  <img src="/ninjasface.png" alt="AI Ninja" className="w-40 h-40 object-contain" />
                 </div>
               </div>
             </div>
