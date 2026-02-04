@@ -2149,6 +2149,7 @@ const Dashboard = () => {
                             <SelectItem value="openai">OpenAI (GPT-4o Mini)</SelectItem>
                             <SelectItem value="google">Google Gemini 1.5 Flash</SelectItem>
                             <SelectItem value="anthropic">Anthropic Claude 3 Haiku</SelectItem>
+                            <SelectItem value="groq">Groq (Llama 3)</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>

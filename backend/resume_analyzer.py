@@ -54,24 +54,27 @@ GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
 GROQ_MODEL = "llama-3.3-70b-versatile"  # Latest and most powerful
 
 
-async def call_groq_api(prompt: str, max_tokens: int = 4000, model: str = None, max_retries: int = None) -> Optional[str]:
+async def call_groq_api(prompt: str, max_tokens: int = 4000, model: str = None, max_retries: int = None, api_key: str = None) -> Optional[str]:
     """Call Groq API for text generation with exponential backoff"""
     target_model = model or GROQ_MODEL
     
-    # Use key pooling for better throughput
+    # Use provided key or fall back to key pooling
     global GROQ_KEY_INDEX
-    keys = GROQ_API_KEYS or get_all_groq_keys()
     
-    if not keys:
-        logger.error("No Groq API keys found in environment")
-        return None
-    
-    # Round-robin selection
-    api_key = keys[GROQ_KEY_INDEX % len(keys)]
-    GROQ_KEY_INDEX += 1
+    current_key = api_key
+    if not current_key:
+        keys = GROQ_API_KEYS or get_all_groq_keys()
+        
+        if not keys:
+            logger.error("No Groq API keys found in environment")
+            return None
+        
+        # Round-robin selection
+        current_key = keys[GROQ_KEY_INDEX % len(keys)]
+        GROQ_KEY_INDEX += 1
     
     headers = {
-        "Authorization": f"Bearer {api_key}",
+        "Authorization": f"Bearer {current_key}",
         "Content-Type": "application/json"
     }
     
@@ -220,6 +223,8 @@ async def unified_api_call(prompt: str, byok_config: Optional[Dict] = None, max_
             return await call_anthropic_api(prompt, api_key, max_tokens)
         elif provider == 'google':
             return await call_google_api(prompt, api_key, max_tokens)
+        elif provider == 'groq':
+            return await call_groq_api(prompt, max_tokens=max_tokens, model=model, api_key=api_key)
             
     # Fallback to internal Groq key pooling
     return await call_groq_api(prompt, max_tokens=max_tokens, model=model)
