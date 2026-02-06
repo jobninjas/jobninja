@@ -25,7 +25,40 @@ import {
 import { Label } from "./ui/label";
 import { Switch } from "./ui/switch";
 
-const AdminDashboard = () => {
+class ErrorBoundary extends React.Component {
+    constructor(props) {
+        super(props);
+        this.state = { hasError: false, error: null };
+    }
+
+    static getDerivedStateFromError(error) {
+        return { hasError: true, error };
+    }
+
+    componentDidCatch(error, errorInfo) {
+        console.error("AdminDashboard Error:", error, errorInfo);
+    }
+
+    render() {
+        if (this.state.hasError) {
+            return (
+                <div className="p-8 text-center text-red-600">
+                    <h2 className="text-xl font-bold mb-2">Something went wrong</h2>
+                    <pre className="text-sm bg-red-50 p-4 rounded text-left overflow-auto max-w-2xl mx-auto">
+                        {this.state.error.toString()}
+                    </pre>
+                    <Button onClick={() => window.location.reload()} className="mt-4" variant="outline">
+                        Reload Page
+                    </Button>
+                </div>
+            );
+        }
+
+        return this.props.children;
+    }
+}
+
+const AdminDashboardContent = () => {
     const [stats, setStats] = useState({
         total_users: 0,
         new_users_24h: 0,
@@ -374,6 +407,14 @@ const AdminDashboard = () => {
                 </DialogContent>
             </Dialog>
         </div>
+    );
+};
+
+const AdminDashboard = () => {
+    return (
+        <ErrorBoundary>
+            <AdminDashboardContent />
+        </ErrorBoundary>
     );
 };
 
