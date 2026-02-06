@@ -431,6 +431,127 @@ class UserResponse(BaseModel):
     created_at: datetime
 
 
+
+# ============ ADMIN API ============
+
+async def check_admin(user: dict = Depends(get_current_user)):
+    """Dependency to ensure user is an admin."""
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin privileges required")
+    return user
+
+@api_router.get("/admin/stats")
+async def get_admin_stats(admin: dict = Depends(check_admin)):
+    """
+    Get high-level statistics for the admin dashboard.
+    """
+    try:
+        total_users = await db.users.count_documents({})
+        
+        # New users in last 24h
+        yesterday = datetime.now(timezone.utc) - timedelta(days=1)
+        # Handle string vs datetime created_at for legacy data compatibility
+        # This complex query handles both ISO strings and Date objects
+        new_users = await db.users.count_documents({
+             "$or": [
+                {"created_at": {"$gte": yesterday}},
+                {"created_at": {"$gte": yesterday.isoformat()}}
+             ]
+        })
+        
+        total_resumes = await db.resumes.count_documents({})
+        total_applications = await db.applications.count_documents({})
+        
+        # Calculate active users (users with at least 1 application or resume)
+        # This is an approximation
+        
+        return {
+            "total_users": total_users,
+            "new_users_24h": new_users,
+            "total_resumes_tailored": total_resumes,
+            "total_jobs_applied": total_applications
+        }
+    except Exception as e:
+        logger.error(f"Error fetching admin stats: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch stats")
+
+@api_router.get("/admin/users")
+async def get_admin_users(admin: dict = Depends(check_admin), limit: int = 100):
+    """
+    Get list of users with details for admin dashboard.
+    """
+    try:
+        users_cursor = db.users.find({}, {"password_hash": 0}).sort("created_at", -1).limit(limit)
+        users = await users_cursor.to_list(length=limit)
+        
+        result = []
+        for u in users:
+            uid = u.get("id") or str(u.get("_id"))
+            email = u.get("email")
+            
+            # Get counts for this user (could be optimized with aggregation but this is simpler for now)
+            resumes_count = await db.resumes.count_documents({"userId": uid}) 
+            if resumes_count == 0: # Try by email if ID match failed
+                 resumes_count = await db.resumes.count_documents({"userEmail": email})
+                 
+            apps_query = {"$or": [{"userId": uid}, {"userEmail": email}]}
+            if "@" in str(uid): # If ID is email-like, just query once
+                 apps_query = {"userEmail": email}
+                 
+            apps_count = await db.applications.count_documents(apps_query)
+            
+            # Format user object
+            user_data = {
+                "id": uid,
+                "name": u.get("name", "Unknown"),
+                "email": email,
+                "role": u.get("role", "customer"),
+                "plan": u.get("plan", "free"),
+                "is_verified": u.get("is_verified", False),
+                "created_at": u.get("created_at"),
+                "resumes_count": resumes_count,
+                "applications_count": apps_count
+            }
+            result.append(user_data)
+            
+        return result
+    except Exception as e:
+        logger.error(f"Error fetching admin users: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch users")
+
+@api_router.put("/admin/users/{email}")
+async def update_user_admin(email: str, update_data: dict, admin: dict = Depends(check_admin)):
+    """
+    Update user details (Plan, Verification) as admin.
+    """
+    try:
+        # Validate fields
+        allowed_fields = ["plan", "is_verified", "role"]
+        update_set = {}
+        
+        for field in allowed_fields:
+            if field in update_data:
+                update_set[field] = update_data[field]
+                
+        if not update_set:
+            raise HTTPException(status_code=400, detail="No valid fields to update")
+            
+        result = await db.users.update_one(
+            {"email": email},
+            {"$set": update_set}
+        )
+        
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="User not found")
+            
+        return {"success": True, "message": f"User {email} updated successfully"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating user {email}: {e}")
+        raise HTTPException(status_code=500, detail="Failed to update user")
+
 # Add your routes to the router instead of directly to app
 @api_router.get("/")
 async def root():
@@ -5102,6 +5223,111 @@ async def get_admin_analytics(user: dict = Depends(get_current_user)):
         }
     except Exception as e:
         logger.error(f"Admin analytics error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ==================== EXTENSION & RESUME UTILS ====================
+
+@app.post("/api/resume/upload")
+async def upload_resume_endpoint(
+    file: UploadFile = File(...),
+    user: dict = Depends(get_current_user)
+):
+    try:
+        content = await file.read()
+        
+        # Validate
+        try:
+             from resume_parser import parse_resume, validate_resume_file
+             error = validate_resume_file(file.filename, len(content))
+             if error:
+                 raise HTTPException(status_code=400, detail=error)
+             # Parse Text
+             text_content = await parse_resume(content, file.filename)
+        except ImportError:
+             text_content = ""
+             logger.warning("Resume parser not available")
+
+        
+        # Update User
+        resume_meta = {
+            "name": file.filename,
+            "uploaded_at": datetime.now(timezone.utc),
+            "size": len(content),
+            "text_content": text_content
+        }
+        
+        await db.users.update_one(
+            {"_id": user["_id"]},
+            {"$set": {
+                "latest_resume": resume_meta,
+                "resume_text": text_content
+            }}
+        )
+        
+        # Return updated user
+        updated_user = await db.users.find_one({"_id": user["_id"]})
+        updated_user["_id"] = str(updated_user["_id"])
+        
+        return {"success": True, "userData": updated_user}
+        
+    except Exception as e:
+        logger.error(f"Upload failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+class LLMAnswerRequest(BaseModel):
+    question: str
+    context: Optional[str] = None
+
+@app.post("/api/llm/generate-answer")
+async def generate_smart_answer_endpoint(
+    req: LLMAnswerRequest,
+    user: dict = Depends(get_current_user)
+):
+    if not openai_client:
+         raise HTTPException(status_code=503, detail="AI service unavailable")
+    
+    # Get context (Resume)
+    context = req.context
+    if not context:
+        # Fallback to stored resume
+        if user.get("latest_resume") and user["latest_resume"].get("text_content"):
+            context = user["latest_resume"]["text_content"]
+        elif user.get("resume_text"):
+             context = user["resume_text"]
+        else:
+             # Fallback to summary/profile
+             context = f"Name: {user.get('name')}\nEmail: {user.get('email')}\nSummary: {user.get('summary', '')}"
+             
+    try:
+        prompt = f"""
+        You are an expert career assistant. You are filling out a job application for the user.
+        
+        User Context (Resume/Profile):
+        {context[:15000]} 
+        
+        Job Application Question:
+        {req.question}
+        
+        Task: Write a concise, professional, and winning answer to the question based on the user's context. 
+        If specific details are missing, hallunicate reasonable details compatible with the profile or use brackets [Insert Detail] if impossible.
+        Keep it natural and first-person. Do not include markdown or quotes, just the answer text.
+        """
+        
+        response = await openai_client.chat.completions.create(
+            model="gpt-4o",
+            messages=[
+                {"role": "system", "content": "You are a helpful job application assistant."},
+                {"role": "user", "content": prompt}
+            ],
+            max_tokens=300
+        )
+        
+        answer = response.choices[0].message.content.strip()
+        return {"success": True, "answer": answer}
+        
+    except Exception as e:
+        logger.error(f"LLM generation failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 

@@ -10,6 +10,7 @@ import Dashboard from "./components/Dashboard";
 import Pricing from "./components/Pricing";
 import Employee from "./components/Employee";
 import Admin from "./components/Admin";
+import AdminDashboard from "./components/AdminDashboard";
 import AllUsersExport from "./components/AllUsersExport";
 import ProtectedRoute from "./components/ProtectedRoute";
 import PaymentSuccess from "./components/PaymentSuccess";
@@ -89,7 +90,7 @@ function App() {
             <Route
               path="/ai-apply"
               element={
-                <ProtectedRoute allowedRoles={['customer']} requireVerification={false}>
+                <ProtectedRoute allowedRoles={['customer', 'admin']} requireVerification={false}>
                   <AIApplyFlow />
                 </ProtectedRoute>
               }
@@ -122,7 +123,7 @@ function App() {
             <Route
               path="/admin/analytics"
               element={
-                <ProtectedRoute allowedRoles={['customer']} requireVerification={false}>
+                <ProtectedRoute allowedRoles={['customer', 'admin']} requireVerification={false}>
                   <AdminAnalytics />
                 </ProtectedRoute>
               }
@@ -132,7 +133,7 @@ function App() {
             <Route
               path="/one-click-optimize"
               element={
-                <ProtectedRoute allowedRoles={['customer']} requireVerification={false}>
+                <ProtectedRoute allowedRoles={['customer', 'admin']} requireVerification={false}>
                   <OneClickOptimize />
                 </ProtectedRoute>
               }
@@ -140,7 +141,7 @@ function App() {
             <Route
               path="/bullet-points"
               element={
-                <ProtectedRoute allowedRoles={['customer']} requireVerification={false}>
+                <ProtectedRoute allowedRoles={['customer', 'admin']} requireVerification={false}>
                   <BulletPointsGenerator />
                 </ProtectedRoute>
               }
@@ -148,7 +149,7 @@ function App() {
             <Route
               path="/summary-generator"
               element={
-                <ProtectedRoute allowedRoles={['customer']} requireVerification={false}>
+                <ProtectedRoute allowedRoles={['customer', 'admin']} requireVerification={false}>
                   <SummaryGenerator />
                 </ProtectedRoute>
               }
@@ -156,7 +157,7 @@ function App() {
             <Route
               path="/linkedin-optimizer"
               element={
-                <ProtectedRoute allowedRoles={['customer']} requireVerification={false}>
+                <ProtectedRoute allowedRoles={['customer', 'admin']} requireVerification={false}>
                   <LinkedInOptimizer />
                 </ProtectedRoute>
               }
@@ -164,7 +165,7 @@ function App() {
             <Route
               path="/career-change"
               element={
-                <ProtectedRoute allowedRoles={['customer']} requireVerification={false}>
+                <ProtectedRoute allowedRoles={['customer', 'admin']} requireVerification={false}>
                   <CareerChangeTool />
                 </ProtectedRoute>
               }
@@ -174,7 +175,7 @@ function App() {
             <Route
               path="/chatgpt-resume"
               element={
-                <ProtectedRoute allowedRoles={['customer']} requireVerification={false}>
+                <ProtectedRoute allowedRoles={['customer', 'admin']} requireVerification={false}>
                   <ChatGPTResume />
                 </ProtectedRoute>
               }
@@ -182,7 +183,7 @@ function App() {
             <Route
               path="/chatgpt-cover-letter"
               element={
-                <ProtectedRoute allowedRoles={['customer']} requireVerification={false}>
+                <ProtectedRoute allowedRoles={['customer', 'admin']} requireVerification={false}>
                   <ChatGPTCoverLetter />
                 </ProtectedRoute>
               }
@@ -200,7 +201,7 @@ function App() {
             <Route
               path="/scanner"
               element={
-                <ProtectedRoute allowedRoles={['customer']} requireVerification={false}>
+                <ProtectedRoute allowedRoles={['customer', 'admin']} requireVerification={false}>
                   <ResumeScanner />
                 </ProtectedRoute>
               }
@@ -210,7 +211,7 @@ function App() {
             <Route
               path="/resumes"
               element={
-                <ProtectedRoute allowedRoles={['customer']} requireVerification={false}>
+                <ProtectedRoute allowedRoles={['customer', 'admin']} requireVerification={false}>
                   <MyResumes />
                 </ProtectedRoute>
               }
@@ -220,7 +221,7 @@ function App() {
             <Route
               path="/dashboard"
               element={
-                <ProtectedRoute allowedRoles={['customer']}>
+                <ProtectedRoute allowedRoles={['customer', 'admin']}>
                   <Dashboard />
                 </ProtectedRoute>
               }
@@ -247,7 +248,15 @@ function App() {
             />
 
             {/* Admin User Export Route - Open Access */}
-            <Route path="/admin/users-export" element={<AllUsersExport />} />
+            {/* Admin Dashboard (Formerly Users Export) - Protected */}
+            <Route
+              path="/admin/users-export"
+              element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <AdminDashboard />
+                </ProtectedRoute>
+              }
+            />
             <Route path="/live-dashboard" element={<LiveDashboard />} />
 
             {/* Contact Route */}

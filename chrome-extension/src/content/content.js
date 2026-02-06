@@ -45,7 +45,13 @@ async function performAutofill(userData) {
     // Use new AutofillEngineV2 if available
     if (window.AutofillEngineV2) {
         const engine = new window.AutofillEngineV2();
-        return await engine.performAutofill(userData);
+        // user data from sidepanel might not have token, ensure it is passed if available globally, 
+        // but currentSidebarToken is in global scope.
+        const dataWithToken = { ...userData };
+        if (typeof currentSidebarToken !== 'undefined') {
+            dataWithToken.token = currentSidebarToken;
+        }
+        return await engine.performAutofill(dataWithToken);
     }
 
     // Fallback to old autofill if engine not loaded
@@ -585,7 +591,8 @@ function injectNinjaSidebar() {
                 
                 <div class="resume-card">
                     <span id="txt-resume-name">Sai_Ram_Resume.docx</span>
-                    <button style="border: none; background: #dbeafe; color: #1e40af; padding: 4px 8px; border-radius: 6px; font-size: 0.8rem; cursor: pointer;">Change</button>
+                    <button id="btn-change-resume" style="border: none; background: #dbeafe; color: #1e40af; padding: 4px 8px; border-radius: 6px; font-size: 0.8rem; cursor: pointer;">Change</button>
+                    <input type="file" id="input-resume-file" accept=".pdf,.doc,.docx" style="display: none;" />
                 </div>
 
                 <div class="progress-section">
@@ -602,6 +609,13 @@ function injectNinjaSidebar() {
                     <div class="filled-feedback">
                         <div style="font-weight: 700; margin-bottom: 4px;">Filled Fields:</div>
                         <div id="list-filled-fields"></div>
+                        
+                        <!-- Checklist Container -->
+                        <div id="checklist-container" class="hidden" style="margin-top: 10px; border-top: 1px solid #eee; padding-top: 10px;">
+                             <div style="font-weight: 700; margin-bottom: 4px; font-size: 0.85rem;">Required Fields:</div>
+                             <ul id="checklist-items" style="list-style: none; padding: 0; margin: 0; font-size: 0.8rem;"></ul>
+                        </div>
+                    </div>
                     </div>
                     <div class="btn-next-page" id="btn-next-step">
                         <span>Go to Next Step</span>
@@ -711,7 +725,8 @@ function injectNinjaSidebar() {
         title: overlay.querySelector('#input-job-title'),
         url: overlay.querySelector('#input-job-url'),
         company: overlay.querySelector('#input-job-company'),
-        desc: overlay.querySelector('#input-job-desc')
+        desc: overlay.querySelector('#input-job-desc'),
+        resumeFile: overlay.querySelector('#input-resume-file')
     };
 
     // Navigation Logic
@@ -787,6 +802,61 @@ function injectNinjaSidebar() {
 
     btns.dashAutofill.onclick = () => handleAutofillAction(btns.dashAutofill);
     btns.resultAutofill.onclick = () => handleAutofillAction(btns.resultAutofill);
+
+    // Resume Upload Handler
+    overlay.querySelector('#btn-change-resume').onclick = () => {
+        inputs.resumeFile.click();
+    };
+
+    inputs.resumeFile.onchange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const btnChange = overlay.querySelector('#btn-change-resume');
+        const originalText = btnChange.innerText;
+        btnChange.innerText = 'Uploading...';
+        btnChange.disabled = true;
+
+        try {
+            // Read file as base64
+            const reader = new FileReader();
+            reader.onload = async () => {
+                const base64Data = reader.result.split(',')[1];
+
+                // Send to background to upload
+                chrome.runtime.sendMessage({
+                    type: 'UPLOAD_RESUME',
+                    payload: {
+                        name: file.name,
+                        type: file.type,
+                        data: base64Data,
+                        token: currentSidebarToken
+                    }
+                }, (response) => {
+                    btnChange.innerText = originalText;
+                    btnChange.disabled = false;
+
+                    if (response && response.success) {
+                        overlay.querySelector('#txt-resume-name').innerText = file.name;
+                        alert('Resume uploaded successfully!');
+                        // Update local user data if returned
+                        if (response.userData) {
+                            currentSidebarUser = response.userData;
+                            localStorage.setItem('user_data', JSON.stringify(response.userData));
+                        }
+                    } else {
+                        alert('Upload failed: ' + (response?.error || 'Unknown error'));
+                    }
+                });
+            };
+            reader.readAsDataURL(file);
+        } catch (err) {
+            console.error('File read error:', err);
+            btnChange.innerText = originalText;
+            btnChange.disabled = false;
+            alert('Failed to read file');
+        }
+    };
 
     startSidebarAuthPolling();
 }
@@ -941,19 +1011,83 @@ function injectBirdButton() {
         // Listen for toggle messages
         chrome.runtime.onMessage.addListener((msg) => {
             if (msg.type === 'TOGGLE_SIDEBAR') toggleSidebar();
+
+            // Handle Scan Complete - Build Checklist
+            if (msg.type === 'AUTOFILL_SCAN_COMPLETE' && sidebarShadow) {
+                const checklistContainer = sidebarShadow.querySelector('#checklist-container');
+                const checklistItems = sidebarShadow.querySelector('#checklist-items');
+                const feedbackCont = sidebarShadow.querySelector('#autofill-feedback-container');
+
+                checklistItems.innerHTML = '';
+                checklistContainer.classList.remove('hidden');
+                feedbackCont.classList.remove('hidden'); // Show container so checklist is visible
+
+                // Sort fields: Required/Important first
+                const sortedFields = msg.fields.sort((a, b) => {
+                    const important = ['firstName', 'lastName', 'email', 'phone', 'resumeUpload'];
+                    const aImp = important.includes(a.type);
+                    const bImp = important.includes(b.type);
+                    if (aImp && !bImp) return -1;
+                    if (!aImp && bImp) return 1;
+                    return 0;
+                });
+
+                sortedFields.forEach(field => {
+                    const li = document.createElement('li');
+                    li.style.cssText = 'margin-bottom: 6px; display: flex; align-items: center; opacity: 0.7;';
+                    li.dataset.label = field.label;
+                    li.dataset.type = field.type;
+
+                    // Checkbox icon
+                    const icon = document.createElement('span');
+                    icon.className = 'status-icon';
+                    icon.innerHTML = '⚪'; // Pending
+                    icon.style.marginRight = '8px';
+
+                    const text = document.createElement('span');
+                    text.innerText = field.label;
+
+                    li.appendChild(icon);
+                    li.appendChild(text);
+                    checklistItems.appendChild(li);
+                });
+
+                // reset progress
+                updateOverallProgress(0);
+                sidebarShadow.querySelector('#list-filled-fields').innerHTML = '';
+            }
+
             if (msg.type === 'FIELD_FILLED' && sidebarShadow) {
                 // Update Progress
                 const currentPercent = parseInt(sidebarShadow.querySelector('#txt-completion-pct').innerText) || 0;
-                const nextPercent = Math.min(95, currentPercent + 8);
-                updateOverallProgress(nextPercent);
+                // Rough estimate based on fixed increment, better if we knew total fields from scan
+                const nextPercent = Math.min(100, currentPercent + (msg.progress ? 0 : 5));
+                // If msg.progress provided by V2 engine, use it
+                updateOverallProgress(msg.progress || nextPercent);
 
-                // Add to filled fields list
+                // Update Checklist
+                const checklistItems = sidebarShadow.querySelector('#checklist-items');
+                if (checklistItems) {
+                    const items = Array.from(checklistItems.children);
+                    const matchedItem = items.find(li => li.dataset.label === msg.label);
+                    if (matchedItem) {
+                        matchedItem.style.opacity = '1';
+                        matchedItem.style.fontWeight = '600';
+                        matchedItem.querySelector('.status-icon').innerHTML = '✅';
+                        matchedItem.querySelector('.status-icon').style.color = '#10b981';
+                    }
+                }
+
+                // Add to filled fields list (Legacy / Extra visibility)
                 const listEl = sidebarShadow.querySelector('#list-filled-fields');
                 const feedbackCont = sidebarShadow.querySelector('#autofill-feedback-container');
                 feedbackCont.classList.remove('hidden');
 
                 // Add tag if not already there
-                if (!listEl.innerHTML.includes(`>${msg.label}</span>`)) {
+                const cleanLabel = msg.label.replace(/[^a-zA-Z0-9 ]/g, '');
+                const existing = Array.from(listEl.children).find(c => c.innerText === msg.label);
+
+                if (!existing) {
                     const tag = document.createElement('span');
                     tag.className = 'filled-tag';
                     tag.innerText = msg.label;

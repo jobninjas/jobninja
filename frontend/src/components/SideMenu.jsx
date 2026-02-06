@@ -22,7 +22,7 @@ import { BRAND } from '../config/branding';
 const SideMenu = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { isAuthenticated, logout } = useAuth();
+  const { isAuthenticated, logout, user } = useAuth();
 
   const handleNavigation = (path) => {
     navigate(path);
@@ -82,7 +82,8 @@ const SideMenu = ({ isOpen, onClose }) => {
             <span className="side-menu-section-title">Navigation</span>
             {menuItems.map((item) => {
               if (item.requiresAuth && !isAuthenticated) return null;
-              const isActive = location.pathname === item.path;
+              // Link visible to all auth users, backend protects data
+              const isActive = location.pathname === item.path || (item.path.includes('?tab=') && location.search.includes(item.path.split('?')[1]));
               return (
                 <button
                   key={item.path}

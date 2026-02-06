@@ -77,7 +77,21 @@ class AutofillEngineV2 {
         console.log('[jobNinjas AutofillV2] Phase 2: Filling fields...');
 
         for (const field of this.classified) {
-            const value = this.getValueForField(field.type);
+            let value = this.getValueForField(field.type);
+
+            // Handle Smart Answers for open-ended questions
+            if (field.type === 'smartAnswer' && this.userData && this.userData.token) {
+                console.log(`[jobNinjas] Generating smart answer for: ${field.label}`);
+
+                // Show "Thinking..." or similar in the field temporarily?
+                field.element.value = "Generating optimal answer...";
+                field.element.dispatchEvent(new Event('input', { bubbles: true }));
+
+                const answer = await this.generateSmartAnswer(field.label || field.context, this.userData.resume_text);
+                if (answer) {
+                    value = answer;
+                }
+            }
 
             if (value) {
                 const success = await this.fillField(field.element, value, field.type);
@@ -97,6 +111,26 @@ class AutofillEngineV2 {
                 }
             }
         }
+    }
+
+    async generateSmartAnswer(question, context) {
+        return new Promise((resolve) => {
+            chrome.runtime.sendMessage({
+                type: 'GENERATE_SMART_ANSWER',
+                payload: {
+                    question,
+                    context, // Can be null, backend has context
+                    token: this.userData.token
+                }
+            }, (response) => {
+                if (chrome.runtime.lastError || !response || !response.success) {
+                    console.warn('Smart answer generation failed', response?.error);
+                    resolve(null);
+                } else {
+                    resolve(response.answer);
+                }
+            });
+        });
     }
 
     // Classify field based on context and attributes
@@ -160,6 +194,15 @@ class AutofillEngineV2 {
         if (this.matchesKeywords(ctx, ['race', 'ethnicity'])) return 'race';
         if (this.matchesKeywords(ctx, ['veteran', 'military'])) return 'veteran';
         if (this.matchesKeywords(ctx, ['disability', 'disabled'])) return 'disability';
+
+        // Smart Question Detection (Open-ended)
+        const questionKeywords = ['describe', 'explain', 'why', 'tell us', 'what is', 'elaborate', 'please share', 'motivation', 'anything else'];
+        if ((tagName === 'textarea' || type === 'text') && !type.includes('date') && !type.includes('email')) {
+            if (ctx.includes('?') || this.matchesKeywords(ctx, questionKeywords) || ctx.length > 50) {
+                // Only if field is big enough to warrant an AI answer
+                return 'smartAnswer';
+            }
+        }
 
         return 'unknown';
     }
