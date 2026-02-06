@@ -436,8 +436,10 @@ class UserResponse(BaseModel):
 
 async def check_admin(user: dict = Depends(get_current_user)):
     """Dependency to ensure user is an admin."""
-    if user.get("role") != "admin":
-        raise HTTPException(status_code=403, detail="Admin privileges required")
+    role = user.get("role", "").lower()
+    if role != "admin":
+        logger.warning(f"Access denied for user {user.get('email')} with role {role}")
+        raise HTTPException(status_code=403, detail=f"Admin privileges required. Current role: {role}")
     return user
 
 @api_router.get("/admin/stats")
@@ -451,7 +453,6 @@ async def get_admin_stats(admin: dict = Depends(check_admin)):
         # New users in last 24h
         yesterday = datetime.now(timezone.utc) - timedelta(days=1)
         # Handle string vs datetime created_at for legacy data compatibility
-        # This complex query handles both ISO strings and Date objects
         new_users = await db.users.count_documents({
              "$or": [
                 {"created_at": {"$gte": yesterday}},
@@ -459,11 +460,8 @@ async def get_admin_stats(admin: dict = Depends(check_admin)):
              ]
         })
         
-        total_resumes = await db.resumes.count_documents({})
+        total_resumes = await db.saved_resumes.count_documents({}) + await db.generated_documents.count_documents({})
         total_applications = await db.applications.count_documents({})
-        
-        # Calculate active users (users with at least 1 application or resume)
-        # This is an approximation
         
         return {
             "total_users": total_users,
@@ -473,7 +471,11 @@ async def get_admin_stats(admin: dict = Depends(check_admin)):
         }
     except Exception as e:
         logger.error(f"Error fetching admin stats: {e}")
-        raise HTTPException(status_code=500, detail="Failed to fetch stats")
+        # Return error details in response for debugging
+        return JSONResponse(
+            status_code=500, 
+            content={"error": str(e), "total_users": 0, "new_users_24h": 0}
+        )
 
 @api_router.get("/admin/users")
 async def get_admin_users(admin: dict = Depends(check_admin), limit: int = 100):
@@ -3020,105 +3022,6 @@ async def get_all_bookings():
         "bookings": bookings,
         "stats": {"total": len(bookings), "pending": pending, "contacted": contacted},
     }
-
-
-# ============ ADMIN ENDPOINTS ============
-
-@api_router.get("/admin/stats")
-async def get_admin_stats(user: dict = Depends(check_admin)):
-    """
-    Get dashboard statistics for admin.
-    """
-    try:
-        # Total Users
-        total_users = await db.users.count_documents({})
-        
-        # New Users (Last 24h)
-        yesterday = datetime.now(timezone.utc) - timedelta(hours=24)
-        new_users = await db.users.count_documents({"created_at": {"$gte": yesterday.isoformat()}}) # Adjust field name if needed
-        
-        # Resumes Tailored (Count saved scans/resumes as proxy)
-        total_resumes = await db.generated_documents.count_documents({}) + await db.scans.count_documents({})
-        
-        # Jobs Applied (Total applications)
-        total_applied = await db.applications.count_documents({})
-        
-        return {
-            "total_users": total_users,
-            "new_users_24h": new_users,
-            "total_resumes_tailored": total_resumes,
-            "total_jobs_applied": total_applied
-        }
-    except Exception as e:
-        logger.error(f"Admin stats error: {e}")
-        # Return zeros on error to prevent crash
-        return {
-            "total_users": 0,
-            "new_users_24h": 0,
-            "total_resumes_tailored": 0,
-            "total_jobs_applied": 0
-        }
-
-@api_router.get("/admin/users")
-async def get_admin_users(limit: int = 100, skip: int = 0, user: dict = Depends(check_admin)):
-    """
-    Get list of users for admin dashboard.
-    """
-    try:
-        users_cursor = db.users.find({}).sort("created_at", -1).skip(skip).limit(limit)
-        users = await users_cursor.to_list(length=limit)
-        
-        result = []
-        for u in users:
-            # Calculate activity (proxy)
-            files_count = await db.saved_resumes.count_documents({"userEmail": u.get("email")})
-            apps_count = await db.applications.count_documents({"userEmail": u.get("email")})
-            
-            result.append({
-                "id": str(u.get("_id")),
-                "userId": u.get("id"),
-                "name": u.get("name", "Unknown"),
-                "email": u.get("email"),
-                "role": u.get("role", "customer"),
-                "plan": u.get("plan", "Free"),
-                "is_verified": u.get("is_verified", False),
-                "created_at": u.get("created_at", u.get("joined_at")), # Handle varying field names
-                "files_count": files_count,
-                "applications_count": apps_count
-            })
-            
-        return result
-    except Exception as e:
-        logger.error(f"Admin users fetch error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-@api_router.put("/admin/users/{email}")
-async def update_admin_user(email: str, update_data: dict, user: dict = Depends(check_admin)):
-    """
-    Update user details (Plan, Role, Verification) via Admin Dashboard.
-    """
-    try:
-        target_user = await db.users.find_one({"email": email})
-        if not target_user:
-             raise HTTPException(status_code=404, detail="User not found")
-             
-        fields_to_update = {}
-        if "plan" in update_data:
-            fields_to_update["plan"] = update_data["plan"]
-        if "role" in update_data:
-            fields_to_update["role"] = update_data["role"]
-        if "is_verified" in update_data:
-            fields_to_update["is_verified"] = update_data["is_verified"]
-            
-        if not fields_to_update:
-            return {"message": "No changes provided"}
-            
-        await db.users.update_one({"email": email}, {"$set": fields_to_update})
-        
-        return {"success": True, "message": "User updated successfully"}
-    except Exception as e:
-        logger.error(f"Admin user update error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
 
 
 # ============ AI NINJA ENDPOINTS ============
