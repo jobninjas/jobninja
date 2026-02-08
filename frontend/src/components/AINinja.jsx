@@ -384,17 +384,7 @@ const AINinja = () => {
                       e.currentTarget.style.boxShadow = 'none';
                     }}
                   >
-                    <div className={tool.color} style={{
-                      width: '64px',
-                      height: '64px',
-                      borderRadius: '16px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      marginBottom: '1.25rem'
-                    }}>
-                      <img src={tool.icon} alt={tool.name} style={{ width: '54px', height: '54px', objectFit: 'contain', transform: 'scale(1.3)' }} />
-                    </div>
+
 
                     <h4 style={{
                       fontSize: '1.125rem',
