@@ -4977,7 +4977,7 @@ async def create_interview_session(
             "parsedText": parsed_text,
             "createdAt": datetime.utcnow()
         }
-        resume_id = resumes_collection.insert_one(resume_doc).inserted_id
+        resume_id = get_resumes_collection().insert_one(resume_doc).inserted_id
         
         # Create interview session
         session = {
@@ -4990,7 +4990,7 @@ async def create_interview_session(
             "targetQuestions": 5,
             "createdAt": datetime.utcnow()
         }
-        session_id = sessions_collection.insert_one(session).inserted_id
+        session_id = get_sessions_collection().insert_one(session).inserted_id
         
         return {
             "success": True,
@@ -5073,7 +5073,7 @@ async def get_interview_session(session_id: str, user: dict = Depends(get_curren
     """Get interview session details"""
     try:
         from bson import ObjectId
-        session = sessions_collection.find_one({"_id": ObjectId(session_id)})
+        session = get_sessions_collection().find_one({"_id": ObjectId(session_id)})
         if not session:
             raise HTTPException(status_code=404, detail="Session not found")
         
@@ -5089,7 +5089,7 @@ async def get_interview_session(session_id: str, user: dict = Depends(get_curren
 async def get_interview_report(session_id: str, user: dict = Depends(get_current_user)):
     """Get interview report for a session"""
     try:
-        report = reports_collection.find_one({"sessionId": session_id})
+        report = get_reports_collection().find_one({"sessionId": session_id})
         if not report:
             raise HTTPException(status_code=404, detail="Report not found")
         
