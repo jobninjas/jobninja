@@ -94,9 +94,7 @@ const Pricing = () => {
   };
 
   const aiNinjaPlans = [
-    { ...PRICING.AI_WEEKLY, popular: false, buttonVariant: 'outline', description: PRICING.AI_WEEKLY.description },
-    { ...PRICING.AI_MONTHLY, popular: true, buttonVariant: 'default', description: PRICING.AI_MONTHLY.description },
-    { ...PRICING.AI_QUARTERLY, popular: false, buttonVariant: 'outline', description: PRICING.AI_QUARTERLY.description },
+    { ...PRICING.AI_YEARLY, popular: true, buttonVariant: 'default', description: PRICING.AI_YEARLY.description },
   ];
 
   const humanNinjaPlans = [
@@ -140,7 +138,7 @@ const Pricing = () => {
             customVariants={revealVariants}
             className="md:text-base text-sm text-gray-600 w-[80%]"
           >
-            Trusted by candidates worldwide. {planType === 'ai' ? 'Automate your search with AI' : 'Let our human Ninjas handle everything.'} Choose your path.
+            Trusted by candidates worldwide. {planType === 'ai' ? 'Automate your search with AI. You only need this once—land your dream job during your trial or first year.' : 'Let our human Ninjas handle everything.'} Choose your path.
           </TimelineContent>
 
           <TimelineContent
@@ -157,7 +155,7 @@ const Pricing = () => {
           </TimelineContent>
         </article>
 
-        <div className={`grid gap-4 py-6 ${planType === 'ai' ? 'md:grid-cols-3' : 'md:grid-cols-2 lg:grid-cols-4'}`}>
+        <div className={`grid gap-4 py-6 ${planType === 'ai' ? 'max-w-md mx-auto' : 'md:grid-cols-2 lg:grid-cols-4'}`}>
           {currentPlans.map((plan, index) => (
             <TimelineContent
               key={plan.id}
@@ -260,6 +258,17 @@ const Pricing = () => {
             </TimelineContent>
           ))}
         </div>
+
+        {planType === 'ai' && (
+          <TimelineContent
+            animationNum={3}
+            className="text-center mt-6 max-w-2xl mx-auto"
+          >
+            <p className="text-sm text-gray-500 italic">
+              * Most users land a job within the trial period or first month. We designed this so you won't need to renew!
+            </p>
+          </TimelineContent>
+        )}
 
         {planType === 'human' && (
           <TimelineContent

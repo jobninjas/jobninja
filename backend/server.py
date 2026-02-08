@@ -3460,9 +3460,9 @@ async def ai_ninja_apply(request: Request):
         # Call Expert AI Ninja for tailored documents with HARD TIMEOUT
         logger.info(f"Generating expert documents for {company} - {jobTitle}")
 
-        # Check for BYOK
-        byok_config = await get_decrypted_byok_key(user.get("email", ""))
-
+        # BYOK RESTRICTION: No longer using BYOK for AI Apply
+        # byok_config = await get_decrypted_byok_key(user.get("email", ""))
+        
         expert_docs = None
         try:
             # 30 second hard timeout to prevent infinite spinning
@@ -3471,7 +3471,7 @@ async def ai_ninja_apply(request: Request):
                     resumeText,
                     jobDescription,
                     user_info=user,
-                    byok_config=byok_config,
+                    byok_config=None, # Force system keys
                     selected_sections=selectedSections,
                     selected_keywords=selectedKeywords,
                 )
@@ -4144,11 +4144,12 @@ async def generate_ai_content(
         from resume_analyzer import unified_api_call
 
         # Check for BYOK
-        byok_config = await get_decrypted_byok_key(user.get("email"))
+        # BYOK RESTRICTION: No longer using BYOK for general tools
+        # byok_config = await get_decrypted_byok_key(user.get("email"))
 
         response = await unified_api_call(
             request.prompt,
-            byok_config=byok_config,
+            # byok_config=byok_config, # Forces system keys
             max_tokens=request.max_tokens,
             model="llama-3.1-8b-instant",
         )
@@ -4327,9 +4328,10 @@ async def generate_resume_docx(request: GenerateResumeRequest):
             )
             # Skip redundant Expert AI calls!
         else:
+            # BYOK RESTRICTION: Keep internal keys only
             # Check for BYOK
             user_email = user.get("email", "") if user else ""
-            byok_config = await get_decrypted_byok_key(user_email)
+            # byok_config = await get_decrypted_byok_key(user_email)
 
             from document_generator import (
                 generate_expert_documents,
@@ -4340,7 +4342,7 @@ async def generate_resume_docx(request: GenerateResumeRequest):
                 request.resume_text,
                 request.job_description,
                 user_info=user,
-                byok_config=byok_config,
+                byok_config=None, # Force system keys
             )
 
             if expert_docs and expert_docs.get("ats_resume"):
@@ -4357,7 +4359,7 @@ async def generate_resume_docx(request: GenerateResumeRequest):
                     request.resume_text,
                     request.job_description,
                     request.analysis,
-                    byok_config=byok_config,
+                    byok_config=None, # Force system keys
                     target_score=request.targetScore
                 )
                 if not resume_data:
@@ -4486,8 +4488,9 @@ async def generate_cover_letter_docx(request: GenerateCoverLetterRequest):
         # User said "Resume generation limit", but usually they go together.
         # Let's just do it for resumes for now to be strict about the request.
 
+        # BYOK RESTRICTION: Keep internal keys only
         # Check for BYOK
-        byok_config = await get_decrypted_byok_key(user.get("email", ""))
+        # byok_config = await get_decrypted_byok_key(user.get("email", ""))
 
         # Generate cover letter content if not provided
         cover_letter_text = request.cover_letter_text
@@ -4497,7 +4500,7 @@ async def generate_cover_letter_docx(request: GenerateCoverLetterRequest):
                 request.job_description,
                 request.job_title,
                 request.company,
-                byok_config=byok_config,
+                byok_config=None, # Force system keys
             )
 
         if not cover_letter_text:

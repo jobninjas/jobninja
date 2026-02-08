@@ -18,6 +18,8 @@ else:
 def get_price_ids():
     """Get price IDs from environment (called at runtime)"""
     return {
+        'ai-yearly': os.environ.get('STRIPE_PRICE_YEARLY'),
+        # Keep old ones for backward compatibility if needed, or remove them
         '1': os.environ.get('STRIPE_PRICE_STARTER'),
         '2': os.environ.get('STRIPE_PRICE_PRO'),
         '3': os.environ.get('STRIPE_PRICE_URGENT'),
@@ -49,35 +51,44 @@ def create_checkout_session(
     
     price_ids = get_price_ids()
     price_id = price_ids.get(str(plan_id))
+    
+    # Fallback to old IDs if frontend sends 1, 2, 3 (incase of cached clients)
+    # But for new 'ai-yearly', it should match direct key.
+    
     if not price_id:
         raise HTTPException(
             status_code=400, 
-            detail=f"Stripe Price ID not configured for plan {plan_id}. Please add STRIPE_PRICE_STARTER, STRIPE_PRICE_PRO, and STRIPE_PRICE_URGENT to backend/.env file. See /app/STRIPE_SETUP_GUIDE.md"
+            detail=f"Stripe Price ID not configured for plan {plan_id}. Please add STRIPE_PRICE_YEARLY to backend/.env file."
         )
     
     try:
         # Create Stripe Checkout Session
-        checkout_session = stripe.checkout.Session.create(
-            customer_email=user_email,
-            client_reference_id=user_id,  # Store user ID for webhook
-            payment_method_types=['card'],  # Stripe auto-enables Apple Pay, Google Pay, Cash App
-            line_items=[
+        session_kwargs = {
+            'customer_email': user_email,
+            'client_reference_id': user_id,
+            'payment_method_types': ['card'],
+            'line_items': [
                 {
                     'price': price_id,
                     'quantity': 1,
                 }
             ],
-            mode='subscription',
-            success_url=success_url,
-            cancel_url=cancel_url,
-            # Metadata for tracking
-            metadata={
+            'mode': 'subscription',
+            'success_url': success_url,
+            'cancel_url': cancel_url,
+            'metadata': {
                 'user_id': user_id,
                 'plan_id': plan_id,
             },
-            # Automatic tax calculation (optional)
-            # automatic_tax={'enabled': True},
-        )
+        }
+
+        # Add trial period if it's the yearly plan
+        if plan_id == 'ai-yearly':
+            session_kwargs['subscription_data'] = {
+                'trial_period_days': 7
+            }
+
+        checkout_session = stripe.checkout.Session.create(**session_kwargs)
         
         return {
             'sessionId': checkout_session.id,
