@@ -54,16 +54,31 @@ from job_fetcher import (
     scheduled_job_fetch,
 )
 from job_apis.job_aggregator import JobAggregator
-from razorpay_service import (
-    create_razorpay_order,
-    verify_razorpay_payment,
-    get_payment_details,
-    RAZORPAY_PLANS,
-    RAZORPAY_PLANS_USD,
-)
+# Razorpay import with error handling
+try:
+    from razorpay_service import (
+        create_razorpay_order,
+        verify_razorpay_payment,
+        get_payment_details,
+        RAZORPAY_PLANS,
+        RAZORPAY_PLANS_USD,
+    )
+except (ImportError, ModuleNotFoundError) as e:
+    logger.error(f"Failed to import razorpay_service: {e}")
+    # Define dummy functions/constants to prevent NameErrors later
+    def create_razorpay_order(*args, **kwargs): raise HTTPException(503, "Payment service unavailable")
+    def verify_razorpay_payment(*args, **kwargs): return False
+    def get_payment_details(*args, **kwargs): return None
+    RAZORPAY_PLANS = {}
+    RAZORPAY_PLANS_USD = {}
 from scraper_service import scrape_job_description
 from byok_crypto import validate_master_key, encrypt_api_key, decrypt_api_key
-from interview_service import InterviewOrchestrator, resumes_collection, sessions_collection, reports_collection
+from interview_service import (
+    InterviewOrchestrator, 
+    get_resumes_collection, 
+    get_sessions_collection, 
+    get_reports_collection
+)
 from byok_validators import (
     validate_openai_key,
     validate_google_key,
