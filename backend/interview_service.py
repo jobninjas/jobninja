@@ -15,11 +15,33 @@ from bson import ObjectId
 import os
 from datetime import datetime
 
-# MongoDB connection
+# MongoDB connection (Lazy initialization)
 mongo_url = os.getenv('MONGO_URL')
 db_name = os.getenv('DB_NAME', 'novaninjas')
-mongo_client = MongoClient(mongo_url)
-db = mongo_client[db_name]
+mongo_client = None
+db = None
+
+def get_db():
+    global mongo_client, db
+    if db:
+        return db
+    try:
+        if not mongo_url:
+            print("Warning: MONGO_URL not set. Interview service storage disabled.")
+            return None
+        mongo_client = MongoClient(mongo_url, serverSelectionTimeoutMS=5000)
+        db = mongo_client[db_name]
+        return db
+    except Exception as e:
+        print(f"Failed to connect to MongoDB in interview_service: {e}")
+        return None
+
+# Initialize on import if possible, but don't crash
+try:
+    if mongo_url:
+        get_db()
+except Exception as e:
+    print(f"Warning: Initial MongoDB connection failed: {e}")
 
 # Initialize Groq client
 if Groq:
