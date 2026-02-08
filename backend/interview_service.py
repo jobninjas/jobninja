@@ -54,10 +54,17 @@ else:
     groq_client = None
 
 # Collections
-sessions_collection = db['interview_sessions']
-turns_collection = db['interview_turns']
-reports_collection = db['evaluation_reports']
-resumes_collection = db['interview_resumes']
+# Collections functions (lazy)
+def get_collection(name):
+    database = get_db()
+    if database is not None:
+        return database[name]
+    return None
+
+def get_sessions_collection(): return get_collection('interview_sessions')
+def get_turns_collection(): return get_collection('interview_turns')
+def get_reports_collection(): return get_collection('evaluation_reports')
+def get_resumes_collection(): return get_collection('interview_resumes')
 
 
 class InterviewPrompts:
@@ -201,20 +208,27 @@ class InterviewOrchestrator:
     
     def get_session(self) -> Optional[Dict[str, Any]]:
         """Get session with resume and turns"""
-        session = sessions_collection.find_one({"_id": ObjectId(self.session_id)})
+        sessions_col = get_sessions_collection()
+        if not sessions_col: return None
+            
+        session = sessions_col.find_one({"_id": ObjectId(self.session_id)})
         if not session:
             return None
         
         # Get resume
         if session.get('resumeId'):
-            resume = resumes_collection.find_one({"_id": ObjectId(session['resumeId'])})
-            session['resume'] = resume
+            resumes_col = get_resumes_collection()
+            if resumes_col:
+                resume = resumes_col.find_one({"_id": ObjectId(session['resumeId'])})
+                session['resume'] = resume
         
         # Get turns
-        turns = list(turns_collection.find(
-            {"sessionId": self.session_id}
-        ).sort("turnNumber", 1))
-        session['turns'] = turns
+        turns_col = get_turns_collection()
+        if turns_col:
+            turns = list(turns_col.find(
+                {"sessionId": self.session_id}
+            ).sort("turnNumber", 1))
+            session['turns'] = turns
         
         return session
     
@@ -235,19 +249,23 @@ class InterviewOrchestrator:
         result = json.loads(response)
         
         # Save the turn
-        turns_collection.insert_one({
-            "sessionId": self.session_id,
-            "turnNumber": 1,
-            "questionText": result.get('question', ''),
-            "answerText": None,
-            "createdAt": datetime.utcnow()
-        })
+        turns_col = get_turns_collection()
+        if turns_col:
+            turns_col.insert_one({
+                "sessionId": self.session_id,
+                "turnNumber": 1,
+                "questionText": result.get('question', ''),
+                "answerText": None,
+                "createdAt": datetime.utcnow()
+            })
         
         # Update session count
-        sessions_collection.update_one(
-            {"_id": ObjectId(self.session_id)},
-            {"$set": {"questionCount": 1}}
-        )
+        sessions_col = get_sessions_collection()
+        if sessions_col:
+            sessions_col.update_one(
+                {"_id": ObjectId(self.session_id)},
+                {"$set": {"questionCount": 1}}
+            )
         
         return result
     
@@ -262,10 +280,12 @@ class InterviewOrchestrator:
         
         # Update current turn with answer
         if turns:
-            turns_collection.update_one(
-                {"_id": turns[-1]['_id']},
-                {"$set": {"answerText": answer_text}}
-            )
+            turns_col = get_turns_collection()
+            if turns_col:
+                turns_col.update_one(
+                    {"_id": turns[-1]['_id']},
+                    {"$set": {"answerText": answer_text}}
+                )
         
         # Check if we reached target questions
         # If we have 5 turns, and we just answered the 5th one, we should stop.
@@ -294,19 +314,23 @@ class InterviewOrchestrator:
         result = json.loads(response)
         
         # Create next turn
-        turns_collection.insert_one({
-            "sessionId": self.session_id,
-            "turnNumber": current_turn_number + 1,
-            "questionText": result.get('question', ''),
-            "answerText": None,
-            "createdAt": datetime.utcnow()
-        })
+        turns_col = get_turns_collection()
+        if turns_col:
+            turns_col.insert_one({
+                "sessionId": self.session_id,
+                "turnNumber": current_turn_number + 1,
+                "questionText": result.get('question', ''),
+                "answerText": None,
+                "createdAt": datetime.utcnow()
+            })
         
         # Update session count
-        sessions_collection.update_one(
-            {"_id": ObjectId(self.session_id)},
-            {"$inc": {"questionCount": 1}}
-        )
+        sessions_col = get_sessions_collection()
+        if sessions_col:
+            sessions_col.update_one(
+                {"_id": ObjectId(self.session_id)},
+                {"$inc": {"questionCount": 1}}
+            )
         
         return {"status": "active", **result}
     
@@ -347,13 +371,18 @@ class InterviewOrchestrator:
             "createdAt": datetime.utcnow()
         }
         
-        report_id = reports_collection.insert_one(report).inserted_id
+        report_id = None
+        reports_col = get_reports_collection()
+        if reports_col:
+            report_id = reports_col.insert_one(report).inserted_id
         
         # Update session status
-        sessions_collection.update_one(
-            {"_id": ObjectId(self.session_id)},
-            {"$set": {"status": "completed", "reportId": str(report_id)}}
-        )
+        sessions_col = get_sessions_collection()
+        if sessions_col and report_id:
+            sessions_col.update_one(
+                {"_id": ObjectId(self.session_id)},
+                {"$set": {"status": "completed", "reportId": str(report_id)}}
+            )
         
         report['_id'] = str(report_id)
         return report
