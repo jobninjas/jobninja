@@ -19,6 +19,7 @@ import LiveDashboard from "./components/LiveDashboard";
 // AI Ninja and Human Ninja components
 import AINinja from "./components/AINinja";
 import JobDetail from "./components/JobDetail";
+import JobDetailsOrion from "./components/JobDetailsOrion";
 import AIApply from "./components/AIApply";
 import HumanNinja from "./components/HumanNinja";
 // New components
@@ -85,7 +86,7 @@ function App() {
 
             {/* AI Ninja Routes */}
             <Route path="/ai-ninja" element={<AINinja />} />
-            <Route path="/ai-ninja/jobs/:id" element={<JobDetail />} />
+            <Route path="/ai-ninja/jobs/:id" element={<JobDetailsOrion />} />
             <Route path="/ai-ninja/apply/:id" element={<AIApply />} />
             <Route
               path="/ai-apply"

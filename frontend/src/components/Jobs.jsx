@@ -32,6 +32,7 @@ import { BRAND } from '../config/branding';
 import { API_URL } from '../config/api';
 import SideMenu from './SideMenu';
 import Header from './Header';
+import JobCardOrion from './JobCardOrion';
 import './SideMenu.css';
 
 const Jobs = () => {
@@ -328,79 +329,9 @@ const Jobs = () => {
           {/* Job List */}
           {!isLoading && !error && (
             <>
-              <div className="job-list">
+              <div className="job-list space-y-4">
                 {displayJobs.map(job => (
-                  <Card key={job.id} className="job-card">
-                    <div className="job-card-main">
-                      <div className="job-info">
-                        <div className="flex items-center gap-2">
-                          <h3 className="job-title">{job.title}</h3>
-                          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-100 text-[10px] py-0 px-1.5 h-4">
-                            <RefreshCw className="w-2.5 h-2.5 mr-1" /> Freshly Scanned
-                          </Badge>
-                        </div>
-                        <p className="job-company">{job.company}</p>
-                        <div className="job-meta">
-                          <span className="job-location">
-                            <MapPin className="w-4 h-4" />
-                            {job.location}
-                          </span>
-                          <span className="job-salary">
-                            <DollarSign className="w-4 h-4" />
-                            {job.salaryRange}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="job-tags">
-                        <Badge variant="outline" className="work-type-badge">
-                          {getWorkTypeIcon(job.type)}
-                          {job.type.charAt(0).toUpperCase() + job.type.slice(1)}
-                        </Badge>
-                        {job.highPay && (
-                          <Badge className="tag-high-pay">
-                            <DollarSign className="w-3 h-3" /> High-paying
-                          </Badge>
-                        )}
-                        {job.visaTags && job.visaTags.length > 0 && (
-                          <Badge className="tag-visa">
-                            <Globe className="w-3 h-3" /> {job.visaTags[0]}
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-                    <p className="job-description" style={{
-                      display: '-webkit-box',
-                      WebkitLineClamp: 3,
-                      WebkitBoxOrient: 'vertical',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      marginBottom: '1rem'
-                    }}>{job.description}</p>
-                    <div className="job-card-actions" style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-                      <Button
-                        variant="outline"
-                        onClick={() => navigate(`/ai-ninja/jobs/${job.id}`)}
-                      >
-                        View Details <ChevronRight className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        className="btn-primary"
-                        onClick={() => navigate('/ai-apply', {
-                          state: {
-                            jobId: job.id,
-                            jobTitle: job.title,
-                            company: job.company,
-                            location: job.location,
-                            description: job.description,
-                            sourceUrl: job.sourceUrl,
-                            salaryRange: job.salaryRange
-                          }
-                        })}
-                      >
-                        <Zap className="w-4 h-4 mr-1" /> Apply with AI Ninja
-                      </Button>
-                    </div>
-                  </Card>
+                  <JobCardOrion key={job.id} job={job} />
                 ))}
               </div>
 
