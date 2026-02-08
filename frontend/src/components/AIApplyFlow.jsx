@@ -1128,10 +1128,11 @@ const AIApplyFlow = () => {
                         template={selectedTemplate}
                         onContentChange={(newText) => {
                           setApplicationSaved(false);
-                          if (activeTab === 'resume') {
-                            setTailoredResume(newText);
-                          } else {
+                          // Determine which state to update based on what's currently active
+                          if (detailedCv) {
                             setDetailedCv(newText);
+                          } else {
+                            setTailoredResume(newText);
                           }
                         }}
                       />

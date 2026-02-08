@@ -17,93 +17,103 @@ const ResumePaper = ({ content, scale = 1, onContentChange, fontFamily = '"Times
 
     // Simple Regex-based Resume Parser
     const parseResumeContent = (text) => {
-        if (!text) return null;
+        try {
+            if (!text && text !== '') return null; // Allow empty string parsing
+            const safeText = String(text || '');
 
-        // Clean up common AI artifacts
-        let cleanText = text.replace(/ORIGINAL RESUME TEXT:[\s\S]*$/i, '').trim();
-        cleanText = cleanText.replace(/ORIGINAL CONTENT:[\s\S]*$/i, '').trim();
+            // Clean up common AI artifacts
+            let cleanText = safeText.replace(/ORIGINAL RESUME TEXT:[\s\S]*$/i, '').trim();
+            cleanText = cleanText.replace(/ORIGINAL CONTENT:[\s\S]*$/i, '').trim();
 
-        const sections = {
-            header: '',
-            summary: '',
-            skills: '',
-            experience: '',
-            projects: '',
-            education: ''
-        };
+            const sections = {
+                header: '',
+                summary: '',
+                skills: '',
+                experience: '',
+                projects: '',
+                education: ''
+            };
 
-        // Split text into lines
-        const lines = cleanText.split('\n');
-        let currentSection = 'header';
-        let buffer = [];
+            // Split text into lines
+            const lines = cleanText.split('\n');
+            let currentSection = 'header';
+            let buffer = [];
 
-        const sectionPatterns = {
-            name: /^#*\s*NAME/i,
-            contact: /^#*\s*CONTACT/i,
-            summary: /^#*\s*(PROFESSIONAL SUMMARY|SUMMARY|PROFILE|OBJECTIVE)/i,
-            skills: /^#*\s*(SKILLS|CORE COMPETENCIES|TECHNICAL SKILLS)/i,
-            experience: /^#*\s*(EXPERIENCE|WORK EXPERIENCE|PROFESSIONAL EXPERIENCE|EMPLOYMENT HISTORY)/i,
-            projects: /^#*\s*(PROJECTS|KEY PROJECTS)/i,
-            education: /^#*\s*(EDUCATION|ACADEMIC BACKGROUND)/i
-        };
+            const sectionPatterns = {
+                name: /^#*\s*NAME/i,
+                contact: /^#*\s*CONTACT/i,
+                summary: /^#*\s*(PROFESSIONAL SUMMARY|SUMMARY|PROFILE|OBJECTIVE)/i,
+                skills: /^#*\s*(SKILLS|CORE COMPETENCIES|TECHNICAL SKILLS)/i,
+                experience: /^#*\s*(EXPERIENCE|WORK EXPERIENCE|PROFESSIONAL EXPERIENCE|EMPLOYMENT HISTORY)/i,
+                projects: /^#*\s*(PROJECTS|KEY PROJECTS)/i,
+                education: /^#*\s*(EDUCATION|ACADEMIC BACKGROUND)/i
+            };
 
-        for (let line of lines) {
-            const trimmed = line.trim();
-            let matched = false;
+            for (let line of lines) {
+                const trimmed = line.trim();
+                let matched = false;
 
-            // Check if line matches a section header
-            for (const [key, regex] of Object.entries(sectionPatterns)) {
-                if (regex.test(trimmed) && trimmed.length < 50) {
-                    if (buffer.length > 0) {
-                        sections[currentSection] = sections[currentSection] + (sections[currentSection] ? '\n' : '') + buffer.join('\n');
-                        buffer = [];
+                // Check if line matches a section header
+                for (const [key, regex] of Object.entries(sectionPatterns)) {
+                    if (regex.test(trimmed) && trimmed.length < 50) {
+                        if (buffer.length > 0) {
+                            sections[currentSection] = sections[currentSection] + (sections[currentSection] ? '\n' : '') + buffer.join('\n');
+                            buffer = [];
+                        }
+                        currentSection = key;
+                        matched = true;
+                        break;
                     }
-                    currentSection = key;
-                    matched = true;
-                    break;
+                }
+
+                if (!matched) {
+                    buffer.push(line);
                 }
             }
 
-            if (!matched) {
-                buffer.push(line);
+            if (buffer.length > 0) {
+                sections[currentSection] = sections[currentSection] + (sections[currentSection] ? '\n' : '') + buffer.join('\n');
             }
-        }
 
-        if (buffer.length > 0) {
-            sections[currentSection] = sections[currentSection] + (sections[currentSection] ? '\n' : '') + buffer.join('\n');
-        }
+            // Final cleanup: trim all section content and remove redundant newlines
+            Object.keys(sections).forEach(key => {
+                if (typeof sections[key] === 'string') {
+                    sections[key] = sections[key]
+                        .split('\n')
+                        .map(line => line.trim())
+                        .filter(line => line.length > 0) // Remove empty lines inside sections
+                        .join('\n');
+                }
+            });
 
-        // Final cleanup: trim all section content and remove redundant newlines
-        Object.keys(sections).forEach(key => {
-            if (typeof sections[key] === 'string') {
-                sections[key] = sections[key]
-                    .split('\n')
-                    .map(line => line.trim())
-                    .filter(line => line.length > 0) // Remove empty lines inside sections
-                    .join('\n');
+            // Process Header
+            let name = sections.name || '';
+            let contact = sections.contact || '';
+
+            if (!name) {
+                const headerLines = sections.header.split('\n').filter(l => l.trim());
+                name = headerLines[0] || '';
+                if (!contact) {
+                    contact = headerLines.slice(1).join(' | ').replace(/\|+/g, ' | ');
+                }
             }
-        });
 
-        // Process Header
-        let name = sections.name || '';
-        let contact = sections.contact || '';
+            // Clean up "NAME" and "CONTACT" labels if they got into the text
+            name = name.replace(/^NAME\n?/i, '').trim();
+            contact = contact.replace(/^CONTACT\n?/i, '').trim();
 
-        if (!name) {
-            const headerLines = sections.header.split('\n').filter(l => l.trim());
-            name = headerLines[0] || '';
-            if (!contact) {
-                contact = headerLines.slice(1).join(' | ').replace(/\|+/g, ' | ');
-            }
+            // Detect if parsing failed (everything dumped in header)
+            const isRaw = !sections.summary && !sections.experience && !sections.education && sections.header.length > 20;
+
+            return { ...sections, name, contact, isRaw, rawContent: safeText };
+        } catch (err) {
+            console.error("Resume parsing error:", err);
+            // Fallback to raw text on error to prevent crash
+            return {
+                header: '', summary: '', skills: '', experience: '', projects: '', education: '',
+                name: 'Error Parsing', contact: '', isRaw: true, rawContent: text
+            };
         }
-
-        // Clean up "NAME" and "CONTACT" labels if they got into the text
-        name = name.replace(/^NAME\n?/i, '').trim();
-        contact = contact.replace(/^CONTACT\n?/i, '').trim();
-
-        // Detect if parsing failed (everything dumped in header)
-        const isRaw = !sections.summary && !sections.experience && !sections.education && sections.header.length > 20;
-
-        return { ...sections, name, contact, isRaw, rawContent: text };
     };
 
     useEffect(() => {
