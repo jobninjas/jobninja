@@ -594,12 +594,12 @@ const AIApplyFlow = () => {
         endpoint = `${API_URL}/api/generate/cover-letter`;
         payload = {
           userId: user.id,
-          resume_text: tailoredResume, // Base resume for context
+          resume_text: tailoredResume, // Base resume for context (uses edited content if available)
           job_description: customJobDescription,
           job_title: customJobTitle,
           company: companyName,
           cover_letter_text: tailoredCoverLetter,
-          is_already_tailored: !!tailoredCoverLetter,
+          is_already_tailored: true, // Treat as final text
           fontFamily: selectedFont,
           template: selectedTemplate
         };

@@ -230,7 +230,7 @@ Convert the provided RAW_INPUT into a complete, ATS-friendly, recruiter-ready re
 You must:
 1) Extract and normalize all data (names, titles, dates, locations, bullets, skills, projects, education).
 2) Fix formatting issues, duplicate sections, missing headers, inconsistent capitalization, and spacing.
-3) Rewrite bullets to be strong, specific, and impact-focused WITHOUT inventing facts.
+3) Rewrite bullets to be strong, specific, and impact-focused. DO NOT invent facts or tools not present in the original for that time period.
 4) Keep all original meaning. If a metric is unclear, keep it but don’t exaggerate.
 5) Output in the requested RESUME_STYLE: ATS_ONE_PAGE_COMPACT (Ensure it is very dense and professional).
 
@@ -257,7 +257,7 @@ Use exactly these section headers (omit any that truly have no content):
 NAME
 CONTACT
 SUMMARY
-SKILLS
+SKILLS (Must be preserved and enhanced, never removed)
 EXPERIENCE
 PROJECTS
 EDUCATION
@@ -328,10 +328,11 @@ You are an Elite Resume Architect and ATS Optimization Expert. Your goal is to r
 
 === YOUR TASK ===
 Take each bullet point and ENHANCE it by:
-- Naturally weaving in target keywords: {', '.join(missing_skills[:15] + keywords[:10])}
-- Adding market-standard industry keywords that recruiters and ATS systems look for
-- Adding specific metrics/numbers where logical (e.g., "improved efficiency by 20%", "led 5+ cross-functional teams")
-- Using powerful action verbs (e.g., "orchestrated", "pioneered", "leveraged")
+- Naturally weaving in target keywords: {', '.join(missing_skills[:15] + keywords[:10])} ONLY IF RELEVANT to that specific role/time period.
+- Adding market-standard industry keywords that recruiters and ATS systems look for.
+- Adding specific metrics/numbers where logical (e.g., "improved efficiency by 20%").
+- Using powerful action verbs (e.g., "orchestrated", "pioneered").
+- WARNING: DO NOT add tools/technologies to a job if they were not released or not used in that era. DO NOT Hallucinate.
 - Ensure the resulting content is dense with keywords relevant to: {job_description[:500]}
 
 === ORIGINAL RESUME (COPY ALL CONTENT - DO NOT SKIP ANY SECTION) ===
