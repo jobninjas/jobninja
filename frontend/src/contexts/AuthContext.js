@@ -61,95 +61,89 @@ export const AuthProvider = ({ children }) => {
           console.error('Auth verification error:', e);
           setUser(null);
         }
+      } else {
+        setUser(null);
       }
-    } else {
-      setUser(null);
-  }
-    } catch (e) {
-  console.error('Auth initialization error:', e);
-  setUser(null);
-  // Optional: clearer error state for user?
-} finally {
-  setLoading(false);
-}
-  };
 
-initAuth();
+      setLoading(false);
+    };
+
+    initAuth();
   }, []);
 
-// Login function - calls backend API
-const login = async (email, password) => {
-  try {
-    const response = await fetch(`${API_URL}/api/auth/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password })
-    });
+  // Login function - calls backend API
+  const login = async (email, password) => {
+    try {
+      const response = await fetch(`${API_URL}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
 
-    const data = await response.json();
+      const data = await response.json();
 
-    if (!response.ok) {
-      throw new Error(data.detail || 'Login failed');
+      if (!response.ok) {
+        throw new Error(data.detail || 'Login failed');
+      }
+
+      localStorage.setItem('auth_token', data.token);
+      localStorage.setItem('user_data', JSON.stringify(data.user));
+      setUser(data.user);
+
+      return { success: true, user: data.user };
+    } catch (error) {
+      console.error('Login error:', error);
+      throw error;
     }
+  };
 
-    localStorage.setItem('auth_token', data.token);
-    localStorage.setItem('user_data', JSON.stringify(data.user));
-    setUser(data.user);
+  // Signup function - calls backend API and sends welcome email
+  const signup = async (email, password, name, referralCode) => {
+    try {
+      const response = await fetch(`${API_URL}/api/auth/signup`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, name, referral_code: referralCode })
+      });
 
-    return { success: true, user: data.user };
-  } catch (error) {
-    console.error('Login error:', error);
-    throw error;
-  }
-};
+      const data = await response.json();
 
-// Signup function - calls backend API and sends welcome email
-const signup = async (email, password, name, referralCode) => {
-  try {
-    const response = await fetch(`${API_URL}/api/auth/signup`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password, name, referral_code: referralCode })
-    });
+      if (!response.ok) {
+        throw new Error(data.detail || 'Signup failed');
+      }
 
-    const data = await response.json();
+      localStorage.setItem('auth_token', data.token);
+      localStorage.setItem('user_data', JSON.stringify(data.user));
+      setUser(data.user);
 
-    if (!response.ok) {
-      throw new Error(data.detail || 'Signup failed');
+      return { success: true, user: data.user };
+    } catch (error) {
+      console.error('Signup error:', error);
+      throw error;
     }
+  };
 
-    localStorage.setItem('auth_token', data.token);
-    localStorage.setItem('user_data', JSON.stringify(data.user));
-    setUser(data.user);
+  // Logout function
+  const logout = () => {
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('user_data');
+    setUser(null);
+  };
 
-    return { success: true, user: data.user };
-  } catch (error) {
-    console.error('Signup error:', error);
-    throw error;
-  }
-};
+  const value = {
+    user,
+    loading,
+    isAuthenticated: !!user,
+    login,
+    googleLogin: (userData, token) => {
+      localStorage.setItem('auth_token', token);
+      localStorage.setItem('user_data', JSON.stringify(userData));
+      setUser(userData);
+    },
+    signup,
+    logout,
+    refreshUser
+  };
 
-// Logout function
-const logout = () => {
-  localStorage.removeItem('auth_token');
-  localStorage.removeItem('user_data');
-  setUser(null);
-};
-
-const value = {
-  user,
-  loading,
-  isAuthenticated: !!user,
-  login,
-  googleLogin: (userData, token) => {
-    localStorage.setItem('auth_token', token);
-    localStorage.setItem('user_data', JSON.stringify(userData));
-    setUser(userData);
-  },
-  signup,
-  logout,
-  refreshUser
-};
-
-return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
