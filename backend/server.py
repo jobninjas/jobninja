@@ -1,3 +1,7 @@
+print("DEBUG: Starting server.py execution...")
+import sys
+print(f"DEBUG: Python version: {sys.version}")
+
 from fastapi import (
     FastAPI, # Force Rebuild
     APIRouter,
