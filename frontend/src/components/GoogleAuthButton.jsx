@@ -33,12 +33,15 @@ const GoogleAuthButton = ({ mode = 'login' }) => {
                 // Navigate to home page
                 navigate('/');
             } else {
-                alert(data.detail || 'Google authentication failed');
+                // Show the actual error message from backend
+                const errorMessage = data.detail || 'Google authentication failed';
+                console.error('Google auth backend error:', data);
+                alert(`Authentication Error: ${errorMessage}`);
             }
         } catch (error) {
             console.error('Google auth error:', error);
             const errorMsg = error.message || 'Failed to connect to authentication server.';
-            alert(`Google Auth Error: ${errorMsg}. Please ensure the backend is running.`);
+            alert(`Google Auth Error: ${errorMsg}`);
         } finally {
             setIsLoading(false);
         }
