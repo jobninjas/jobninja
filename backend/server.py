@@ -132,18 +132,17 @@ if not mongo_url:
     db = None
 else:
     try:
-        import ssl
         masked_url = mongo_url.split("@")[-1] if "@" in mongo_url else "hidden"
         logger.info(f"🔄 Initializing MongoDB connection to: ...@{masked_url}")
         
-        # Use simple connection with SSL bypass
+        # Use simple connection with basic SSL bypass
+        # Motor/PyMongo 4.x uses tlsAllowInvalidCertificates instead of ssl_cert_reqs
         client = AsyncIOMotorClient(
             mongo_url,
             serverSelectionTimeoutMS=30000,
             connectTimeoutMS=30000,
             socketTimeoutMS=30000,
-            ssl_cert_reqs=ssl.CERT_NONE,
-            tlsInsecure=True # Final fallback for SSL issues
+            tlsAllowInvalidCertificates=True
         )
         
         # Access the database object
