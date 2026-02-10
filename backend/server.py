@@ -128,13 +128,15 @@ db = None
 
 if mongo_url:
     try:
-        # Use simple connection - let MongoDB driver handle SSL automatically
-        # Railway and MongoDB Atlas work best with minimal TLS configuration
+        import ssl
+        # Use simple connection with SSL certificate validation disabled
+        # Railway's Python environment has SSL/TLS compatibility issues with MongoDB Atlas
         client = AsyncIOMotorClient(
             mongo_url,
-            serverSelectionTimeoutMS=30000,  # Increased timeout for Railway
+            serverSelectionTimeoutMS=30000,
             connectTimeoutMS=30000,
             socketTimeoutMS=30000,
+            ssl_cert_reqs=ssl.CERT_NONE,  # Bypass certificate validation for Railway
         )
         db = client[db_name]
         logger.info("MongoDB client initialized successfully")
