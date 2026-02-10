@@ -17,11 +17,11 @@ const SearchPreview = () => {
                 </div>
 
                 <h3 className="search-preview-main-link">
-                    jobNinjas.org - Human-Powered Job Applications
+                    jobNinjas.ai - AI-Powered Job Search & Application Tools
                 </h3>
 
                 <p className="search-preview-description">
-                    jobNinjas.org - Human-powered job applications for serious job seekers. AI-powered resume optimization and personalized support.
+                    jobNinjas.ai - AI-Powered Job Search & Application Tools. Smart resume optimization, automated applications, and career advancement for serious job seekers.
                 </p>
 
                 <div className="search-preview-sitelinks">
@@ -39,7 +39,7 @@ const SearchPreview = () => {
                     </div>
                     <div className="sitelink-item">
                         <h4 className="sitelink-title">Services</h4>
-                        <p className="sitelink-desc">Explore our human-powered services for job application success.</p>
+                        <p className="sitelink-desc">Explore our AI-powered tools and premium services for job application success.</p>
                     </div>
                 </div>
             </div>
