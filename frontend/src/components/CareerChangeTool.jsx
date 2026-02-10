@@ -17,6 +17,7 @@ import {
 import { API_URL } from '../config/api';
 import SideMenu from './SideMenu';
 import Header from './Header';
+import SubscriptionWall from './SubscriptionWall';
 import './CareerChangeTool.css';
 
 const CareerChangeTool = () => {
@@ -133,137 +134,139 @@ const CareerChangeTool = () => {
     };
 
     return (
-        <div className="career-page">
-            <SideMenu isOpen={sideMenuOpen} onClose={() => setSideMenuOpen(false)} />
-            <Header onMenuClick={() => setSideMenuOpen(true)} />
+        <SubscriptionWall>
+            <div className="career-page">
+                <SideMenu isOpen={sideMenuOpen} onClose={() => setSideMenuOpen(false)} />
+                <Header onMenuClick={() => setSideMenuOpen(true)} />
 
-            <div className="career-container">
-                <div className="career-hero">
-                    <div className="hero-badge career-badge">
-                        <TrendingUp className="w-5 h-5" />
-                        <span>Career Change Tool</span>
-                    </div>
-                    <h1>Discover Your <span className="text-gradient-career">Next Step</span></h1>
-                    <p>Upload your resume and let AI analyze your skills to suggest the best career paths for you.</p>
-                </div>
-
-                {!result ? (
-                    <Card className="upload-card">
-                        <h2><Upload className="w-5 h-5" /> Upload Your Resume</h2>
-                        <p>We'll analyze your skills and experience to find matching career paths</p>
-
-                        <div
-                            className={`upload-zone ${resumeFile ? 'has-file' : ''}`}
-                            onClick={() => document.getElementById('career-resume-upload').click()}
-                        >
-                            <input
-                                id="career-resume-upload"
-                                type="file"
-                                accept=".pdf,.docx,.txt"
-                                onChange={handleFileUpload}
-                                hidden
-                            />
-                            {resumeFile ? (
-                                <div className="uploaded-file">
-                                    <FileText className="w-12 h-12" style={{ color: 'var(--primary)' }} />
-                                    <span className="file-name">{resumeFile.name}</span>
-                                    <button className="remove-file" onClick={(e) => { e.stopPropagation(); setResumeFile(null); }}>
-                                        <X className="w-4 h-4" /> Remove
-                                    </button>
-                                </div>
-                            ) : (
-                                <>
-                                    <Upload className="w-12 h-12" style={{ color: '#94a3b8' }} />
-                                    <p>Click to upload your resume</p>
-                                    <span className="file-types">PDF, DOCX, or TXT</span>
-                                </>
-                            )}
+                <div className="career-container">
+                    <div className="career-hero">
+                        <div className="hero-badge career-badge">
+                            <TrendingUp className="w-5 h-5" />
+                            <span>Career Change Tool</span>
                         </div>
+                        <h1>Discover Your <span className="text-gradient-career">Next Step</span></h1>
+                        <p>Upload your resume and let AI analyze your skills to suggest the best career paths for you.</p>
+                    </div>
 
-                        {error && <div className="error-message">{error}</div>}
+                    {!result ? (
+                        <Card className="upload-card">
+                            <h2><Upload className="w-5 h-5" /> Upload Your Resume</h2>
+                            <p>We'll analyze your skills and experience to find matching career paths</p>
 
-                        <Button
-                            className="analyze-btn"
-                            onClick={handleAnalyze}
-                            disabled={!resumeFile || isAnalyzing}
-                        >
-                            {isAnalyzing ? (
-                                <>
-                                    <Loader2 className="w-5 h-5 animate-spin" />
-                                    Analyzing Your Career Path...
-                                </>
-                            ) : (
-                                <>
-                                    <Sparkles className="w-5 h-5" />
-                                    Discover My Next Step
-                                </>
-                            )}
-                        </Button>
-                    </Card>
-                ) : (
-                    <div className="results-section">
-                        <Card className="results-card">
-                            <div className="results-header">
-                                <CheckCircle className="w-8 h-8 text-green-500" />
-                                <h2>Your Career Matches</h2>
-                                <p>Based on your skills and experience</p>
-                            </div>
-
-                            <div className="suggestions-list">
-                                {result.suggestions.map((suggestion, index) => (
-                                    <div key={index} className="suggestion-card">
-                                        <div className="suggestion-header">
-                                            <Briefcase className="w-6 h-6" />
-                                            <div>
-                                                <h3>{suggestion.role}</h3>
-                                                <span className="match-badge">{suggestion.match}% Match</span>
-                                            </div>
-                                        </div>
-                                        <p className="reason">{suggestion.reason}</p>
-                                        <p className="growth"><TrendingUp className="w-4 h-4" /> {suggestion.growth}</p>
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => navigate('/scanner')}
-                                        >
-                                            Optimize Resume for This Role <ArrowRight className="w-4 h-4" />
-                                        </Button>
+                            <div
+                                className={`upload-zone ${resumeFile ? 'has-file' : ''}`}
+                                onClick={() => document.getElementById('career-resume-upload').click()}
+                            >
+                                <input
+                                    id="career-resume-upload"
+                                    type="file"
+                                    accept=".pdf,.docx,.txt"
+                                    onChange={handleFileUpload}
+                                    hidden
+                                />
+                                {resumeFile ? (
+                                    <div className="uploaded-file">
+                                        <FileText className="w-12 h-12" style={{ color: 'var(--primary)' }} />
+                                        <span className="file-name">{resumeFile.name}</span>
+                                        <button className="remove-file" onClick={(e) => { e.stopPropagation(); setResumeFile(null); }}>
+                                            <X className="w-4 h-4" /> Remove
+                                        </button>
                                     </div>
-                                ))}
+                                ) : (
+                                    <>
+                                        <Upload className="w-12 h-12" style={{ color: '#94a3b8' }} />
+                                        <p>Click to upload your resume</p>
+                                        <span className="file-types">PDF, DOCX, or TXT</span>
+                                    </>
+                                )}
                             </div>
+
+                            {error && <div className="error-message">{error}</div>}
+
+                            <Button
+                                className="analyze-btn"
+                                onClick={handleAnalyze}
+                                disabled={!resumeFile || isAnalyzing}
+                            >
+                                {isAnalyzing ? (
+                                    <>
+                                        <Loader2 className="w-5 h-5 animate-spin" />
+                                        Analyzing Your Career Path...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Sparkles className="w-5 h-5" />
+                                        Discover My Next Step
+                                    </>
+                                )}
+                            </Button>
                         </Card>
+                    ) : (
+                        <div className="results-section">
+                            <Card className="results-card">
+                                <div className="results-header">
+                                    <CheckCircle className="w-8 h-8 text-green-500" />
+                                    <h2>Your Career Matches</h2>
+                                    <p>Based on your skills and experience</p>
+                                </div>
 
-                        <div className="insights-grid">
-                            <Card className="insight-card">
-                                <h3><Target className="w-5 h-5" /> Your Strengths</h3>
-                                <ul>
-                                    {result.strengths.map((strength, i) => (
-                                        <li key={i}><CheckCircle className="w-4 h-4 text-green-500" /> {strength}</li>
+                                <div className="suggestions-list">
+                                    {result.suggestions.map((suggestion, index) => (
+                                        <div key={index} className="suggestion-card">
+                                            <div className="suggestion-header">
+                                                <Briefcase className="w-6 h-6" />
+                                                <div>
+                                                    <h3>{suggestion.role}</h3>
+                                                    <span className="match-badge">{suggestion.match}% Match</span>
+                                                </div>
+                                            </div>
+                                            <p className="reason">{suggestion.reason}</p>
+                                            <p className="growth"><TrendingUp className="w-4 h-4" /> {suggestion.growth}</p>
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => navigate('/scanner')}
+                                            >
+                                                Optimize Resume for This Role <ArrowRight className="w-4 h-4" />
+                                            </Button>
+                                        </div>
                                     ))}
-                                </ul>
+                                </div>
                             </Card>
 
-                            <Card className="insight-card">
-                                <h3><TrendingUp className="w-5 h-5" /> Development Areas</h3>
-                                <ul>
-                                    {result.developmentAreas.map((area, i) => (
-                                        <li key={i}><ArrowRight className="w-4 h-4 text-blue-500" /> {area}</li>
-                                    ))}
-                                </ul>
-                            </Card>
+                            <div className="insights-grid">
+                                <Card className="insight-card">
+                                    <h3><Target className="w-5 h-5" /> Your Strengths</h3>
+                                    <ul>
+                                        {result.strengths.map((strength, i) => (
+                                            <li key={i}><CheckCircle className="w-4 h-4 text-green-500" /> {strength}</li>
+                                        ))}
+                                    </ul>
+                                </Card>
+
+                                <Card className="insight-card">
+                                    <h3><TrendingUp className="w-5 h-5" /> Development Areas</h3>
+                                    <ul>
+                                        {result.developmentAreas.map((area, i) => (
+                                            <li key={i}><ArrowRight className="w-4 h-4 text-blue-500" /> {area}</li>
+                                        ))}
+                                    </ul>
+                                </Card>
+                            </div>
+
+                            <Button
+                                variant="outline"
+                                className="try-again-btn"
+                                onClick={() => { setResult(null); setResumeFile(null); }}
+                            >
+                                Analyze Another Resume
+                            </Button>
                         </div>
-
-                        <Button
-                            variant="outline"
-                            className="try-again-btn"
-                            onClick={() => { setResult(null); setResumeFile(null); }}
-                        >
-                            Analyze Another Resume
-                        </Button>
-                    </div>
-                )}
+                    )}
+                </div>
             </div>
-        </div>
+        </SubscriptionWall>
     );
 };
 

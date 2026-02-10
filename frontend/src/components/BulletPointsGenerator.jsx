@@ -16,6 +16,7 @@ import { BRAND } from '../config/branding';
 import { API_URL } from '../config/api';
 import SideMenu from './SideMenu';
 import Header from './Header';
+import SubscriptionWall from './SubscriptionWall';
 import './BulletPointsGenerator.css';
 
 const BulletPointsGenerator = () => {
@@ -123,146 +124,148 @@ Return ONLY a JSON array of strings like: ["bullet 1", "bullet 2", ...]`;
     };
 
     return (
-        <div className="bullets-page">
-            <SideMenu isOpen={sideMenuOpen} onClose={() => setSideMenuOpen(false)} />
-            <Header onMenuClick={() => setSideMenuOpen(true)} />
+        <SubscriptionWall>
+            <div className="bullets-page">
+                <SideMenu isOpen={sideMenuOpen} onClose={() => setSideMenuOpen(false)} />
+                <Header onMenuClick={() => setSideMenuOpen(true)} />
 
-            <div className="bullets-container">
-                <div className="bullets-hero">
-                    <div className="hero-badge">
-                        <List className="w-5 h-5" />
-                        <span>Bullet Points Generator</span>
+                <div className="bullets-container">
+                    <div className="bullets-hero">
+                        <div className="hero-badge">
+                            <List className="w-5 h-5" />
+                            <span>Bullet Points Generator</span>
+                        </div>
+                        <h1>Generate Powerful <span className="text-gradient">Resume Bullets</span></h1>
+                        <p>Create tailored, ATS-friendly bullet points that highlight your achievements and skills.</p>
                     </div>
-                    <h1>Generate Powerful <span className="text-gradient">Resume Bullets</span></h1>
-                    <p>Create tailored, ATS-friendly bullet points that highlight your achievements and skills.</p>
-                </div>
 
-                <div className="bullets-grid">
-                    <Card className="input-card">
-                        <h2><Sparkles className="w-5 h-5" /> Generate Bullet Points</h2>
+                    <div className="bullets-grid">
+                        <Card className="input-card">
+                            <h2><Sparkles className="w-5 h-5" /> Generate Bullet Points</h2>
 
-                        <div className="form-group">
-                            <label>Job Title *</label>
-                            <input
-                                type="text"
-                                placeholder="e.g. Software Engineer, Product Manager"
-                                value={jobTitle}
-                                onChange={(e) => setJobTitle(e.target.value)}
-                            />
-                        </div>
+                            <div className="form-group">
+                                <label>Job Title *</label>
+                                <input
+                                    type="text"
+                                    placeholder="e.g. Software Engineer, Product Manager"
+                                    value={jobTitle}
+                                    onChange={(e) => setJobTitle(e.target.value)}
+                                />
+                            </div>
 
-                        <div className="form-group">
-                            <label>Key Skills (Optional)</label>
-                            <input
-                                type="text"
-                                placeholder="e.g. Python, React, Leadership"
-                                value={skills}
-                                onChange={(e) => setSkills(e.target.value)}
-                            />
-                        </div>
+                            <div className="form-group">
+                                <label>Key Skills (Optional)</label>
+                                <input
+                                    type="text"
+                                    placeholder="e.g. Python, React, Leadership"
+                                    value={skills}
+                                    onChange={(e) => setSkills(e.target.value)}
+                                />
+                            </div>
 
-                        <div className="form-group">
-                            <label>Experience Context (Optional)</label>
-                            <textarea
-                                placeholder="Brief description of your role or achievements..."
-                                value={experience}
-                                onChange={(e) => setExperience(e.target.value)}
-                                rows={4}
-                            />
-                        </div>
+                            <div className="form-group">
+                                <label>Experience Context (Optional)</label>
+                                <textarea
+                                    placeholder="Brief description of your role or achievements..."
+                                    value={experience}
+                                    onChange={(e) => setExperience(e.target.value)}
+                                    rows={4}
+                                />
+                            </div>
 
-                        {error && <div className="error-message">{error}</div>}
+                            {error && <div className="error-message">{error}</div>}
 
-                        <Button
-                            className="generate-btn"
-                            onClick={handleGenerate}
-                            disabled={!jobTitle.trim() || isGenerating}
-                        >
-                            {isGenerating ? (
-                                <>
-                                    <Loader2 className="w-5 h-5 animate-spin" />
-                                    Generating...
-                                </>
+                            <Button
+                                className="generate-btn"
+                                onClick={handleGenerate}
+                                disabled={!jobTitle.trim() || isGenerating}
+                            >
+                                {isGenerating ? (
+                                    <>
+                                        <Loader2 className="w-5 h-5 animate-spin" />
+                                        Generating...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Sparkles className="w-5 h-5" />
+                                        Generate Bullets
+                                    </>
+                                )}
+                            </Button>
+                        </Card>
+
+                        <Card className="output-card">
+                            <div className="output-header">
+                                <h2><List className="w-5 h-5" /> Your Bullet Points</h2>
+                                {bulletPoints.length > 0 && (
+                                    <Button variant="outline" size="sm" onClick={copyAll}>
+                                        {copiedIndex === 'all' ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                                        {copiedIndex === 'all' ? 'Copied!' : 'Copy All'}
+                                    </Button>
+                                )}
+                            </div>
+
+                            {bulletPoints.length === 0 ? (
+                                <div className="empty-state">
+                                    <List className="w-16 h-16 text-gray-300" />
+                                    <p>Enter your job details and click Generate to create bullet points</p>
+                                </div>
                             ) : (
-                                <>
-                                    <Sparkles className="w-5 h-5" />
-                                    Generate Bullets
-                                </>
+                                <div className="bullets-list">
+                                    {bulletPoints.map((bullet, index) => (
+                                        <div key={index} className="bullet-item">
+                                            <span className="bullet-marker">•</span>
+                                            <p>{bullet}</p>
+                                            <button
+                                                className="copy-btn"
+                                                onClick={() => copyBullet(bullet, index)}
+                                            >
+                                                {copiedIndex === index ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
                             )}
-                        </Button>
-                    </Card>
 
-                    <Card className="output-card">
-                        <div className="output-header">
-                            <h2><List className="w-5 h-5" /> Your Bullet Points</h2>
                             {bulletPoints.length > 0 && (
-                                <Button variant="outline" size="sm" onClick={copyAll}>
-                                    {copiedIndex === 'all' ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                                    {copiedIndex === 'all' ? 'Copied!' : 'Copy All'}
+                                <Button
+                                    variant="ghost"
+                                    className="regenerate-btn"
+                                    onClick={handleGenerate}
+                                    disabled={isGenerating}
+                                >
+                                    <RefreshCw className="w-4 h-4" />
+                                    Regenerate
                                 </Button>
                             )}
-                        </div>
+                        </Card>
+                    </div>
 
-                        {bulletPoints.length === 0 ? (
-                            <div className="empty-state">
-                                <List className="w-16 h-16 text-gray-300" />
-                                <p>Enter your job details and click Generate to create bullet points</p>
+                    {/* Tips Section */}
+                    <div className="tips-section">
+                        <h3>Pro Tips for Great Bullet Points</h3>
+                        <div className="tips-grid">
+                            <div className="tip">
+                                <span className="tip-number">1</span>
+                                <p><strong>Start with action verbs:</strong> Led, Developed, Implemented, Achieved</p>
                             </div>
-                        ) : (
-                            <div className="bullets-list">
-                                {bulletPoints.map((bullet, index) => (
-                                    <div key={index} className="bullet-item">
-                                        <span className="bullet-marker">•</span>
-                                        <p>{bullet}</p>
-                                        <button
-                                            className="copy-btn"
-                                            onClick={() => copyBullet(bullet, index)}
-                                        >
-                                            {copiedIndex === index ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                                        </button>
-                                    </div>
-                                ))}
+                            <div className="tip">
+                                <span className="tip-number">2</span>
+                                <p><strong>Quantify achievements:</strong> Include numbers, percentages, revenue impact</p>
                             </div>
-                        )}
-
-                        {bulletPoints.length > 0 && (
-                            <Button
-                                variant="ghost"
-                                className="regenerate-btn"
-                                onClick={handleGenerate}
-                                disabled={isGenerating}
-                            >
-                                <RefreshCw className="w-4 h-4" />
-                                Regenerate
-                            </Button>
-                        )}
-                    </Card>
-                </div>
-
-                {/* Tips Section */}
-                <div className="tips-section">
-                    <h3>Pro Tips for Great Bullet Points</h3>
-                    <div className="tips-grid">
-                        <div className="tip">
-                            <span className="tip-number">1</span>
-                            <p><strong>Start with action verbs:</strong> Led, Developed, Implemented, Achieved</p>
-                        </div>
-                        <div className="tip">
-                            <span className="tip-number">2</span>
-                            <p><strong>Quantify achievements:</strong> Include numbers, percentages, revenue impact</p>
-                        </div>
-                        <div className="tip">
-                            <span className="tip-number">3</span>
-                            <p><strong>Be specific:</strong> Mention tools, technologies, and methodologies used</p>
-                        </div>
-                        <div className="tip">
-                            <span className="tip-number">4</span>
-                            <p><strong>Show impact:</strong> Focus on results and outcomes, not just duties</p>
+                            <div className="tip">
+                                <span className="tip-number">3</span>
+                                <p><strong>Be specific:</strong> Mention tools, technologies, and methodologies used</p>
+                            </div>
+                            <div className="tip">
+                                <span className="tip-number">4</span>
+                                <p><strong>Show impact:</strong> Focus on results and outcomes, not just duties</p>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
+        </SubscriptionWall>
     );
 };
 

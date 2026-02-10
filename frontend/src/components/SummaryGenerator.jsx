@@ -15,6 +15,7 @@ import {
 import { API_URL } from '../config/api';
 import SideMenu from './SideMenu';
 import Header from './Header';
+import SubscriptionWall from './SubscriptionWall';
 import './SummaryGenerator.css';
 
 const SummaryGenerator = () => {
@@ -89,142 +90,144 @@ Return ONLY the summary text, no explanations.`;
     };
 
     return (
-        <div className="summary-page">
-            <SideMenu isOpen={sideMenuOpen} onClose={() => setSideMenuOpen(false)} />
-            <Header onMenuClick={() => setSideMenuOpen(true)} />
+        <SubscriptionWall>
+            <div className="summary-page">
+                <SideMenu isOpen={sideMenuOpen} onClose={() => setSideMenuOpen(false)} />
+                <Header onMenuClick={() => setSideMenuOpen(true)} />
 
-            <div className="summary-container">
-                <div className="summary-hero">
-                    <div className="hero-badge">
-                        <Target className="w-5 h-5" />
-                        <span>Summary Generator</span>
+                <div className="summary-container">
+                    <div className="summary-hero">
+                        <div className="hero-badge">
+                            <Target className="w-5 h-5" />
+                            <span>Summary Generator</span>
+                        </div>
+                        <h1>Create Your Perfect <span className="text-gradient">Resume Summary</span></h1>
+                        <p>Generate a personalized, ATS-friendly professional summary that makes you stand out.</p>
                     </div>
-                    <h1>Create Your Perfect <span className="text-gradient">Resume Summary</span></h1>
-                    <p>Generate a personalized, ATS-friendly professional summary that makes you stand out.</p>
-                </div>
 
-                <div className="summary-grid">
-                    <Card className="input-card">
-                        <h2><Sparkles className="w-5 h-5" /> Your Details</h2>
+                    <div className="summary-grid">
+                        <Card className="input-card">
+                            <h2><Sparkles className="w-5 h-5" /> Your Details</h2>
 
-                        <div className="form-group">
-                            <label>Target Job Title *</label>
-                            <input
-                                type="text"
-                                placeholder="e.g. Senior Software Engineer"
-                                value={jobTitle}
-                                onChange={(e) => setJobTitle(e.target.value)}
-                            />
-                        </div>
+                            <div className="form-group">
+                                <label>Target Job Title *</label>
+                                <input
+                                    type="text"
+                                    placeholder="e.g. Senior Software Engineer"
+                                    value={jobTitle}
+                                    onChange={(e) => setJobTitle(e.target.value)}
+                                />
+                            </div>
 
-                        <div className="form-group">
-                            <label>Years of Experience</label>
-                            <input
-                                type="text"
-                                placeholder="e.g. 5"
-                                value={yearsExperience}
-                                onChange={(e) => setYearsExperience(e.target.value)}
-                            />
-                        </div>
+                            <div className="form-group">
+                                <label>Years of Experience</label>
+                                <input
+                                    type="text"
+                                    placeholder="e.g. 5"
+                                    value={yearsExperience}
+                                    onChange={(e) => setYearsExperience(e.target.value)}
+                                />
+                            </div>
 
-                        <div className="form-group">
-                            <label>Key Skills</label>
-                            <input
-                                type="text"
-                                placeholder="e.g. Python, Cloud Architecture, Team Leadership"
-                                value={keySkills}
-                                onChange={(e) => setKeySkills(e.target.value)}
-                            />
-                        </div>
+                            <div className="form-group">
+                                <label>Key Skills</label>
+                                <input
+                                    type="text"
+                                    placeholder="e.g. Python, Cloud Architecture, Team Leadership"
+                                    value={keySkills}
+                                    onChange={(e) => setKeySkills(e.target.value)}
+                                />
+                            </div>
 
-                        <div className="form-group">
-                            <label>Notable Achievements</label>
-                            <textarea
-                                placeholder="e.g. Led a team of 10, increased revenue by 25%..."
-                                value={achievements}
-                                onChange={(e) => setAchievements(e.target.value)}
-                                rows={4}
-                            />
-                        </div>
+                            <div className="form-group">
+                                <label>Notable Achievements</label>
+                                <textarea
+                                    placeholder="e.g. Led a team of 10, increased revenue by 25%..."
+                                    value={achievements}
+                                    onChange={(e) => setAchievements(e.target.value)}
+                                    rows={4}
+                                />
+                            </div>
 
-                        {error && <div className="error-message">{error}</div>}
+                            {error && <div className="error-message">{error}</div>}
 
-                        <Button
-                            className="generate-btn"
-                            onClick={handleGenerate}
-                            disabled={!jobTitle.trim() || isGenerating}
-                        >
-                            {isGenerating ? (
-                                <>
-                                    <Loader2 className="w-5 h-5 animate-spin" />
-                                    Generating...
-                                </>
+                            <Button
+                                className="generate-btn"
+                                onClick={handleGenerate}
+                                disabled={!jobTitle.trim() || isGenerating}
+                            >
+                                {isGenerating ? (
+                                    <>
+                                        <Loader2 className="w-5 h-5 animate-spin" />
+                                        Generating...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Sparkles className="w-5 h-5" />
+                                        Generate Summary
+                                    </>
+                                )}
+                            </Button>
+                        </Card>
+
+                        <Card className="output-card">
+                            <div className="output-header">
+                                <h2><FileText className="w-5 h-5" /> Your Summary</h2>
+                                {summary && (
+                                    <Button variant="outline" size="sm" onClick={copySummary}>
+                                        {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                                        {copied ? 'Copied!' : 'Copy'}
+                                    </Button>
+                                )}
+                            </div>
+
+                            {!summary ? (
+                                <div className="empty-state">
+                                    <FileText className="w-16 h-16 text-gray-300" />
+                                    <p>Fill in your details and click Generate to create your professional summary</p>
+                                </div>
                             ) : (
-                                <>
-                                    <Sparkles className="w-5 h-5" />
-                                    Generate Summary
-                                </>
+                                <div className="summary-output">
+                                    <p>{summary}</p>
+                                </div>
                             )}
-                        </Button>
-                    </Card>
 
-                    <Card className="output-card">
-                        <div className="output-header">
-                            <h2><FileText className="w-5 h-5" /> Your Summary</h2>
                             {summary && (
-                                <Button variant="outline" size="sm" onClick={copySummary}>
-                                    {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                                    {copied ? 'Copied!' : 'Copy'}
-                                </Button>
+                                <div className="output-actions">
+                                    <Button
+                                        variant="ghost"
+                                        onClick={handleGenerate}
+                                        disabled={isGenerating}
+                                    >
+                                        <RefreshCw className="w-4 h-4" />
+                                        Regenerate
+                                    </Button>
+                                </div>
                             )}
-                        </div>
+                        </Card>
+                    </div>
 
-                        {!summary ? (
-                            <div className="empty-state">
-                                <FileText className="w-16 h-16 text-gray-300" />
-                                <p>Fill in your details and click Generate to create your professional summary</p>
+                    {/* Examples Section */}
+                    <div className="examples-section">
+                        <h3>Example Summaries</h3>
+                        <div className="examples-grid">
+                            <div className="example-card">
+                                <span className="example-role">Software Engineer</span>
+                                <p>Innovative Software Engineer with 5+ years of experience building scalable web applications. Expert in React, Node.js, and cloud technologies with proven ability to reduce deployment time by 40%.</p>
                             </div>
-                        ) : (
-                            <div className="summary-output">
-                                <p>{summary}</p>
+                            <div className="example-card">
+                                <span className="example-role">Product Manager</span>
+                                <p>Strategic Product Manager with 7+ years driving product roadmaps from concept to launch. Track record of increasing user engagement by 60% and leading cross-functional teams of 15+ members.</p>
                             </div>
-                        )}
-
-                        {summary && (
-                            <div className="output-actions">
-                                <Button
-                                    variant="ghost"
-                                    onClick={handleGenerate}
-                                    disabled={isGenerating}
-                                >
-                                    <RefreshCw className="w-4 h-4" />
-                                    Regenerate
-                                </Button>
+                            <div className="example-card">
+                                <span className="example-role">Data Scientist</span>
+                                <p>Results-oriented Data Scientist with expertise in machine learning, Python, and statistical modeling. Delivered $2M+ in cost savings through predictive analytics and process optimization.</p>
                             </div>
-                        )}
-                    </Card>
-                </div>
-
-                {/* Examples Section */}
-                <div className="examples-section">
-                    <h3>Example Summaries</h3>
-                    <div className="examples-grid">
-                        <div className="example-card">
-                            <span className="example-role">Software Engineer</span>
-                            <p>Innovative Software Engineer with 5+ years of experience building scalable web applications. Expert in React, Node.js, and cloud technologies with proven ability to reduce deployment time by 40%.</p>
-                        </div>
-                        <div className="example-card">
-                            <span className="example-role">Product Manager</span>
-                            <p>Strategic Product Manager with 7+ years driving product roadmaps from concept to launch. Track record of increasing user engagement by 60% and leading cross-functional teams of 15+ members.</p>
-                        </div>
-                        <div className="example-card">
-                            <span className="example-role">Data Scientist</span>
-                            <p>Results-oriented Data Scientist with expertise in machine learning, Python, and statistical modeling. Delivered $2M+ in cost savings through predictive analytics and process optimization.</p>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
+        </SubscriptionWall>
     );
 };
 

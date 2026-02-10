@@ -18,6 +18,7 @@ import SideMenu from './SideMenu';
 import Header from './Header';
 import './ChatGPTResume.css';
 import ResumePaper from './ResumePaper';
+import SubscriptionWall from './SubscriptionWall';
 
 const ChatGPTResume = () => {
     const navigate = useNavigate();
@@ -133,109 +134,111 @@ Otherwise, ask specific clarifying questions.`;
     };
 
     return (
-        <div className="chatgpt-page">
-            <SideMenu isOpen={sideMenuOpen} onClose={() => setSideMenuOpen(false)} />
-            <Header onMenuClick={() => setSideMenuOpen(true)} />
+        <SubscriptionWall>
+            <div className="chatgpt-page">
+                <SideMenu isOpen={sideMenuOpen} onClose={() => setSideMenuOpen(false)} />
+                <Header onMenuClick={() => setSideMenuOpen(true)} />
 
-            <div className="chatgpt-container">
-                <div className="chatgpt-hero">
-                    <div className="hero-badge chatgpt-badge">
-                        <MessageSquare className="w-5 h-5" />
-                        <span>ChatGPT Resume Writer</span>
+                <div className="chatgpt-container">
+                    <div className="chatgpt-hero">
+                        <div className="hero-badge chatgpt-badge">
+                            <MessageSquare className="w-5 h-5" />
+                            <span>ChatGPT Resume Writer</span>
+                        </div>
+                        <h1>Write Your Resume with <span className="text-gradient-chat">AI Assistance</span></h1>
+                        <p>Have a conversation with AI to build your perfect resume step by step</p>
                     </div>
-                    <h1>Write Your Resume with <span className="text-gradient-chat">AI Assistance</span></h1>
-                    <p>Have a conversation with AI to build your perfect resume step by step</p>
-                </div>
 
-                <div className="chat-layout">
-                    <Card className="chat-card">
-                        <div className="chat-messages">
-                            {messages.map((message, index) => (
-                                <div key={index} className={`message ${message.role}`}>
-                                    <div className="message-avatar">
-                                        {message.role === 'assistant' ? (
+                    <div className="chat-layout">
+                        <Card className="chat-card">
+                            <div className="chat-messages">
+                                {messages.map((message, index) => (
+                                    <div key={index} className={`message ${message.role}`}>
+                                        <div className="message-avatar">
+                                            {message.role === 'assistant' ? (
+                                                <Sparkles className="w-5 h-5" />
+                                            ) : (
+                                                <span>You</span>
+                                            )}
+                                        </div>
+                                        <div className="message-content">
+                                            <pre>{message.content}</pre>
+                                        </div>
+                                    </div>
+                                ))}
+                                {isLoading && (
+                                    <div className="message assistant">
+                                        <div className="message-avatar">
                                             <Sparkles className="w-5 h-5" />
-                                        ) : (
-                                            <span>You</span>
-                                        )}
+                                        </div>
+                                        <div className="message-content typing">
+                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                            <span>Thinking...</span>
+                                        </div>
                                     </div>
-                                    <div className="message-content">
-                                        <pre>{message.content}</pre>
-                                    </div>
-                                </div>
-                            ))}
-                            {isLoading && (
-                                <div className="message assistant">
-                                    <div className="message-avatar">
-                                        <Sparkles className="w-5 h-5" />
-                                    </div>
-                                    <div className="message-content typing">
-                                        <Loader2 className="w-4 h-4 animate-spin" />
-                                        <span>Thinking...</span>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
+                                )}
+                            </div>
 
-                        <div className="chat-input-area">
-                            <textarea
-                                placeholder="Tell me about your experience, skills, and target job..."
-                                value={input}
-                                onChange={(e) => setInput(e.target.value)}
-                                onKeyPress={handleKeyPress}
-                                rows={2}
-                            />
-                            <Button
-                                className="send-btn"
-                                onClick={sendMessage}
-                                disabled={!input.trim() || isLoading}
-                            >
-                                <Send className="w-5 h-5" />
-                            </Button>
-                        </div>
-
-                        <div className="chat-actions">
-                            <Button variant="ghost" size="sm" onClick={startOver}>
-                                <RefreshCw className="w-4 h-4" />
-                                Start Over
-                            </Button>
-                        </div>
-                    </Card>
-
-                    {generatedResume && (
-                        <Card className="resume-preview-card">
-                            <div className="preview-header">
-                                <h3><FileText className="w-5 h-5" /> Generated Resume</h3>
-                                <Button variant="outline" size="sm" onClick={copyResume}>
-                                    {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                                    {copied ? 'Copied!' : 'Copy'}
+                            <div className="chat-input-area">
+                                <textarea
+                                    placeholder="Tell me about your experience, skills, and target job..."
+                                    value={input}
+                                    onChange={(e) => setInput(e.target.value)}
+                                    onKeyPress={handleKeyPress}
+                                    rows={2}
+                                />
+                                <Button
+                                    className="send-btn"
+                                    onClick={sendMessage}
+                                    disabled={!input.trim() || isLoading}
+                                >
+                                    <Send className="w-5 h-5" />
                                 </Button>
                             </div>
-                            <div className="preview-content bg-gray-900 flex justify-center p-8 overflow-hidden relative border border-gray-800 rounded-lg">
-                                <div style={{ transform: 'scale(0.85)', transformOrigin: 'top center' }}>
-                                    <ResumePaper content={generatedResume} scale={1} />
-                                </div>
-                            </div>
-                            <Button className="download-btn" onClick={() => navigate('/scanner')}>
-                                <Download className="w-4 h-4" />
-                                Optimize & Download
-                            </Button>
-                        </Card>
-                    )}
-                </div>
 
-                {/* Tips */}
-                <div className="tips-section">
-                    <h3>Tips for Best Results</h3>
-                    <div className="tips-grid">
-                        <div className="tip">Share your current job title and years of experience</div>
-                        <div className="tip">Mention specific achievements with numbers</div>
-                        <div className="tip">Tell me your target role and industry</div>
-                        <div className="tip">List your key skills and certifications</div>
+                            <div className="chat-actions">
+                                <Button variant="ghost" size="sm" onClick={startOver}>
+                                    <RefreshCw className="w-4 h-4" />
+                                    Start Over
+                                </Button>
+                            </div>
+                        </Card>
+
+                        {generatedResume && (
+                            <Card className="resume-preview-card">
+                                <div className="preview-header">
+                                    <h3><FileText className="w-5 h-5" /> Generated Resume</h3>
+                                    <Button variant="outline" size="sm" onClick={copyResume}>
+                                        {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                                        {copied ? 'Copied!' : 'Copy'}
+                                    </Button>
+                                </div>
+                                <div className="preview-content bg-gray-900 flex justify-center p-8 overflow-hidden relative border border-gray-800 rounded-lg">
+                                    <div style={{ transform: 'scale(0.85)', transformOrigin: 'top center' }}>
+                                        <ResumePaper content={generatedResume} scale={1} />
+                                    </div>
+                                </div>
+                                <Button className="download-btn" onClick={() => navigate('/scanner')}>
+                                    <Download className="w-4 h-4" />
+                                    Optimize & Download
+                                </Button>
+                            </Card>
+                        )}
+                    </div>
+
+                    {/* Tips */}
+                    <div className="tips-section">
+                        <h3>Tips for Best Results</h3>
+                        <div className="tips-grid">
+                            <div className="tip">Share your current job title and years of experience</div>
+                            <div className="tip">Mention specific achievements with numbers</div>
+                            <div className="tip">Tell me your target role and industry</div>
+                            <div className="tip">List your key skills and certifications</div>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
+        </SubscriptionWall>
     );
 };
 
