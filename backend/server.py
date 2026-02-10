@@ -126,25 +126,33 @@ except ImportError:
 client = None
 db = None
 
-if mongo_url:
+# Check and initialize MongoDB
+if not mongo_url:
+    logger.error("❌ CRITICAL: MONGO_URL environment variable is MISSING or EMPTY!")
+    db = None
+else:
     try:
         import ssl
-        # Use simple connection with SSL certificate validation disabled
-        # Railway's Python environment has SSL/TLS compatibility issues with MongoDB Atlas
+        masked_url = mongo_url.split("@")[-1] if "@" in mongo_url else "hidden"
+        logger.info(f"🔄 Initializing MongoDB connection to: ...@{masked_url}")
+        
+        # Use simple connection with SSL bypass
         client = AsyncIOMotorClient(
             mongo_url,
             serverSelectionTimeoutMS=30000,
             connectTimeoutMS=30000,
             socketTimeoutMS=30000,
-            ssl_cert_reqs=ssl.CERT_NONE,  # Bypass certificate validation for Railway
+            ssl_cert_reqs=ssl.CERT_NONE,
+            tlsInsecure=True # Final fallback for SSL issues
         )
+        
+        # Access the database object
         db = client[db_name]
-        logger.info("MongoDB client initialized successfully")
+        logger.info(f"✅ MongoDB client initialized for database: {db_name}")
+        
     except Exception as e:
-        logger.error(f"Failed to initialize MongoDB client: {e}")
+        logger.error(f"❌ Failed to initialize MongoDB client: {str(e)}")
         db = None
-else:
-    logger.warning("MongoDB will be unavailable because MONGO_URL is not set.")
 
 # Initialize Rate Limiter
 limiter = Limiter(key_func=get_remote_address)
