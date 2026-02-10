@@ -2560,11 +2560,14 @@ async def google_auth(request: dict, background_tasks: BackgroundTasks):
     except HTTPException:
         raise
     except Exception as e:
+        error_msg = str(e)
         logger.error(
-            f"Error in Google authentication: {str(e)}\n{traceback.format_exc()}"
+            f"Error in Google authentication: {error_msg}\n{traceback.format_exc()}"
         )
+        # Return more detailed error for debugging
         raise HTTPException(
-            status_code=500, detail="Internal server error during Google login"
+            status_code=500, 
+            detail=f"Google login error: {error_msg}. Check if google-auth is installed."
         )
 
 
