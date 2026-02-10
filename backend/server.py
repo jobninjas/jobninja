@@ -2435,8 +2435,16 @@ async def calculate_job_match_score(
 async def google_auth(request: dict, background_tasks: BackgroundTasks):
     """Handle Google OAuth authentication"""
     try:
-        from google.oauth2 import id_token
-        from google.auth.transport import requests as google_requests
+        # Try to import google-auth libraries
+        try:
+            from google.oauth2 import id_token
+            from google.auth.transport import requests as google_requests
+        except ImportError as import_error:
+            logger.error(f"Google auth library not installed: {import_error}")
+            raise HTTPException(
+                status_code=500,
+                detail="Google authentication is not configured on this server. Please contact support or use email/password login."
+            )
 
         credential = request.get("credential")
         mode = request.get("mode", "login")
