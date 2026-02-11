@@ -6382,14 +6382,17 @@ async def debug_force_sync():
         if not job_sync_service:
             return {"error": "Service not available"}
         
-        adzuna = await job_sync_service.sync_adzuna_jobs()
-        jsearch = await job_sync_service.sync_jsearch_jobs()
+        # Run syncs
+        await job_sync_service.sync_adzuna_jobs()
+        await job_sync_service.sync_jsearch_jobs()
+        
+        # Get detailed status (including errors)
+        status = await job_sync_service.get_sync_status()
         
         return {
             "status": "success", 
-            "adzuna": adzuna, 
-            "jsearch": jsearch,
-            "message": "Sync triggered successfully on production"
+            "sync_details": status,
+            "message": "Sync triggered. Check sync_details for errors."
         }
     except Exception as e:
         return {"error": str(e)}
