@@ -12,7 +12,7 @@ const SearchPreview = () => {
                     </div>
                     <div className="search-preview-meta">
                         <span className="search-preview-title">jobNinjas</span>
-                        <span className="search-preview-url">jobninjas.org</span>
+                        <span className="search-preview-url">jobninjas.ai</span>
                     </div>
                 </div>
 

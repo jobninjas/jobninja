@@ -11,8 +11,8 @@ export const Contact2 = ({
     title = "Contact Us",
     description = "We are available for questions, feedback, or collaboration opportunities. Let us know how we can help!",
     phone = "+1 (770) 744-0189",
-    email = "veereddy@jobninjas.org",
-    web = { label: "jobNinjas.org", url: "https://jobNinjas.org" },
+    email = "support@jobninjas.ai",
+    web = { label: "jobNinjas.ai", url: "https://jobNinjas.ai" },
 }) => {
     const [formData, setFormData] = useState({
         firstName: '',

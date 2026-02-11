@@ -28,31 +28,44 @@
       manifest.json provides metadata used when your web app is installed on a
       user's mobile device or desktop. See https://developers.google.com/web/fundamentals/web-app-manifest/
     -->
-  <!--
-      Notice the use of %PUBLIC_URL% in the tags above.
-      It will be replaced with the URL of the `public` folder during the build.
-      Only files inside the `public` folder can be referenced from the HTML.
-
-      Unlike "/favicon.ico" or "favicon.ico", "%PUBLIC_URL%/favicon.ico" will
-      work correctly both with client-side routing and a non-root public URL.
-      Learn how to configure a non-root public URL by running `npm run build`.
-    -->
+  <link rel="canonical" href="https://jobninjas.ai" />
   <title>jobNinjas.ai - AI-Powered Job Search & Application Tools</title>
 
-  <!-- Structured Data for Search Engine Result Branding -->
+  <!-- Branded Structured Data (Professional Search Appearance) -->
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "jobNinjas",
+      "url": "https://jobninjas.ai",
+      "logo": "https://jobninjas.ai/logo.png",
+      "sameAs": [
+        "https://www.linkedin.com/company/110213459/",
+        "https://www.instagram.com/jobninjas_org",
+        "https://t.me/jobNinjas"
+      ],
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "email": "support@jobninjas.ai",
+        "contactType": "customer support"
+      }
+    }
+  </script>
+
   <script type="application/ld+json">
     {
       "@context": "https://schema.org",
       "@type": "WebSite",
       "name": "jobNinjas",
-      "url": "https://jobninjas.org",
+      "url": "https://jobninjas.ai",
       "potentialAction": {
         "@type": "SearchAction",
-        "target": "https://jobninjas.org/jobs?q={search_term_string}",
+        "target": "https://jobninjas.ai/jobs?q={search_term_string}",
         "query-input": "required name=search_term_string"
       }
     }
   </script>
+
   <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -61,26 +74,26 @@
         {
           "@type": "SiteNavigationElement",
           "position": 1,
-          "name": "Login",
-          "url": "https://jobninjas.org/login"
+          "name": "AI Ninja Flow",
+          "url": "https://jobninjas.ai/ai-ninja"
         },
         {
           "@type": "SiteNavigationElement",
           "position": 2,
-          "name": "Register",
-          "url": "https://jobninjas.org/signup"
+          "name": "Human Ninja Service",
+          "url": "https://jobninjas.ai/human-ninja"
         },
         {
           "@type": "SiteNavigationElement",
           "position": 3,
-          "name": "Our Platform",
-          "url": "https://jobninjas.org/ai-ninja"
+          "name": "Live Job Board",
+          "url": "https://jobninjas.ai/jobs"
         },
         {
           "@type": "SiteNavigationElement",
           "position": 4,
-          "name": "Services",
-          "url": "https://jobninjas.org/human-ninja"
+          "name": "Interview Prep",
+          "url": "https://jobninjas.ai/interview-prep"
         }
       ]
     }

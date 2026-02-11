@@ -16,9 +16,9 @@ const ContactPage = () => {
                 <Contact2
                     title="Get in Touch"
                     description="Have questions about AI Ninja or Human Ninja? Our team is here to help you accelerate your job search."
-                    email="veereddy@jobninjas.org"
+                    email="support@jobninjas.ai"
                     phone="+1 (770) 744-0189"
-                    web={{ label: "jobNinjas.org", url: "https://jobNinjas.org" }}
+                    web={{ label: "jobNinjas.ai", url: "https://jobNinjas.ai" }}
                 />
             </main>
 

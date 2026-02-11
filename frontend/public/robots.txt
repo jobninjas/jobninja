@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://jobninjas.org/sitemap.xml
+Sitemap: https://jobninjas.ai/sitemap.xml
