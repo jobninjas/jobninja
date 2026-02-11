@@ -79,10 +79,34 @@ const AdminPortal = () => {
         }
     };
 
-    // ... (rest of useEffect and functions)
+    useEffect(() => {
+        if (isAuthenticated) {
+            fetchData();
+        }
+    }, [isAuthenticated]);
+
+    const handleUpdatePlan = async (userEmail, newPlan) => {
+        try {
+            await apiCall(`/api/admin/users/${userEmail}`, {
+                method: 'PUT',
+                body: JSON.stringify({ plan: newPlan })
+            });
+            // Refresh users
+            setUsers(users.map(u => u.email === userEmail ? { ...u, plan: newPlan } : u));
+        } catch (error) {
+            alert("Failed to update plan");
+        }
+    };
+
+    const filteredUsers = users.filter(u =>
+        u.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        u.email.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    const today = new Date().toISOString().split('T')[0];
+    const todayUsers = users.filter(u => u.created_at && u.created_at.startsWith(today));
 
     if (!isAuthenticated) {
-        // ... (password gate code - UNCHANGED)
         return (
             <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4">
                 <Card className="w-full max-w-md shadow-2xl border-t-4 border-t-indigo-600">
