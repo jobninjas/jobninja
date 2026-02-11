@@ -1542,6 +1542,10 @@ async def login(credentials: UserLogin, request: Request):
             "plan": user.get("plan"),
             "is_verified": bool(user.get("is_verified", False)),
             "referral_code": user.get("referral_code"),
+            "subscription_status": user.get("subscription_status"),
+            "trial_expires_at": user.get("trial_expires_at"),
+            "subscription_expires_at": user.get("subscription_expires_at"),
+            "ai_applications_bonus": user.get("ai_applications_bonus", 0)
         },
         "token": access_token,
     }
@@ -1562,6 +1566,10 @@ async def get_me(user: dict = Depends(get_current_user)):
             "plan": user.get("plan"),
             "is_verified": bool(user.get("is_verified", False)),
             "referral_code": user.get("referral_code"),
+            "subscription_status": user.get("subscription_status"),
+            "trial_expires_at": user.get("trial_expires_at"),
+            "subscription_expires_at": user.get("subscription_expires_at"),
+            "ai_applications_bonus": user.get("ai_applications_bonus", 0)
         },
     }
 
