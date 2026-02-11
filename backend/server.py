@@ -6429,8 +6429,9 @@ async def debug_force_sync():
             "sync_errors": sync_errors,
             "sync_details": status
         }
-    except Exception as e:
-        return {"error": "Critical Endpoint Failure", "details": str(e), "traceback": traceback.format_exc()}
+    except BaseException as e:
+        import traceback
+        return {"error": "Critical Endpoint Failure", "details": str(e), "type": str(type(e)), "traceback": traceback.format_exc()}
 
 # Admin Dashboard Endpoints
 @app.get("/api/admin/call-bookings")
