@@ -815,6 +815,10 @@ async def submit_call_booking(request: CallBookingRequest):
             "id": str(result.inserted_id)
         }
         
+    except Exception as e:
+        logger.error(f"Error submitting call booking: {e}")
+        raise HTTPException(status_code=500, detail="Failed to submit booking")
+
 @api_router.get("/admin/job-stats")
 async def get_admin_job_stats(admin: dict = Depends(check_admin)):
     """
