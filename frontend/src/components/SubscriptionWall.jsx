@@ -47,60 +47,72 @@ const SubscriptionWall = ({ children }) => {
         );
     }
 
-    // If authenticated but no active subscription/trial, show upgrade wall
+    // If authenticated but no active subscription/trial, show upgrade wall WITH background blur
     if (!hasActiveSubscription && !isTrialActive) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-                <Card className="max-w-2xl w-full p-8 text-center">
-                    <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <Sparkles className="w-8 h-8 text-white" />
-                    </div>
-                    <h2 className="text-3xl font-bold text-gray-900 mb-2">
-                        Upgrade to Access This Tool
-                    </h2>
-                    <p className="text-lg text-gray-600 mb-6">
-                        Get unlimited access to all AI-powered job search tools with a 2 weeks free trial.
-                    </p>
+            <div className="relative min-h-screen">
+                {/* Background Content (Blurred) */}
+                <div className="filter blur-sm pointer-events-none select-none opacity-50">
+                    {children}
+                </div>
 
-                    {/* Feature highlights */}
-                    <div className="bg-gray-50 rounded-lg p-6 mb-6 text-left">
-                        <h3 className="font-semibold text-gray-900 mb-3">What you'll get:</h3>
-                        <ul className="space-y-2 text-gray-700">
-                            <li className="flex items-start gap-2">
-                                <span className="text-green-500 mt-1">✓</span>
-                                <span>Unlimited AI-powered job applications</span>
-                            </li>
-                            <li className="flex items-start gap-2">
-                                <span className="text-green-500 mt-1">✓</span>
-                                <span>Auto-fill Chrome extension</span>
-                            </li>
-                            <li className="flex items-start gap-2">
-                                <span className="text-green-500 mt-1">✓</span>
-                                <span>AI Interview Prep</span>
-                            </li>
-                            <li className="flex items-start gap-2">
-                                <span className="text-green-500 mt-1">✓</span>
-                                <span>Tailored resume + cover letter for each job</span>
-                            </li>
-                            <li className="flex items-start gap-2">
-                                <span className="text-green-500 mt-1">✓</span>
-                                <span>24/7 Job Board with match scores</span>
-                            </li>
-                        </ul>
-                    </div>
+                {/* Overlay */}
+                <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-[2px] px-4">
+                    <Card className="max-w-2xl w-full p-8 text-center shadow-2xl relative bg-white/95 backdrop-blur">
+                        <div className="w-20 h-20 bg-transparent rounded-full flex items-center justify-center mx-auto mb-4">
+                            <img
+                                src="/ninjasface.png"
+                                alt="Ninja Pro"
+                                className="w-full h-full object-contain"
+                            />
+                        </div>
+                        <h2 className="text-3xl font-bold text-gray-900 mb-2">
+                            Get Ninja Pro to use this tool
+                        </h2>
+                        <p className="text-lg text-gray-600 mb-6">
+                            Get unlimited access to all AI-powered job search tools with a 2 weeks free trial.
+                        </p>
 
-                    <Button
-                        size="lg"
-                        className="w-full sm:w-auto"
-                        onClick={() => navigate('/pricing')}
-                    >
-                        Start 2 Weeks Free Trial <ArrowRight className="w-5 h-5 ml-2" />
-                    </Button>
+                        {/* Feature highlights */}
+                        <div className="bg-gray-50/80 rounded-lg p-6 mb-6 text-left border border-gray-100">
+                            <h3 className="font-semibold text-gray-900 mb-3">What you'll get:</h3>
+                            <ul className="space-y-2 text-gray-700">
+                                <li className="flex items-start gap-2">
+                                    <span className="text-green-500 mt-1">✓</span>
+                                    <span>Unlimited AI-powered job applications</span>
+                                </li>
+                                <li className="flex items-start gap-2">
+                                    <span className="text-green-500 mt-1">✓</span>
+                                    <span>Auto-fill Chrome extension</span>
+                                </li>
+                                <li className="flex items-start gap-2">
+                                    <span className="text-green-500 mt-1">✓</span>
+                                    <span>AI Interview Prep</span>
+                                </li>
+                                <li className="flex items-start gap-2">
+                                    <span className="text-green-500 mt-1">✓</span>
+                                    <span>Tailored resume + cover letter for each job</span>
+                                </li>
+                                <li className="flex items-start gap-2">
+                                    <span className="text-green-500 mt-1">✓</span>
+                                    <span>24/7 Job Board with match scores</span>
+                                </li>
+                            </ul>
+                        </div>
 
-                    <p className="text-sm text-gray-500 mt-4">
-                        No credit card required • Cancel anytime
-                    </p>
-                </Card>
+                        <Button
+                            size="lg"
+                            className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white border-0"
+                            onClick={() => navigate('/pricing')}
+                        >
+                            Start 2 Weeks Free Trial <ArrowRight className="w-5 h-5 ml-2" />
+                        </Button>
+
+                        <p className="text-sm text-gray-500 mt-4">
+                            No credit card required • Cancel anytime
+                        </p>
+                    </Card>
+                </div>
             </div>
         );
     }
