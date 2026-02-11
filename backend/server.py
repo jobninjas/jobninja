@@ -6377,25 +6377,39 @@ async def trigger_manual_sync(user: dict = Depends(get_current_user)):
 
 @app.get("/api/debug/sync-jobs")
 async def debug_force_sync():
-    """Temporary debug endpoint to force sync"""
+    """Temporary debug endpoint to force sync and check config"""
+    import os
     try:
+        # Check Env Vars
+        adzuna_id = os.getenv("ADZUNA_APP_ID")
+        adzuna_key = os.getenv("ADZUNA_APP_KEY")
+        rapid_key = os.getenv("RAPIDAPI_KEY")
+        
+        config_status = {
+            "ADZUNA_APP_ID": "***" + adzuna_id[-4:] if adzuna_id else "MISSING",
+            "ADZUNA_APP_KEY": "***" + adzuna_key[-4:] if adzuna_key else "MISSING",
+            "RAPIDAPI_KEY": "***" + rapid_key[-4:] if rapid_key else "MISSING",
+            "DB_Connected": job_sync_service is not None
+        }
+
         if not job_sync_service:
-            return {"error": "Service not available"}
+            return {"status": "error", "config": config_status, "error": "Service not available (DB connection failed?)"}
         
         # Run syncs
         await job_sync_service.sync_adzuna_jobs()
         await job_sync_service.sync_jsearch_jobs()
         
-        # Get detailed status (including errors)
+        # Get detailed status
         status = await job_sync_service.get_sync_status()
         
         return {
             "status": "success", 
-            "sync_details": status,
-            "message": "Sync triggered. Check sync_details for errors."
+            "config": config_status,
+            "sync_details": status
         }
     except Exception as e:
-        return {"error": str(e)}
+        import traceback
+        return {"error": str(e), "traceback": traceback.format_exc()}
 
 # Admin Dashboard Endpoints
 @app.get("/api/admin/call-bookings")
