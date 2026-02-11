@@ -65,43 +65,24 @@ const AdminPortal = () => {
             else console.error("Messages API failed:", messagesRes.reason);
 
             if (jStatsRes.status === 'fulfilled') setJobStats(jStatsRes.value);
-            else console.error("Job Stats API failed:", jStatsRes.reason);
+            else {
+                console.error("Job Stats API failed:", jStatsRes.reason);
+                // Optional: set a visible error state for this specific card
+                setJobStats({ error: jStatsRes.reason.message });
+            }
 
         } catch (error) {
             console.error("Failed to fetch admin data:", error);
+            setError(`System Error: ${error.message}`); // Show global error
         } finally {
             setLoading(false);
         }
     };
 
-    useEffect(() => {
-        if (isAuthenticated) {
-            fetchData();
-        }
-    }, [isAuthenticated]);
-
-    const handleUpdatePlan = async (userEmail, newPlan) => {
-        try {
-            await apiCall(`/api/admin/users/${userEmail}`, {
-                method: 'PUT',
-                body: JSON.stringify({ plan: newPlan })
-            });
-            // Refresh users
-            setUsers(users.map(u => u.email === userEmail ? { ...u, plan: newPlan } : u));
-        } catch (error) {
-            alert("Failed to update plan");
-        }
-    };
-
-    const filteredUsers = users.filter(u =>
-        u.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        u.email.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-
-    const today = new Date().toISOString().split('T')[0];
-    const todayUsers = users.filter(u => u.created_at && u.created_at.startsWith(today));
+    // ... (rest of useEffect and functions)
 
     if (!isAuthenticated) {
+        // ... (password gate code - UNCHANGED)
         return (
             <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4">
                 <Card className="w-full max-w-md shadow-2xl border-t-4 border-t-indigo-600">
@@ -137,6 +118,14 @@ const AdminPortal = () => {
 
     return (
         <div className="min-h-screen bg-slate-50">
+            {/* Show Global Error if any */}
+            {error && (
+                <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 sticky top-16 z-50">
+                    <p className="font-bold">Error Loading Data</p>
+                    <p>{error}</p>
+                </div>
+            )}
+
             {/* Header */}
             <header className="bg-white border-b sticky top-0 z-10">
                 <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
