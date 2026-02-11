@@ -14,7 +14,9 @@ import { VerticalCutReveal } from "./ui/vertical-cut-reveal";
 import NumberFlow from "@number-flow/react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import './SideMenu.css';
+import { API_URL } from '../config/api';
 
 const PricingSwitch = ({
   selected,
@@ -68,7 +70,7 @@ const PricingSwitch = ({
 
 const Pricing = () => {
   const navigate = useNavigate();
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, refreshUser } = useAuth();
   const [isBookCallModalOpen, setIsBookCallModalOpen] = useState(false);
   const [sideMenuOpen, setSideMenuOpen] = useState(false);
   const [switchValue, setSwitchValue] = useState("0"); // "0" for ai, "1" for human
@@ -105,6 +107,38 @@ const Pricing = () => {
   ];
 
   const currentPlans = planType === 'ai' ? aiNinjaPlans : humanNinjaPlans;
+
+  const handleActivateTrial = async () => {
+    if (!isAuthenticated) {
+      navigate('/signup');
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('auth_token');
+      const response = await fetch(`${API_URL}/api/subscription/activate-trial`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'token': token
+        },
+        body: JSON.stringify({ plan_id: 'ai-yearly' })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        alert("You have unlocked 2 weeks access without any payment!");
+        await refreshUser();
+        navigate('/dashboard'); // Or wherever appropriate
+      } else {
+        alert(data.detail || "Failed to activate trial.");
+      }
+    } catch (error) {
+      console.error("Trial activation error:", error);
+      alert("An error occurred. Please try again.");
+    }
+  };
 
   return (
     <div className="min-h-screen bg-white pricing-page">
@@ -252,6 +286,8 @@ const Pricing = () => {
                         setIsBookCallModalOpen(true);
                       } else if (planType === 'human') {
                         setIsBookCallModalOpen(true);
+                      } else if (planType === 'ai') {
+                        handleActivateTrial();
                       } else if (plan.price === 0) {
                         navigate('/ai-ninja');
                       } else {
@@ -259,7 +295,7 @@ const Pricing = () => {
                       }
                     }}
                   >
-                    {plan.price === 0 ? 'Try Free' : (plan.id === 'human-enterprise' ? 'Contact Us' : 'Get Started')}
+                    {planType === 'ai' ? 'Start 2 Weeks Free' : (plan.price === 0 ? 'Try Free' : (plan.id === 'human-enterprise' ? 'Contact Us' : 'Get Started'))}
                   </button>
 
                   <div className="space-y-4 pt-4 border-t border-neutral-200">

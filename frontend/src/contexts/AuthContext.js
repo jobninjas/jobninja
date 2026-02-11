@@ -150,5 +150,15 @@ export const AuthProvider = ({ children }) => {
     refreshUser
   };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  // Derived state
+  const hasActiveSubscription = user?.subscription_status === 'active' || user?.plan === 'unlimited' || user?.plan === 'pro';
+  const isTrialActive = user?.subscription_status === 'trial' && new Date(user?.trial_expires_at) > new Date();
+
+  const contextValue = {
+    ...value,
+    hasActiveSubscription,
+    isTrialActive
+  };
+
+  return <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>;
 };

@@ -3,9 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
-import { Lock, Sparkles, ArrowRight } from 'lucide-react';
-
-import { API_URL } from '../config/api';
+import { Lock, ArrowRight } from 'lucide-react';
 
 /**
  * SubscriptionWall Component
@@ -20,37 +18,7 @@ import { API_URL } from '../config/api';
  */
 const SubscriptionWall = ({ children }) => {
     const navigate = useNavigate();
-    const { isAuthenticated, user, hasActiveSubscription, isTrialActive, refreshUser } = useAuth();
-    const [isLoading, setIsLoading] = React.useState(false);
-
-    const handleActivateTrial = async () => {
-        setIsLoading(true);
-        try {
-            const token = localStorage.getItem('auth_token');
-            const response = await fetch(`${API_URL}/api/subscription/activate-trial`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'token': token
-                },
-                body: JSON.stringify({ plan_id: 'ai-yearly' })
-            });
-
-            const data = await response.json();
-
-            if (response.ok) {
-                alert("You have unlocked 2 weeks access without any payment!");
-                await refreshUser();
-            } else {
-                alert(data.detail || "Failed to activate trial.");
-            }
-        } catch (error) {
-            console.error("Trial activation error:", error);
-            alert("An error occurred. Please try again.");
-        } finally {
-            setIsLoading(false);
-        }
-    };
+    const { isAuthenticated, hasActiveSubscription, isTrialActive } = useAuth();
 
     // If not authenticated, redirect to signup
     if (!isAuthenticated) {
@@ -134,11 +102,10 @@ const SubscriptionWall = ({ children }) => {
 
                         <Button
                             size="lg"
-                            disabled={isLoading}
                             className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white border-0"
-                            onClick={handleActivateTrial}
+                            onClick={() => navigate('/pricing')}
                         >
-                            {isLoading ? "Unlocking..." : "Unlock 2 Weeks Free Access"} <ArrowRight className="w-5 h-5 ml-2" />
+                            View Pricing & Plans <ArrowRight className="w-5 h-5 ml-2" />
                         </Button>
 
                     </Card>
