@@ -183,12 +183,23 @@ class JobSyncService:
     
     def _normalize_adzuna_job(self, job_data: Dict) -> Dict:
         """Normalize Adzuna job data to common format"""
+        location_obj = job_data.get("location", {})
+        display_name = location_obj.get("display_name", "")
+        area = location_obj.get("area", [])
+        
+        # Improves location string for strict USA filtering
+        # Adzuna area format: ["US", "Illinois", "DuPage County", "Naperville"]
+        if area and "US" in area:
+            # If it's a US job, ensure "United States" is in the location string
+            if "United States" not in display_name and "USA" not in display_name:
+                display_name = f"{display_name}, United States"
+                
         return {
             "job_id": f"adzuna_{job_data.get('id', '')}",
             "source": "adzuna",
             "title": job_data.get("title", ""),
             "company": job_data.get("company", {}).get("display_name", ""),
-            "location": job_data.get("location", {}).get("display_name", ""),
+            "location": display_name,
             "description": job_data.get("description", ""),
             "url": job_data.get("redirect_url", ""),
             "salary_min": job_data.get("salary_min"),
