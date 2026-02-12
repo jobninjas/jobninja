@@ -6653,6 +6653,70 @@ async def submit_contact_message(data: ContactMessage):
         logger.error(f"Error saving contact message: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
+
+@app.post("/api/debug/fix-descriptions")
+async def fix_descriptions(limit: int = 50):
+    """
+    V7 Fix: Re-fetch full descriptions for truncated jobs.
+    Limits to 50 jobs per run to prevent timeout.
+    """
+    try:
+        from scraper_service import scrape_job_description
+        from pymongo import UpdateOne
+        
+        # Find jobs with short descriptions (likely truncated) or from remoteok/remotive
+        # Truncated was 2000 chars, so let's look for < 2100 to be safe
+        cursor = db.jobs.find({
+            "$or": [
+                {"description": {"$regex": "^.{0,2100}$"}}, # Short descriptions
+                {"source": {"$in": ["remoteok", "remotive"]}} # Target sources
+            ]
+        }).limit(limit)
+        
+        updates = []
+        processed = 0
+        
+        async for job in cursor:
+            try:
+                # Skip if description is already long enough (e.g. > 3000 chars)
+                if len(job.get("description", "")) > 3000:
+                    continue
+                    
+                url = job.get("sourceUrl")
+                if not url:
+                    continue
+                    
+                logger.info(f"Refetching description for {job.get('company')} - {job.get('title')}")
+                full_description = await scrape_job_description(url)
+                
+                if full_description and len(full_description) > len(job.get("description", "")):
+                    updates.append(UpdateOne(
+                        {"_id": job["_id"]},
+                        {"$set": {
+                            "description": full_description,
+                            "updatedAt": datetime.utcnow()
+                        }}
+                    ))
+                    processed += 1
+            except Exception as e:
+                logger.error(f"Failed to scrape {job.get('_id')}: {e}")
+                continue
+                
+        modified_count = 0
+        if updates:
+            result = await db.jobs.bulk_write(updates)
+            modified_count = result.modified_count
+            
+        return {
+            "status": "success",
+            "version": "v7_description_fix",
+            "processed": processed,
+            "modified": modified_count,
+            "message": f"V7: Refetched {processed} descriptions, Updated {modified_count} jobs"
+        }
+    except Exception as e:
+        return {"error": f"{type(e).__name__}: {str(e)}"}
+
 # Include the API router with all /api/* routes
 app.include_router(api_router)
 

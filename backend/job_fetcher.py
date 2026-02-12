@@ -124,7 +124,7 @@ def clean_html(text: str) -> str:
         return ""
     clean = re.sub(r'<[^>]+>', '', str(text))
     clean = re.sub(r'\s+', ' ', clean).strip()
-    return clean[:2000]  # Limit description length
+    return clean  # No limit on description length
 
 
 def build_job_tags(job_data: Dict) -> List[str]:
