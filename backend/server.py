@@ -4801,26 +4801,39 @@ async def debug_jobs():
 
 @app.post("/api/debug/fix-locations")
 async def fix_locations():
-    """Emergency fix: Append ', United States' to all jobs without it."""
+    """Emergency fix: Append ', United States' and REFRESH DATES."""
     try:
-        # Broader fix: If it doesn't say "United States" (case insensitive), append it.
-        # This covers "Naperville", "New York, NY", etc.
+        # 1. Location Fix (broader)
+        # 2. Date Fix (bring old jobs to NOW so they show up)
         
         result = await db.jobs.update_many(
             {
-                "location": {"$not": {"$regex": "United States", "$options": "i"}},
                 "source": "adzuna"
             },
             [
-                {"$set": {"location": {"$concat": ["$location", ", United States"]}}},
-                {"$set": {"country": "us"}}
+                {
+                    "$set": {
+                        # Append United States if missing
+                        "location": {
+                            "$cond": {
+                                "if": {"$regexMatch": {"input": "$location", "regex": "United States", "options": "i"}},
+                                "then": "$location",
+                                "else": {"$concat": ["$location", ", United States"]}
+                            }
+                        },
+                        "country": "us",
+                        # MAKE THEM FRESH (The critical fix for "0 jobs")
+                        "created_at": datetime.utcnow(), 
+                        "posted_date": datetime.utcnow()
+                    }
+                }
             ]
         )
         
         return {
             "status": "success", 
             "modified": result.modified_count, 
-            "message": f"Fixed locations for {result.modified_count} jobs"
+            "message": f"Refreshed dates & locations for {result.modified_count} jobs"
         }
     except Exception as e:
         return {"error": str(e)}
