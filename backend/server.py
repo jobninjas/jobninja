@@ -4481,8 +4481,14 @@ async def get_jobs(
         
         # 1. 72-Hour Freshness Filter (Project Orion)
         # Only show jobs from last 72 hours (User Requirement)
+        # 1. 72-Hour Freshness Filter (Project Orion)
+        # Only show jobs from last 72 hours (User Requirement)
+        # Support both 'created_at' (snake) and 'createdAt' (camel)
         cutoff_time = datetime.utcnow() - timedelta(hours=72)
-        query["created_at"] = {"$gte": cutoff_time}
+        query["$or"] = [
+            {"created_at": {"$gte": cutoff_time}},
+            {"createdAt": {"$gte": cutoff_time}}
+        ]
 
         if country:
             country_lower = country.lower()
@@ -4493,10 +4499,18 @@ async def get_jobs(
                 # 3. OR location contains USA keywords/states
                 us_pattern = r"\b(AL|AK|AZ|AR|CA|CO|CT|DE|FL|GA|HI|ID|IL|IN|IA|KS|KY|LA|ME|MD|MA|MI|MN|MS|MO|MT|NE|NV|NH|NJ|NM|NY|NC|ND|OH|OK|OR|PA|RI|SC|SD|TN|TX|UT|VT|VA|WA|WV|WI|WY|Alabama|Alaska|Arizona|Arkansas|California|Colorado|Connecticut|Delaware|Florida|Georgia|Hawaii|Idaho|Illinois|Indiana|Iowa|Kansas|Kentucky|Louisiana|Maine|Maryland|Massachusetts|Michigan|Minnesota|Mississippi|Missouri|Montana|Nebraska|Nevada|New Hampshire|New Jersey|New Mexico|New York|North Carolina|North Dakota|Ohio|Oklahoma|Oregon|Pennsylvania|Rhode Island|South Carolina|South Dakota|Tennessee|Texas|Utah|Vermont|Virginia|Washington|West Virginia|Wisconsin|Wyoming|United States|USA|US)\b"
                 
-                query["$or"] = [
-                    {"country": "us"}, 
-                    {"country": "usa"},
-                    {"location": {"$regex": us_pattern, "$options": "i"}}
+                
+                # Combine date filter with country filter using $and
+                # We save the date criteria from the existing $or
+                date_criteria = query.pop("$or")
+                
+                query["$and"] = [
+                    {"$or": date_criteria},
+                    {"$or": [
+                        {"country": "us"}, 
+                        {"country": "usa"},
+                        {"location": {"$regex": us_pattern, "$options": "i"}}
+                    ]}
                 ]
                 
                 # Still exclude explicit international matches to be safe
@@ -4723,6 +4737,17 @@ async def get_jobs_stats():
         logger.error(f"Error fetching job stats: {e}")
         raise HTTPException(status_code=500, detail="Failed to fetch job stats")
 
+
+@app.post("/api/debug/force-sync")
+async def force_sync(background_tasks: BackgroundTasks):
+    """Trigger partial sync immediately."""
+    try:
+        from job_sync_service import JobSyncService
+        service = JobSyncService(app.mongodb)
+        background_tasks.add_task(service.sync_adzuna_jobs)
+        return {"status": "started", "message": "Adzuna sync triggered in background"}
+    except Exception as e:
+        return {"error": str(e)}
 
 @app.get("/api/debug/jobs")
 async def debug_jobs():
