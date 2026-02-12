@@ -119,11 +119,25 @@ def format_salary_range(salary_min: int, salary_max: int) -> str:
 
 
 def clean_html(text: str) -> str:
-    """Remove HTML tags from text"""
+    """Remove HTML tags but preserve structure"""
     if not text:
         return ""
-    clean = re.sub(r'<[^>]+>', '', str(text))
-    clean = re.sub(r'\s+', ' ', clean).strip()
+    
+    # 1. Replace block elements with newlines to preserve structure
+    text = re.sub(r'<br\s*/?>', '\n', str(text), flags=re.IGNORECASE)
+    text = re.sub(r'</p>', '\n\n', str(text), flags=re.IGNORECASE)
+    text = re.sub(r'</li>', '\n', str(text), flags=re.IGNORECASE)
+    text = re.sub(r'</div>', '\n', str(text), flags=re.IGNORECASE)
+    text = re.sub(r'</h1>|</h2>|</h3>|</h4>|</h5>|</h6>', '\n\n', str(text), flags=re.IGNORECASE)
+    
+    # 2. Strip standard HTML tags
+    clean = re.sub(r'<[^>]+>', '', text)
+    
+    # 3. Clean up whitespace but PRESERVE newlines
+    # Split by lines, strip each line, join with newline
+    lines = [line.strip() for line in clean.split('\n')]
+    clean = '\n'.join(line for line in lines if line) # Remove empty lines
+    
     return clean  # No limit on description length
 
 
