@@ -4807,10 +4807,26 @@ async def fix_locations():
         # 2. Date Fix (bring old jobs to NOW so they show up)
         
         result = await db.jobs.update_many(
-            {
-                "source": "adzuna"
-            },
+            {},  # Target EVERYTHING. No filters. Brute force.
             [
+                {
+                    "$set": {
+                        # Append United States if missing
+                        "location": {
+                            "$cond": {
+                                "if": {"$regexMatch": {"input": "$location", "regex": "United States", "options": "i"}},
+                                "then": "$location",
+                                "else": {"$concat": ["$location", ", United States"]}
+                            }
+                        },
+                        "country": "us",
+                        # MAKE THEM FRESH (The critical fix for "0 jobs")
+                        "created_at": datetime.utcnow(), 
+                        "posted_date": datetime.utcnow()
+                    }
+                }
+            ]
+        )
                 {
                     "$set": {
                         # Append United States if missing
