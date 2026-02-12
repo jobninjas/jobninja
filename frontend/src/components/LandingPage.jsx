@@ -280,61 +280,7 @@ const LandingPage = () => {
           </div>
         </div>
 
-        {/* Floating UI Preview */}
-        <div className="hero-preview-section">
-          <div className="preview-cards-container">
-            {/* Resume Preview Card */}
-            <Card className="preview-card resume-preview-card">
-              <div className="preview-card-header">
-                <span className="preview-label">Optimized Resume</span>
-                <Badge className="match-badge">99.8% match</Badge>
-              </div>
-              <div className="resume-preview-content">
-                <h4>Your Name</h4>
-                <p className="preview-subtitle">Software Engineer</p>
-                <div className="preview-section">
-                  <strong>Summary</strong>
-                  <p>Experienced software engineer with 5+ years building scalable applications...</p>
-                </div>
-                <div className="preview-section">
-                  <strong>Experience</strong>
-                  <p>• Led development of microservices architecture</p>
-                  <p>• Improved system performance by 40%</p>
-                </div>
-              </div>
-            </Card>
 
-            {/* Auto Apply Card */}
-            <Card className="preview-card auto-apply-card">
-              <div className="preview-card-header">
-                <span className="preview-label">Auto Apply To Jobs</span>
-                <Badge variant="outline">Live</Badge>
-              </div>
-              <div className="job-list-preview">
-                <div className="job-item-preview applying">
-                  <div className="job-company">Google</div>
-                  <div className="job-role">Software Engineer</div>
-                  <Badge className="status-applying">Applying...</Badge>
-                </div>
-                <div className="job-item-preview applied">
-                  <div className="job-company">Microsoft</div>
-                  <div className="job-role">Senior SDE</div>
-                  <Badge className="status-applied">Applied</Badge>
-                </div>
-                <div className="job-item-preview applied">
-                  <div className="job-company">Meta</div>
-                  <div className="job-role">Product Manager</div>
-                  <Badge className="status-applied">Applied</Badge>
-                </div>
-                <div className="job-item-preview pending">
-                  <div className="job-company">Amazon</div>
-                  <div className="job-role">Data Scientist</div>
-                  <Badge className="status-pending">Pending</Badge>
-                </div>
-              </div>
-            </Card>
-          </div>
-        </div>
       </section>
 
 
