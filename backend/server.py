@@ -4741,6 +4741,7 @@ async def get_jobs_stats():
 @app.post("/api/debug/force-sync")
 async def force_sync(background_tasks: BackgroundTasks):
     """Trigger partial sync immediately."""
+    try:
         from job_sync_service import JobSyncService
         service = JobSyncService(app.mongodb)
         background_tasks.add_task(service.sync_adzuna_jobs)
