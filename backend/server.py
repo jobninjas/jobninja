@@ -258,13 +258,20 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
         return False
 
 
-def ensure_verified(user: dict):
-    """Raise 403 if user is not verified."""
-    if not user.get("is_verified", False):
-        raise HTTPException(
-            status_code=403,
-            detail="Email verification required to use this feature. Please check your inbox or resend the link from your dashboard.",
-        )
+
+@app.on_event("startup")
+async def startup_db_client():
+    try:
+        app.mongodb_client = AsyncIOMotorClient(os.getenv("MONGO_URL"))
+        app.mongodb = app.mongodb_client.get_database()
+        print("Combined DB connected.")
+        # Trigger sync on startup
+        from job_sync_service import JobSyncService
+        service = JobSyncService(app.mongodb)
+        asyncio.create_task(service.sync_adzuna_jobs())
+        print("Startup job sync initiated.")
+    except Exception as e:
+        print(f"Startup sync failed: {e}")
 
 
 def create_access_token(data: dict):
@@ -4715,6 +4722,28 @@ async def get_jobs_stats():
     except Exception as e:
         logger.error(f"Error fetching job stats: {e}")
         raise HTTPException(status_code=500, detail="Failed to fetch job stats")
+
+
+@app.get("/api/debug/jobs")
+async def debug_jobs():
+    """Returns raw DB stats to verify data presence."""
+    try:
+        total = await db.jobs.count_documents({})
+        recent = await db.jobs.count_documents({"created_at": {"$gte": datetime.utcnow() - timedelta(hours=72)}})
+        us = await db.jobs.count_documents({"country": "us"})
+        sample = await db.jobs.find_one({})
+        if sample and "_id" in sample: sample["_id"] = str(sample["_id"])
+        
+        return {
+            "status": "online",
+            "time": datetime.utcnow(),
+            "total_jobs": total,
+            "jobs_last_72h": recent,
+            "us_jobs": us,
+            "sample_job": sample
+        }
+    except Exception as e:
+        return {"error": str(e)}
 
 
 @app.post("/api/jobs/refresh")
