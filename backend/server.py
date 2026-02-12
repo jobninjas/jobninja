@@ -4741,11 +4741,39 @@ async def get_jobs_stats():
 @app.post("/api/debug/force-sync")
 async def force_sync(background_tasks: BackgroundTasks):
     """Trigger partial sync immediately."""
-    try:
         from job_sync_service import JobSyncService
         service = JobSyncService(app.mongodb)
         background_tasks.add_task(service.sync_adzuna_jobs)
         return {"status": "started", "message": "Adzuna sync triggered in background"}
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.get("/api/debug/adzuna-check")
+async def debug_adzuna_check():
+    """Directly test Adzuna API connectivity."""
+    try:
+        app_id = os.getenv("ADZUNA_APP_ID")
+        app_key = os.getenv("ADZUNA_APP_KEY")
+        
+        if not app_id or not app_key:
+            return {"status": "error", "message": "Missing API Keys", "app_id": str(app_id)[:2] + "***"}
+            
+        async with aiohttp.ClientSession() as session:
+            url = f"https://api.adzuna.com/v1/api/jobs/us/search/1"
+            params = {
+                "app_id": app_id,
+                "app_key": app_key,
+                "results_per_page": 1,
+                "what": "developer"
+            }
+            async with session.get(url, params=params) as resp:
+                data = await resp.json()
+                return {
+                    "status": resp.status,
+                    "url": str(resp.url).replace(app_key, "***"),
+                    "results_count": len(data.get("results", [])),
+                    "first_result": data.get("results")[0] if data.get("results") else None
+                }
     except Exception as e:
         return {"error": str(e)}
 
