@@ -38,13 +38,11 @@ class ErrorBoundary extends React.Component {
                             We're sorry, but an unexpected error occurred. Please try reloading the page.
                         </p>
 
-                        {process.env.NODE_ENV === 'development' && (
-                            <div className="text-left bg-gray-100 p-4 rounded text-xs font-mono mb-6 overflow-auto max-h-48">
-                                <p className="text-red-600 font-bold">{this.state.error && this.state.error.toString()}</p>
-                                <br />
-                                {this.state.errorInfo && this.state.errorInfo.componentStack}
-                            </div>
-                        )}
+                        <div className="text-left bg-gray-100 p-4 rounded text-xs font-mono mb-6 overflow-auto max-h-48">
+                            <p className="text-red-600 font-bold">{this.state.error && this.state.error.toString()}</p>
+                            <br />
+                            {this.state.errorInfo && this.state.errorInfo.componentStack}
+                        </div>
 
                         <div className="flex gap-4 justify-center">
                             <Button onClick={() => window.location.href = '/'} variant="outline">
