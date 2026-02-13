@@ -15,7 +15,8 @@ import {
   FileText,
   ScanLine,
   Sparkles,
-  MousePointerClick
+  MousePointerClick,
+  Lock
 } from 'lucide-react';
 import { BRAND } from '../config/branding';
 
@@ -46,7 +47,7 @@ const SideMenu = ({ isOpen, onClose }) => {
     { icon: FileText, label: 'My Resumes', path: '/resumes', requiresAuth: true },
     { icon: Mic, label: 'Interview Prep', path: '/interview-prep' },
     { icon: Sparkles, label: 'Free Tools', path: '/free-tools', highlight: true },
-    { icon: MousePointerClick, label: 'Auto-Fill Applications', path: '/dashboard?tab=profile', requiresAuth: true },
+    { icon: MousePointerClick, label: 'Auto-Fill Applications', path: '/dashboard?tab=profile', requiresAuth: true, locked: true },
     { icon: CreditCard, label: 'Pricing', path: '/pricing' },
   ];
 
@@ -87,15 +88,26 @@ const SideMenu = ({ isOpen, onClose }) => {
               return (
                 <button
                   key={item.path}
-                  onClick={() => handleNavigation(item.path)}
-                  className={`side-menu-item ${isActive ? 'active' : ''}`}
+                  onClick={() => {
+                    if (item.locked) return; // Prevent navigation if locked
+                    handleNavigation(item.path);
+                  }}
+                  className={`side-menu-item ${isActive ? 'active' : ''} ${item.locked ? 'opacity-60 cursor-not-allowed' : ''}`}
                 >
-                  {typeof item.icon === 'string' ? (
-                    <img src={item.icon} alt={item.label} className="side-menu-icon object-contain transform scale-150" style={{ width: '28px', height: '28px' }} />
-                  ) : (
-                    <item.icon className="side-menu-icon" />
-                  )}
+                  <div className="relative">
+                    {typeof item.icon === 'string' ? (
+                      <img src={item.icon} alt={item.label} className="side-menu-icon object-contain transform scale-150" style={{ width: '28px', height: '28px' }} />
+                    ) : (
+                      <item.icon className="side-menu-icon" />
+                    )}
+                    {item.locked && (
+                      <div className="absolute -top-1 -right-1 bg-gray-100 rounded-full p-0.5 border border-gray-200">
+                        <Lock className="w-3 h-3 text-gray-500" />
+                      </div>
+                    )}
+                  </div>
                   <span>{item.label}</span>
+                  {item.locked && <span className="ml-2 text-xs bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded border border-gray-200">Soon</span>}
                 </button>
               );
             })}
