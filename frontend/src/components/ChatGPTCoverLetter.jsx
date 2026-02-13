@@ -17,6 +17,7 @@ import {
 import { API_URL } from '../config/api';
 import SideMenu from './SideMenu';
 import Header from './Header';
+import SubscriptionWall from './SubscriptionWall';
 import './ChatGPTCoverLetter.css';
 
 const ChatGPTCoverLetter = () => {
