@@ -195,8 +195,17 @@ const ResumePaper = ({ content, scale = 1, onContentChange, fontFamily = '"Times
                         {parsed.experience && (
                             <div style={{ margin: '8px 0 0 0', padding: 0 }}>
                                 <h2 style={{ fontSize: '11pt', fontWeight: 'bold', textTransform: 'uppercase', borderBottom: isModern ? 'none' : '1px solid black', margin: 0, padding: 0, color: isModern ? '#3b82f6' : '#000' }}>Experience</h2>
-                                <div style={{ fontSize: '10pt', lineHeight: '1.2', whiteSpace: 'pre-wrap', margin: '2px 0 0 0', padding: 0 }}>
-                                    {parsed.experience.trim()}
+                                <div style={{ fontSize: '10pt', lineHeight: '1.2', margin: '2px 0 0 0', padding: 0 }}>
+                                    {parsed.experience.split('\n').map((line, i) => {
+                                        const trimmed = line.trim();
+                                        if (!trimmed) return null;
+                                        const isBullet = trimmed.startsWith('-') || trimmed.startsWith('•') || trimmed.startsWith('*');
+                                        if (isBullet) {
+                                            return <div key={i} style={{ paddingLeft: '12px' }}>{trimmed}</div>;
+                                        } else {
+                                            return <div key={i} style={{ fontWeight: 'bold', marginTop: '4px' }}>{trimmed}</div>;
+                                        }
+                                    })}
                                 </div>
                             </div>
                         )}
@@ -204,7 +213,18 @@ const ResumePaper = ({ content, scale = 1, onContentChange, fontFamily = '"Times
                         {parsed.projects && (
                             <div style={{ margin: '8px 0 0 0', padding: 0 }}>
                                 <h2 style={{ fontSize: '11pt', fontWeight: 'bold', textTransform: 'uppercase', borderBottom: isModern ? 'none' : '1px solid black', margin: 0, padding: 0, color: isModern ? '#3b82f6' : '#000' }}>Projects</h2>
-                                <div style={{ fontSize: '10pt', lineHeight: '1.2', whiteSpace: 'pre-wrap', margin: '2px 0 0 0', padding: 0 }}>{parsed.projects.trim()}</div>
+                                <div style={{ fontSize: '10pt', lineHeight: '1.2', margin: '2px 0 0 0', padding: 0 }}>
+                                    {parsed.projects.split('\n').map((line, i) => {
+                                        const trimmed = line.trim();
+                                        if (!trimmed) return null;
+                                        const isBullet = trimmed.startsWith('-') || trimmed.startsWith('•') || trimmed.startsWith('*');
+                                        if (isBullet) {
+                                            return <div key={i} style={{ paddingLeft: '12px' }}>{trimmed}</div>;
+                                        } else {
+                                            return <div key={i} style={{ fontWeight: 'bold', marginTop: '4px' }}>{trimmed}</div>;
+                                        }
+                                    })}
+                                </div>
                             </div>
                         )}
 

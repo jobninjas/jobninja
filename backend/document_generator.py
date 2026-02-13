@@ -1002,20 +1002,31 @@ def create_text_docx(text: str, title: str = "Document", font_family: str = "Tim
                 p.alignment = WD_ALIGN_PARAGRAPH.CENTER
                 add_bottom_border(p)
             p.paragraph_format.space_after = Pt(2)
+            p.paragraph_format.space_after = Pt(2)
         elif line_stripped.startswith('- ') or line_stripped.startswith('• '):
             # Bullet point
             p = doc.add_paragraph(line_stripped[2:], style='List Bullet')
             p.paragraph_format.space_after = Pt(0)
         else:
-            p = doc.add_paragraph(line)
-            # Try to center contact info if it's the first non-empty line after the name
-            # Strip literal "CONTACT:" prefix if AI included it
-            if i == 0 and line_stripped.upper().startswith("CONTACT:"):
-                 p.clear()
-                 p.add_run(line_stripped[8:].strip())
-                 
-            if i == 0 and ('@' in line or '|' in line) and not is_modern:
-                 p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            # Check if this is a job header (contains separators like " — " or " | ")
+            is_job_header = " — " in line_stripped or " | " in line_stripped or " – " in line_stripped
+            
+            p = doc.add_paragraph()
+            if is_job_header:
+                run = p.add_run(line)
+                run.bold = True
+            else:
+                # Try to center contact info if it's the first non-empty line after the name
+                # Strip literal "CONTACT:" prefix if AI included it
+                if i == 0 and line_stripped.upper().startswith("CONTACT:"):
+                     p.clear()
+                     p.add_run(line_stripped[8:].strip())
+                     
+                if i == 0 and ('@' in line or '|' in line) and not is_modern:
+                     p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                else:
+                    p.add_run(line)
+
             p.paragraph_format.space_after = Pt(0)
             
     # Save to BytesIO
