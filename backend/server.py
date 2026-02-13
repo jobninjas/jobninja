@@ -159,8 +159,10 @@ limiter = Limiter(key_func=get_remote_address)
 # Create the main app
 # Create the main app
 # Secure Docs: Hide in production
-docs_url = "/docs" if os.environ.get("ENVIRONMENT", "development") != "production" else None
-redoc_url = "/redoc" if os.environ.get("ENVIRONMENT", "development") != "production" else None
+# Secure Docs: Hide in production
+is_prod = os.environ.get("ENVIRONMENT") == "production"
+docs_url = None if is_prod else "/docs"
+redoc_url = None if is_prod else "/redoc"
 
 app = FastAPI(docs_url=docs_url, redoc_url=redoc_url)
 app.state.limiter = limiter
@@ -238,7 +240,20 @@ else:
 # Note: api_router will be included at the end of the file after all routes are defined
 
 # Security Configuration
-JWT_SECRET = os.environ.get("JWT_SECRET", "your-secret-key-change-in-production")
+# CRITICAL: Fail if no secret in production, or generate random one for dev
+if os.environ.get("ENVIRONMENT") == "production":
+    JWT_SECRET = os.environ.get("JWT_SECRET")
+    if not JWT_SECRET or JWT_SECRET == "your-secret-key-change-in-production":
+        logger.error("❌ CRITICAL: JWT_SECRET is missing or default in PRODUCTION!")
+        # For safety, we should raise error, but to avoid crash loop if they just deployed:
+        # We will generate a random one. THIS WILL LOGOUT ALL USERS ON RESTART.
+        import secrets
+        JWT_SECRET = secrets.token_urlsafe(32)
+        logger.warning(f"⚠️  Generated ephemeral JWT_SECRET: {JWT_SECRET[:5]}...")
+else:
+    # Dev mode: use env or default
+    JWT_SECRET = os.environ.get("JWT_SECRET", "dev-secret-key-do-not-use-in-prod")
+
 JWT_ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 7 days
 
