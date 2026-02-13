@@ -193,6 +193,41 @@ const LandingPage = () => {
       location: 'WA',
       text: 'The tailored resumes are spot-on. Each application feels personalized. Way better than copy-pasting the same resume everywhere.',
       avatar: 'AR'
+    },
+    {
+      name: 'Michael Chen',
+      role: 'Frontend Developer',
+      location: 'NY',
+      text: 'I was struggling with ATS rejections. After using the Resume Scanner and AI tailoring, my response rate tripled in two weeks.',
+      avatar: 'MC'
+    },
+    {
+      name: 'Sarah Johnson',
+      role: 'UX Designer',
+      location: 'Remote',
+      text: 'The automated cover letters actually sound human! I made minor edits and sent them out. Secured a role at a top design agency.',
+      avatar: 'SJ'
+    },
+    {
+      name: 'David Kim',
+      role: 'Backend Engineer',
+      location: 'IL',
+      text: 'Interview Prep modlue is a game changer. The AI gave me feedback on my answers that was exactly what the hiring manager asked.',
+      avatar: 'DK'
+    },
+    {
+      name: 'Emily Davis',
+      role: 'Marketing Manager',
+      location: 'FL',
+      text: 'Auto-fill saved me so much repetitive typing. I applied to 15 jobs during my lunch break. Highly recommend!',
+      avatar: 'ED'
+    },
+    {
+      name: 'James Wilson',
+      role: 'Project Manager',
+      location: 'UK',
+      text: 'Great platform for finding visa-sponsored roles. The job board is curated perfectly for international candidates.',
+      avatar: 'JW'
     }
   ];
 
@@ -563,22 +598,45 @@ const LandingPage = () => {
       <section className="testimonials-section-modern">
         <div className="container">
           <h2 className="section-title-modern">Success Stories</h2>
-          <div className="testimonials-grid-modern">
-            {testimonials.map((testimonial, index) => (
-              <Card key={index} className="testimonial-card-modern">
-                <div className="testimonial-quote-icon">
-                  <MessageSquare className="w-6 h-6" />
-                </div>
-                <p className="testimonial-text">"{testimonial.text}"</p>
-                <div className="testimonial-author">
-                  <div className="author-avatar">{testimonial.avatar}</div>
-                  <div className="author-info">
-                    <strong>{testimonial.name}</strong>
-                    <span>{testimonial.role} • {testimonial.location}</span>
-                  </div>
-                </div>
-              </Card>
-            ))}
+          <div className="testimonials-marquee-container">
+            <div className="testimonials-marquee-content">
+              {/* First Set */}
+              <div className="testimonials-scroll">
+                {testimonials.map((testimonial, index) => (
+                  <Card key={index} className="testimonial-card-modern">
+                    <div className="testimonial-quote-icon">
+                      <MessageSquare className="w-6 h-6" />
+                    </div>
+                    <p className="testimonial-text">"{testimonial.text}"</p>
+                    <div className="testimonial-author">
+                      <div className="author-avatar">{testimonial.avatar}</div>
+                      <div className="author-info">
+                        <strong>{testimonial.name}</strong>
+                        <span>{testimonial.role} • {testimonial.location}</span>
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+              {/* Duplicate Set for Infinite Loop */}
+              <div className="testimonials-scroll">
+                {testimonials.map((testimonial, index) => (
+                  <Card key={`dup-${index}`} className="testimonial-card-modern">
+                    <div className="testimonial-quote-icon">
+                      <MessageSquare className="w-6 h-6" />
+                    </div>
+                    <p className="testimonial-text">"{testimonial.text}"</p>
+                    <div className="testimonial-author">
+                      <div className="author-avatar">{testimonial.avatar}</div>
+                      <div className="author-info">
+                        <strong>{testimonial.name}</strong>
+                        <span>{testimonial.role} • {testimonial.location}</span>
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </section>
