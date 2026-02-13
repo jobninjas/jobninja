@@ -4978,14 +4978,17 @@ class RazorpayVerifyRequest(BaseModel):
 
 
 @app.post("/api/razorpay/create-order")
-async def create_razorpay_order_endpoint(request: RazorpayOrderRequest):
+async def create_razorpay_order_endpoint(request: RazorpayOrderRequest, user: dict = Depends(get_current_user)):
     """
     Create a Razorpay order for payment
     """
     try:
+        # Enforce email verification for payments
+        ensure_verified(user)
+        
         order = create_razorpay_order(
             plan_id=request.plan_id,
-            user_email=request.user_email,
+            user_email=user.get("email"), # Use authenticated email
             currency=request.currency,
         )
 
@@ -5007,7 +5010,7 @@ async def create_razorpay_order_endpoint(request: RazorpayOrderRequest):
 
 
 @app.post("/api/razorpay/verify-payment")
-async def verify_razorpay_payment_endpoint(request: RazorpayVerifyRequest):
+async def verify_razorpay_payment_endpoint(request: RazorpayVerifyRequest, user: dict = Depends(get_current_user)):
     """
     Verify Razorpay payment and activate subscription
     """
@@ -5024,10 +5027,12 @@ async def verify_razorpay_payment_endpoint(request: RazorpayVerifyRequest):
 
         # Get payment details
         payment = get_payment_details(request.razorpay_payment_id)
+        
+        user_email = user.get("email") # Trust the token, not the request body
 
         # Update user subscription in database
         await db.users.update_one(
-            {"email": request.user_email},
+            {"email": user_email},
             {
                 "$set": {
                     "subscription": {
@@ -5049,7 +5054,7 @@ async def verify_razorpay_payment_endpoint(request: RazorpayVerifyRequest):
         # Log the payment
         await db.payments.insert_one(
             {
-                "user_email": request.user_email,
+                "user_email": user_email,
                 "plan_id": request.plan_id,
                 "payment_id": request.razorpay_payment_id,
                 "order_id": request.razorpay_order_id,
