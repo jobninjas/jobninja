@@ -31,6 +31,39 @@ const Login = () => {
   const [submitting, setSubmitting] = useState(false);
   const [sideMenuOpen, setSideMenuOpen] = useState(false);
 
+  // Turnstile State
+  const turnstileRef = React.useRef(null);
+  const [turnstileToken, setTurnstileToken] = useState(null);
+
+  // Render Turnstile
+  useEffect(() => {
+    const renderTurnstile = () => {
+      if (window.turnstile && turnstileRef.current) {
+        window.turnstile.render(turnstileRef.current, {
+          sitekey: '0x4AAAAAAACeyHCDFw5HGsmjQ',
+          callback: function (token) {
+            setTurnstileToken(token);
+            setError('');
+          },
+        });
+      }
+    };
+
+    // If turnstile script is already loaded
+    if (window.turnstile) {
+      renderTurnstile();
+    } else {
+      // Check periodically or wait for load (simple retry)
+      const interval = setInterval(() => {
+        if (window.turnstile) {
+          clearInterval(interval);
+          renderTurnstile();
+        }
+      }, 100);
+      return () => clearInterval(interval);
+    }
+  }, []);
+
   const handleChange = (e) => {
     setFormData({
       ...formData,
@@ -41,10 +74,15 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    if (!turnstileToken) {
+      setError('Please complete the security check.');
+      return;
+    }
+
     setSubmitting(true);
 
     try {
-      const result = await login(formData.email, formData.password);
+      const result = await login(formData.email, formData.password, turnstileToken);
       if (result.success) {
         // Redirect based on user role
         if (result.user.role === 'customer') {
@@ -129,6 +167,11 @@ const Login = () => {
                 required
                 className="h-14 px-5 border-[#e5e7eb] bg-white text-base rounded-xl focus:ring-2 focus:ring-[#22c55e]/20 focus:border-[#22c55e]"
               />
+            </div>
+
+            {/* Turnstile Widget */}
+            <div className="flex justify-center my-4">
+              <div ref={turnstileRef}></div>
             </div>
 
             <Button

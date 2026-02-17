@@ -262,7 +262,48 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 7 days
 def hash_password(password: str) -> str:
     """Hash a password using bcrypt."""
     salt = bcrypt.gensalt()
+    salt = bcrypt.gensalt()
     return bcrypt.hashpw(password.encode("utf-8"), salt).decode("utf-8")
+
+
+async def verify_turnstile_token(token: str, ip_address: str = None) -> bool:
+    """
+    Verify Cloudflare Turnstile token.
+    """
+    secret_key = os.environ.get("CLOUDFLARE_TURNSTILE_SECRET_KEY")
+    # If no secret key is set (e.g. dev without keys), we might skip or fail.
+    # For security, better to fail, but for dev convenience, maybe skip if not set?
+    # Let's fail safe: if key provided, must verify.
+    
+    if not secret_key or secret_key == "PASTE_YOUR_SECRET_KEY_HERE":
+        logger.warning("Turnstile Secret Key not configured. Skipping verification.")
+        return True
+
+    if not token:
+        return False
+
+    try:
+        async with aiohttp.ClientSession() as session:
+            payload = {
+                "secret": secret_key,
+                "response": token
+            }
+            if ip_address:
+                payload["remoteip"] = ip_address
+
+            async with session.post(
+                "https://challenges.cloudflare.com/turnstile/v0/siteverify",
+                data=payload
+            ) as response:
+                result = await response.json()
+                if not result.get("success"):
+                    logger.warning(f"Turnstile verification failed: {result.get('error-codes')}")
+                    return False
+                return True
+    except Exception as e:
+        logger.error(f"Turnstile verification error: {e}")
+        # Fail open or closed? Closed for security.
+        return False
 
 
 def ensure_verified(user: dict):
@@ -531,11 +572,13 @@ class UserSignup(BaseModel):
     password: str
     name: str
     referral_code: Optional[str] = None
+    turnstile_token: Optional[str] = None
 
 
 class UserLogin(BaseModel):
     email: str
     password: str
+    turnstile_token: Optional[str] = None
 
 
 class GoogleLoginRequest(BaseModel):
@@ -1485,6 +1528,11 @@ async def signup(user_data: UserSignup, request: Request):
     Register a new user and send welcome email.
     """
     try:
+        # Verify Turnstile
+        client_ip = request.client.host if request.client else None
+        if not await verify_turnstile_token(user_data.turnstile_token, client_ip):
+             raise HTTPException(status_code=400, detail="Security check failed. Please refresh and try again.")
+
         # Check if user already exists (case-insensitive)
         existing_user = await db.users.find_one(
             {"email": {"$regex": f"^{re.escape(user_data.email)}$", "$options": "i"}}
@@ -1551,6 +1599,11 @@ async def login(credentials: UserLogin, request: Request):
     """
     Login user with email and password.
     """
+    # Verify Turnstile
+    client_ip = request.client.host if request.client else None
+    if not await verify_turnstile_token(credentials.turnstile_token, client_ip):
+            raise HTTPException(status_code=400, detail="Security check failed. Please refresh and try again.")
+
     email_clean = credentials.email.strip()
     # Find all matching users and sort by is_verified (True first)
     cursor = db.users.find(

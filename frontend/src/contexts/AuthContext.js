@@ -77,12 +77,12 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   // Login function - calls backend API
-  const login = async (email, password) => {
+  const login = async (email, password, turnstileToken) => {
     try {
       const response = await fetch(`${API_URL}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
+        body: JSON.stringify({ email, password, turnstile_token: turnstileToken })
       });
 
       const data = await response.json();
@@ -103,12 +103,12 @@ export const AuthProvider = ({ children }) => {
   };
 
   // Signup function - calls backend API and sends welcome email
-  const signup = async (email, password, name, referralCode) => {
+  const signup = async (email, password, name, referralCode, turnstileToken) => {
     try {
       const response = await fetch(`${API_URL}/api/auth/signup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, name, referral_code: referralCode })
+        body: JSON.stringify({ email, password, name, referral_code: referralCode, turnstile_token: turnstileToken })
       });
 
       const data = await response.json();

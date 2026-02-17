@@ -27,6 +27,39 @@ const Signup = () => {
   const [submitting, setSubmitting] = useState(false);
   const [sideMenuOpen, setSideMenuOpen] = useState(false);
 
+  // Turnstile State
+  const turnstileRef = React.useRef(null);
+  const [turnstileToken, setTurnstileToken] = useState(null);
+
+  // Render Turnstile
+  useEffect(() => {
+    const renderTurnstile = () => {
+      if (window.turnstile && turnstileRef.current) {
+        window.turnstile.render(turnstileRef.current, {
+          sitekey: '0x4AAAAAAACeyHCDFw5HGsmjQ',
+          callback: function (token) {
+            setTurnstileToken(token);
+            setError('');
+          },
+        });
+      }
+    };
+
+    // If turnstile script is already loaded
+    if (window.turnstile) {
+      renderTurnstile();
+    } else {
+      // Check periodically or wait for load (simple retry)
+      const interval = setInterval(() => {
+        if (window.turnstile) {
+          clearInterval(interval);
+          renderTurnstile();
+        }
+      }, 100);
+      return () => clearInterval(interval);
+    }
+  }, []);
+
   // Redirect if already authenticated
   useEffect(() => {
     if (!authLoading && isAuthenticated) {
@@ -55,10 +88,15 @@ const Signup = () => {
       return;
     }
 
+    if (!turnstileToken) {
+      setError('Please complete the security check.');
+      return;
+    }
+
     setSubmitting(true);
 
     try {
-      const result = await signup(formData.email, formData.password, formData.name, referralCode);
+      const result = await signup(formData.email, formData.password, formData.name, referralCode, turnstileToken);
       if (result.success) {
         navigate('/'); // Redirect to home page after signup
       }
@@ -164,6 +202,11 @@ const Signup = () => {
                 required
                 className="h-12 px-5 border-[#e5e7eb] bg-white text-base rounded-xl focus:ring-2 focus:ring-[#22c55e]/20 focus:border-[#22c55e]"
               />
+            </div>
+
+            {/* Turnstile Widget */}
+            <div className="flex justify-center my-4">
+              <div ref={turnstileRef}></div>
             </div>
 
             <div className="pt-2">
