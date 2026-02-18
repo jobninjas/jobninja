@@ -914,3 +914,138 @@ async def fetch_lever_jobs(company_id: str) -> List[Dict[str, Any]]:
     except Exception as e:
         logger.error(f"Error fetching Lever jobs for {company_id}: {e}")
         return []
+
+# =============================================================================
+# EXPORTED FUNCTIONS: Main Orchestration
+# =============================================================================
+
+async def fetch_all_job_categories(db=None) -> List[Dict[str, Any]]:
+    """
+    Main function to fetch jobs from ALL sources
+    """
+    logger.info("🚀 Starting multi-source job fetch...")
+    all_jobs = []
+    
+    # 1. Fetch from Adzuna (US Software Engineers)
+    try:
+        adzuna_jobs = await fetch_jobs_from_adzuna(
+            country="us", 
+            what="software engineer",
+            results_per_page=50
+        )
+        all_jobs.extend(adzuna_jobs)
+    except Exception as e:
+        logger.error(f"Failed to fetch Adzuna jobs: {e}")
+
+    # 2. Fetch from RemoteOK
+    try:
+        remoteok_jobs = await fetch_jobs_from_remoteok()
+        all_jobs.extend(remoteok_jobs)
+    except Exception as e:
+        logger.error(f"Failed to fetch RemoteOK jobs: {e}")
+
+    # 3. Fetch from Remotive (Software Dev)
+    try:
+        remotive_jobs = await fetch_jobs_from_remotive(category="software-dev")
+        all_jobs.extend(remotive_jobs)
+    except Exception as e:
+        logger.error(f"Failed to fetch Remotive jobs: {e}")
+        
+    # 4. Fetch from Arbeitnow (DISABLED)
+    # arbeitnow_jobs = await fetch_jobs_from_arbeitnow()
+    # all_jobs.extend(arbeitnow_jobs)
+    
+    # 5. Fetch from Jobicy
+    try:
+        jobicy_jobs = await fetch_jobs_from_jobicy(count=50, geo="usa")
+        all_jobs.extend(jobicy_jobs)
+    except Exception as e:
+        logger.error(f"Failed to fetch Jobicy jobs: {e}")
+        
+    # 6. Fetch from YC RSS
+    try:
+        yc_jobs = await fetch_jobs_from_yc_rss()
+        all_jobs.extend(yc_jobs)
+    except Exception as e:
+        logger.error(f"Failed to fetch YC jobs: {e}")
+
+    # 7. Fetch from Greenhouse (Direct Scraping) - Top Tech Companies
+    greenhouse_companies = ["stripe", "twitch", "dropbox", "airbnb", "reddit", "gusto"]
+    for company in greenhouse_companies:
+        try:
+            gh_jobs = await fetch_greenhouse_jobs(company)
+            all_jobs.extend(gh_jobs)
+        except Exception as e:
+            logger.error(f"Failed to fetch Greenhouse jobs for {company}: {e}")
+
+    # 8. Fetch from Lever (Direct Scraping) - Top Tech Companies
+    lever_companies = ["netflix", "atlassian", "figma", "plaid", "affirm"]
+    for company in lever_companies:
+        try:
+            lever_jobs = await fetch_lever_jobs(company)
+            all_jobs.extend(lever_jobs)
+        except Exception as e:
+            logger.error(f"Failed to fetch Lever jobs for {company}: {e}")
+    
+    logger.info(f"🏁 Total jobs fetched from all sources: {len(all_jobs)}")
+    return all_jobs
+
+
+async def update_jobs_in_database(db, jobs: List[Dict[str, Any]]) -> int:
+    """
+    Update jobs in MongoDB database
+    """
+    if not jobs:
+        logger.warning("No jobs to update")
+        return 0
+    
+    try:
+        # Get all sources from jobs
+        sources = list(set(job.get("source", "unknown") for job in jobs))
+        
+        # Mark old jobs from these sources as inactive
+        # This is a bit aggressive if we are fetching partial lists, but acceptable for aggregator
+        await db.jobs.update_many(
+            {"source": {"$in": sources}},
+            {"$set": {"isActive": False}}
+        )
+        
+        # Insert/update new jobs
+        count = 0
+        for job in jobs:
+            # Ensure job is active
+            job["isActive"] = True
+            
+            # Upsert by externalId
+            result = await db.jobs.update_one(
+                {"externalId": job["externalId"]},
+                {"$set": job},
+                upsert=True
+            )
+            if result.upserted_id or result.modified_count:
+                count += 1
+        
+        # Ensure all formatted/inserted jobs are explicitly active
+        external_ids = [job["externalId"] for job in jobs]
+        await db.jobs.update_many(
+            {"externalId": {"$in": external_ids}},
+            {"$set": {"isActive": True}}
+        )
+        
+        logger.info(f"💾 Database update complete: {count} jobs inserted/updated")
+        return count
+        
+    except Exception as e:
+        logger.error(f"❌ Database update failed: {e}")
+        return 0
+
+
+async def scheduled_job_fetch(db):
+    """
+    Task to be run on schedule
+    """
+    logger.info("⏰ Starting scheduled job fetch...")
+    jobs = await fetch_all_job_categories(db)
+    if jobs and db is not None:
+        await update_jobs_in_database(db, jobs)
+    logger.info("✅ Scheduled job fetch completed")
