@@ -5,7 +5,7 @@ import { Button } from './ui/button';
 import { Card } from './ui/card';
 import { Badge } from './ui/badge';
 import SideMenu from './SideMenu';
-import BrandLogo from './BrandLogo';
+import Header from './Header';
 import './SideMenu.css';
 import {
     MapPin,
@@ -193,24 +193,8 @@ const JobDetailsOrion = () => {
         <div className="job-detail-page bg-[#F3F4F6] min-h-screen font-sans">
             <SideMenu isOpen={sideMenuOpen} onClose={() => setSideMenuOpen(false)} />
 
-            {/* Navigation */}
-            <header className="bg-white border-b sticky top-0 z-50">
-                <div className="w-full px-4 h-16 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                        <Button variant="ghost" size="icon" onClick={() => setSideMenuOpen(true)}>
-                            <Menu className="w-5 h-5" />
-                        </Button>
-                        <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/')}>
-                            <img src={BRAND.logoPath} alt="Logo" className="h-8" />
-                            <BrandLogo className="text-xl font-bold text-gray-900" />
-                        </div>
-                    </div>
-                    <div className="flex gap-2">
-                        <Button variant="ghost" onClick={() => navigate('/jobs')}>Jobs</Button>
-                        <Button variant="ghost" onClick={() => navigate('/dashboard')}>Dashboard</Button>
-                    </div>
-                </div>
-            </header>
+            {/* Standard Navigation Header */}
+            <Header onMenuClick={() => setSideMenuOpen(true)} />
 
 
             <div className="container mx-auto px-4 pt-1 pb-6 max-w-6xl">
