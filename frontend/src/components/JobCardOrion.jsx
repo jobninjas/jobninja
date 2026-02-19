@@ -1,6 +1,7 @@
 import React from 'react';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
+import { useAINinja } from '../contexts/AINinjaContext';
 import { Card } from './ui/card';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -60,6 +61,8 @@ const MatchScore = ({ score }) => {
 const JobCardOrion = ({ job, onAskNova }) => {
     const navigate = useNavigate();
 
+    const { openChatWithJob } = useAINinja();
+
     // Parse date for "posted x hours ago"
     const getTimeAgo = (dateString) => {
         if (!dateString) return 'Recently';
@@ -85,17 +88,7 @@ const JobCardOrion = ({ job, onAskNova }) => {
 
     const handleAskNova = (e) => {
         e.stopPropagation();
-        if (onAskNova) {
-            onAskNova(job);
-        } else {
-            // Open Nova chat with context (fallback)
-            navigate('/ai-ninja', {
-                state: {
-                    initialMessage: `Tell me about the ${job.title} role at ${job.company}. Is it a good fit for me?`,
-                    jobContext: job
-                }
-            });
-        }
+        openChatWithJob(job);
     };
 
     return (
@@ -188,7 +181,7 @@ const JobCardOrion = ({ job, onAskNova }) => {
                             onClick={handleAskNova}
                         >
                             <MessageSquare className="w-4 h-4 mr-2" />
-                            Ask Nova
+                            Ask AI Ninja
                         </Button>
                     </div>
                 </div>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useAINinja } from '../contexts/AINinjaContext';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
 import { Badge } from './ui/badge';
@@ -56,6 +57,7 @@ const JobDetailsOrion = () => {
     const navigate = useNavigate();
     const { id } = useParams();
     const { isAuthenticated } = useAuth();
+    const { openChatWithJob } = useAINinja();
     const [job, setJob] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -257,8 +259,8 @@ const JobDetailsOrion = () => {
                                         <Sparkles className="w-5 h-5 mr-2" /> Apply with Autofill
                                     </Button>
                                     <Button variant="outline" className="flex-1 h-12 text-lg border-gray-200 rounded-xl hover:bg-gray-50 text-gray-700"
-                                        onClick={() => navigate('/ai-ninja', { state: { initialMessage: `Tell me about ${job.title} at ${job.company}`, jobContext: job } })}>
-                                        <MessageSquare className="w-5 h-5 mr-2" /> Ask Nova
+                                        onClick={() => openChatWithJob(job)}>
+                                        <MessageSquare className="w-5 h-5 mr-2" /> Ask AI Ninja
                                     </Button>
                                     {job.sourceUrl && (
                                         <Button variant="outline" className="flex-1 h-12 text-lg border-gray-200 rounded-xl hover:bg-gray-50 text-gray-700"
