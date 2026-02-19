@@ -194,7 +194,7 @@ const JobDetailsOrion = () => {
 
             {/* Navigation */}
             <header className="bg-white border-b sticky top-0 z-50">
-                <div className="container mx-auto px-4 h-16 flex items-center justify-between">
+                <div className="w-full px-4 h-16 flex items-center justify-between">
                     <div className="flex items-center gap-4">
                         <Button variant="ghost" size="icon" onClick={() => setSideMenuOpen(true)}>
                             <Menu className="w-5 h-5" />
