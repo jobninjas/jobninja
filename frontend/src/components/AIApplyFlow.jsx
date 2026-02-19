@@ -670,9 +670,16 @@ const AIApplyFlow = ({ isScanner = false }) => {
               {jobData.location && <span><MapPin className="w-4 h-4" /> {jobData.location}</span>}
             </div>
           </div>
-          <Button variant="ghost" onClick={() => navigate('/ai-ninja')}>
-            <ArrowLeft className="w-4 h-4 mr-2" /> Back
-          </Button>
+          <div className="flex gap-2">
+            {jobData.sourceUrl && (
+              <Button variant="outline" size="sm" onClick={() => window.open(jobData.sourceUrl, '_blank')}>
+                <ExternalLink className="w-4 h-4 mr-2" /> Apply on Site
+              </Button>
+            )}
+            <Button variant="ghost" onClick={() => navigate('/ai-ninja')}>
+              <ArrowLeft className="w-4 h-4 mr-2" /> Back
+            </Button>
+          </div>
         </div>
       </Card>
     );

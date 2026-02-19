@@ -266,7 +266,8 @@ const JobDetailsOrion = () => {
                                             jobId: job.id,
                                             jobTitle: job.title,
                                             company: job.company,
-                                            jobDescription: job.fullDescription || job.description
+                                            jobDescription: job.fullDescription || job.description,
+                                            sourceUrl: job.sourceUrl
                                         }
                                     })}>
                                     <Sparkles className="w-5 h-5 mr-2" /> Apply with Autofill
@@ -275,6 +276,12 @@ const JobDetailsOrion = () => {
                                     onClick={() => navigate('/ai-ninja', { state: { initialMessage: `Tell me about ${job.title} at ${job.company}`, jobContext: job } })}>
                                     <MessageSquare className="w-5 h-5 mr-2" /> Ask Nova
                                 </Button>
+                                {job.sourceUrl && (
+                                    <Button variant="outline" className="flex-1 h-12 text-lg border-gray-200 rounded-xl hover:bg-gray-50 text-gray-700"
+                                        onClick={() => window.open(job.sourceUrl, '_blank')}>
+                                        <ExternalLink className="w-5 h-5 mr-2" /> Apply on Site
+                                    </Button>
+                                )}
                             </div>
                         </Card>
 
