@@ -127,7 +127,7 @@ const AIApplyFlow = ({ isScanner = false }) => {
   const [isFetchingUrl, setIsFetchingUrl] = useState(false);
   const [activeTab, setActiveTab] = useState('report');
   const [isDownloading, setIsDownloading] = useState(null);
-  const [customJobDescription, setCustomJobDescription] = useState(jobData.description || '');
+  const [customJobDescription, setCustomJobDescription] = useState(jobData.jobDescription || jobData.description || '');
   const [customJobTitle, setCustomJobTitle] = useState(jobData.jobTitle || jobData.title || '');
   const [usageLimits, setUsageLimits] = useState(null);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
