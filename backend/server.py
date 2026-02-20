@@ -88,12 +88,19 @@ from byok_validators import (
     validate_api_key_format,
 )
 from openai import AsyncOpenAI
-# Ensure parser is available
+# Ensure parser and enrichment are available
 try:
     from resume_parser import parse_resume, validate_resume_file
 except ImportError:
-    # Log but don't crash yet, assume it might be fixed later or this block acts as warning
-    pass
+    parse_resume = None
+    validate_resume_file = None
+
+try:
+    from company_enrichment import enrich_company, enrich_job_metadata
+except (ImportError, ModuleNotFoundError):
+    logger.error("Failed to import company_enrichment. Company features will be limited.")
+    async def enrich_company(name, db=None): return {"name": name}
+    def enrich_job_metadata(job): return job
 
 # Setup logging
 logger = logging.getLogger(__name__)
@@ -132,8 +139,11 @@ if not mongo_url:
     db = None
 else:
     try:
-        masked_url = mongo_url.split("@")[-1] if "@" in mongo_url else "hidden"
-        logger.info(f"🔄 Initializing MongoDB connection to: ...@{masked_url}")
+        if mongo_url.startswith("mongodb+srv://"):
+            logger.info("Connecting to MongoDB Atlas (srv)...")
+        else:
+            masked_url = mongo_url.split("@")[-1] if "@" in mongo_url else "hidden"
+            logger.info(f"🔄 Initializing MongoDB connection to: ...@{masked_url}")
         
         # Use simple connection with basic SSL bypass
         # Motor/PyMongo 4.x uses tlsAllowInvalidCertificates instead of ssl_cert_reqs
@@ -7092,7 +7102,7 @@ async def submit_contact_message(data: ContactMessage):
 # ============================================
 # COMPANY ENRICHMENT API
 # ============================================
-from company_enrichment import enrich_company, enrich_job_metadata
+# Imports handled at top of file for robustness
 
 @app.get("/api/company/{company_name}/data")
 async def get_company_data(company_name: str):
