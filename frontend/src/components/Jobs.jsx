@@ -26,7 +26,8 @@ import {
   X,
   Loader2,
   RefreshCw,
-  Zap
+  Zap,
+  Settings
 } from 'lucide-react';
 import { BRAND } from '../config/branding';
 import { API_URL } from '../config/api';
@@ -59,6 +60,40 @@ const Jobs = () => {
   const [sponsorshipFilter, setSponsorshipFilter] = useState('all');
   const [workTypeFilter, setWorkTypeFilter] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
+  const [userProfile, setUserProfile] = useState(null);
+  const [recommendedTags, setRecommendedTags] = useState([]);
+
+  // Fetch user profile to get default filters
+  const fetchUserProfile = async () => {
+    try {
+      const storedToken = token || localStorage.getItem('auth_token');
+      if (!storedToken) return;
+
+      const response = await fetch(`${API_URL}/api/user/profile`, {
+        headers: { 'token': storedToken }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.profile) {
+          setUserProfile(data.profile);
+
+          // Set defaults if currently empty
+          const targetRole = data.profile.preferences?.target_role || data.profile.targetRole;
+          const preferredLocation = data.profile.preferences?.preferred_locations || data.profile.address?.city || data.profile.city;
+
+          if (targetRole && !searchKeyword) {
+            setSearchKeyword(targetRole);
+          }
+          if (preferredLocation && !locationFilter) {
+            setLocationFilter(preferredLocation);
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching user profile for filters:', err);
+    }
+  };
 
 
   // Fetch jobs from API
@@ -74,6 +109,10 @@ const Jobs = () => {
 
       if (searchKeyword) {
         url += `&search=${encodeURIComponent(searchKeyword)}`;
+      }
+
+      if (locationFilter) {
+        url += `&location=${encodeURIComponent(locationFilter)}`;
       }
 
       if (workTypeFilter && workTypeFilter !== 'all') {
@@ -137,8 +176,12 @@ const Jobs = () => {
         console.log('Loaded', mappedJobs.length, 'jobs');
       } else {
         setJobs([]);
-        setPagination({ page: 1, limit: 20, total: 0, pages: 0 });
+        setPagination(data.pagination || { page: 1, limit: 20, total: jobsArray.length, pages: 1 });
         setError('No jobs found matching your filters');
+      }
+
+      if (data.recommendedFilters) {
+        setRecommendedTags(data.recommendedFilters);
       }
     } catch (error) {
       console.error('Error fetching jobs:', error);
@@ -180,12 +223,15 @@ const Jobs = () => {
       }
     }, 500);
     return () => clearTimeout(timer);
-  }, [searchKeyword]);
+  }, [searchKeyword, locationFilter]);
 
-  // Initial fetch for stats only
+  // Initial fetch for stats and profile
   useEffect(() => {
     fetchJobStats();
-  }, []);
+    if (isAuthenticated) {
+      fetchUserProfile();
+    }
+  }, [isAuthenticated]);
 
   // Filter jobs locally
   // Jobs are now filtered on the server
@@ -219,13 +265,41 @@ const Jobs = () => {
 
   return (
     <DashboardLayout activePage="jobs">
-      <div className="jobs-page-content p-6">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold">Recommended Jobs</h1>
-          <div className="text-sm text-gray-500">
+      <div className="jobs-page-content p-3 sm:p-4 md:p-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-1 mb-4 sm:mb-6">
+          <h1 className="text-xl sm:text-2xl font-bold">Recommended Jobs</h1>
+          <div className="text-xs sm:text-sm text-gray-500">
             Based on your resume profile
           </div>
         </div>
+
+        {/* Recommended Tags Hero Row */}
+        {isAuthenticated && recommendedTags.length > 0 && (
+          <div className="recommended-tags-row mb-6 overflow-x-auto whitespace-nowrap pb-2 flex items-center gap-3">
+            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Recommended:</span>
+            {recommendedTags.map((tag, idx) => (
+              <button
+                key={`${tag.type}-${idx}`}
+                onClick={() => {
+                  if (tag.type === "role") setSearchKeyword(tag.value);
+                  if (tag.type === "location") setLocationFilter(tag.value);
+                }}
+                className={`px-3 py-1.5 rounded-full border text-sm font-medium transition-all flex items-center gap-2 ${(tag.type === 'role' && searchKeyword.toLowerCase().includes(tag.value.toLowerCase())) ||
+                  (tag.type === 'location' && locationFilter.toLowerCase().includes(tag.value.toLowerCase()))
+                  ? 'bg-primary/10 border-primary text-primary'
+                  : 'bg-white border-gray-200 text-gray-600 hover:border-primary/50'
+                  }`}
+              >
+                {tag.label}
+                {tag.type === 'role' && <Badge variant="secondary" className="bg-primary/10 text-primary border-0 text-[10px] px-1 h-4">+1</Badge>}
+                {tag.type === 'location' && <Badge variant="secondary" className="bg-green-100 text-green-700 border-0 text-[10px] px-1 h-4">New</Badge>}
+              </button>
+            ))}
+            <Button variant="ghost" size="sm" className="text-primary text-xs font-bold gap-1 ml-auto">
+              All Filters <Settings className="w-3 h-3" />
+            </Button>
+          </div>
+        )}
 
         {/* Filters Section */}
         <section className="jobs-filters-section">

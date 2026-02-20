@@ -15,9 +15,16 @@ async def check():
     count = await db.jobs.count_documents({})
     print(f"Total Jobs: {count}")
     
-    distinct_sources = await db.jobs.distinct("source")
-    print(f"Sources found: {distinct_sources}")
-    
+    # Aggregation to count by source
+    pipeline = [
+        {"$group": {"_id": "$source", "count": {"$sum": 1}}}
+    ]
+    results = await db.jobs.aggregate(pipeline).to_list(None)
+    print("\n--- Job Counts by Source ---")
+    for r in results:
+        print(f"{r['_id']}: {r['count']}")
+    print("----------------------------\n")
+
     # Check Workday specifically
     wd_count = await db.jobs.count_documents({"source": "workday"})
     print(f"Workday Jobs: {wd_count}")

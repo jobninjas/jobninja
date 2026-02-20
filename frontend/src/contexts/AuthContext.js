@@ -53,14 +53,13 @@ export const AuthProvider = ({ children }) => {
           });
           clearTimeout(timeoutId);
 
-          if (response.ok) {
-            const data = await response.json();
-            localStorage.setItem('user_data', JSON.stringify(data.user));
-            setUser(data.user);
-          } else {
+          if (response.status === 401 || response.status === 403) {
             localStorage.removeItem('auth_token');
             localStorage.removeItem('user_data');
             setUser(null);
+          } else {
+            // Server error or other issue, keep local state but log it
+            console.error('Auth verification server error:', response.status);
           }
         } catch (e) {
           console.error('Auth verification error:', e);

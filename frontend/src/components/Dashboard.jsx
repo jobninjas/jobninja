@@ -11,6 +11,7 @@ import { Textarea } from './ui/textarea';
 import { API_URL, apiCall } from '../config/api';
 import { BRAND, APPLICATION_STATUS_LABELS } from '../config/branding';
 import SideMenu from './SideMenu';
+import ProfileOrion from './ProfileOrion';
 import './SideMenu.css';
 import VerificationBanner from './VerificationBanner';
 import {
@@ -1114,6 +1115,22 @@ const Dashboard = () => {
             )}
 
             {activeTab === 'profile' && (
+              <ProfileOrion
+                profile={profile}
+                handleProfileChange={handleProfileChange}
+                handleArrayChange={handleArrayChange}
+                addArrayItem={addArrayItem}
+                removeArrayItem={removeArrayItem}
+                handleFileUpload={handleFileUpload}
+                handleResumeSync={handleResumeSync}
+                handleSaveProfile={handleSaveProfile}
+                isSaving={isSaving}
+                isSyncing={isSyncing}
+                saveMessage={saveMessage}
+                user={user}
+              />
+            )}
+            {false && activeTab === 'profile' && (
               <div className="space-y-6">
                 {/* Save Message */}
                 {saveMessage && (

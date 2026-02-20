@@ -21,6 +21,8 @@ from typing import List, Dict, Any, Optional
 import re
 import json
 
+import logging
+print("LOADED NEW JOB FETCHER")
 logger = logging.getLogger(__name__)
 
 # =============================================================================
@@ -351,6 +353,7 @@ async def fetch_jobs_from_adzuna(
                         "company": company,
                         "location": job.get("location", {}).get("display_name", "Unknown Location"),
                         "description": sanitize_description(description),
+                        "fullDescription": sanitize_description(description),
                         "salaryRange": format_salary_range(salary_min, salary_max),
                         "salaryMin": salary_min,
                         "salaryMax": salary_max,
@@ -456,6 +459,7 @@ async def fetch_jobs_from_remoteok() -> List[Dict[str, Any]]:
                         "company": company,
                         "location": location,
                         "description": sanitize_description(description),
+                        "fullDescription": sanitize_description(description),
                         "salaryRange": format_salary_range(salary_min, salary_max),
                         "salaryMin": salary_min,
                         "salaryMax": salary_max,
@@ -560,6 +564,7 @@ async def fetch_jobs_from_remotive(category: str = None, limit: int = 500) -> Li
                         "company": company,
                         "location": location,
                         "description": sanitize_description(description),
+                        "fullDescription": sanitize_description(description),
                         "salaryRange": format_salary_range(salary_min, salary_max),
                         "salaryMin": salary_min,
                         "salaryMax": salary_max,
@@ -694,6 +699,7 @@ async def fetch_jobs_from_jobicy(count: int = 50, geo: str = None, industry: str
                         "company": company,
                         "location": location,
                         "description": sanitize_description(description),
+                        "fullDescription": sanitize_description(description),
                         "salaryRange": format_salary_range(salary_min, salary_max),
                         "salaryMin": salary_min,
                         "salaryMax": salary_max,
@@ -765,6 +771,7 @@ async def fetch_jobs_from_yc_rss() -> List[Dict[str, Any]]:
                 "company": company,
                 "location": "Remote / US" if is_remote else "San Francisco, CA",
                 "description": sanitize_description(description),
+                "fullDescription": sanitize_description(description),
                 "salaryRange": "Competitive",
                 "salaryMin": 0,
                 "salaryMax": 0,
@@ -921,70 +928,170 @@ async def fetch_lever_jobs(company_id: str) -> List[Dict[str, Any]]:
 
 async def fetch_ashby_jobs(company_id: str) -> List[Dict[str, Any]]:
     """
-    Fetch jobs from public Ashby board
-    URL format: https://api.ashbyhq.com/posting-api/job-board/{company_id}
+    Fetch jobs from Ashby:
+    1. Get list via GraphQL (fast)
+    2. Concurrently fetch HTML for each job to get full description (slow but necessary)
     """
-    url = f"https://api.ashbyhq.com/posting-api/job-board/{company_id}"
+    gql_url = "https://jobs.ashbyhq.com/api/non-user-graphql?op=ApiJobBoardWithTeams"
     
+    # 1. Fetch List
+    jobs_list = []
     try:
+        payload = {
+            "operationName": "ApiJobBoardWithTeams",
+            "variables": { "organizationHostedJobsPageName": company_id },
+            "query": """
+            query ApiJobBoardWithTeams($organizationHostedJobsPageName: String!) {
+              jobBoard: jobBoardWithTeams(
+                organizationHostedJobsPageName: $organizationHostedJobsPageName
+              ) {
+                jobPostings {
+                  id
+                  title
+                  locationName
+                  employmentType
+                  secondaryLocations {
+                    locationName
+                  }
+                  compensationTierSummary
+                }
+              }
+            }
+            """
+        }
+        
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Accept": "application/json",
+            "Accept-Encoding": "gzip, deflate",
+            "Content-Type": "application/json"
+        }
+
         async with aiohttp.ClientSession() as session:
-            async with session.post(url, json={"includeCompensation": True}, timeout=30) as response:
+            async with session.post(gql_url, json=payload, headers=headers) as response:
                 if response.status != 200:
-                    logger.warning(f"Ashby board not found for {company_id}")
+                    logger.warning(f"Ashby GraphQL failed for {company_id}: {response.status}")
                     return []
                 
                 data = await response.json()
-                jobs = []
-                
-                for job in data.get("jobs", []):
-                    title = job.get("title", "")
-                    description = job.get("descriptionHtml", "") 
-                    
-                    # Parse using new functions
-                    sections = parse_job_sections(description)
-                    is_visa = detect_visa_sponsorship(description)
-                    
-                    location = job.get("location", "Unknown")
-                    work_type = "remote" if job.get("isRemote") else detect_work_type(title, location)
-                    
-                    # Ashby compensation
-                    comp = job.get("compensation", {})
-                    salary_min = comp.get("minValue") or 0
-                    salary_max = comp.get("maxValue") or 0
-                    salary_range = "Competitive"
-                    if salary_min and salary_max:
-                        salary_range = f"${int(salary_min):,} - ${int(salary_max):,}"
-                    
-                    job_data = {
-                        "externalId": f"ashby-{job.get('id')}",
-                        "title": title,
-                        "company": company_id.capitalize(),
-                        "location": location,
-                        "description": sanitize_description(description),
-                        "responsibilities": sanitize_description(sections["responsibilities"]),
-                        "qualifications": sanitize_description(sections["qualifications"]),
-                        "benefits": sanitize_description(sections["benefits"]),
-                        "fullDescription": sanitize_description(description),
-                        "salaryRange": salary_range,
-                        "salaryMin": salary_min,
-                        "salaryMax": salary_max,
-                        "sourceUrl": job.get("jobUrl", ""),
-                        "source": "ashby",
-                        "type": work_type,
-                        "visaTags": ["visa-sponsoring"] if is_visa else [],
-                        "categoryTags": build_job_tags({"visaTags": is_visa, "type": work_type}),
-                        "createdAt": datetime.now(timezone.utc),
-                        "updatedAt": datetime.now(timezone.utc),
-                        "isActive": True
-                    }
-                    jobs.append(job_data)
-                    
-                logger.info(f"✅ Ashby: Fetched {len(jobs)} jobs for {company_id}")
-                return jobs
+                job_board = data.get("data", {}).get("jobBoard")
+                if not job_board:
+                    return []
+                jobs_list = job_board.get("jobPostings", [])
                 
     except Exception as e:
-        logger.error(f"Error fetching Ashby jobs for {company_id}: {e}")
+        logger.error(f"Error fetching Ashby list for {company_id}: {e}")
         return []
+
+    # 2. Fetch Details (HTML Scraping)
+    if not jobs_list:
+        return []
+
+    logger.info(f"Ashby: Fetching details for {len(jobs_list)} jobs from {company_id}...")
+    sem = asyncio.Semaphore(10) # Limit concurrency
+    
+    import re
+    import json
+    from bs4 import BeautifulSoup
+    
+    async def fetch_detail(job_summary):
+        job_id = job_summary.get("id")
+        title = job_summary.get("title")
+        job_url = f"https://jobs.ashbyhq.com/{company_id}/{job_id}"
+        
+        full_desc = "See full job post"
+        desc_text = title
+        
+        async with sem:
+            try:
+                # Reuse session? Better to create one or pass it. Creating one for simplicity/isolation
+                async with aiohttp.ClientSession() as session:
+                    async with session.get(job_url, headers={"User-Agent": headers["User-Agent"]}, timeout=20) as resp:
+                        if resp.status == 200:
+                            html = await resp.text()
+                            
+                            # Extract JSON
+                            pattern = re.compile(r'window\.__appData\s*=\s*({.+?});', re.DOTALL)
+                            match = pattern.search(html)
+                            if match:
+                                try:
+                                    data = json.loads(match.group(1))
+                                    
+                                    # Recursive find description
+                                    def find_key(obj, key):
+                                        if isinstance(obj, dict):
+                                            if key in obj: return obj[key]
+                                            for k, v in obj.items():
+                                                res = find_key(v, key)
+                                                if res: return res
+                                        elif isinstance(obj, list):
+                                            for item in obj:
+                                                res = find_key(item, key)
+                                                if res: return res
+                                        return None
+
+                                    html_desc = find_key(data, "descriptionHtml")
+                                    if html_desc:
+                                        full_desc = html_desc
+                                        # Parse text from HTML for snippet
+                                        soup = BeautifulSoup(html_desc, 'html.parser')
+                                        desc_text = soup.get_text()[:500] + "..."
+                                    else:
+                                        plain_desc = find_key(data, "description")
+                                        if plain_desc:
+                                            full_desc = plain_desc
+                                            desc_text = plain_desc[:500] + "..."
+                                            
+                                except:
+                                    pass # JSON parse fail, keep defaults
+            except Exception as e:
+                # logger.warning(f"Failed to fetch details for {job_id}: {e}")
+                pass
+        
+        # Merge data
+        loc_name = job_summary.get("locationName", "")
+        sec_locs = job_summary.get("secondaryLocations", [])
+        if sec_locs:
+            loc_extras = [l["locationName"] for l in sec_locs if l.get("locationName")]
+            if loc_extras:
+                loc_name += f" (+ {', '.join(loc_extras)})"
+                
+        salary = job_summary.get("compensationTierSummary") or "Competitive"
+        
+        # Parse sections
+        sections = parse_job_sections(full_desc)
+        is_visa = detect_visa_sponsorship(full_desc)
+        work_type = "remote" if "remote" in loc_name.lower() else "onsite"
+        
+        return {
+            "externalId": f"ashby-{company_id}-{job_id}",
+            "title": title,
+            "company": company_id.capitalize(),
+            "location": loc_name,
+            "description": sanitize_description(desc_text),
+            "responsibilities": sanitize_description(sections["responsibilities"]),
+            "qualifications": sanitize_description(sections["qualifications"]),
+            "benefits": sanitize_description(sections["benefits"]),
+            "fullDescription": sanitize_description(full_desc), # Store FULL HTML
+            "salaryRange": salary,
+            "sourceUrl": job_url,
+            "source": "ashby",
+            "type": work_type,
+            "visaTags": ["visa-sponsoring"] if is_visa else [],
+            "categoryTags": build_job_tags({"visaTags": is_visa, "type": work_type}),
+            "createdAt": datetime.now(timezone.utc),
+            "updatedAt": datetime.now(timezone.utc),
+            "isActive": True
+        }
+
+    # Run concurrent fetches
+    tasks = [fetch_detail(job) for job in jobs_list]
+    results = await asyncio.gather(*tasks)
+    
+    # Filter nones
+    valid_jobs = [j for j in results if j]
+    logger.info(f"✅ Ashby: Fetched {len(valid_jobs)} jobs with details for {company_id}")
+    return valid_jobs
 
 # =============================================================================
 # NEW: Workday Scraper (Internal API)
@@ -1365,14 +1472,12 @@ async def scheduled_job_fetch(db):
         aggregator = JobAggregator(db)
         
         # Run aggregation
-        # Enable all sources including JSearch (RapidAPI)
+        # FOCUS ON QUALITY: Disable Adzuna/JSearch as they lack full descriptions
         stats = await aggregator.aggregate_all_jobs(
-            use_adzuna=True,
-            use_jsearch=True,  # Enable JSearch!
-            use_usajobs=True,
-            use_rss=True,
-            max_adzuna_pages=10,
-            max_jsearch_queries=15 # Cover all our new categories
+            use_adzuna=False,
+            use_jsearch=False, 
+            use_usajobs=True, # USAJobs usually has ok details or is niche
+            use_rss=True,     # RemoteOK/Remotive are usually ok
         )
         
         logger.info(f"✅ Scheduled job fetch completed. Stats: {stats}")

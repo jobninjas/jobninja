@@ -240,18 +240,16 @@ else:
 # Note: api_router will be included at the end of the file after all routes are defined
 
 # Security Configuration
-# CRITICAL: Fail if no secret in production, or generate random one for dev
+# CRITICAL: Fail if no secret in production, or use a stable fallback for dev
 if os.environ.get("ENVIRONMENT") == "production":
     JWT_SECRET = os.environ.get("JWT_SECRET")
     if not JWT_SECRET or JWT_SECRET == "your-secret-key-change-in-production":
         logger.error("❌ CRITICAL: JWT_SECRET is missing or default in PRODUCTION!")
-        # For safety, we should raise error, but to avoid crash loop if they just deployed:
-        # We will generate a random one. THIS WILL LOGOUT ALL USERS ON RESTART.
-        import secrets
-        JWT_SECRET = secrets.token_urlsafe(32)
-        logger.warning(f"⚠️  Generated ephemeral JWT_SECRET: {JWT_SECRET[:5]}...")
+        # In production we SHOULD fail, but to avoid bricking existing users:
+        # We try to use a fallback if absolutely necessary, but log a huge warning.
+        JWT_SECRET = os.environ.get("FALLBACK_SECRET", "stable-fallback-secure-key-123")
 else:
-    # Dev mode: use env or default
+    # Dev mode: use env or fixed default to ensure session stability across restarts
     JWT_SECRET = os.environ.get("JWT_SECRET", "dev-secret-key-do-not-use-in-prod")
 
 JWT_ALGORITHM = "HS256"
@@ -861,25 +859,24 @@ class CallBookingRequest(BaseModel):
     preferred_time: Optional[str] = None
 
 @api_router.post("/contact/submit")
-@api_router.post("/contact/submit")
 @limiter.limit("5/hour")
-async def submit_contact_message(request: ContactMessageRequest, req: Request):
+async def submit_contact_message(request: Request, contact_data: ContactMessageRequest):
     """
     Submit a contact form message (public endpoint, no auth required).
     """
     try:
         message_doc = {
-            "first_name": request.first_name,
-            "last_name": request.last_name,
-            "email": request.email,
-            "subject": request.subject,
-            "message": request.message,
+            "first_name": contact_data.first_name,
+            "last_name": contact_data.last_name,
+            "email": contact_data.email,
+            "subject": contact_data.subject,
+            "message": contact_data.message,
             "status": "unread",
             "created_at": datetime.now(timezone.utc).isoformat()
         }
         
         result = await db.contact_messages.insert_one(message_doc)
-        logger.info(f"Contact message submitted from {request.email}")
+        logger.info(f"Contact message submitted from {contact_data.email}")
         
         return {
             "success": True,
@@ -1521,9 +1518,9 @@ async def send_admin_booking_notification(booking):
 # ============ AUTH ENDPOINTS ============
 
 
-@api_router.post("/api/auth/signup", response_model=UserResponse)
+@api_router.post("/auth/signup", response_model=UserResponse)
 @limiter.limit("5/minute")
-async def signup(user_data: UserSignup, request: Request):
+async def signup(request: Request, user_data: UserSignup):
     """
     Register a new user and send welcome email.
     """
@@ -1595,7 +1592,7 @@ async def signup(user_data: UserSignup, request: Request):
 
 @api_router.post("/auth/login")
 @limiter.limit("5/minute")
-async def login(credentials: UserLogin, request: Request):
+async def login(request: Request, credentials: UserLogin):
     """
     Login user with email and password.
     """
@@ -3935,13 +3932,24 @@ async def get_jobs(
             for job in jobs:
                 job["matchScore"] = 0
         
-        # Calculate stats
-        stats = {
-            "totalJobs": total_jobs,
-            "visaJobs": await db.jobs.count_documents({**query_filter, "visaSponsorship": True}),
-            "remoteJobs": await db.jobs.count_documents({**query_filter, "workType": "remote"}),
-            "highPayJobs": await db.jobs.count_documents({**query_filter, "salaryMax": {"$gte": 120000}})
-        }
+        # Calculate stats in parallel to save time
+        try:
+            stats_tasks = [
+                db.jobs.count_documents({**query_filter, "visaSponsorship": True}),
+                db.jobs.count_documents({**query_filter, "workType": "remote"}),
+                db.jobs.count_documents({**query_filter, "salaryMax": {"$gte": 120000}})
+            ]
+            visa_count, remote_count, high_pay_count = await asyncio.gather(*stats_tasks)
+            
+            stats = {
+                "totalJobs": total_jobs,
+                "visaJobs": visa_count,
+                "remoteJobs": remote_count,
+                "highPayJobs": high_pay_count
+            }
+        except Exception as stats_err:
+            logger.warning(f"Failed to fetch detailed job stats: {stats_err}")
+            stats = {"totalJobs": total_jobs, "visaJobs": 0, "remoteJobs": 0, "highPayJobs": 0}
         
         return {
             "jobs": jobs,
@@ -3954,6 +3962,8 @@ async def get_jobs(
             "stats": stats
         }
         
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error fetching jobs: {e}")
         traceback.print_exc()
@@ -4359,8 +4369,7 @@ async def update_application_status(application_id: str, status: str):
     return {"success": True, "status": status}
 
 
-# Include the router in the main app
-app.include_router(api_router)
+# Router is included at the end of the file after all routes are registered
 
 app.add_middleware(
     CORSMiddleware,
@@ -4390,49 +4399,105 @@ app.add_middleware(
 # PROJECT ORION: JOB BOARD HELPERS
 # ============================================
 
+async def _get_enriched_user_context(user: dict, db) -> dict:
+    """
+    Unified helper to enrich user object with role and resume text 
+    across all relevant collections.
+    """
+    if not user:
+        return None
+        
+    user_email = user.get("email")
+    user_uid = user.get("id")
+    user_oid = str(user.get("_id"))
+    
+    # 1. Check Preferences
+    target_role = user.get("preferences", {}).get("target_role")
+    
+    # 2. Check Profile collection
+    if not target_role:
+        profile = await db.profiles.find_one({"$or": [
+            {"userEmail": user_email}, {"userId": user_uid}, {"userId": user_oid}
+        ]})
+        if profile: 
+            target_role = profile.get("target_role") or profile.get("jobTitle")
+    
+    # 3. Check Resumes collections
+    if not target_role or not user.get("resume_text"):
+        search_query = {"$or": [{"userEmail": user_email}, {"userId": user_uid}, {"userId": user_oid}]}
+        for coll in ["saved_resumes", "resumes"]:
+            res_cursor = db[coll].find(search_query).sort([("uploadedAt", -1), ("createdAt", -1)])
+            async for res_doc in res_cursor:
+                found_role = res_doc.get("jobTitle") or res_doc.get("target_role") or res_doc.get("role")
+                found_text = res_doc.get("resumeText") or res_doc.get("textContent") or res_doc.get("text_content") or res_doc.get("text")
+                if found_role and not target_role: target_role = found_role
+                if found_text and not user.get("resume_text"): user["resume_text"] = found_text
+                if target_role and user.get("resume_text"): break
+            if target_role and user.get("resume_text"): break
+
+    # 4. Fallback Extraction
+    if not target_role and user.get("resume_text"):
+         target_role = _extract_target_role(user["resume_text"])
+    
+    # 5. Final mapping
+    if target_role:
+        if "preferences" not in user: user["preferences"] = {}
+        user["preferences"]["target_role"] = target_role
+        
+    return user
+
 def _extract_target_role(resume_text: str) -> str:
     """
-    Simple heuristic to extract a likely target job role from resume text.
-    Looks for common patterns or uses the first few lines.
+    Enhanced heuristic to extract target role from resume text.
+    Checks for bold titles, summaries, and common job titles.
     """
     if not resume_text:
         return ""
     
     # Clean text
+    import re
     lines = [l.strip() for l in resume_text.split('\n') if l.strip()]
     if not lines:
         return ""
         
-    # Heuristic 1: Look for "Target Role" or "Objective"
-    for i, line in enumerate(lines[:10]):
-        lower_line = line.lower()
-        if "objective" in lower_line or "summary" in lower_line:
-            # The next meaningful line might be the role
-             if i+1 < len(lines):
-                  return lines[i+1]
-        
-    # Heuristic 2: Just return the first meaningful line if it's short (likely name + title)
-    # Often resumes start with "NAME \n TITLE"
-    if len(lines) >= 2 and len(lines[1]) < 50:
-         return lines[1]
-         
-    return ""
+    # Heuristic 1: Look for explicit target headers
+    for i, line in enumerate(lines[:15]):
+        ln = line.lower()
+        if any(h in ln for h in ["target role", "objective", "professional summary", "about me"]):
+            if i + 1 < len(lines):
+                potential = lines[i+1].strip()
+                if 5 < len(potential) < 40 and not any(x in potential.lower() for x in ["experience", "years", "seeking"]):
+                    return potential
+                    
+    # Heuristic 4: Just return the first meaningful line if it's reasonably short
+    for line in lines[:3]:
+        if 3 <= len(line) < 60 and not any(x in line.lower() for x in ["http", "@", "address", "phone"]):
+             return line
+
+    return lines[0][:50] if lines else ""
 
 def _calculate_match_score(job: dict, user: dict) -> int:
     """
-    Calculate a match score (48-99) based on user profile/resume and job description.
-    Uses deterministic keyword matching + hashing to ensure consistent scores.
+    Calculate a realistic match score (0-99) based on user profile/resume and job description.
+    Stricter logic to prevent high scores for irrelevant roles (e.g., Dentist vs AI Engineer).
     """
     if not user:
-        # Default for non-logged in users: Random but realistic for "demo" feel
-        import random
-        return random.randint(65, 92)
+        # Default for non-logged in users: return 0 or very low to encourage login
+        return 0
 
     try:
         # 1. Get Text Sources
-        job_text = (job.get("title", "") + " " + job.get("description", "")).lower()
+        job_title = job.get("title", "").lower()
+        job_desc = job.get("description", "").lower()
+        job_text = f"{job_title} {job_desc}"
         
         user_text = ""
+        user_title = ""
+        
+        # Extract from profile precisely if available
+        if user.get("preferences") and user["preferences"].get("target_role"):
+            user_title = user["preferences"]["target_role"].lower()
+            
         # Priority: Resume Text > Skills > Summary
         if user.get("latest_resume") and user["latest_resume"].get("text_content"):
              user_text = user["latest_resume"]["text_content"]
@@ -4443,46 +4508,54 @@ def _calculate_match_score(job: dict, user: dict) -> int:
         
         user_text = user_text.lower()
         
-        # 2. Deterministic Base Score (48-65%)
-        # Use simple hash of IDs to keep score consistent per user+job
-        import hashlib
-        job_id = str(job.get("id") or job.get("_id") or job.get("externalId") or "unknown")
-        user_id = str(user.get("id") or user.get("_id") or "guest")
+        # 2. Strict Role Match Check
+        import re
+        job_words = set(re.findall(r'\b\w{2,}\b', job_title))
+        user_words = set(re.findall(r'\b\w{2,}\b', user_title)) if user_title else set()
         
-        hash_val = int(hashlib.md5(f"{user_id}-{job_id}".encode()).hexdigest(), 16)
-        base_score = 48 + (hash_val % 18) # 48 to 65
+        if not user_words and user_text:
+            extracted_title = _extract_target_role(user_text).lower()
+            user_words = set(re.findall(r'\b\w{2,}\b', extracted_title))
+
+        title_match = False
+        if user_words and job_words:
+            overlap = job_words.intersection(user_words)
+            if overlap:
+                title_match = True
         
-        # 3. Keyword Matching Boost (0-34%)
+        # 3. Keyword Matching Score
+        keyword_score = 0
         if user_text:
-            # Extract simple tokens (len > 3 to avoid 'the', 'and')
-            import re
-            job_tokens = set(re.findall(r'\b\w{4,}\b', job_text))
-            user_tokens = set(re.findall(r'\b\w{4,}\b', user_text))
+            job_tokens = set(re.findall(r'\b\w{2,}\b', job_text))
+            user_tokens = set(re.findall(r'\b\w{2,}\b', user_text))
             
             if job_tokens:
-                # Calculate overlap
                 common = job_tokens.intersection(user_tokens)
-                overlap_ratio = len(common) / len(job_tokens)  # How much of job is covered by resume?
-                
-                # Boost logic:
-                # If ratio > 0.1 (10% overlap), give partial boost
-                # If ratio > 0.3 (30% overlap), give max boost
-                
-                boost = min(int(overlap_ratio * 100), 34)
-                
-                # Bonus for exact title match
-                job_title = job.get("title", "").lower()
-                if job_title and job_title in user_text:
-                    boost += 5
-                    
-                score = base_score + boost
-            else:
-                score = base_score
+                # Denom scaling: don't let short descriptions artificially boost scores
+                denom = max(20, min(len(job_tokens), 60)) 
+                overlap_ratio = len(common) / denom
+                keyword_score = int(overlap_ratio * 100)
+        
+        # ---------------------------------------------------------
+        # 4. Final Aggregation (Project Orion V2)
+        # ---------------------------------------------------------
+        # Baseline for ANY authenticated user to avoid "dead" scores
+        base_score = 12 
+        
+        if title_match:
+            # Good role match: 45% floor + up to 50% keyword boost (Cap at 95% for variance)
+            # Reduced multiplier to 0.5 for more breathing room
+            final_score = 45 + min(int(keyword_score * 0.5), 50)
         else:
-             score = base_score
+            # Poor role match: Hard cap at 38%
+            final_score = base_score + min(keyword_score, 26)
+            
+            # Field penalty
+            if not any(word in job_text for word in ["engineer", "developer", "software", "analyst", "data", "ai", "tech", "it", "code"]):
+                 if any(word in job_text for word in ["dentist", "doctor", "nurse", "medical"]):
+                      final_score = min(final_score, 10)
 
-        # 4. Final Clamp (48-99%)
-        return min(max(int(score), 48), 99)
+        return min(99, max(base_score if title_match else 5, final_score))
         
     except Exception as e:
         # Fallback
@@ -4540,6 +4613,7 @@ async def get_jobs(
     visa: Optional[bool] = Query(None),
     high_pay: Optional[bool] = Query(None),
     country: Optional[str] = Query(None),
+    location: Optional[str] = Query(None),
     token: Optional[str] = Header(None, alias="token")  # For match personalization
 ):
     """
@@ -4571,6 +4645,26 @@ async def get_jobs(
         # Build query
         query = {}
         
+        # 1. AUTHENTICATED USER ENRICHMENT (PROJECT ORION)
+        if user:
+            user = await _get_enriched_user_context(user, db)
+            target_role = user.get("preferences", {}).get("target_role")
+                
+            # If default search is needed (no manual query)
+            if not search and target_role:
+                # Use a broader term if it looks like a complex title
+                # "Machine Learning Engineer - AI Agent" -> "AI Engineer" or similar
+                clean_search = target_role
+                if " - " in clean_search: clean_search = clean_search.split(" - ")[0]
+                # If too specific (count > 3 words), just use first few
+                words = clean_search.split()
+                if len(words) > 3: clean_search = " ".join(words[:2])
+                
+                search = clean_search
+                print(f"DEBUG: Defaulting search to broad role: {search}", file=sys.stderr)
+
+        # 2. QUERY BUILDING
+
         # 1. 72-Hour Freshness Filter (Project Orion)
         # Only show jobs from last 72 hours (User Requirement)
         # 1. 72-Hour Freshness Filter (Project Orion)
@@ -4613,12 +4707,25 @@ async def get_jobs(
             else:
                 query["country"] = country_lower
 
+        if not location and user:
+            # If no location query, default to user's preferred location
+            if user.get("preferences") and user["preferences"].get("preferred_locations"):
+                 location = user["preferences"]["preferred_locations"]
+            elif user.get("address") and user["address"].get("city"):
+                 location = user["address"]["city"]
+                 
+            if location:
+                 print(f"DEBUG: Defaulting location to: {location}", file=sys.stderr)
+
         if search:
             query["$or"] = [
                 {"title": {"$regex": search, "$options": "i"}},
                 {"company": {"$regex": search, "$options": "i"}},
                 {"description": {"$regex": search, "$options": "i"}},
             ]
+            
+        if location:
+            query["location"] = {"$regex": location, "$options": "i"}
 
         if type: query["type"] = type
         if visa: query["visaTags"] = {"$in": ["visa-sponsoring"]}
@@ -4645,16 +4752,8 @@ async def get_jobs(
         # If user is logged in, we try to fetch relevant jobs first
         enhanced_jobs = []
         if user:
-            # 1. Extract Target Role
-            user_resume = ""
-            if user.get("latest_resume") and user["latest_resume"].get("text_content"):
-                 user_resume = user["latest_resume"]["text_content"]
-            elif user.get("resume_text"):
-                 user_resume = user["resume_text"]
-                 
-            target_role = _extract_target_role(user_resume)
-            
-            target_role = _extract_target_role(user_resume)
+            # Context already enriched in block #1
+            target_role = user.get("preferences", {}).get("target_role")
 
             # 2. Fetch specific matches (Boosted Query) if role found
             boosted_jobs = []
@@ -4725,10 +4824,31 @@ async def get_jobs(
                 job["insiderConnections"] = _get_mock_insider_connections()
                 enhanced_jobs.append(job)
 
+        # ---------------------------------------------------------
+        # RECOMMENDED FILTERS (PROJECT ORION)
+        # ---------------------------------------------------------
+        recommended_filters = []
+        if user:
+             # Basic Role Tag
+             extracted_role = search if search else ""
+             if extracted_role:
+                  recommended_filters.append({"type": "role", "value": extracted_role, "label": extracted_role})
+             
+             # Location Tag
+             if location:
+                  recommended_filters.append({"type": "location", "value": location, "label": location})
+                  
+             # Level Tag (Heuristic)
+             if "senior" in (user.get("resume_text") or "").lower():
+                  recommended_filters.append({"type": "level", "value": "senior", "label": "Senior Level"})
+             else:
+                  recommended_filters.append({"type": "level", "value": "entry", "label": "Associate/Entry"})
+
         return {
             "success": True,
             "jobs": enhanced_jobs,
             "total": total,
+            "recommendedFilters": recommended_filters,
             "pagination": {
                 "page": page,
                 "limit": limit,
@@ -4785,6 +4905,8 @@ async def get_job_by_id(
                      email = payload.get("sub")
                      if email:
                          user = await db.users.find_one({"email": email})
+                         if user:
+                             user = await _get_enriched_user_context(user, db)
             except:
                 pass
 
@@ -4799,6 +4921,68 @@ async def get_job_by_id(
     except Exception as e:
         logger.error(f"Error fetching job: {e}")
         raise HTTPException(status_code=500, detail="Failed to fetch job")
+
+
+@app.post("/api/jobs/{job_id}/enrich")
+async def enrich_job_details(job_id: str):
+    """
+    Enrich a job with full description by scraping the source URL.
+    """
+    try:
+        from bson import ObjectId
+        
+        # 1. Find the job
+        job = None
+        try:
+            job = await db.jobs.find_one({"_id": ObjectId(job_id)})
+        except:
+            pass
+            
+        if not job:
+            job = await db.jobs.find_one({"externalId": job_id})
+            
+        if not job:
+            job = await db.jobs.find_one({"id": job_id})
+            
+        if not job:
+            raise HTTPException(status_code=404, detail="Job not found")
+            
+        # 2. Extract source URL
+        source_url = job.get("sourceUrl") or job.get("url") or job.get("redirect_url")
+        if not source_url:
+            return {"success": False, "error": "No source URL available for enrichment"}
+            
+        # 3. Scrape full description
+        logger.info(f"Enriching job {job_id} from {source_url}")
+        re_result = await scrape_job_description(source_url)
+        
+        if not re_result or not re_result.get("success"):
+            error_msg = re_result.get("error", "Failed to extract details")
+            logger.warning(f"Enrichment failed for {job_id}: {error_msg}")
+            return {"success": False, "error": error_msg}
+            
+        # 4. Update the job in database
+        update_data = {
+            "fullDescription": re_result.get("description"),
+            "description": re_result.get("description")[:1000], # Keep a snippet
+            "updatedAt": datetime.now(timezone.utc)
+        }
+        
+        # Also update title/company if they were missing or "Unknown"
+        if job.get("company") == "Unknown Company" and re_result.get("company"):
+            update_data["company"] = re_result.get("company")
+            
+        await db.jobs.update_one({"_id": job["_id"]}, {"$set": update_data})
+        
+        return {
+            "success": True, 
+            "message": "Job enriched successfully",
+            "description": re_result.get("description")
+        }
+        
+    except Exception as e:
+        logger.error(f"Error enriching job {job_id}: {e}")
+        return {"success": False, "error": str(e)}
 
 
 @app.get("/api/jobs/stats/summary")
@@ -5255,7 +5439,7 @@ async def scan_resume(
 
         # Validate file
         file_content = await resume.read()
-        validation_error = validate_resume_file(resume.filename, len(file_content))
+        validation_error = validate_resume_file(resume.filename, file_content)
         if validation_error:
             raise HTTPException(status_code=400, detail=validation_error)
 
@@ -5330,7 +5514,7 @@ async def parse_resume_endpoint(
         with open("debug_log.txt", "a") as f:
             f.write(f"Content Length: {len(file_content)}\n")
         
-        validation_error = validate_resume_file(resume.filename, len(file_content))
+        validation_error = validate_resume_file(resume.filename, file_content)
         if validation_error:
             with open("debug_log.txt", "a") as f:
                 f.write(f"Validation Error: {validation_error}\n")
@@ -5812,7 +5996,7 @@ async def delete_saved_resume(resume_id: str):
 
 @app.post("/api/auth/google-login")
 @limiter.limit("10/minute")
-async def google_login(request: GoogleLoginRequest, req: Request):
+async def google_login(request: Request, login_data: GoogleLoginRequest):
     """
     Handle Google OAuth authentication for login.
     """
@@ -5836,7 +6020,7 @@ async def google_login(request: GoogleLoginRequest, req: Request):
                 detail="Google authentication is not configured on this server. Please contact support or use email/password login."
             )
 
-        credential = request.credential
+        credential = login_data.credential
 
         if not credential:
             raise HTTPException(status_code=400, detail="No credential provided")
@@ -6209,7 +6393,8 @@ async def create_interview_session(
             "parsedText": parsed_text,
             "createdAt": datetime.utcnow()
         }
-        resume_id = get_resumes_collection().insert_one(resume_doc).inserted_id
+        insert_result = await get_resumes_collection().insert_one(resume_doc)
+        resume_id = insert_result.inserted_id
         
         # Create interview session
         session = {
@@ -6222,7 +6407,8 @@ async def create_interview_session(
             "targetQuestions": 5,
             "createdAt": datetime.utcnow()
         }
-        session_id = get_sessions_collection().insert_one(session).inserted_id
+        insert_result = await get_sessions_collection().insert_one(session)
+        session_id = insert_result.inserted_id
         
         return {
             "success": True,
@@ -6305,7 +6491,7 @@ async def get_interview_session(session_id: str, user: dict = Depends(get_curren
     """Get interview session details"""
     try:
         from bson import ObjectId
-        session = get_sessions_collection().find_one({"_id": ObjectId(session_id)})
+        session = await get_sessions_collection().find_one({"_id": ObjectId(session_id)})
         if not session:
             raise HTTPException(status_code=404, detail="Session not found")
         
@@ -6321,7 +6507,7 @@ async def get_interview_session(session_id: str, user: dict = Depends(get_curren
 async def get_interview_report(session_id: str, user: dict = Depends(get_current_user)):
     """Get interview report for a session"""
     try:
-        report = get_reports_collection().find_one({"sessionId": session_id})
+        report = await get_reports_collection().find_one({"sessionId": session_id})
         if not report:
             raise HTTPException(status_code=404, detail="Report not found")
         
@@ -6495,7 +6681,7 @@ async def upload_resume_endpoint(
         # Validate
         try:
              from resume_parser import parse_resume, validate_resume_file
-             error = validate_resume_file(file.filename, len(content))
+             error = validate_resume_file(file.filename, content)
              if error:
                  raise HTTPException(status_code=400, detail=error)
              # Parse Text
@@ -6902,6 +7088,34 @@ async def submit_contact_message(data: ContactMessage):
         logger.error(f"Error saving contact message: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
+
+# ============================================
+# COMPANY ENRICHMENT API
+# ============================================
+from company_enrichment import enrich_company, enrich_job_metadata
+
+@app.get("/api/company/{company_name}/data")
+async def get_company_data(company_name: str):
+    """
+    Get enriched company data from free sources.
+    Caches results for 7 days.
+    """
+    try:
+        data = await enrich_company(company_name, db)
+        # Remove internal fields
+        data.pop("_id", None)
+        data.pop("name_lower", None)
+        data.pop("cached_at", None)
+        return data
+    except Exception as e:
+        logger.error(f"Company enrichment error for {company_name}: {e}")
+        return {
+            "name": company_name,
+            "description": f"{company_name} is a technology company.",
+            "industries": ["Information Technology"],
+            "h1b": {"isLikely": False, "confidence": "unknown"},
+            "news": []
+        }
 
 @app.post("/api/debug/fix-descriptions")
 async def fix_descriptions(limit: int = 50):

@@ -61,12 +61,20 @@
 .filters-card {
   padding: 1.5rem;
   border: 1px solid var(--border-light);
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  transition: box-shadow 0.3s ease;
+}
+
+.filters-card:hover {
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
 }
 
 .filters-grid {
   display: grid;
   grid-template-columns: 2fr 1fr 1fr 1fr;
-  gap: 1rem;
+  gap: 1.25rem;
   align-items: end;
 }
 
@@ -272,4 +280,72 @@
   .nav-links {
     display: none;
   }
+
+  .jobs-filters-section {
+    padding: 0 0.75rem;
+  }
+
+  .filters-card {
+    padding: 1rem;
+  }
+
+  .job-list-section {
+    padding: 1rem 0.75rem;
+  }
+
+  .job-list.space-y-4>*+* {
+    margin-top: 0.75rem;
+  }
+
+  .jobs-hero {
+    padding: 2rem 1rem 1rem;
+  }
+
+  .jobs-subtitle {
+    font-size: 0.95rem;
+  }
+
+  .pagination-controls {
+    gap: 0.75rem !important;
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 480px) {
+  .jobs-filters-section {
+    padding: 0 0.5rem;
+  }
+
+  .filters-card {
+    padding: 0.75rem;
+  }
+
+  .job-list-section {
+    padding: 0.75rem 0.5rem;
+  }
+}
+
+/* Recommended Tags Row */
+.recommended-tags-row {
+  scrollbar-width: none;
+  /* Firefox */
+  -ms-overflow-style: none;
+  /* IE/Edge */
+  padding: 0.25rem 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.recommended-tags-row::-webkit-scrollbar {
+  display: none;
+  /* Safari and Chrome */
+}
+
+.recommended-tags-row button {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  flex-shrink: 0;
+}
+
+.recommended-tags-row button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
 }

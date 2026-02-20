@@ -14,6 +14,8 @@ from job_apis.jsearch_service import JSearchService
 from job_apis.usajobs_service import USAJobsService
 from job_apis.rss_service import RSSJobService
 
+import logging
+print("LOADED NEW JOB AGGREGATOR")
 logger = logging.getLogger(__name__)
 
 class JobAggregator:
@@ -46,9 +48,7 @@ class JobAggregator:
             use_adzuna: Whether to fetch from Adzuna
             use_jsearch: Whether to fetch from JSearch
             use_usajobs: Whether to fetch from USAJobs
-            max_adzuna_pages: Max pages to fetch from Ad
-
-zuna
+            max_adzuna_pages: Max pages to fetch from Adzuna
             max_jsearch_queries: Number of different job queries for JSearch
             
         Returns:
@@ -140,20 +140,95 @@ zuna
                 logger.error(f"Error fetching RSS jobs: {e}")
                 stats["errors"].append(f"RSS: {str(e)}")
         
-        # Fetch from Direct ATS (Greenhouse & Lever)
+        # Fetch from Direct ATS (Greenhouse & Lever & Ashby)
         try:
-            logger.info("Fetching jobs from Greenhouse & Lever...")
-            from job_fetcher import fetch_greenhouse_jobs, fetch_lever_jobs
+            logger.info("Fetching jobs from Greenhouse & Lever & Ashby...")
+            from job_fetcher import fetch_greenhouse_jobs, fetch_lever_jobs, fetch_ashby_jobs
             
-            gh_jobs = await fetch_greenhouse_jobs()
-            lev_jobs = await fetch_lever_jobs()
+            # 1. Greenhouse (expanded to 60+ companies)
+            gh_companies = [
+                "stripe", "openai", "anthropic", "scale", "databricks", 
+                "pinterest", "gusto", "notion", "airtable", "roblox",
+                "cruise", "twitch", "discord", "plaid", "brex", "ramp",
+                "benchling", "faire", "verkada", "kearney", "fivetran",
+                "grammarly", "lattice", "dbt", "coda", "webflow", "duolingo",
+                "lemonade", "chime", "affirm", "cloudflare", "dropbox",
+                # New additions
+                "anduril", "rippling", "wiz-inc", "vanta", "snyk",
+                "hashicorp", "gitlab", "datadog", "elastic", "confluent",
+                "cockroachlabs", "samsara", "toast", "bill", "marqeta",
+                "thoughtspot", "allbirds", "peloton-interactive", "rivian",
+                "lucid-motors", "joby-aviation", "relativity-space",
+                "flexport", "miro", "calendly", "zapier", "canva",
+                "supabase", "vercel", "netlify", "clickup", "asana",
+                "monday", "amplitude", "mixpanel", "segment",
+                "twilio", "sendgrid", "contentful", "auth0",
+                "retool", "airbyte", "dbt-labs", "stytch",
+            ]
+            import random
+            random.shuffle(gh_companies)
+            target_gh = gh_companies[:25] # Fetch from 25 random companies
             
+            gh_jobs = []
+            for company in target_gh:
+                try:
+                    jobs = await fetch_greenhouse_jobs(company)
+                    gh_jobs.extend(jobs)
+                except Exception as e:
+                    logger.error(f"Failed GH fetch for {company}: {e}")
+
+            # 2. Lever (expanded to 30+ companies)
+            lev_companies = [
+                "netflix", "atlassian", "lyft", "palantir", "figma",
+                "benchling", "plaid", "affirm", "box", "sprout-social",
+                "udemy", "eventbrite", "farfetch", "instacart",
+                # New additions
+                "postman", "sourcegraph", "render", "supabase",
+                "loom", "notion", "descript", "pitch",
+                "replit", "assembly", "sanity-io", "ghost",
+                "clerk", "neon", "turso", "railway",
+            ]
+            random.shuffle(lev_companies)
+            target_lev = lev_companies[:15]
+            
+            lev_jobs = []
+            for company in target_lev:
+                try:
+                    jobs = await fetch_lever_jobs(company)
+                    lev_jobs.extend(jobs)
+                except Exception as e:
+                    logger.error(f"Failed Lever fetch for {company}: {e}")
+
+            # 3. Ashby (expanded to 25+ companies)
+            ashby_companies = [
+                "deel", "ramp", "remote", "notion", "airtable",
+                "webflow", "retell", "clay", "perplexity", "modal", "linear",
+                # New additions
+                "cursor", "cohere", "mistral", "together-ai",
+                "weights-biases", "labelbox", "runway", "stability-ai",
+                "descript", "jasper", "copy-ai", "writer",
+                "assembled", "ashby",
+            ]
+            random.shuffle(ashby_companies)
+            target_ashby = ashby_companies[:15]
+            
+            ashby_jobs = []
+            for company in target_ashby:
+                try:
+                    company_jobs = await fetch_ashby_jobs(company)
+                    ashby_jobs.extend(company_jobs)
+                except Exception as e:
+                    logger.error(f"Failed Ashby fetch for {company}: {e}")
+
             all_jobs.extend(gh_jobs)
             all_jobs.extend(lev_jobs)
+            all_jobs.extend(ashby_jobs)
             
             stats["greenhouse"] = len(gh_jobs)
             stats["lever"] = len(lev_jobs)
-            logger.info(f"Fetched {len(gh_jobs)} Greenhouse jobs and {len(lev_jobs)} Lever jobs")
+            stats["ashby"] = len(ashby_jobs)
+            logger.info(f"Fetched {len(gh_jobs)} Greenhouse, {len(lev_jobs)} Lever, {len(ashby_jobs)} Ashby jobs")
+            
         except Exception as e:
             logger.error(f"Error fetching ATS jobs: {e}")
             stats["errors"].append(f"ATS: {str(e)}")
@@ -217,13 +292,8 @@ zuna
         
     async def _store_jobs(self, jobs: List[Dict[str, Any]]) -> int:
         """
-        Store jobs in MongoDB, avoiding duplicates
-        
-        Args:
-            jobs: List of job dictionaries
-            
-        Returns:
-            Number of jobs stored
+        Store jobs in MongoDB with smart deduplication and updates.
+        Preserves rich descriptions if new fetch returns snippets.
         """
         if not jobs:
             return 0
@@ -236,27 +306,48 @@ zuna
                 job['createdAt'] = datetime.now()
                 job['updatedAt'] = datetime.now()
                 
-                # Upsert based on URL (or title+company if no URL)
+                # Determine filter query
                 filter_query = {}
-                if job.get('url'):
+                if job.get('sourceUrl'):
+                    filter_query = {"sourceUrl": job['sourceUrl']}
+                elif job.get('url'):
                     filter_query = {"url": job['url']}
                 else:
                     filter_query = {
                         "title": job.get('title'),
                         "company": job.get('company')
                     }
-                    
-                result = await self.db.jobs.update_one(
-                    filter_query,
-                    {"$set": job},
-                    upsert=True
-                )
                 
-                if result.upserted_id or result.modified_count > 0:
-                    stored_count += 1
+                # Check for existing job to perform smart update
+                existing = await self.db.jobs.find_one(filter_query)
+                
+                if existing:
+                    # SMART UPDATE LOGIC
+                    old_desc = existing.get("fullDescription", "") or ""
+                    new_desc = job.get("fullDescription", "") or ""
                     
+                    # If existing has HTML (>200 chars) and new is short/link (<200 chars)
+                    # KEEP EXISTING description fields
+                    if len(old_desc) > 200 and len(new_desc) < 200:
+                        job["fullDescription"] = old_desc
+                        job["description"] = existing.get("description", job.get("description"))
+                        # Preserve parsed sections if they exist in old but not new
+                        if existing.get("responsibilities"):
+                            job["responsibilities"] = existing.get("responsibilities")
+                            job["qualifications"] = existing.get("qualifications")
+                            job["benefits"] = existing.get("benefits")
+                            
+                    # Update (Upsert=True to be safe)
+                    await self.db.jobs.update_one(filter_query, {"$set": job}, upsert=True)
+                else:
+                    # New job
+                    await self.db.jobs.update_one(filter_query, {"$set": job}, upsert=True)
+                
+                stored_count += 1
+                
             except Exception as e:
-                logger.error(f"Error storing job {job.get('title', 'Unknown')}: {e}")
+                logger.error(f"Error processing job {job.get('title', 'Unknown')}: {e}")
+                continue
                 
         logger.info(f"Stored {stored_count} jobs in MongoDB")
         return stored_count

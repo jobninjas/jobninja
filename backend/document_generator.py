@@ -262,13 +262,14 @@ EXPERIENCE
 PROJECTS
 EDUCATION
 
-CONTENT RULES:
-- SUMMARY: 3–4 lines max, no fluff, include your core stack + value.
-- SKILLS: Grouped categories (GenAI/LLMs, ML/DL, Cloud/DevOps, Languages/Tools, Data/DB).
-- EXPERIENCE: For each role, 4–6 bullets max. Start each bullet with a strong verb.
-  Include: scope, tech stack, measurable outcome when present.
-- PROJECTS: 3 projects max unless more are truly strong. Each: 2–4 bullets.
-  Include: architecture + tools + measurable impact + deployment details.
+- [STRICT HISTORICAL ACCURACY & ZERO HALLUCINATION] (MANDATORY):
+    1. EXPERIENCE & PROJECTS: You MUST NOT add any technical skills, frameworks, tools, or software that are not explicitly mentioned in the [RAW_INPUT] for that specific role or project. 
+    2. TIMELINE: Do not inject modern tech (like LLMs, Generative AI, RAG, Llama-3, etc.) into roles ending before 2022 unless they are explicitly in the source text.
+    3. DATA INTEGRITY: Do not invent metrics or outcomes. If a JD requires a skill not in the resume, DO NOT fabricate it. Highlight a transferable existing skill instead.
+- SUMMARY: 3–4 lines max, include your core stack + value.
+- SKILLS: Grouped categories. Only include skills the candidate actually has in [RAW_INPUT].
+- EXPERIENCE: For each role, 4–6 bullets max. Start each bullet with a strong verb. Use the EXACT dates provided.
+- PROJECTS: 3 projects max. Preserve the exact tech stack mentioned in [RAW_INPUT].
 - EDUCATION: Degree, school, location (if available), graduation year if present.
 
 QUALITY BAR:
@@ -405,16 +406,10 @@ GENERATE THE {target_score}% OPTIMIZED RESUME JSON NOW:
         if not response:
             return None
         
-        # Clean the response
-        response = response.strip()
-        if response.startswith("```"):
-            lines = response.split("```")
-            response = lines[1] if len(lines) > 1 else lines[0]
-            if response.startswith("json"):
-                response = response[4:]
-        response = response.strip()
+        # Robust cleaning using shared utility
+        cleaned_json = clean_json_response(response)
         
-        return json.loads(response)
+        return json.loads(cleaned_json)
     except Exception as e:
         logger.error(f"Failed to generate resume content: {e}")
         return None
@@ -576,14 +571,15 @@ ABSOLUTE SCHEMA RULES:
 
 [TAILORING_RULES]
 {selective_instructions}
-- You are an expert resume writer and ATS optimization specialist.
-- Rewrite bullets to be strong, specific, and impact-focused.
-- Use simple ASCII bullets like "-" only.
-- SUMMARY: 3–4 lines max, include core stack + value.
-- SKILLS: MERGE existing skills with any new ones. Grouped categories (GenAI/LLMs, ML/DL, Cloud/DevOps, Languages/Tools, Data/DB). DO NOT REMOVE EXISTING SKILLS.
-- EXPERIENCE: For each role, 4–6 bullets max. Start each bullet with a strong verb.
-- PROJECTS: 3 projects max unless more are truly strong. Each: 2–4 bullets.
-- QUALITY BAR: Make it tight, readable, and high-signal. ABSOLUTELY NO BLANK LINES BETWEEN BULLETS OR SECTIONS.
+- [STRICT HISTORICAL ACCURACY & ZERO HALLUCINATION] (MANDATORY):
+    1. FOR EXPERIENCE & PROJECTS: You MUST NOT add any technical skills, frameworks, tools, or software that are not explicitly mentioned in the [FACTS_JSON] for that specific role or project. 
+    2. REWRITING: You may rewrite bullets for impact and alignment, but ONLY using the tools and tech mentioned in the original text for that period. 
+    3. TIMELINE CHECK: Ensure the resume is 100% authentic to the candidate's history. Do not inject modern tech (like LLMs, Generative AI, RAG, Llama-3, etc.) into roles ending before 2022 unless they are explicitly in the source text.
+    4. DATA INTEGRITY: Do not invent metrics or outcomes. If a JD requires a skill not in the resume, DO NOT fabribate it. Highlight a transferable existing skill instead.
+- SKILLS: MERGE existing skills with those found in the resume. DO NOT add skills from the [JOB_DESCRIPTION] that the candidate does not have.
+- EXPERIENCE: For each role, 4–6 bullets max. Start each bullet with a strong verb. Use the EXACT dates provided.
+- PROJECTS: 3 projects max. Preserve the exact tech stack mentioned in [FACTS_JSON].
+- QUALITY BAR: Tight, readable, high-signal. ABSOLUTELY NO BLANK LINES BETWEEN BULLETS OR SECTIONS.
 - Keep output JSON valid and complete.
 
 Return JSON structure ONLY:

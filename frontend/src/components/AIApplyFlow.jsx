@@ -43,7 +43,7 @@ import {
   Zap
 } from 'lucide-react';
 import { BRAND } from '../config/branding';
-import { API_URL } from '../config/api';
+import { API_URL, apiCall } from '../config/api';
 import SideMenu from './SideMenu';
 import Header from './Header';
 import UpgradeModal from './UpgradeModal';
@@ -168,11 +168,8 @@ const AIApplyFlow = ({ isScanner = false }) => {
 
   const fetchUsageLimits = async () => {
     try {
-      const response = await fetch(`${API_URL}/api/usage/limits?email=${encodeURIComponent(user.email)}`);
-      if (response.ok) {
-        const data = await response.json();
-        setUsageLimits(data);
-      }
+      const data = await apiCall(`/api/usage/limits?email=${encodeURIComponent(user.email)}`);
+      setUsageLimits(data);
     } catch (error) {
       console.error('Failed to fetch usage limits:', error);
     }
@@ -187,14 +184,9 @@ const AIApplyFlow = ({ isScanner = false }) => {
     setIsLoadingResumes(true);
     try {
       console.log(`Fetching resumes from: ${API_URL}/api/resumes/${encodeURIComponent(user.email)}`);
-      const response = await fetch(`${API_URL}/api/resumes/${encodeURIComponent(user.email)}`);
-      if (response.ok) {
-        const data = await response.json();
-        console.log(`Fetched ${data.resumes?.length || 0} resumes`);
-        setSavedResumes(data.resumes || []);
-      } else {
-        console.error('Failed to fetch resumes:', response.status);
-      }
+      const data = await apiCall(`/api/resumes/${encodeURIComponent(user.email)}`);
+      console.log(`Fetched ${data.resumes?.length || 0} resumes`);
+      setSavedResumes(data.resumes || []);
     } catch (error) {
       console.error('Failed to fetch resumes:', error);
     } finally {
@@ -217,8 +209,12 @@ const AIApplyFlow = ({ isScanner = false }) => {
     if (user?.email) formData.append('email', user.email);
 
     try {
+      const token = localStorage.getItem('auth_token');
       const response = await fetch(`${API_URL}/api/scan/parse`, {
         method: 'POST',
+        headers: {
+          ...(token ? { 'token': token } : {})
+        },
         body: formData
       });
 
@@ -258,18 +254,14 @@ const AIApplyFlow = ({ isScanner = false }) => {
     if (!window.confirm('Are you sure you want to delete this resume?')) return;
 
     try {
-      const response = await fetch(`${API_URL}/api/resumes/${resumeId}`, {
+      const response = await apiCall(`/api/resumes/${resumeId}`, {
         method: 'DELETE'
       });
 
-      if (response.ok) {
-        setSavedResumes(prev => prev.filter(r => r.id !== resumeId));
-        if (selectedResume?.id === resumeId) {
-          setSelectedResume(null);
-          setResumeText('');
-        }
-      } else {
-        alert('Failed to delete resume');
+      setSavedResumes(prev => prev.filter(r => r.id !== resumeId));
+      if (selectedResume?.id === resumeId) {
+        setSelectedResume(null);
+        setResumeText('');
       }
     } catch (error) {
       console.error('Error deleting resume:', error);
@@ -282,21 +274,14 @@ const AIApplyFlow = ({ isScanner = false }) => {
 
     setIsFetchingUrl(true);
     try {
-      const response = await fetch(`${API_URL}/api/fetch-job-description`, {
+      const data = await apiCall('/api/fetch-job-description', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           url: jobUrl.trim(),
           userId: user?.id || user?.email
         })
       });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.detail || 'Failed to fetch job description');
-      }
-
-      const data = await response.json();
       if (data.success) {
         if (data.description) setCustomJobDescription(data.description);
         if (data.jobTitle) setCustomJobTitle(data.jobTitle);
@@ -345,8 +330,12 @@ const AIApplyFlow = ({ isScanner = false }) => {
       analyzeFormData.append('job_description', customJobDescription);
       if (user?.email) analyzeFormData.append('email', user.email);
 
+      const token = localStorage.getItem('auth_token');
       const analyzeResponse = await fetch(`${API_URL}/api/scan/analyze`, {
         method: 'POST',
+        headers: {
+          ...(token ? { 'token': token } : {})
+        },
         body: analyzeFormData
       });
 
@@ -404,8 +393,12 @@ const AIApplyFlow = ({ isScanner = false }) => {
         applyFormData.append('resume', blob, 'resume.txt');
       }
 
+      const token = localStorage.getItem('auth_token');
       const applyResponse = await fetch(`${API_URL}/api/ai-ninja/apply`, {
         method: 'POST',
+        headers: {
+          ...(token ? { 'token': token } : {})
+        },
         body: applyFormData
       });
 
@@ -486,25 +479,19 @@ const AIApplyFlow = ({ isScanner = false }) => {
       console.log('Saving resume:', { ...resumeData, resume_text: `[${textToSave.length} chars]` });
       console.log('API URL:', `${API_URL}/api/resumes/save`);
 
-      const response = await fetch(`${API_URL}/api/resumes/save`, {
+      const responseData = await apiCall('/api/resumes/save', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(resumeData)
       });
 
-      console.log('Response status:', response.status);
-      const responseData = await response.json();
       console.log('Response data:', responseData);
 
-      if (response.ok || responseData.success) {
+      if (responseData.success) {
         setResumeSaved(true);
         setShowSaveResumePrompt(false);
         setShowReplaceModal(false);
         // Refresh saved resumes list
         fetchSavedResumes();
-      } else if (response.status === 400 && responseData.detail?.includes('delete one')) {
-        // Show replace modal if limit reached
-        setShowReplaceModal(true);
       } else {
         alert(responseData.detail || 'Failed to save resume. Please try again.');
       }
@@ -529,15 +516,12 @@ const AIApplyFlow = ({ isScanner = false }) => {
         replace_id: oldResumeId
       };
 
-      const response = await fetch(`${API_URL}/api/resumes/save`, {
+      const responseData = await apiCall('/api/resumes/save', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(resumeData)
       });
 
-      const responseData = await response.json();
-
-      if (response.ok || responseData.success) {
+      if (responseData.success) {
         setResumeSaved(true);
         setShowReplaceModal(false);
         setShowSaveResumePrompt(false);
@@ -608,9 +592,13 @@ const AIApplyFlow = ({ isScanner = false }) => {
 
       console.log(`Downloading ${type} from ${endpoint}`);
 
+      const token = localStorage.getItem('auth_token');
       const response = await fetch(endpoint, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'token': token } : {})
+        },
         body: JSON.stringify(payload)
       });
 

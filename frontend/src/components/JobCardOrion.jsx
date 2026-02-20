@@ -4,6 +4,7 @@ import { Button } from './ui/button';
 import { useAINinja } from '../contexts/AINinjaContext';
 import { Card } from './ui/card';
 import { useNavigate } from 'react-router-dom';
+import './JobCardOrion.css';
 import {
     MapPin,
     Clock,
@@ -13,46 +14,42 @@ import {
     Zap,
     MessageSquare,
     CheckCircle2,
-    Building2
+    Building2,
+    ExternalLink
 } from 'lucide-react';
 
-const MatchScore = ({ score }) => {
-    const radius = 24;
+const MatchScore = ({ score, size = 'default' }) => {
+    const isSmall = size === 'small';
+    const radius = isSmall ? 18 : 24;
+    const svgSize = isSmall ? 44 : 64;
+    const center = svgSize / 2;
     const circumference = 2 * Math.PI * radius;
     const strokeDashoffset = circumference - (score / 100) * circumference;
 
-    let color = '#ef4444'; // red
-    if (score >= 70) color = '#eab308'; // yellow
-    if (score >= 85) color = '#10b981'; // green
+    let color = '#94a3b8'; // gray-400 for low match
+    if (score >= 40) color = '#f97316'; // orange-500 for fair match
+    if (score >= 70) color = '#0ea5e9'; // sky-500 for good match
+    if (score >= 90) color = '#10b981'; // emerald-500 for strong match
+
+    const label = score >= 90 ? 'Strong Match' : score >= 70 ? 'Good Match' : score >= 40 ? 'Fair Match' : 'Low Match';
 
     return (
-        <div className="flex flex-col items-center justify-center">
-            <div className="relative w-16 h-16 flex items-center justify-center">
+        <div className="flex flex-col items-center justify-center flex-shrink-0">
+            <div className="relative flex items-center justify-center"
+                style={{ width: svgSize, height: svgSize }}>
                 <svg className="w-full h-full transform -rotate-90">
-                    <circle
-                        cx="32"
-                        cy="32"
-                        r={radius}
-                        stroke="#e5e7eb"
-                        strokeWidth="4"
-                        fill="transparent"
-                    />
-                    <circle
-                        cx="32"
-                        cy="32"
-                        r={radius}
-                        stroke={color}
-                        strokeWidth="4"
-                        fill="transparent"
-                        strokeDasharray={circumference}
-                        strokeDashoffset={strokeDashoffset}
-                        strokeLinecap="round"
-                    />
+                    <circle cx={center} cy={center} r={radius}
+                        stroke="#e5e7eb" strokeWidth={isSmall ? 3 : 4} fill="transparent" />
+                    <circle cx={center} cy={center} r={radius}
+                        stroke={color} strokeWidth={isSmall ? 3 : 4} fill="transparent"
+                        strokeDasharray={circumference} strokeDashoffset={strokeDashoffset}
+                        strokeLinecap="round" />
                 </svg>
-                <span className="absolute text-lg font-bold" style={{ color }}>{score}%</span>
+                <span className={`absolute font-bold ${isSmall ? 'text-xs' : 'text-base'}`}
+                    style={{ color }}>{score}%</span>
             </div>
-            <span className="text-[10px] font-bold mt-1 uppercase tracking-wider text-gray-500">
-                {score >= 85 ? 'Strong Match' : score >= 70 ? 'Good Match' : 'Fair Match'}
+            <span className={`font-bold uppercase tracking-wider text-gray-500 text-center leading-tight ${isSmall ? 'text-[8px] mt-0.5' : 'text-[10px] mt-1'}`}>
+                {label}
             </span>
         </div>
     );
@@ -60,30 +57,28 @@ const MatchScore = ({ score }) => {
 
 const JobCardOrion = ({ job, onAskNova }) => {
     const navigate = useNavigate();
-
     const { openChatWithJob } = useAINinja();
 
-    // Parse date for "posted x hours ago"
     const getTimeAgo = (dateString) => {
         if (!dateString) return 'Recently';
         const date = new Date(dateString);
         const now = new Date();
         const diffInHours = Math.floor((now - date) / (1000 * 60 * 60));
-
         if (diffInHours < 1) return 'Just now';
-        if (diffInHours < 24) return `${diffInHours} hour${diffInHours !== 1 ? 's' : ''} ago`;
-        return `${Math.floor(diffInHours / 24)} day${Math.floor(diffInHours / 24) !== 1 ? 's' : ''} ago`;
+        if (diffInHours < 24) return `${diffInHours}h ago`;
+        const days = Math.floor(diffInHours / 24);
+        if (days < 7) return `${days}d ago`;
+        return `${Math.floor(days / 7)}w ago`;
     };
 
     const handleApply = (e) => {
         e.stopPropagation();
-        navigate('/ai-apply', {
-            state: {
-                jobId: job.id,
-                jobTitle: job.title,
-                company: job.company
-            }
-        });
+        const urlToOpen = job.sourceUrl || job.url || job.redirect_url;
+        if (urlToOpen) {
+            window.open(urlToOpen, '_blank');
+        } else {
+            alert("Source URL not available for this job.");
+        }
     };
 
     const handleAskNova = (e) => {
@@ -91,101 +86,101 @@ const JobCardOrion = ({ job, onAskNova }) => {
         openChatWithJob(job);
     };
 
+    const workType = job.type ? job.type.charAt(0).toUpperCase() + job.type.slice(1) : 'Full-time';
+
     return (
-        <Card className="p-6 hover:shadow-lg transition-shadow border-l-4 border-l-transparent hover:border-l-primary cursor-pointer group" onClick={() => navigate(`/ai-ninja/jobs/${job.id}`)}>
-            <div className="flex flex-col md:flex-row gap-6">
+        <Card
+            className="jobcard-orion hover:shadow-lg transition-all cursor-pointer group"
+            onClick={() => navigate(`/ai-ninja/jobs/${job.id}`)}
+        >
+            {/* ── HEADER: Logo + Title + Match Score ── */}
+            <div className="jobcard-header">
+                <div className="jobcard-logo">
+                    {job.companyLogo ? (
+                        <img src={job.companyLogo} alt={job.company}
+                            className="w-full h-full object-contain rounded-lg" />
+                    ) : (
+                        <span>{job.company.charAt(0)}</span>
+                    )}
+                </div>
 
-                {/* Left: Company Logo & Info */}
-                <div className="flex-1">
-                    <div className="flex items-start justify-between mb-4">
-                        <div className="flex items-center gap-3">
-                            <div className="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center text-gray-500 font-bold text-xl">
-                                {job.company.charAt(0)}
-                            </div>
-                            <div>
-                                <div className="flex items-center gap-2">
-                                    <h3 className="font-bold text-lg text-gray-900 group-hover:text-primary transition-colors">
-                                        {job.title}
-                                    </h3>
-                                    {job.isNew && (
-                                        <Badge variant="secondary" className="bg-blue-50 text-blue-700 text-[10px] h-5">
-                                            New
-                                        </Badge>
-                                    )}
-                                </div>
-                                <div className="text-sm text-gray-600 flex items-center gap-2">
-                                    <span className="font-medium">{job.company}</span>
-                                    <span>•</span>
-                                    <span className="text-gray-500">{getTimeAgo(job.createdAt)}</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Mobile Match Score (shown only on small screens) */}
-                        <div className="md:hidden">
-                            <MatchScore score={job.matchScore || 0} />
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-y-2 gap-x-4 mb-4 text-sm text-gray-600">
-                        <div className="flex items-center gap-1.5">
-                            <MapPin className="w-4 h-4 text-gray-400" />
-                            {job.location}
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                            <Clock className="w-4 h-4 text-gray-400" />
-                            {job.type ? job.type.charAt(0).toUpperCase() + job.type.slice(1) : 'Full-time'}
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                            <Briefcase className="w-4 h-4 text-gray-400" />
-                            {job.level || 'Mid-Senior Level'}
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                            <DollarSign className="w-4 h-4 text-gray-400" />
-                            {job.salaryRange || 'Competitive'}
-                        </div>
-                    </div>
-
-                    <div className="flex flex-wrap gap-2 mt-2">
-                        {job.visaTags && job.visaTags.includes('visa-sponsoring') && (
-                            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                                <CheckCircle2 className="w-3 h-3 mr-1" /> H1B Sponsor Likely
+                <div className="jobcard-title-block">
+                    <div className="flex items-center gap-2 flex-wrap">
+                        <h3 className="jobcard-title group-hover:text-emerald-600 transition-colors">
+                            {job.title}
+                        </h3>
+                        {job.isNew && (
+                            <Badge variant="secondary" className="bg-blue-50 text-blue-700 text-[10px] h-5 flex-shrink-0">
+                                New
                             </Badge>
                         )}
-                        {job.categoryTags && job.categoryTags.slice(0, 3).map((tag, i) => (
-                            <Badge key={i} variant="secondary" className="bg-gray-100 text-gray-600 font-normal">
-                                {tag}
-                            </Badge>
-                        ))}
+                    </div>
+                    <div className="jobcard-company-line">
+                        <span className="font-medium">{job.company}</span>
+                        <span className="text-gray-300">•</span>
+                        <span className="text-gray-400">{getTimeAgo(job.createdAt)}</span>
                     </div>
                 </div>
 
-                {/* Right: Actions & Score */}
-                <div className="flex flex-col items-center gap-4 min-w-[180px] border-l border-gray-100 pl-6 md:flex">
-                    <div className="hidden md:block">
-                        <MatchScore score={job.matchScore || 0} />
-                    </div>
-
-                    <div className="flex flex-col w-full gap-2 mt-auto">
-                        <Button
-                            className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold shadow-sm"
-                            onClick={handleApply}
-                        >
-                            <Zap className="w-4 h-4 mr-2 fill-current" />
-                            Apply with Autofill
-                        </Button>
-
-                        <Button
-                            variant="outline"
-                            className="w-full border-gray-300 hover:bg-gray-50 text-gray-700"
-                            onClick={handleAskNova}
-                        >
-                            <MessageSquare className="w-4 h-4 mr-2" />
-                            Ask AI Ninja
-                        </Button>
-                    </div>
+                <div className="jobcard-score-desktop">
+                    <MatchScore score={job.matchScore || 0} />
                 </div>
+                <div className="jobcard-score-mobile">
+                    <MatchScore score={job.matchScore || 0} size="small" />
+                </div>
+            </div>
 
+            {/* ── METADATA GRID ── */}
+            <div className="jobcard-meta-grid">
+                <div className="jobcard-meta-item">
+                    <MapPin className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                    <span className="truncate">{job.location || 'Not specified'}</span>
+                </div>
+                <div className="jobcard-meta-item">
+                    <Clock className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                    <span>{workType}</span>
+                </div>
+                <div className="jobcard-meta-item">
+                    <Briefcase className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                    <span>{job.level || 'Mid-Senior Level'}</span>
+                </div>
+                <div className="jobcard-meta-item">
+                    <DollarSign className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                    <span>{job.salaryRange || 'Competitive'}</span>
+                </div>
+            </div>
+
+            {/* ── TAGS ── */}
+            <div className="jobcard-tags">
+                {job.visaTags && job.visaTags.includes('visa-sponsoring') && (
+                    <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-xs">
+                        <CheckCircle2 className="w-3 h-3 mr-1" /> H1B Sponsor Likely
+                    </Badge>
+                )}
+                {job.categoryTags && job.categoryTags.slice(0, 4).map((tag, i) => (
+                    <Badge key={i} variant="secondary" className="bg-gray-100 text-gray-600 font-normal text-xs">
+                        {tag}
+                    </Badge>
+                ))}
+            </div>
+
+            {/* ── ACTION BUTTONS ── */}
+            <div className="jobcard-actions">
+                <Button
+                    className="jobcard-btn-apply bg-emerald-500 hover:bg-emerald-600 text-white font-bold shadow-sm"
+                    onClick={handleApply}
+                >
+                    <ExternalLink className="w-4 h-4 mr-1.5" />
+                    Apply Now
+                </Button>
+                <Button
+                    variant="outline"
+                    className="jobcard-btn-ask border-gray-300 hover:bg-gray-50 text-gray-700"
+                    onClick={handleAskNova}
+                >
+                    <MessageSquare className="w-4 h-4 mr-1.5" />
+                    Ask AI Ninja
+                </Button>
             </div>
         </Card>
     );

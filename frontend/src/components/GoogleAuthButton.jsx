@@ -13,7 +13,7 @@ const GoogleAuthButton = ({ mode = 'login' }) => {
         setIsLoading(true);
         try {
             // Send Google credential to backend
-            const response = await fetch(`${API_URL}/api/auth/google`, {
+            const response = await fetch(`${API_URL}/api/auth/google-login`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

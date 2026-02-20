@@ -10,9 +10,10 @@ except ImportError:
     Groq = None
     print("Warning: groq module not found. Interview features will be disabled.")
 
-from pymongo import MongoClient
+from motor.motor_asyncio import AsyncIOMotorClient
 from bson import ObjectId
 import os
+import asyncio
 from datetime import datetime
 
 # MongoDB connection (Lazy initialization)
@@ -29,7 +30,13 @@ def get_db():
         if not mongo_url:
             print("Warning: MONGO_URL not set. Interview service storage disabled.")
             return None
-        mongo_client = MongoClient(mongo_url, serverSelectionTimeoutMS=5000)
+        # Using Motor for async support. 
+        # Note: We use tlsAllowInvalidCertificates for development simplicity if needed
+        mongo_client = AsyncIOMotorClient(
+            mongo_url, 
+            serverSelectionTimeoutMS=5000,
+            tlsAllowInvalidCertificates=True
+        )
         db = mongo_client[db_name]
         return db
     except Exception as e:
@@ -54,7 +61,8 @@ else:
     groq_client = None
 
 # Collections
-# Collections functions (lazy)
+# Collections functions (lazy) - still return the collection object
+# The caller must await the actual database operation (find_one, insert_one, etc.)
 def get_collection(name):
     database = get_db()
     if database is not None:
@@ -206,12 +214,12 @@ class InterviewOrchestrator:
     def __init__(self, session_id: str):
         self.session_id = session_id
     
-    def get_session(self) -> Optional[Dict[str, Any]]:
+    async def get_session(self) -> Optional[Dict[str, Any]]:
         """Get session with resume and turns"""
         sessions_col = get_sessions_collection()
         if not sessions_col: return None
             
-        session = sessions_col.find_one({"_id": ObjectId(self.session_id)})
+        session = await sessions_col.find_one({"_id": ObjectId(self.session_id)})
         if not session:
             return None
         
@@ -219,22 +227,21 @@ class InterviewOrchestrator:
         if session.get('resumeId'):
             resumes_col = get_resumes_collection()
             if resumes_col:
-                resume = resumes_col.find_one({"_id": ObjectId(session['resumeId'])})
+                resume = await resumes_col.find_one({"_id": ObjectId(session['resumeId'])})
                 session['resume'] = resume
         
         # Get turns
         turns_col = get_turns_collection()
         if turns_col:
-            turns = list(turns_col.find(
-                {"sessionId": self.session_id}
-            ).sort("turnNumber", 1))
+            cursor = turns_col.find({"sessionId": self.session_id}).sort("turnNumber", 1)
+            turns = await cursor.to_list(length=100)
             session['turns'] = turns
         
         return session
     
     async def generate_initial_question(self) -> Dict[str, Any]:
         """Generate the first interview question"""
-        session = self.get_session()
+        session = await self.get_session()
         if not session:
             raise ValueError("Session not found")
         
@@ -251,7 +258,7 @@ class InterviewOrchestrator:
         # Save the turn
         turns_col = get_turns_collection()
         if turns_col:
-            turns_col.insert_one({
+            await turns_col.insert_one({
                 "sessionId": self.session_id,
                 "turnNumber": 1,
                 "questionText": result.get('question', ''),
@@ -262,7 +269,7 @@ class InterviewOrchestrator:
         # Update session count
         sessions_col = get_sessions_collection()
         if sessions_col:
-            sessions_col.update_one(
+            await sessions_col.update_one(
                 {"_id": ObjectId(self.session_id)},
                 {"$set": {"questionCount": 1}}
             )
@@ -271,7 +278,7 @@ class InterviewOrchestrator:
     
     async def process_answer_and_get_next(self, answer_text: str) -> Dict[str, Any]:
         """Process answer and generate next question"""
-        session = self.get_session()
+        session = await self.get_session()
         if not session:
             raise ValueError("Session not found")
         
@@ -282,7 +289,7 @@ class InterviewOrchestrator:
         if turns:
             turns_col = get_turns_collection()
             if turns_col:
-                turns_col.update_one(
+                await turns_col.update_one(
                     {"_id": turns[-1]['_id']},
                     {"$set": {"answerText": answer_text}}
                 )
@@ -316,7 +323,7 @@ class InterviewOrchestrator:
         # Create next turn
         turns_col = get_turns_collection()
         if turns_col:
-            turns_col.insert_one({
+            await turns_col.insert_one({
                 "sessionId": self.session_id,
                 "turnNumber": current_turn_number + 1,
                 "questionText": result.get('question', ''),
@@ -327,7 +334,7 @@ class InterviewOrchestrator:
         # Update session count
         sessions_col = get_sessions_collection()
         if sessions_col:
-            sessions_col.update_one(
+            await sessions_col.update_one(
                 {"_id": ObjectId(self.session_id)},
                 {"$inc": {"questionCount": 1}}
             )
@@ -336,7 +343,7 @@ class InterviewOrchestrator:
     
     async def finalize_and_generate_report(self) -> Dict[str, Any]:
         """Finalize interview and generate evaluation report"""
-        session = self.get_session()
+        session = await self.get_session()
         if not session:
             raise ValueError("Session not found")
         
@@ -374,12 +381,13 @@ class InterviewOrchestrator:
         report_id = None
         reports_col = get_reports_collection()
         if reports_col:
-            report_id = reports_col.insert_one(report).inserted_id
+            insert_result = await reports_col.insert_one(report)
+            report_id = insert_result.inserted_id
         
         # Update session status
         sessions_col = get_sessions_collection()
         if sessions_col and report_id:
-            sessions_col.update_one(
+            await sessions_col.update_one(
                 {"_id": ObjectId(self.session_id)},
                 {"$set": {"status": "completed", "reportId": str(report_id)}}
             )
