@@ -3812,7 +3812,7 @@ app.add_middleware(
 # PROJECT ORION: JOB BOARD HELPERS
 # ============================================
 
-async def _get_enriched_user_context(user: dict) -> dict:
+async def _get_enriched_user_context(user: dict, db=None) -> dict:
     """
     Unified helper to enrich user object with role and resume text 
     using Supabase.
@@ -3824,7 +3824,7 @@ async def _get_enriched_user_context(user: dict) -> dict:
     user_id = str(user.get("id") or user.get("_id"))
     
     # 1. Check if already enriched in user object (from profiles table)
-    target_role = user.get("preferences", {}).get("target_role")
+    target_role = (user.get("preferences") or {}).get("target_role")
     resume_text = user.get("resume_text") or user.get("resumeText")
     
     # 2. If missing, look in profiles table specifically
@@ -6060,7 +6060,7 @@ async def get_jobs(
                         user = SupabaseService.get_user_by_email(email)
                         if user:
                             # Enriched with target_role and resume_text
-                            user = await _get_enriched_user_context(user)
+                            user = await _get_enriched_user_context(user, db=None)
             except Exception as e:
                  logger.error(f"Project Orion Auth Error (get_jobs): {str(e)}")
                  pass
