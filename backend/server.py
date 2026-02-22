@@ -3901,8 +3901,8 @@ def _calculate_match_score(job: dict, user: dict) -> int:
 
     try:
         # 1. Get Text Sources
-        job_title = job.get("title", "").lower()
-        job_desc = job.get("description", "").lower()
+        job_title = (job.get("title") or "").lower()
+        job_desc = (job.get("description") or "").lower()
         job_text = f"{job_title} {job_desc}"
         
         user_text = ""
@@ -6017,7 +6017,7 @@ async def generate_smart_answer_endpoint(
 
 def _get_mock_company_data(company_name: str) -> dict:
     """Helper for premium job cards - generates mock metadata like logos and ratings."""
-    name_clean = company_name.lower().strip()
+    name_clean = (company_name or "Unknown").lower().strip()
     return {
         "logo": f"https://logo.clearbit.com/{name_clean.replace(' ', '')}.com",
         "rating": round(3.8 + (hash(name_clean) % 12) / 10, 1),
@@ -6069,7 +6069,7 @@ async def get_jobs(
         offset = (page - 1) * limit
         
         # Determine if we should perform a boosted search (if user has a target role)
-        target_role = user.get("preferences", {}).get("target_role") if user else None
+        target_role = (user.get("preferences") or {}).get("target_role") if user else None
         
         # Primary fetch (Fresh jobs)
         supabase_jobs = SupabaseService.get_jobs(
@@ -6126,7 +6126,7 @@ async def get_jobs(
                   recommended_filters.append({"type": "role", "value": extracted_role, "label": extracted_role})
              
              # Location Tag (if available)
-             location = user.get("preferences", {}).get("preferred_locations") or user.get("address", {}).get("city")
+             location = (user.get("preferences") or {}).get("preferred_locations") or (user.get("address") or {}).get("city")
              if location:
                   recommended_filters.append({"type": "location", "value": location, "label": location})
                   
