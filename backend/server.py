@@ -4023,11 +4023,15 @@ async def get_job_by_id(
     Get a single job by ID (supports Supabase UUID or job_id)
     """
     try:
+        logger.info(f"DEBUG: Fetching job by ID: {job_id}")
         # Use Supabase natively (replacing legacy MongoDB)
         job = SupabaseService.get_job_by_any_id(job_id)
-
+        
         if not job:
+            logger.warning(f"DEBUG: Job {job_id} not found in Supabase")
             raise HTTPException(status_code=404, detail="Job not found")
+
+        logger.info(f"DEBUG: Job {job_id} found: {job.get('title')}")
 
         # Project Orion: Add Match Score
         user = None
