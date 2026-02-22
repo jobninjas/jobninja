@@ -633,17 +633,50 @@ class SupabaseService:
     # --- JOB SYNC & MANAGEMENT ---
 
     @staticmethod
-    def get_job_by_external_id(job_id: str) -> Optional[Dict[str, Any]]:
-        """Get job by its external ID (e.g. adzuna_123)"""
+    def get_job_by_any_id(id_val: str) -> Optional[Dict[str, Any]]:
+        """
+        Get job by its ID (UUID) or its external job_id.
+        """
         client = SupabaseService.get_client()
         if not client: return None
         try:
-            # External ID is stored in 'job_id' column
-            response = client.table("jobs").select("*").eq("job_id", job_id).execute()
+            # 1. Try to find by UUID (primary key)
+            try:
+                # Basic UUID format check to avoid unnecessary db errors
+                import uuid
+                uuid.UUID(id_val)
+                response = client.table("jobs").select("*").eq("id", id_val).execute()
+                if response.data:
+                    return response.data[0]
+            except ValueError:
+                pass # Not a UUID, move to external ID
+
+            # 2. Try by external ID (adzuna_123, etc)
+            response = client.table("jobs").select("*").eq("job_id", id_val).execute()
             return response.data[0] if response.data else None
         except Exception as e:
-            logger.error(f"Error fetching job by ID: {e}")
+            logger.error(f"Error fetching job by any ID ({id_val}): {e}")
             return None
+
+    @staticmethod
+    def update_job(job_id: str, update_data: Dict[str, Any]) -> bool:
+        """Update a job record in Supabase"""
+        client = SupabaseService.get_client()
+        if not client: return False
+        try:
+            # First try by UUID
+            try:
+                import uuid
+                uuid.UUID(job_id)
+                client.table("jobs").update(update_data).eq("id", job_id).execute()
+                return True
+            except ValueError:
+                # Try by external ID
+                client.table("jobs").update(update_data).eq("job_id", job_id).execute()
+                return True
+        except Exception as e:
+            logger.error(f"Error updating job {job_id}: {e}")
+            return False
 
     @staticmethod
     def _sanitize_job_data(job_data: Dict[str, Any]) -> Dict[str, Any]:
@@ -796,7 +829,17 @@ class SupabaseService:
             return response.data[0] if response.data else None
         except Exception as e:
             logger.error(f"Error inserting call booking: {e}")
-            return None
+    @staticmethod
+    def update_call_booking(booking_id: str, update_data: Dict[str, Any]) -> bool:
+        """Update a call booking record in Supabase"""
+        client = SupabaseService.get_client()
+        if not client: return False
+        try:
+            client.table("call_bookings").update(update_data).eq("id", booking_id).execute()
+            return True
+        except Exception as e:
+            logger.error(f"Error updating call booking: {e}")
+            return False
 
     @staticmethod
     def get_admin_stats() -> Dict[str, Any]:
@@ -840,6 +883,34 @@ class SupabaseService:
         except Exception as e:
             logger.error(f"Error fetching admin stats from Supabase: {e}")
             return {}
+
+    @staticmethod
+    def get_job_stats_summary() -> Dict[str, Any]:
+        """Get total, fresh and US job stats for admin summary"""
+        client = SupabaseService.get_client()
+        if not client: return {"total": 0, "fresh": 0, "us": 0}
+        try:
+            # Total jobs
+            total_res = client.table("jobs").select("*", count="exact").limit(0).execute()
+            total = total_res.count or 0
+            
+            # Fresh jobs (72h)
+            threshold = (datetime.utcnow() - timedelta(hours=72)).isoformat()
+            fresh_res = client.table("jobs").select("*", count="exact").eq("is_active", True).gte("created_at", threshold).limit(0).execute()
+            fresh = fresh_res.count or 0
+            
+            # US jobs
+            us_res = client.table("jobs").select("*", count="exact").eq("country", "us").limit(0).execute()
+            us = us_res.count or 0
+            
+            return {
+                "total": total,
+                "fresh": fresh,
+                "us": us
+            }
+        except Exception as e:
+            logger.error(f"Error fetching job stats summary: {e}")
+            return {"total": 0, "fresh": 0, "us": 0}
 
     @staticmethod
     def get_job_stats_24h() -> Dict[str, Any]:
@@ -921,4 +992,16 @@ class SupabaseService:
             return True
         except Exception as e:
             logger.error(f"Error updating user profile: {e}")
+            return False
+
+    @staticmethod
+    def update_contact_message(message_id: str, update_data: Dict[str, Any]) -> bool:
+        """Update a contact message record in Supabase"""
+        client = SupabaseService.get_client()
+        if not client: return False
+        try:
+            client.table("contact_messages").update(update_data).eq("id", message_id).execute()
+            return True
+        except Exception as e:
+            logger.error(f"Error updating contact message: {e}")
             return False
