@@ -5448,23 +5448,35 @@ async def save_application(application: ApplicationData):
     Save a job application to the tracker in Supabase
     """
     try:
-        # Get user profile to link to user_id
         profile = SupabaseService.get_user_by_email(application.userEmail)
+        user_id = profile["id"] if profile else None
         
-        # Link job_id if possible (needs to be UUID)
-        # Note: If jobId is not a UUID, we might need a lookup or just store it as is if its allowed
+        job_id = application.jobId
+        if not job_id or len(job_id) < 30:
+            client = SupabaseService.get_client()
+            import datetime
+            job_data = {
+                "title": application.jobTitle or "Unknown Role",
+                "company": application.company or "Unknown Company",
+                "job_id": f"external-{int(datetime.datetime.utcnow().timestamp())}",
+                "description": application.jobDescription or "",
+                "location": application.location or "",
+                "url": application.sourceUrl or "",
+            }
+            job_res = client.table("jobs").insert(job_data).execute()
+            if job_res.data:
+                job_id = job_res.data[0]["id"]
+            else:
+                job_id = None
         
         app_doc = {
-            "user_id": profile["id"] if profile else None,
-            "job_id": application.jobId if application.jobId and len(application.jobId) > 30 else None, # Simple UUID check
+            "user_id": user_id,
+            "job_id": job_id,
             "status": application.status or "materials_ready",
             "notes": application.notes,
-            "platform": application.location, # Re-mapping location to platform if needed
+            "platform": application.location,
             "applied_at": application.appliedAt
         }
-        
-        # Note: Some fields like resumeText and coverLetterText are not in the current Supabase schema
-        # We might want to store them in a separate JSONB field if important, but let's stick to schema for now
 
         result = SupabaseService.create_application(app_doc)
         if not result:

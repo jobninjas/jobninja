@@ -212,20 +212,20 @@ class SupabaseService:
             if not user: return []
             
             response = client.table("applications")\
-                .select("*")\
+                .select("*, jobs(title, company, url)")\
                 .eq("user_id", user["id"])\
                 .order("created_at", desc=True)\
                 .execute()
                 
             apps = []
             for a in response.data:
-                meta = a.get("metadata") or {}
+                job_info = a.get("jobs") or {}
                 apps.append({
                     "_id": str(a["id"]),
                     "userEmail": user_email,
-                    "jobTitle": meta.get("jobTitle") or a.get("job_title"),
-                    "company": meta.get("company") or a.get("company"),
-                    "jobUrl": meta.get("jobUrl") or a.get("job_url"),
+                    "jobTitle": job_info.get("title") or "Unknown Role",
+                    "company": job_info.get("company") or "Unknown Company",
+                    "jobUrl": job_info.get("url") or "",
                     "status": a.get("status"),
                     "notes": a.get("notes"),
                     "dateApplied": a.get("created_at")
