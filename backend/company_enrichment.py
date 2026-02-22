@@ -221,22 +221,11 @@ def infer_remote_type(title: str, location: str = "", description: str = "") -> 
     return "On-site"
 
 
-async def enrich_company(company_name: str, db=None) -> Dict[str, Any]:
+async def enrich_company(company_name: str) -> Dict[str, Any]:
     """
-    Main enrichment function. Checks cache first, then fetches from free sources.
+    Main enrichment function. Fetches from free sources.
+    (Cache migrated/disabled during Supabase transition)
     """
-    # 1. Check cache
-    if db:
-        try:
-            cached = await db.company_cache.find_one({
-                "name_lower": company_name.lower(),
-                "cached_at": {"$gte": datetime.utcnow() - timedelta(days=7)}
-            })
-            if cached:
-                cached.pop("_id", None)
-                return cached
-        except Exception as e:
-            logger.error(f"Cache check failed: {e}")
     
     # 2. Build enrichment data
     name_lower = company_name.lower().strip()
@@ -282,17 +271,6 @@ async def enrich_company(company_name: str, db=None) -> Dict[str, Any]:
         },
         "cached_at": datetime.utcnow()
     }
-    
-    # 3. Cache result
-    if db:
-        try:
-            await db.company_cache.update_one(
-                {"name_lower": name_lower},
-                {"$set": result},
-                upsert=True
-            )
-        except Exception as e:
-            logger.error(f"Cache write failed: {e}")
     
     return result
 

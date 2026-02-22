@@ -1,54 +1,23 @@
 """
 Interview Prep Service - AI-powered mock interviews
-Uses Groq for AI and MongoDB for storage
+Uses Groq for AI and Supabase for storage
 """
 import json
-from typing import Dict, Any, Optional
+import os
+import asyncio
+from typing import Dict, Any, Optional, List
+from datetime import datetime
+import logging
+
 try:
     from groq import Groq
 except ImportError:
     Groq = None
     print("Warning: groq module not found. Interview features will be disabled.")
 
-from motor.motor_asyncio import AsyncIOMotorClient
-from bson import ObjectId
-import os
-import asyncio
-from datetime import datetime
+from supabase_service import SupabaseService
 
-# MongoDB connection (Lazy initialization)
-mongo_url = os.getenv('MONGO_URL')
-db_name = os.getenv('DB_NAME', 'novaninjas')
-mongo_client = None
-db = None
-
-def get_db():
-    global mongo_client, db
-    if db is not None:
-        return db
-    try:
-        if not mongo_url:
-            print("Warning: MONGO_URL not set. Interview service storage disabled.")
-            return None
-        # Using Motor for async support. 
-        # Note: We use tlsAllowInvalidCertificates for development simplicity if needed
-        mongo_client = AsyncIOMotorClient(
-            mongo_url, 
-            serverSelectionTimeoutMS=5000,
-            tlsAllowInvalidCertificates=True
-        )
-        db = mongo_client[db_name]
-        return db
-    except Exception as e:
-        print(f"Failed to connect to MongoDB in interview_service: {e}")
-        return None
-
-# Initialize on import if possible, but don't crash
-try:
-    if mongo_url:
-        get_db()
-except Exception as e:
-    print(f"Warning: Initial MongoDB connection failed: {e}")
+logger = logging.getLogger(__name__)
 
 # Initialize Groq client
 if Groq:
@@ -59,20 +28,6 @@ if Groq:
         groq_client = None
 else:
     groq_client = None
-
-# Collections
-# Collections functions (lazy) - still return the collection object
-# The caller must await the actual database operation (find_one, insert_one, etc.)
-def get_collection(name):
-    database = get_db()
-    if database is not None:
-        return database[name]
-    return None
-
-def get_sessions_collection(): return get_collection('interview_sessions')
-def get_turns_collection(): return get_collection('interview_turns')
-def get_reports_collection(): return get_collection('evaluation_reports')
-def get_resumes_collection(): return get_collection('interview_resumes')
 
 
 class InterviewPrompts:
@@ -150,7 +105,7 @@ class InterviewPrompts:
     6. Role-Fit Score (0-100)
     7. Top 10 Actionable Fixes
     8. Rewrite: Take the two "weakest" answers and provide a "Best Possible" version grounded in the candidate's actual resume facts.
-
+    
     CONSTRAINTS:
     - Cite specific quotes from the transcript when giving feedback.
     - Be constructive but direct.
@@ -187,7 +142,7 @@ class AIService:
             )
             return response.choices[0].message.content or ""
         except Exception as e:
-            print(f"Groq chat failed: {e}")
+            logger.error(f"Groq chat failed: {e}")
             raise
     
     @staticmethod
@@ -204,7 +159,7 @@ class AIService:
             )
             return transcription
         except Exception as e:
-            print(f"Groq transcription failed: {e}")
+            logger.error(f"Groq transcription failed: {e}")
             raise
 
 
@@ -215,27 +170,19 @@ class InterviewOrchestrator:
         self.session_id = session_id
     
     async def get_session(self) -> Optional[Dict[str, Any]]:
-        """Get session with resume and turns"""
-        sessions_col = get_sessions_collection()
-        if sessions_col is None: return None
-            
-        session = await sessions_col.find_one({"_id": ObjectId(self.session_id)})
+        """Get session with resume and turns from Supabase"""
+        session = SupabaseService.get_interview_session(self.session_id)
         if not session:
             return None
         
         # Get resume
-        if session.get('resumeId'):
-            resumes_col = get_resumes_collection()
-            if resumes_col is not None:
-                resume = await resumes_col.find_one({"_id": ObjectId(session['resumeId'])})
-                session['resume'] = resume
+        if session.get('resume_id'):
+            resume = SupabaseService.get_interview_resume(session['resume_id'])
+            session['resume'] = resume
         
         # Get turns
-        turns_col = get_turns_collection()
-        if turns_col is not None:
-            cursor = turns_col.find({"sessionId": self.session_id}).sort("turnNumber", 1)
-            turns = await cursor.to_list(length=100)
-            session['turns'] = turns
+        turns = SupabaseService.get_interview_turns(self.session_id)
+        session['turns'] = turns
         
         return session
     
@@ -246,33 +193,29 @@ class InterviewOrchestrator:
             raise ValueError("Session not found")
         
         resume = session.get('resume', {})
-        profile = resume.get('parsedText', '')
+        profile = resume.get('parsed_text', '')
         
         prompt = InterviewPrompts.INITIAL_QUESTION\
             .replace('{{profile}}', profile)\
-            .replace('{{jd}}', session.get('jobDescription', ''))
+            .replace('{{jd}}', session.get('job_description', ''))
         
         response = AIService.chat(prompt, json_mode=True)
         result = json.loads(response)
         
-        # Save the turn
-        turns_col = get_turns_collection()
-        if turns_col is not None:
-            await turns_col.insert_one({
-                "sessionId": self.session_id,
-                "turnNumber": 1,
-                "questionText": result.get('question', ''),
-                "answerText": None,
-                "createdAt": datetime.utcnow()
-            })
+        # Save the turn in Supabase
+        SupabaseService.insert_interview_turn({
+            "session_id": self.session_id,
+            "turn_number": 1,
+            "question_text": result.get('question', ''),
+            "answer_text": None,
+            "created_at": datetime.utcnow().isoformat()
+        })
         
         # Update session count
-        sessions_col = get_sessions_collection()
-        if sessions_col is not None:
-            await sessions_col.update_one(
-                {"_id": ObjectId(self.session_id)},
-                {"$set": {"questionCount": 1}}
-            )
+        SupabaseService.update_interview_session(
+            self.session_id,
+            {"question_count": 1}
+        )
         
         return result
     
@@ -287,33 +230,31 @@ class InterviewOrchestrator:
         
         # Update current turn with answer
         if turns:
-            turns_col = get_turns_collection()
-            if turns_col is not None:
-                await turns_col.update_one(
-                    {"_id": turns[-1]['_id']},
-                    {"$set": {"answerText": answer_text}}
-                )
+            last_turn = turns[-1]
+            SupabaseService.update_interview_turn(
+                last_turn['id'],
+                {"answer_text": answer_text}
+            )
         
         # Check if we reached target questions
-        # If we have 5 turns, and we just answered the 5th one, we should stop.
-        question_count = session.get('questionCount', 0)
-        target_questions = session.get('targetQuestions', 5)
+        question_count = session.get('question_count', 0)
+        target_questions = session.get('target_questions', 5)
         
         if question_count >= target_questions:
             return {"status": "completed"}
         
         # Generate next question
         resume = session.get('resume', {})
-        profile = resume.get('parsedText', '')
+        profile = resume.get('parsed_text', '')
         
         history = "\n\n".join([
-            f"Q: {t.get('questionText', '')}\nA: {t.get('answerText', '')}"
-            for t in turns if t.get('answerText')
+            f"Q: {t.get('question_text', '')}\nA: {t.get('answer_text', '')}"
+            for t in turns if t.get('answer_text')
         ])
         
         prompt = InterviewPrompts.NEXT_TURN\
             .replace('{{profile}}', profile)\
-            .replace('{{jd}}', session.get('jobDescription', ''))\
+            .replace('{{jd}}', session.get('job_description', ''))\
             .replace('{{history}}', history)\
             .replace('{{lastAnswer}}', answer_text)
         
@@ -321,23 +262,19 @@ class InterviewOrchestrator:
         result = json.loads(response)
         
         # Create next turn
-        turns_col = get_turns_collection()
-        if turns_col is not None:
-            await turns_col.insert_one({
-                "sessionId": self.session_id,
-                "turnNumber": current_turn_number + 1,
-                "questionText": result.get('question', ''),
-                "answerText": None,
-                "createdAt": datetime.utcnow()
-            })
+        SupabaseService.insert_interview_turn({
+            "session_id": self.session_id,
+            "turn_number": current_turn_number + 1,
+            "question_text": result.get('question', ''),
+            "answer_text": None,
+            "created_at": datetime.utcnow().isoformat()
+        })
         
         # Update session count
-        sessions_col = get_sessions_collection()
-        if sessions_col is not None:
-            await sessions_col.update_one(
-                {"_id": ObjectId(self.session_id)},
-                {"$inc": {"questionCount": 1}}
-            )
+        SupabaseService.update_interview_session(
+            self.session_id,
+            {"question_count": question_count + 1}
+        )
         
         return {"status": "active", **result}
     
@@ -348,49 +285,44 @@ class InterviewOrchestrator:
             raise ValueError("Session not found")
         
         resume = session.get('resume', {})
-        profile = resume.get('parsedText', '')
+        profile = resume.get('parsed_text', '')
         turns = session.get('turns', [])
         
         transcript = "\n\n".join([
-            f"Q: {t.get('questionText', '')}\nA: {t.get('answerText', '')}"
-            for t in turns if t.get('answerText')
+            f"Q: {t.get('question_text', '')}\nA: {t.get('answer_text', '')}"
+            for t in turns if t.get('answer_text')
         ])
         
         prompt = InterviewPrompts.FINAL_REPORT\
             .replace('{{profile}}', profile)\
-            .replace('{{jd}}', session.get('jobDescription', ''))\
+            .replace('{{jd}}', session.get('job_description', ''))\
             .replace('{{transcript}}', transcript)
         
         response = AIService.chat(prompt, json_mode=True)
         result = json.loads(response)
         
         # Save report
-        report = {
-            "sessionId": self.session_id,
+        report_data = {
+            "session_id": self.session_id,
             "summary": result.get('summary', ''),
             "strengths": result.get('strengths', []),
             "gaps": result.get('gaps', []),
-            "repetition": result.get('repetition', ''),
-            "actionableFixes": result.get('actionableFixes', []),
+            "repetition_feedback": result.get('repetition', ''),
             "scores": result.get('scores', {}),
-            "rewrittenAnswers": result.get('rewrittenAnswers', []),
-            "roleFitScore": result.get('roleFitScore', 0),
-            "createdAt": datetime.utcnow()
+            "rewritten_answers": result.get('rewrittenAnswers', []),
+            "role_fit_score": result.get('roleFitScore', 0),
+            "created_at": datetime.utcnow().isoformat()
         }
         
-        report_id = None
-        reports_col = get_reports_collection()
-        if reports_col is not None:
-            insert_result = await reports_col.insert_one(report)
-            report_id = insert_result.inserted_id
+        report = SupabaseService.insert_evaluation_report(report_data)
+        report_id = report.get('id') if report else None
         
         # Update session status
-        sessions_col = get_sessions_collection()
-        if sessions_col is not None and report_id:
-            await sessions_col.update_one(
-                {"_id": ObjectId(self.session_id)},
-                {"$set": {"status": "completed", "reportId": str(report_id)}}
+        if report_id:
+            SupabaseService.update_interview_session(
+                self.session_id,
+                {"status": "completed", "report_id": report_id}
             )
+            report['id'] = report_id
         
-        report['_id'] = str(report_id)
         return report

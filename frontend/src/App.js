@@ -253,14 +253,10 @@ function App() {
                   }
                 />
 
-                {/* Hidden Admin Portal - STRICT ADMIN ONLY */}
+                {/* Hidden Admin Portal - ACCESSIBLE WITH PASSWORD 1010 */}
                 <Route
                   path="/job-ninjas-admin-portal"
-                  element={
-                    <ProtectedRoute allowedRoles={['admin']}>
-                      <AdminPortal />
-                    </ProtectedRoute>
-                  }
+                  element={<AdminPortal />}
                 />
 
                 {/* Live Dashboard - STRICT ADMIN ONLY */}

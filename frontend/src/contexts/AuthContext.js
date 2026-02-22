@@ -57,13 +57,20 @@ export const AuthProvider = ({ children }) => {
             localStorage.removeItem('auth_token');
             localStorage.removeItem('user_data');
             setUser(null);
+          } else if (response.ok) {
+            const data = await response.json();
+            setUser(data.user || data);
+            if (data.user) {
+              localStorage.setItem('user_data', JSON.stringify(data.user));
+            }
           } else {
             // Server error or other issue, keep local state but log it
             console.error('Auth verification server error:', response.status);
+            setUser(JSON.parse(userData));
           }
         } catch (e) {
           console.error('Auth verification error:', e);
-          setUser(null);
+          setUser(JSON.parse(userData));
         }
       } else {
         setUser(null);
