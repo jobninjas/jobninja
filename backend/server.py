@@ -4180,6 +4180,26 @@ async def debug_adzuna_check():
     except Exception as e:
         return {"error": str(e)}
 
+@app.get("/api/debug/config-check")
+async def config_check():
+    """Diagnostic to check environment and code version."""
+    import hashlib
+    
+    # Calculate a hash of the server.py file to verify code version
+    with open(__file__, "rb") as f:
+        file_hash = hashlib.md5(f.read()).hexdigest()
+        
+    supabase_url = os.environ.get("SUPABASE_URL", "NOT_SET")
+    
+    return {
+        "status": "online",
+        "file_hash": file_hash,
+        "supabase_url": supabase_url,
+        "supabase_url_masked": f"{supabase_url[:10]}...{supabase_url[-5:]}" if supabase_url != "NOT_SET" else "NOT_SET",
+        "env": os.environ.get("ENVIRONMENT", "unknown"),
+        "timestamp": datetime.utcnow().isoformat()
+    }
+
 @app.get("/api/debug/jobs")
 async def debug_jobs():
     """Returns raw DB stats to verify data presence."""
