@@ -4197,6 +4197,7 @@ async def diagnostic_check():
         "supabase_url": supabase_url,
         "supabase_url_masked": f"{supabase_url[:10]}...{supabase_url[-5:]}" if supabase_url != "NOT_SET" else "NOT_SET",
         "env": os.environ.get("ENVIRONMENT", "unknown"),
+        "v": "22_02_1734",
         "timestamp": datetime.utcnow().isoformat()
     }
 
