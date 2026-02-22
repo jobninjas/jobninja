@@ -5766,7 +5766,7 @@ async def health_check():
 
     return {
         "status": "ok",
-        "v": "v2_supabase_22_02_1745",
+        "v": "v2_supabase_22_02_1810",
         "mongodb": "connected" if db is not None else "failed",
         "supabase": "connected" if supabase_client is not None else "failed",
         "groq_api_key_set": groq_key is not None and len(groq_key) > 0,

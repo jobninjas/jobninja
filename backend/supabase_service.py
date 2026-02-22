@@ -687,13 +687,19 @@ class SupabaseService:
             'source_url', 'posted_at', 'created_at', 'categories'
         }
         
+        # Map URL fields to source_url
+        url_val = job_data.get('url') or job_data.get('redirect_url') or job_data.get('sourceUrl')
+        if url_val and not job_data.get('source_url'):
+            job_data['source_url'] = url_val
+            
         # Map datePosted to posted_at if needed
         if 'datePosted' in job_data and 'posted_at' not in job_data:
             job_data['posted_at'] = job_data.pop('datePosted')
             
-        # Map contract_type to job_type if needed
-        if 'contract_type' in job_data and 'job_type' not in job_data:
-            job_data['job_type'] = job_data.pop('contract_type')
+        # Map workType/contract_type to job_type if needed
+        work_val = job_data.get('workType') or job_data.get('contract_type')
+        if work_val and 'job_type' not in job_data:
+            job_data['job_type'] = work_val
             
         return {k: v for k, v in job_data.items() if k in allowed_columns}
 
