@@ -4267,6 +4267,16 @@ async def debug_supabase():
             "traceback": traceback.format_exc()
         }
 
+@app.get("/api/debug/env")
+async def debug_env():
+    """Diagnostic route to check which environment variables are exposed (keys only!)."""
+    keys = list(os.environ.keys())
+    return {
+        "status": "online",
+        "has_supabase_url": "SUPABASE_URL" in keys,
+        "has_supabase_key": "SUPABASE_SERVICE_ROLE_KEY" in keys,
+        "keys": keys
+    }
 
 @app.post("/api/debug/fix-locations")
 async def fix_locations():
