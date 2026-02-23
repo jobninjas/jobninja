@@ -286,6 +286,10 @@ async def verify_turnstile_token(token: str, ip_address: str = None) -> bool:
 
 def ensure_verified(user: dict):
     """Ensure the user has verified their email."""
+    # Bypass for local development
+    if not is_prod:
+        return
+        
     if not user.get("is_verified"):
         raise HTTPException(
             status_code=403,
@@ -822,20 +826,20 @@ async def get_all_call_bookings(admin: dict = Depends(check_admin)):
     """Get all call bookings (admin only)"""
     try:
         bookings = SupabaseService.get_call_bookings()
-        return {"success": True, "bookings": bookings}
+        return bookings
     except Exception as e:
         logger.error(f"Error fetching bookings: {e}")
-        return {"success": False, "error": str(e)}
+        raise HTTPException(status_code=500, detail=str(e))
 
 @api_router.get("/admin/contact-messages")
 async def get_all_contact_messages(admin: dict = Depends(check_admin)):
     """Get all contact messages (admin only)"""
     try:
         messages = SupabaseService.get_contact_messages()
-        return {"success": True, "messages": messages}
+        return messages
     except Exception as e:
         logger.error(f"Error fetching messages: {e}")
-        return {"success": False, "error": str(e)}
+        raise HTTPException(status_code=500, detail=str(e))
 
 class StatusUpdateRequest(BaseModel):
     status: str
@@ -3440,8 +3444,10 @@ async def get_user_usage_limits(identifier: str) -> dict:
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     daily_usage = SupabaseService.check_daily_usage(user.get("email"), today)
     current_daily_apps = daily_usage.get("apps", 0)
+    current_daily_autofills = daily_usage.get("autofills", 0)
 
     limit = 10  # Default for free
+    autofills_limit = 5 # Default for free
     current_count = current_daily_apps
     can_generate = False
     reset_date = None
@@ -6172,7 +6178,7 @@ async def get_jobs(
         )
         
         # Fallback: if no fresh jobs, try fetching older jobs
-        if not supabase_jobs and not search:
+        if not supabase_jobs:
             logger.info("No fresh jobs found in last 72h. Falling back to older jobs...")
             supabase_jobs = SupabaseService.get_jobs(
                 limit=limit if not target_role else 100,
@@ -6343,40 +6349,9 @@ async def debug_force_sync():
             "sync_errors": sync_errors,
             "sync_details": status
         }
-    except BaseException as e:
-        import traceback
-        return {"error": "Critical Endpoint Failure", "details": str(e), "type": str(type(e)), "traceback": traceback.format_exc()}
-
-# Admin Dashboard Endpoints
-@app.get("/api/admin/call-bookings")
-async def get_admin_call_bookings(user: dict = Depends(get_current_user)):
-    """Get all Human Ninja call bookings for admin dashboard"""
-    if user.get("role") != "admin":
-        raise HTTPException(status_code=403, detail="Admin access required")
-    
-    try:
-        # Fetch all call bookings from Supabase
-        bookings = SupabaseService.get_call_bookings()
-        
-        return {"bookings": bookings, "total": len(bookings)}
     except Exception as e:
-        logger.error(f"Error fetching call bookings: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.get("/api/admin/contact-messages")
-async def get_admin_contact_messages(user: dict = Depends(get_current_user)):
-    """Get all contact form messages for admin dashboard"""
-    if user.get("role") != "admin":
-        raise HTTPException(status_code=403, detail="Admin access required")
-    
-    try:
-        # Fetch all contact messages from Supabase
-        messages = SupabaseService.get_contact_messages()
-        
-        return {"messages": messages, "total": len(messages)}
-    except Exception as e:
-        logger.error(f"Error fetching contact messages: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Error in debug_force_sync: {e}")
+        return {"status": "error", "error": str(e), "traceback": traceback.format_exc()}
 
 # Contact Form Endpoint
 class ContactMessage(BaseModel):

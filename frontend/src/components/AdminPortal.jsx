@@ -64,11 +64,19 @@ const AdminPortal = () => {
                 setError(`Users API Error: ${usersRes.reason.message}`);
             }
 
-            if (bookingsRes.status === 'fulfilled') setBookings(bookingsRes.value);
-            else console.error("Bookings API failed:", bookingsRes.reason);
+            if (bookingsRes.status === 'fulfilled') {
+                const data = bookingsRes.value;
+                setBookings(Array.isArray(data) ? data : (data.bookings || []));
+            } else {
+                console.error("Bookings API failed:", bookingsRes.reason);
+            }
 
-            if (messagesRes.status === 'fulfilled') setMessages(messagesRes.value);
-            else console.error("Messages API failed:", messagesRes.reason);
+            if (messagesRes.status === 'fulfilled') {
+                const data = messagesRes.value;
+                setMessages(Array.isArray(data) ? data : (data.messages || []));
+            } else {
+                console.error("Messages API failed:", messagesRes.reason);
+            }
 
             if (jStatsRes.status === 'fulfilled') setJobStats(jStatsRes.value);
             else {
