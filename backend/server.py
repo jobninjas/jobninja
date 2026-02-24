@@ -5723,13 +5723,15 @@ async def create_interview_session(
     roleTitle: str = Form(...),
     user: dict = Depends(get_current_user)
 ):
-    """Create a new interview session"""
+    """Create a new interview session - stores in MongoDB"""
     try:
+        import uuid as _uuid
+
         # Read resume bytes
         file_content = await resume.read()
         filename = resume.filename or ""
 
-        # Parse resume text from file
+        # Parse resume text
         parsed_text = ""
         try:
             if filename.lower().endswith('.docx'):
@@ -5742,9 +5744,7 @@ async def create_interview_session(
                     import io
                     import PyPDF2
                     reader = PyPDF2.PdfReader(io.BytesIO(file_content))
-                    parsed_text = "\n".join(
-                        page.extract_text() or "" for page in reader.pages
-                    )
+                    parsed_text = "\n".join(page.extract_text() or "" for page in reader.pages)
                 except Exception:
                     parsed_text = file_content.decode('utf-8', errors='ignore')
             else:
@@ -5756,36 +5756,55 @@ async def create_interview_session(
         if not parsed_text.strip():
             parsed_text = f"Resume file: {filename}"
 
-        # NOTE: user_id is intentionally None — our users are in MongoDB, not
-        # Supabase Auth, so the FK constraint on auth.users would reject any ID.
-        resume_doc = {
-            "user_id": None,
-            "file_name": filename,
-            "parsed_text": parsed_text,
-            "created_at": datetime.utcnow().isoformat()
-        }
-        new_resume = SupabaseService.insert_interview_resume(resume_doc)
-        if not new_resume:
-            raise HTTPException(status_code=500, detail="Failed to save resume. Check Supabase interview_resumes table.")
-        resume_id = new_resume.get("id")
+        # Use a proper UUID as the session ID (works everywhere)
+        session_id = str(_uuid.uuid4())
+        user_id = str(user.get("id") or user.get("_id") or "")
+        now = datetime.utcnow()
 
-        # Create interview session
-        session_data = {
-            "user_id": None,
-            "resume_id": resume_id,
-            "job_description": jd,
+        # Primary store: MongoDB (always works, no FK issues)
+        mongo_session = {
+            "session_id": session_id,
+            "user_id": user_id,
             "role_title": roleTitle,
+            "job_description": jd,
+            "resume_text": parsed_text,
+            "resume_filename": filename,
             "status": "pending",
-            "created_at": datetime.utcnow().isoformat()
+            "question_count": 0,
+            "target_questions": 5,
+            "turns": [],
+            "created_at": now,
         }
-        new_session = SupabaseService.insert_interview_session(session_data)
-        if not new_session:
-            raise HTTPException(status_code=500, detail="Failed to create interview session. Check Supabase interview_sessions table.")
+        await db.interview_sessions.insert_one(mongo_session)
+        logger.info(f"Interview session {session_id} created in MongoDB for user {user_id}")
 
-        session_id = new_session.get("id")
+        # Optional: also try Supabase (for analytics/reporting) — failures don't block the user
+        try:
+            resume_doc = {
+                "user_id": None,
+                "file_name": filename,
+                "parsed_text": parsed_text,
+                "created_at": now.isoformat()
+            }
+            new_resume = SupabaseService.insert_interview_resume(resume_doc)
+            resume_id = new_resume.get("id") if new_resume else None
+
+            session_data = {
+                "id": session_id,          # Use same UUID so lookups are consistent
+                "user_id": None,
+                "resume_id": resume_id,
+                "job_description": jd,
+                "role_title": roleTitle,
+                "status": "pending",
+                "created_at": now.isoformat()
+            }
+            SupabaseService.insert_interview_session(session_data)
+        except Exception as sb_err:
+            logger.warning(f"Supabase interview sync skipped: {sb_err}")
+
         return {
             "success": True,
-            "sessionId": str(session_id),
+            "sessionId": session_id,
             "message": "Session created successfully"
         }
 
