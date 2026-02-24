@@ -36,6 +36,8 @@ import Checkout from "./components/Checkout";
 import ResumeScanner from "./components/ResumeScanner";
 import AIApplyFlow from "./components/AIApplyFlow";
 import RefundPolicy from "./components/RefundPolicy";
+import PrivacyPolicy from "./components/PrivacyPolicy";
+import TermsAndConditions from "./components/TermsAndConditions";
 import VerifyEmail from "./components/VerifyEmail";
 import ScrollToTop from "./components/ScrollToTop";
 // Phase 1 Tools
@@ -87,6 +89,8 @@ function App() {
                 <Route path="/payment/canceled" element={<PaymentCanceled />} />
                 <Route path="/checkout" element={<Checkout />} />
                 <Route path="/refund-policy" element={<RefundPolicy />} />
+                <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+                <Route path="/terms" element={<TermsAndConditions />} />
                 <Route path="/verify-email" element={<VerifyEmail />} />
 
                 {/* AI Ninja Routes */}

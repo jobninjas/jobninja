@@ -1,14 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-    ShieldCheck,
-    Clock,
-    CreditCard,
-    HelpCircle,
-    Mail,
-    ArrowLeft,
-    Info,
-    ChevronRight
+    ShieldCheck, XCircle, DollarSign, Clock, Mail, ArrowLeft, Info, AlertTriangle, CheckCircle
 } from 'lucide-react';
 import { BRAND } from '../config/branding';
 import { Button } from './ui/button';
@@ -19,134 +12,168 @@ import SideMenu from './SideMenu';
 const RefundPolicy = () => {
     const navigate = useNavigate();
     const [sideMenuOpen, setSideMenuOpen] = useState(false);
+    const EFFECTIVE_DATE = 'February 24, 2026';
 
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col">
-            {/* Side Menu */}
             <SideMenu isOpen={sideMenuOpen} onClose={() => setSideMenuOpen(false)} />
-
-            {/* Navigation Header */}
             <Header onMenuClick={() => setSideMenuOpen(true)} />
 
             <main className="flex-grow container mx-auto px-4 py-12 max-w-4xl">
                 <button
                     onClick={() => navigate(-1)}
-                    className="flex items-center text-gray-600 hover:text-primary mb-8 transition-colors group"
+                    className="flex items-center text-gray-600 hover:text-blue-600 mb-8 transition-colors group"
                 >
                     <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" />
                     Back
                 </button>
 
                 <div className="text-center mb-12">
-                    <div className="inline-flex items-center justify-center p-3 bg-primary/10 rounded-2xl mb-4">
-                        <ShieldCheck className="w-8 h-8 text-primary" />
+                    <div className="inline-flex items-center justify-center p-3 bg-green-50 rounded-2xl mb-4">
+                        <ShieldCheck className="w-8 h-8 text-green-600" />
                     </div>
-                    <h1 className="text-4xl font-bold text-gray-900 mb-4">Refund Policy</h1>
-                    <p className="text-xl text-gray-600">
-                        Transparent and fair policies for the {BRAND.name} community.
+                    <h1 className="text-4xl font-bold text-gray-900 mb-3">Refund Policy</h1>
+                    <p className="text-gray-500 text-sm">Effective Date: {EFFECTIVE_DATE}</p>
+                    <p className="text-gray-600 mt-2 text-lg">
+                        Clear, honest, and straightforward — no surprises.
                     </p>
                 </div>
 
                 <div className="space-y-8">
+
+                    {/* Key Summary Cards */}
+                    <div className="grid md:grid-cols-3 gap-4">
+                        <div className="bg-blue-50 border border-blue-200 rounded-2xl p-5 text-center">
+                            <CheckCircle className="w-7 h-7 text-blue-600 mx-auto mb-2" />
+                            <p className="font-bold text-blue-800 text-sm">Free for 2 Weeks</p>
+                            <p className="text-blue-700 text-xs mt-1">Try the full platform free — 20 jobs/day, no card required.</p>
+                        </div>
+                        <div className="bg-green-50 border border-green-200 rounded-2xl p-5 text-center">
+                            <DollarSign className="w-7 h-7 text-green-600 mx-auto mb-2" />
+                            <p className="font-bold text-green-800 text-sm">$50 / Year — One-Time</p>
+                            <p className="text-green-700 text-xs mt-1">Not a subscription. Pay once, use for 12 months. No auto-renewal.</p>
+                        </div>
+                        <div className="bg-red-50 border border-red-200 rounded-2xl p-5 text-center">
+                            <XCircle className="w-7 h-7 text-red-500 mx-auto mb-2" />
+                            <p className="font-bold text-red-800 text-sm">No Refunds</p>
+                            <p className="text-red-700 text-xs mt-1">All purchases are final. You had 2 free weeks to evaluate the platform.</p>
+                        </div>
+                    </div>
+
                     {/* Main Policy Card */}
                     <Card className="p-8 border-none shadow-xl bg-white/80 backdrop-blur-sm">
-                        <section className="mb-10">
+
+                        <section className="mb-8">
                             <div className="flex items-center gap-3 mb-4">
-                                <Info className="w-6 h-6 text-primary" />
-                                <h2 className="text-2xl font-semibold text-gray-800">Overview</h2>
+                                <Info className="w-6 h-6 text-blue-600" />
+                                <h2 className="text-2xl font-semibold text-gray-800">How Our Pricing Works</h2>
                             </div>
+                            <p className="text-gray-600 leading-relaxed mb-4">
+                                {BRAND.name} offers a <strong>14-day free trial</strong> when you sign up — no credit card required. During your trial, you get up to <strong>20 job applications per day</strong> using our AI tools.
+                            </p>
                             <p className="text-gray-600 leading-relaxed">
-                                At {BRAND.name}, we strive to provide the best possible experience for our users. We understand that circumstances change, and we've designed our refund policy to be as fair and straightforward as possible.
+                                If you want unlimited access — including unlimited applications, AI Interview Prep, Auto Fill Chrome Extension, and all advanced tools — you can upgrade to <strong>Pro for $50/year</strong>.
+                            </p>
+                            <div className="mt-4 bg-blue-50 border border-blue-100 rounded-xl p-4">
+                                <p className="text-blue-800 text-sm">
+                                    <strong>Important:</strong> This is a <strong>one-time annual payment</strong>, not a subscription. There are no automatic renewals or recurring charges. When your 12 months expire, you simply choose to renew or not.
+                                </p>
+                            </div>
+                        </section>
+
+                        <section className="mb-8 pt-8 border-t border-gray-100">
+                            <div className="flex items-center gap-3 mb-4">
+                                <XCircle className="w-6 h-6 text-red-500" />
+                                <h2 className="text-2xl font-semibold text-gray-800">No Refund Policy</h2>
+                            </div>
+                            <div className="bg-red-50 border border-red-200 rounded-xl p-5 mb-4">
+                                <p className="text-red-800 font-semibold mb-2">All Pro purchases are final and non-refundable.</p>
+                                <p className="text-red-700 text-sm leading-relaxed">
+                                    Because we provide a <strong>free 2-week trial</strong> before any payment is required, users have full opportunity to evaluate the platform before committing. Once a Pro purchase is made, it immediately grants access to the full platform — making it non-refundable as a digital service delivered upon payment.
+                                </p>
+                            </div>
+                            <ul className="space-y-3 text-gray-600 text-sm">
+                                <li className="flex gap-2">
+                                    <XCircle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
+                                    <span>We do not offer refunds for unused months or partial use of the annual access period.</span>
+                                </li>
+                                <li className="flex gap-2">
+                                    <XCircle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
+                                    <span>We do not offer refunds if you did not use the platform after purchase.</span>
+                                </li>
+                                <li className="flex gap-2">
+                                    <XCircle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
+                                    <span>We do not offer refunds if you found a job (congratulations 🎉) and no longer need the service.</span>
+                                </li>
+                                <li className="flex gap-2">
+                                    <XCircle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
+                                    <span>Chargeback disputes filed after a valid purchase may result in account suspension.</span>
+                                </li>
+                            </ul>
+                        </section>
+
+                        <section className="mb-8 pt-8 border-t border-gray-100">
+                            <div className="flex items-center gap-3 mb-4">
+                                <AlertTriangle className="w-6 h-6 text-yellow-500" />
+                                <h2 className="text-2xl font-semibold text-gray-800">Exceptions</h2>
+                            </div>
+                            <p className="text-gray-600 mb-3">
+                                We may review refund requests on a case-by-case basis <strong>only</strong> in the following situations:
+                            </p>
+                            <ul className="space-y-3 text-gray-600 text-sm">
+                                <li className="flex gap-2">
+                                    <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
+                                    <span><strong>Duplicate charge:</strong> You were charged more than once for the same purchase due to a technical error.</span>
+                                </li>
+                                <li className="flex gap-2">
+                                    <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
+                                    <span><strong>Platform unavailability:</strong> A confirmed platform-wide outage lasting more than 7 consecutive days.</span>
+                                </li>
+                            </ul>
+                            <p className="text-gray-500 text-sm mt-3">
+                                Exception requests must be submitted within <strong>48 hours of purchase</strong> to <a href={`mailto:${BRAND.supportEmail}`} className="text-blue-600 underline">{BRAND.supportEmail}</a>.
                             </p>
                         </section>
 
-                        <div className="grid md:grid-cols-2 gap-8">
-                            <section className="bg-gray-50 p-6 rounded-2xl border border-gray-100">
-                                <div className="flex items-center gap-3 mb-3">
-                                    <Bot className="w-5 h-5 text-blue-600" />
-                                    <h3 className="text-lg font-bold text-gray-800">AI Ninja (Self-Serve)</h3>
-                                </div>
-                                <ul className="space-y-3 text-gray-600 text-sm">
-                                    <li className="flex gap-2">
-                                        <ChevronRight className="w-4 h-4 text-primary flex-shrink-0" />
-                                        <span>Refunds are available within <strong>7 days</strong> of purchase if no AI applications have been generated.</span>
-                                    </li>
-                                    <li className="flex gap-2">
-                                        <ChevronRight className="w-4 h-4 text-primary flex-shrink-0" />
-                                        <span>Monthly subscriptions can be canceled at any time to prevent future billing.</span>
-                                    </li>
-                                </ul>
-                            </section>
-
-                            <section className="bg-gray-50 p-6 rounded-2xl border border-gray-100">
-                                <div className="flex items-center gap-3 mb-3">
-                                    <UserCheck className="w-5 h-5 text-orange-500" />
-                                    <h3 className="text-lg font-bold text-gray-800">Human Ninja (Done-for-You)</h3>
-                                </div>
-                                <ul className="space-y-3 text-gray-600 text-sm">
-                                    <li className="flex gap-2">
-                                        <ChevronRight className="w-4 h-4 text-primary flex-shrink-0" />
-                                        <span>Refunds are case-by-case before the application process begins.</span>
-                                    </li>
-                                    <li className="flex gap-2">
-                                        <ChevronRight className="w-4 h-4 text-primary flex-shrink-0" />
-                                        <span>Once our specialists start searching and tailoring for you, service fees are non-refundable.</span>
-                                    </li>
-                                </ul>
-                            </section>
-                        </div>
-
-                        <section className="mt-10 pt-10 border-t border-gray-100">
+                        <section className="pt-8 border-t border-gray-100">
                             <div className="flex items-center gap-3 mb-4">
-                                <Clock className="w-6 h-6 text-primary" />
-                                <h2 className="text-2xl font-semibold text-gray-800">Processing Timeline</h2>
+                                <Clock className="w-6 h-6 text-blue-600" />
+                                <h2 className="text-2xl font-semibold text-gray-800">Need Help?</h2>
                             </div>
                             <p className="text-gray-600 mb-4">
-                                Once a refund is approved:
+                                If you believe you qualify for an exception or have a billing question, please reach out promptly.
                             </p>
-                            <div className="bg-blue-50 border border-blue-100 p-4 rounded-xl flex items-start gap-3">
-                                <CreditCard className="w-5 h-5 text-blue-600 mt-0.5" />
-                                <p className="text-sm text-blue-800">
-                                    Refunds typically take <strong>5-10 business days</strong> to appear on your original payment method, depending on your bank or credit card issuer.
-                                </p>
-                            </div>
                         </section>
                     </Card>
 
                     {/* Contact Section */}
-                    <div className="bg-primary/5 rounded-3xl p-8 border border-primary/10 text-center">
-                        <h3 className="text-xl font-bold text-gray-900 mb-2">Need Help?</h3>
+                    <div className="bg-blue-50 rounded-3xl p-8 border border-blue-100 text-center">
+                        <h3 className="text-xl font-bold text-gray-900 mb-2">Billing Questions?</h3>
                         <p className="text-gray-600 mb-6">
-                            If you have questions about a refund or need assistance with your account, our support team is here to help.
+                            Contact our support team within 48 hours of your purchase for any billing-related concerns.
                         </p>
-                        <div className="flex flex-col sm:flex-row justify-center gap-4">
-                            <Button
-                                onClick={() => window.location.href = 'mailto:support@novaninja.com'}
-                                className="h-12 px-8 rounded-xl bg-green-600 hover:bg-green-700 text-white border-none"
-                            >
-                                <Mail className="w-4 h-4 mr-2" /> Email Support
-                            </Button>
-                            <Button variant="outline" className="h-12 px-8 rounded-xl border-2" onClick={() => navigate('/dashboard')}>
-                                <HelpCircle className="w-4 h-4 mr-2" /> Help Center
-                            </Button>
-                        </div>
+                        <Button
+                            onClick={() => window.location.href = `mailto:${BRAND.supportEmail}`}
+                            className="h-12 px-8 rounded-xl bg-blue-600 hover:bg-blue-700 text-white"
+                        >
+                            <Mail className="w-4 h-4 mr-2" /> {BRAND.supportEmail}
+                        </Button>
                     </div>
                 </div>
             </main>
 
             <footer className="bg-white border-t py-8 mt-auto">
                 <div className="container mx-auto px-4 text-center">
-                    <p className="text-gray-500 text-sm">
-                        {BRAND.copyright} • {BRAND.name} is a strategic talent acceleration platform.
-                    </p>
+                    <p className="text-gray-500 text-sm">{BRAND.copyright}</p>
+                    <div className="flex justify-center gap-6 mt-2 text-sm">
+                        <button onClick={() => navigate('/privacy-policy')} className="text-gray-500 hover:underline">Privacy Policy</button>
+                        <button onClick={() => navigate('/terms')} className="text-gray-500 hover:underline">Terms & Conditions</button>
+                        <button onClick={() => navigate('/refund-policy')} className="text-blue-600 hover:underline">Refund Policy</button>
+                    </div>
                 </div>
             </footer>
         </div>
     );
 };
-
-// Mock Bot/UserCheck icons if they are not available (they should be from lucide-react in this project)
-const Bot = ({ className }) => <div className={className}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 8V4H8" /><rect width="16" height="12" x="4" y="8" rx="2" /><path d="M2 14h2" /><path d="M20 14h2" /><path d="M15 13v2" /><path d="M9 13v2" /></svg></div>;
-const UserCheck = ({ className }) => <div className={className}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><polyline points="16 11 18 13 22 9" /></svg></div>;
 
 export default RefundPolicy;
