@@ -1,73 +1,212 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+
+  <!-- ===== CORE PAGES ===== -->
   <url>
     <loc>https://jobninjas.ai/</loc>
-    <lastmod>2026-01-26</lastmod>
+    <lastmod>2026-02-23</lastmod>
+    <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://jobninjas.ai/ai-ninja</loc>
-    <lastmod>2026-01-26</lastmod>
-    <priority>0.9</priority>
-  </url>
-  <url>
-    <loc>https://jobninjas.ai/human-ninja</loc>
-    <lastmod>2026-01-26</lastmod>
-    <priority>0.9</priority>
-  </url>
-  <url>
-    <loc>https://jobninjas.ai/jobs</loc>
-    <lastmod>2026-01-26</lastmod>
-    <priority>0.8</priority>
-  </url>
-  <url>
     <loc>https://jobninjas.ai/pricing</loc>
-    <lastmod>2026-01-26</lastmod>
+    <lastmod>2026-02-23</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://jobninjas.ai/signup</loc>
+    <lastmod>2026-02-23</lastmod>
+    <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://jobninjas.ai/login</loc>
-    <lastmod>2026-01-26</lastmod>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://jobninjas.ai/signup</loc>
-    <lastmod>2026-01-26</lastmod>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://jobninjas.ai/free-tools</loc>
-    <lastmod>2026-01-26</lastmod>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://jobninjas.ai/interview-prep</loc>
-    <lastmod>2026-01-26</lastmod>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://jobninjas.ai/resume-templates</loc>
-    <lastmod>2026-01-26</lastmod>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://jobninjas.ai/cover-letter-templates</loc>
-    <lastmod>2026-01-26</lastmod>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://jobninjas.ai/ats-guides</loc>
-    <lastmod>2026-01-26</lastmod>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://jobninjas.ai/contact</loc>
-    <lastmod>2026-01-26</lastmod>
+    <lastmod>2026-02-23</lastmod>
+    <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://jobninjas.ai/refund-policy</loc>
-    <lastmod>2026-01-26</lastmod>
-    <priority>0.5</priority>
+    <loc>https://jobninjas.ai/contact</loc>
+    <lastmod>2026-02-23</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
   </url>
+  <url>
+    <loc>https://jobninjas.ai/refund-policy</loc>
+    <lastmod>2026-02-23</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.4</priority>
+  </url>
+
+  <!-- ===== MAIN PRODUCT PAGES ===== -->
+  <url>
+    <loc>https://jobninjas.ai/ai-ninja</loc>
+    <lastmod>2026-02-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.95</priority>
+  </url>
+  <url>
+    <loc>https://jobninjas.ai/human-ninja</loc>
+    <lastmod>2026-02-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://jobninjas.ai/jobs</loc>
+    <lastmod>2026-02-23</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://jobninjas.ai/interview-prep</loc>
+    <lastmod>2026-02-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://jobninjas.ai/scanner</loc>
+    <lastmod>2026-02-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+
+  <!-- ===== AI RESUME TOOLS ===== -->
+  <url>
+    <loc>https://jobninjas.ai/one-click-optimize</loc>
+    <lastmod>2026-02-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://jobninjas.ai/bullet-points</loc>
+    <lastmod>2026-02-23</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://jobninjas.ai/summary-generator</loc>
+    <lastmod>2026-02-23</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://jobninjas.ai/linkedin-optimizer</loc>
+    <lastmod>2026-02-23</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://jobninjas.ai/career-change</loc>
+    <lastmod>2026-02-23</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://jobninjas.ai/chatgpt-resume</loc>
+    <lastmod>2026-02-23</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://jobninjas.ai/chatgpt-cover-letter</loc>
+    <lastmod>2026-02-23</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
+  </url>
+
+  <!-- ===== FREE TOOLS ===== -->
+  <url>
+    <loc>https://jobninjas.ai/free-tools</loc>
+    <lastmod>2026-02-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://jobninjas.ai/networking-templates</loc>
+    <lastmod>2026-02-23</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.65</priority>
+  </url>
+  <url>
+    <loc>https://jobninjas.ai/interview-framework</loc>
+    <lastmod>2026-02-23</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.65</priority>
+  </url>
+  <url>
+    <loc>https://jobninjas.ai/reference-prep</loc>
+    <lastmod>2026-02-23</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://jobninjas.ai/salary-negotiator</loc>
+    <lastmod>2026-02-23</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://jobninjas.ai/linkedin-headline</loc>
+    <lastmod>2026-02-23</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://jobninjas.ai/career-gap</loc>
+    <lastmod>2026-02-23</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.65</priority>
+  </url>
+  <url>
+    <loc>https://jobninjas.ai/job-decoder</loc>
+    <lastmod>2026-02-23</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.65</priority>
+  </url>
+  <url>
+    <loc>https://jobninjas.ai/offer-comparator</loc>
+    <lastmod>2026-02-23</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.65</priority>
+  </url>
+
+  <!-- ===== TEMPLATES & EXAMPLES ===== -->
+  <url>
+    <loc>https://jobninjas.ai/resume-templates</loc>
+    <lastmod>2026-02-23</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://jobninjas.ai/cover-letter-templates</loc>
+    <lastmod>2026-02-23</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://jobninjas.ai/linkedin-examples</loc>
+    <lastmod>2026-02-23</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.65</priority>
+  </url>
+  <url>
+    <loc>https://jobninjas.ai/resume-examples</loc>
+    <lastmod>2026-02-23</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.65</priority>
+  </url>
+  <url>
+    <loc>https://jobninjas.ai/linkedin-mockup</loc>
+    <lastmod>2026-02-23</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://jobninjas.ai/ats-guides</loc>
+    <lastmod>2026-02-23</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
 </urlset>
