@@ -5725,7 +5725,15 @@ async def create_interview_session(
 ):
     """Create a new interview session"""
     try:
-        user_id = user.get("id") or str(user.get("_id"))
+        import uuid as _uuid
+        raw_user_id = user.get("id") or str(user.get("_id"))
+        # Only pass user_id to Supabase if it's a valid UUID (36-char format)
+        # MongoDB ObjectIds (24 hex chars) are NOT valid Supabase UUIDs
+        try:
+            _uuid.UUID(str(raw_user_id))
+            supabase_user_id = str(raw_user_id)
+        except (ValueError, AttributeError):
+            supabase_user_id = None
         
         # Read resume
         file_content = await resume.read()
@@ -5740,7 +5748,7 @@ async def create_interview_session(
         
         # Save resume to Supabase
         resume_doc = {
-            "user_id": user_id if len(str(user_id)) == 36 else None,
+            "user_id": supabase_user_id,
             "file_name": resume.filename,
             "parsed_text": parsed_text,
             "created_at": datetime.utcnow().isoformat()
@@ -5750,7 +5758,7 @@ async def create_interview_session(
         
         # Create interview session in Supabase
         session_data = {
-            "user_id": user_id if len(str(user_id)) == 36 else None,
+            "user_id": supabase_user_id,
             "resume_id": resume_id,
             "job_description": jd,
             "status": "pending",
@@ -5758,6 +5766,10 @@ async def create_interview_session(
         }
         new_session = SupabaseService.insert_interview_session(session_data)
         session_id = new_session.get("id") if new_session else None
+        
+        if not session_id:
+            logger.error(f"Session insert returned None. Supabase may be misconfigured or interview_sessions table missing.")
+            raise HTTPException(status_code=500, detail="Failed to create interview session. Please try again.")
         
         return {
             "success": True,

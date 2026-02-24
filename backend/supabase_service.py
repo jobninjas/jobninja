@@ -339,24 +339,28 @@ class SupabaseService:
     def insert_interview_session(session_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """Insert a new interview session"""
         client = SupabaseService.get_client()
-        if not client: return None
+        if not client:
+            logger.error("insert_interview_session: Supabase client not available")
+            return None
         try:
             response = client.table("interview_sessions").insert(session_data).execute()
             return response.data[0] if response.data else None
         except Exception as e:
-            logger.error(f"Error inserting interview session: {e}")
+            logger.error(f"Error inserting interview session. Data: {session_data}. Error: {repr(e)}")
             return None
 
     @staticmethod
     def insert_interview_resume(resume_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """Insert a new interview resume"""
         client = SupabaseService.get_client()
-        if not client: return None
+        if not client:
+            logger.error("insert_interview_resume: Supabase client not available")
+            return None
         try:
             response = client.table("interview_resumes").insert(resume_data).execute()
             return response.data[0] if response.data else None
         except Exception as e:
-            logger.error(f"Error inserting interview resume: {e}")
+            logger.error(f"Error inserting interview resume. Data keys: {list(resume_data.keys())}. Error: {repr(e)}")
             return None
 
     @staticmethod

@@ -64,7 +64,7 @@ const InterviewPrep = () => {
       const data = await response.json();
       console.log('Session created:', data);
 
-      if (data.sessionId) {
+      if (data.sessionId && data.sessionId !== 'None') {
         // Navigate to React interview room
         navigate(`/interview-prep/${data.sessionId}`);
       } else {

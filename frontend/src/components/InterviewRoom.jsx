@@ -26,6 +26,11 @@ const InterviewRoom = () => {
     const audioChunksRef = React.useRef([]);
 
     useEffect(() => {
+        // Guard: if sessionId is invalid (e.g. the string "None" from a failed session creation), redirect back
+        if (!sessionId || sessionId === 'None') {
+            navigate('/interview-prep');
+            return;
+        }
         startInterview();
     }, [sessionId]);
 
