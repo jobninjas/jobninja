@@ -1280,7 +1280,7 @@ async def fetch_ashby_jobs(company_id: str) -> List[Dict[str, Any]]:
 # EXPORTED FUNCTIONS: Main Orchestration
 # =============================================================================
 
-async def fetch_all_job_categories(db=None) -> List[Dict[str, Any]]:
+async def fetch_all_job_categories() -> List[Dict[str, Any]]:
     """
     Main function to fetch jobs from ALL sources
     """
@@ -1411,7 +1411,7 @@ async def fetch_all_job_categories(db=None) -> List[Dict[str, Any]]:
     return all_jobs
 
 
-async def update_jobs_in_database(jobs: List[Dict[str, Any]], db=None) -> int:
+async def update_jobs_in_database(jobs: List[Dict[str, Any]]) -> int:
     """
     Update jobs in Supabase database
     """
@@ -1449,7 +1449,7 @@ async def update_jobs_in_database(jobs: List[Dict[str, Any]], db=None) -> int:
         return 0
 
 
-async def scheduled_job_fetch(db=None):
+async def scheduled_job_fetch():
     """
     Task to be run on schedule
     Uses JobAggregator for robust multi-source fetching

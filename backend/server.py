@@ -4240,7 +4240,7 @@ async def aggregate_jobs_from_apis(
     This can fetch 60K+ USA jobs using free tier limits
     """
     try:
-        aggregator = JobAggregator(db)
+        aggregator = JobAggregator()
         stats = await aggregator.aggregate_all_jobs(
             use_adzuna=use_adzuna,
             use_jsearch=use_jsearch,
@@ -4269,7 +4269,7 @@ async def get_aggregator_stats():
     Get statistics about aggregated jobs in the database
     """
     try:
-        aggregator = JobAggregator(db)
+        aggregator = JobAggregator()
         stats = await aggregator.get_job_stats()
 
         return {"success": True, "stats": stats}
@@ -4418,7 +4418,7 @@ async def job_fetch_background_task():
         logger.info("⏳ Waiting 30s before initial job fetch to pass health checks...")
         await asyncio.sleep(30)
         logger.info("🚀 Running initial job fetch after startup delay...")
-        await scheduled_job_fetch(db)
+        await scheduled_job_fetch()
     except Exception as e:
         logger.error(f"Initial job fetch error: {e}")
 
@@ -4428,7 +4428,7 @@ async def job_fetch_background_task():
 
         try:
             logger.info("🔄 Running scheduled job fetch...")
-            await scheduled_job_fetch(db)
+            await scheduled_job_fetch()
         except Exception as e:
             logger.error(f"Background job fetch error: {e}")
 
@@ -4979,19 +4979,18 @@ async def get_unified_resumes(email: str):
         # Pull from Supabase
         resumes = SupabaseService.get_saved_resumes(email)
 
-        
         merged = []
         for r in resumes:
-            # Standardize fields for frontend
-            r["resumeName"] = r.get("resumeName") or r.get("fileName") or "Resume"
-            r["resumeText"] = r.get("resumeText") or ""
-            r["createdAt"] = r.get("createdAt") or r.get("created_at")
-            r["updatedAt"] = r.get("updatedAt") or r.get("updated_at") or r["createdAt"]
+            # Standardize fields for frontend (map snake_case to camelCase)
+            r["resumeName"] = r.get("resume_name") or r.get("resumeName") or r.get("file_name") or r.get("fileName") or "Resume"
+            r["resumeText"] = r.get("resume_text") or r.get("resumeText") or ""
+            r["createdAt"] = r.get("created_at") or r.get("createdAt")
+            r["updatedAt"] = r.get("updated_at") or r.get("updatedAt") or r["createdAt"]
             r["textPreview"] = r["resumeText"][:200] + "..." if r["resumeText"] else ""
             merged.append(r)
 
         merged.sort(key=lambda x: str(x.get("updatedAt", "")), reverse=True)
-        return {"success": True, "resumes": merged[:3]}
+        return {"success": True, "resumes": merged[:5]} # Increased limit to 5
 
     except Exception as e:
         logger.error(f"Unified resume fetch error: {e}")
@@ -5015,15 +5014,15 @@ async def save_user_resume(request: SaveResumeRequest):
 
         # Check if resume with same name exists in Supabase
         client = SupabaseService.get_client()
-        existing_res = client.table("saved_resumes").select("*").eq("userEmail", request.user_email).eq("resumeName", request.resume_name).execute()
+        existing_res = client.table("saved_resumes").select("*").eq("user_email", request.user_email).eq("resume_name", request.resume_name).execute()
         existing = existing_res.data[0] if existing_res.data else None
 
         if existing:
             # Update existing - does not count towards limit in Supabase
             client.table("saved_resumes").update({
-                "resumeText": request.resume_text,
-                "fileName": request.file_name,
-                "updatedAt": datetime.now(timezone.utc).isoformat(),
+                "resume_text": request.resume_text,
+                "file_name": request.file_name,
+                "updated_at": datetime.now(timezone.utc).isoformat(),
             }).eq("id", existing["id"]).execute()
             
             return {
@@ -5033,25 +5032,25 @@ async def save_user_resume(request: SaveResumeRequest):
             }
 
 
-        # Check limit only for new resumes in Supabase (Limit: 3)
-        count_res = client.table("saved_resumes").select("id", count="exact").eq("userEmail", request.user_email).execute()
+        # Check limit only for new resumes in Supabase (Limit: 5)
+        count_res = client.table("saved_resumes").select("id", count="exact").eq("user_email", request.user_email).execute()
         count = count_res.count or 0
         
-        if count >= 3:
+        if count >= 5:
             raise HTTPException(
                 status_code=400,
-                detail="You can only save up to 3 resumes. Please delete one to add a new one.",
+                detail="You can only save up to 5 resumes. Please delete one to add a new one.",
             )
 
         # Save new resume to Supabase
         new_resume = {
-            "userEmail": request.user_email,
-            "resumeName": request.resume_name,
-            "resumeText": request.resume_text,
-            "fileName": request.file_name,
-            "createdAt": datetime.now(timezone.utc).isoformat(),
-            "updatedAt": datetime.now(timezone.utc).isoformat(),
-            "isSystemGenerated": False,
+            "user_email": request.user_email,
+            "resume_name": request.resume_name,
+            "resume_text": request.resume_text,
+            "file_name": request.file_name,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+            "is_system_generated": False,
         }
         
         res = client.table("saved_resumes").insert(new_resume).execute()
@@ -5123,14 +5122,7 @@ async def google_login(request: Request, login_data: GoogleLoginRequest, backgro
     Handle Google OAuth authentication for login.
     """
     try:
-        # Check if database is connected
-        if db is None:
-            logger.error("Database connection is None - MONGO_URL may be invalid")
-            raise HTTPException(
-                status_code=500,
-                detail="Database connection failed. Please contact support."
-            )
-        
+        # Check if auth libraries are verified
         # Verify imports
         if id_token is None or google_requests is None:
             logger.error("Google auth libraries missing at runtime.")
@@ -5669,7 +5661,7 @@ async def health_check():
 
     return {
         "status": "ok",
-        "version": "v3_supabase_only_final_fix_2288",
+        "version": "v3_supabase_only_final_fix: 2299",
         "database": "supabase"
     }
 

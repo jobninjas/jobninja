@@ -585,12 +585,15 @@ class SupabaseService:
             return False
 
     @staticmethod
-    def get_saved_resumes(user_id: str, limit: int = 5) -> List[Dict[str, Any]]:
-        """Get saved resumes for a user from Supabase"""
+    def get_saved_resumes(identifier: str, limit: int = 5) -> List[Dict[str, Any]]:
+        """Get saved resumes for a user from Supabase (by user_id or user_email)"""
         client = SupabaseService.get_client()
         if not client: return []
         try:
-            response = client.table("saved_resumes").select("*").eq("user_id", user_id).order("created_at", desc=True).limit(limit).execute()
+            # Determine if identifier is email or UUID
+            column = "user_email" if "@" in identifier else "user_id"
+            
+            response = client.table("saved_resumes").select("*").eq(column, identifier).order("created_at", desc=True).limit(limit).execute()
             return response.data
         except Exception as e:
             logger.error(f"Error fetching saved resumes: {e}")

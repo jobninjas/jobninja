@@ -20,14 +20,11 @@ print("LOADED NEW JOB AGGREGATOR")
 logger = logging.getLogger(__name__)
 
 class JobAggregator:
-    def __init__(self, db=None):
+    def __init__(self):
         """
         Initialize job aggregator
-        
-        Args:
-            db: Optional MongoDB database instance (deprecated)
         """
-        self.db = db
+        self.db = None
         self.adzuna = AdzunaService()
         self.jsearch = JSearchService()
         self.usajobs = USAJobsService()
