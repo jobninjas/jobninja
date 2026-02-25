@@ -5574,53 +5574,82 @@ async def create_interview_session(
     roleTitle: str = Form(...),
     user: dict = Depends(get_current_user)
 ):
-    """Create a new interview session"""
+    """Create a new interview session - stores in Supabase"""
     try:
-        user_id = user.get("id") or str(user.get("_id"))
-        
-        # Read resume
+        import uuid as _uuid
+
+        # Read resume bytes
         file_content = await resume.read()
-        
-        # Simple extraction
-        if resume.filename.endswith('.pdf'):
-            parsed_text = f"[PDF Resume: {resume.filename}]"
-        elif resume.filename.endswith('.docx'):
-            parsed_text = f"[DOCX Resume: {resume.filename}]"
-        else:
+        filename = resume.filename or ""
+
+        # Parse resume text
+        parsed_text = ""
+        try:
+            if filename.lower().endswith('.docx'):
+                import io
+                from docx import Document as DocxDocument
+                doc = DocxDocument(io.BytesIO(file_content))
+                parsed_text = "\n".join([p.text for p in doc.paragraphs if p.text.strip()])
+            elif filename.lower().endswith('.pdf'):
+                try:
+                    import io
+                    import PyPDF2
+                    reader = PyPDF2.PdfReader(io.BytesIO(file_content))
+                    parsed_text = "\n".join(page.extract_text() or "" for page in reader.pages)
+                except Exception:
+                    parsed_text = file_content.decode('utf-8', errors='ignore')
+            else:
+                parsed_text = file_content.decode('utf-8', errors='ignore')
+        except Exception as parse_err:
+            logger.warning(f"Resume parse error ({filename}): {parse_err}")
             parsed_text = file_content.decode('utf-8', errors='ignore')
-        
-        # Save resume to Supabase
-        resume_doc = {
-            "user_id": user_id if len(str(user_id)) == 36 else None,
-            "file_name": resume.filename,
-            "parsed_text": parsed_text,
-            "created_at": datetime.utcnow().isoformat()
-        }
-        new_resume = SupabaseService.insert_interview_resume(resume_doc)
-        resume_id = new_resume.get("id") if new_resume else None
-        
-        # Create interview session in Supabase
-        session_data = {
-            "user_id": user_id if len(str(user_id)) == 36 else None,
-            "resume_id": resume_id,
-            "job_description": jd,
-            "status": "pending",
-            "question_count": 0,
-            "target_questions": 5,
-            "created_at": datetime.utcnow().isoformat()
-        }
-        new_session = SupabaseService.insert_interview_session(session_data)
-        session_id = new_session.get("id") if new_session else None
-        
+
+        if not parsed_text.strip():
+            parsed_text = f"Resume file: {filename}"
+
+        # Primary store: Supabase (Interview Sessions)
+        session_id = str(_uuid.uuid4())
+        user_id = str(user.get("id") or "")
+        now = datetime.utcnow()
+
+        try:
+            # Insert resume metadata first
+            resume_doc = {
+                "user_id": user_id if user_id else None,
+                "file_name": filename,
+                "parsed_text": parsed_text,
+                "created_at": now.isoformat()
+            }
+            new_resume = SupabaseService.insert_interview_resume(resume_doc)
+            resume_id = new_resume.get("id") if new_resume else None
+
+            # Create session in Supabase
+            session_data = {
+                "id": session_id,
+                "user_id": user_id if user_id else None,
+                "resume_id": resume_id,
+                "job_description": jd,
+                "role_title": roleTitle,
+                "status": "pending",
+                "question_count": 0,
+                "target_questions": 5,
+                "created_at": now.isoformat(),
+                "resume_text": parsed_text # Redundancy for old code compatibility
+            }
+            SupabaseService.insert_interview_session(session_data)
+            logger.info(f"Interview session {session_id} created in Supabase for user {user_id}")
+
+        except Exception as sb_err:
+            logger.error(f"Supabase interview creation failed: {sb_err}")
+            # Raise here so the user sees the 500 and the real cause
+            raise HTTPException(status_code=500, detail=f"Database error: {str(sb_err)}")
+
         return {
             "success": True,
-            "sessionId": str(session_id),
+            "sessionId": session_id,
             "message": "Session created successfully"
         }
-    
-    except Exception as e:
-        logger.error(f"Session creation error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+
 
 
 @app.post("/api/interview/start/{session_id}")

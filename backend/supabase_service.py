@@ -32,7 +32,20 @@ class SupabaseService:
     # --- CRUD Wrappers ---
 
     @staticmethod
+    def get_user_by_id(user_id: str) -> Optional[Dict[str, Any]]:
+        client = SupabaseService.get_client()
+        if not client: return None
+        
+        try:
+            response = client.table("profiles").select("*").eq("id", user_id).execute()
+            return response.data[0] if response.data else None
+        except Exception as e:
+            logger.error(f"Error fetching user by ID: {e}")
+            return None
+
+    @staticmethod
     def get_user_by_email(email: str) -> Optional[Dict[str, Any]]:
+
         client = SupabaseService.get_client()
         if not client: return None
         
@@ -43,16 +56,7 @@ class SupabaseService:
             logger.error(f"Error fetching user by email: {e}")
             return None
 
-    @staticmethod
-    def get_user_by_id(user_id: str) -> Optional[Dict[str, Any]]:
-        client = SupabaseService.get_client()
-        if not client: return None
-        try:
-            response = client.table("profiles").select("*").eq("id", user_id).execute()
-            return response.data[0] if response.data else None
-        except Exception as e:
-            logger.error(f"Error fetching user by id: {e}")
-            return None
+
 
     @staticmethod
     def create_profile(user_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
@@ -381,6 +385,67 @@ class SupabaseService:
         except Exception as e:
             logger.error(f"Error fetching interview resume: {e}")
             return None
+
+    @staticmethod
+    def update_interview_session(session_id: str, update_data: Dict[str, Any]) -> bool:
+        """Update an interview session in Supabase"""
+        client = SupabaseService.get_client()
+        if not client: return False
+        try:
+            client.table("interview_sessions").update(update_data).eq("id", session_id).execute()
+            return True
+        except Exception as e:
+            logger.error(f"Error updating interview session: {e}")
+            return False
+
+    @staticmethod
+    def get_interview_turns(session_id: str) -> List[Dict[str, Any]]:
+        """Get all turns for an interview session from Supabase"""
+        client = SupabaseService.get_client()
+        if not client: return []
+        try:
+            response = client.table("interview_turns").select("*").eq("session_id", session_id).order("turn_number", desc=False).execute()
+            return response.data or []
+        except Exception as e:
+            logger.error(f"Error fetching interview turns: {e}")
+            return []
+
+    @staticmethod
+    def insert_interview_turn(turn_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """Insert a new interview turn into Supabase"""
+        client = SupabaseService.get_client()
+        if not client: return None
+        try:
+            response = client.table("interview_turns").insert(turn_data).execute()
+            return response.data[0] if response.data else None
+        except Exception as e:
+            logger.error(f"Error inserting interview turn: {e}")
+            return None
+
+    @staticmethod
+    def update_interview_turn(session_id: str, turn_number: int, update_data: Dict[str, Any]) -> bool:
+        """Update a specific interview turn's answer in Supabase"""
+        client = SupabaseService.get_client()
+        if not client: return False
+        try:
+            client.table("interview_turns").update(update_data).eq("session_id", session_id).eq("turn_number", turn_number).execute()
+            return True
+        except Exception as e:
+            logger.error(f"Error updating interview turn: {e}")
+            return False
+
+    @staticmethod
+    def insert_evaluation_report(report_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """Insert a new evaluation report into Supabase"""
+        client = SupabaseService.get_client()
+        if not client: return None
+        try:
+            response = client.table("evaluation_reports").insert(report_data).execute()
+            return response.data[0] if response.data else None
+        except Exception as e:
+            logger.error(f"Error inserting evaluation report: {e}")
+            return None
+
 
     @staticmethod
     def get_applications(user_id: str = None, user_email: str = None, limit: int = 100) -> List[Dict[str, Any]]:
@@ -864,6 +929,8 @@ class SupabaseService:
             return response.data[0] if response.data else None
         except Exception as e:
             logger.error(f"Error inserting call booking: {e}")
+            return None
+
     @staticmethod
     def update_call_booking(booking_id: str, update_data: Dict[str, Any]) -> bool:
         """Update a call booking record in Supabase"""
@@ -876,48 +943,7 @@ class SupabaseService:
             logger.error(f"Error updating call booking: {e}")
             return False
 
-    @staticmethod
-    def get_admin_stats() -> Dict[str, Any]:
-        """Get detailed statistics for admin dashboard from Supabase"""
-        client = SupabaseService.get_client()
-        if not client: return {}
-        try:
-            # 1. Total and New Users
-            users_res = client.table("profiles").select("*", count="exact").limit(0).execute()
-            total_users = users_res.count or 0
-            
-            yesterday = (datetime.utcnow() - timedelta(days=1)).isoformat()
-            new_users_res = client.table("profiles").select("*", count="exact").gte("created_at", yesterday).limit(0).execute()
-            new_users_24h = new_users_res.count or 0
-
-            # 2. Resumes & Applications
-            scans_res = client.table("scans").select("*", count="exact").limit(0).execute()
-            total_resumes = scans_res.count or 0
-            
-            apps_res = client.table("applications").select("*", count="exact").limit(0).execute()
-            total_applications = apps_res.count or 0
-
-            # 3. Subscription Stats
-            free_res = client.table("profiles").select("*", count="exact").in_("plan", ["free", "trial"]).limit(0).execute()
-            pro_res = client.table("profiles").select("*", count="exact").in_("plan", ["pro", "unlimited"]).limit(0).execute()
-
-            # 4. Interview Stats
-            interviews_res = client.table("interview_sessions").select("*", count="exact").limit(0).execute()
-
-            return {
-                "total_users": total_users,
-                "new_users_24h": new_users_24h,
-                "total_resumes_tailored": total_resumes,
-                "total_jobs_applied": total_applications,
-                "total_interviews": interviews_res.count or 0,
-                "subscription_stats": {
-                    "free": free_res.count or 0,
-                    "pro": pro_res.count or 0
-                }
-            }
-        except Exception as e:
-            logger.error(f"Error fetching admin stats from Supabase: {e}")
-            return {}
+    # get_admin_stats moved below (canonical version kept at end of file)
 
     @staticmethod
     def get_job_stats_summary() -> Dict[str, Any]:
@@ -1025,52 +1051,51 @@ class SupabaseService:
 
     @staticmethod
     def get_admin_stats() -> Dict[str, Any]:
-        """Compute high-level admin stats from the profiles table"""
+        """Compute high-level admin stats from Supabase tables"""
         client = SupabaseService.get_client()
-        if not client:
-            return {"total_users": 0, "new_users_24h": 0, "subscription_stats": {"pro": 0, "free": 0},
-                    "total_resumes_tailored": 0, "total_jobs_applied": 0}
+        if not client: return {}
+        
         try:
-            cutoff_24h = (datetime.utcnow() - timedelta(hours=24)).isoformat()
-
-            # All users
-            all_resp = client.table("profiles").select("id, plan, created_at", count="exact").execute()
-            total_users = all_resp.count or len(all_resp.data)
-            rows = all_resp.data or []
-
-            # New in last 24h
-            new_24h = sum(1 for r in rows if r.get("created_at") and r["created_at"] >= cutoff_24h)
-
-            # Subscription breakdown
+            thirty_days_ago = (datetime.now(timezone.utc) - timedelta(days=30)).isoformat()
+            
+            # --- Users ---
+            all_users = client.table("profiles").select("id, plan, created_at", count="exact").execute()
+            total_users = all_users.count or 0
+            recent_users = sum(1 for r in (all_users.data or []) if r.get("created_at") and r["created_at"] >= thirty_days_ago)
+            
             pro_plans = {"pro", "unlimited", "ai-yearly", "ai-monthly"}
-            pro_count = sum(1 for r in rows if (r.get("plan") or "").lower() in pro_plans)
-            free_count = total_users - pro_count
-
-            # Applications count
-            try:
-                apps_resp = client.table("applications").select("id", count="exact").execute()
-                total_apps = apps_resp.count or 0
-            except Exception:
-                total_apps = 0
-
-            # Resumes/scans count
-            try:
-                scans_resp = client.table("resume_scans").select("id", count="exact").execute()
-                total_scans = scans_resp.count or 0
-            except Exception:
-                total_scans = 0
+            pro_count = sum(1 for r in (all_users.data or []) if (r.get("plan") or "").lower() in pro_plans)
+            
+            # --- Applications ---
+            apps_all = client.table("applications").select("id, status, created_at", count="exact").execute()
+            total_apps = apps_all.count or 0
+            recent_apps = sum(1 for r in (apps_all.data or []) if r.get("created_at") and r["created_at"] >= thirty_days_ago)
+            
+            status_breakdown = {}
+            for r in (apps_all.data or []):
+                s = r.get("status") or "pending"
+                status_breakdown[s] = status_breakdown.get(s, 0) + 1
+                
+            # --- Interviews ---
+            interviews_all = client.table("interview_sessions").select("id, created_at", count="exact").execute()
+            total_interviews = interviews_all.count or 0
+            recent_interviews = sum(1 for r in (interviews_all.data or []) if r.get("created_at") and r["created_at"] >= thirty_days_ago)
+            
+            # --- Engagement (Active Users 30d) ---
+            usage_resp = client.table("daily_usage").select("user_email").gte("date", thirty_days_ago[:10]).execute()
+            active_emails = set(r["user_email"] for r in (usage_resp.data or []))
+            active_users_30d = len(active_emails)
 
             return {
-                "total_users": total_users,
-                "new_users_24h": new_24h,
-                "subscription_stats": {"pro": pro_count, "free": free_count},
-                "total_jobs_applied": total_apps,
-                "total_resumes_tailored": total_scans,
+                "users": {"total": total_users, "recent_30d": recent_users, "pro": pro_count},
+                "applications": {"total": total_apps, "recent_30d": recent_apps, "by_status": status_breakdown},
+                "interviews": {"total_sessions": total_interviews, "recent_30d": recent_interviews},
+                "engagement": {"active_users_30d": active_users_30d}
             }
         except Exception as e:
-            logger.error(f"Error computing admin stats: {repr(e)}")
-            return {"total_users": 0, "new_users_24h": 0, "subscription_stats": {"pro": 0, "free": 0},
-                    "total_resumes_tailored": 0, "total_jobs_applied": 0}
+            logger.error(f"Error computing comprehensive admin stats: {e}")
+            return {}
+
 
     @staticmethod
     def update_user_profile(user_id: str, update_data: Dict[str, Any]) -> bool:
@@ -1094,4 +1119,311 @@ class SupabaseService:
             return True
         except Exception as e:
             logger.error(f"Error updating contact message: {e}")
+            return False
+
+    # ----------------------------------------------------------------
+    # AUTH HELPERS
+    # ----------------------------------------------------------------
+
+    @staticmethod
+    def sign_up_user(user_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """Create a new user profile in Supabase profiles table"""
+        client = SupabaseService.get_client()
+        if not client: return None
+        try:
+            response = client.table("profiles").insert(user_data).execute()
+            return response.data[0] if response.data else None
+        except Exception as e:
+            logger.error(f"Error creating user in Supabase: {repr(e)}")
+            return None
+
+    @staticmethod
+    def get_user_by_verification_token(token: str) -> Optional[Dict[str, Any]]:
+        """Find a user by their email verification token"""
+        client = SupabaseService.get_client()
+        if not client: return None
+        try:
+            response = client.table("profiles").select("*").eq("verification_token", token).execute()
+            return response.data[0] if response.data else None
+        except Exception as e:
+            logger.error(f"Error finding user by verification token: {e}")
+            return None
+
+    @staticmethod
+    def get_user_by_referral_code(referral_code: str) -> Optional[Dict[str, Any]]:
+        """Find a user by their referral code"""
+        client = SupabaseService.get_client()
+        if not client: return None
+        try:
+            response = client.table("profiles").select("*").eq("referral_code", referral_code).execute()
+            return response.data[0] if response.data else None
+        except Exception as e:
+            logger.error(f"Error finding user by referral code: {e}")
+            return None
+
+    @staticmethod
+    def update_user_by_email(email: str, update_data: Dict[str, Any]) -> bool:
+        """Update a user profile by email"""
+        client = SupabaseService.get_client()
+        if not client: return False
+        try:
+            client.table("profiles").update(update_data).eq("email", email).execute()
+            return True
+        except Exception as e:
+            logger.error(f"Error updating user by email: {e}")
+            return False
+
+    @staticmethod
+    def delete_user(email: str) -> bool:
+        """Delete a user profile by email"""
+        client = SupabaseService.get_client()
+        if not client: return False
+        try:
+            client.table("profiles").delete().eq("email", email).execute()
+            return True
+        except Exception as e:
+            logger.error(f"Error deleting user: {e}")
+            return False
+
+    # ----------------------------------------------------------------
+    # BYOK KEYS
+    # ----------------------------------------------------------------
+
+    @staticmethod
+    def save_byok_key(user_email: str, provider: str, encrypted_key: Dict[str, Any]) -> bool:
+        """Save or update a BYOK key in Supabase"""
+        client = SupabaseService.get_client()
+        if not client: return False
+        try:
+            from datetime import datetime
+            data = {
+                "user_email": user_email,
+                "provider": provider,
+                "encrypted_key": encrypted_key,
+                "updated_at": datetime.utcnow().isoformat(),
+            }
+            client.table("byok_keys").upsert(data, on_conflict="user_email").execute()
+            return True
+        except Exception as e:
+            logger.error(f"Error saving BYOK key: {e}")
+            return False
+
+    @staticmethod
+    def get_byok_key(user_email: str) -> Optional[Dict[str, Any]]:
+        """Get a user's BYOK key config from Supabase"""
+        client = SupabaseService.get_client()
+        if not client: return None
+        try:
+            response = client.table("byok_keys").select("*").eq("user_email", user_email).execute()
+            return response.data[0] if response.data else None
+        except Exception as e:
+            logger.error(f"Error fetching BYOK key: {e}")
+            return None
+
+    @staticmethod
+    def delete_byok_key(user_email: str) -> bool:
+        """Delete a user's BYOK key from Supabase"""
+        client = SupabaseService.get_client()
+        if not client: return False
+        try:
+            client.table("byok_keys").delete().eq("user_email", user_email).execute()
+            return True
+        except Exception as e:
+            logger.error(f"Error deleting BYOK key: {e}")
+            return False
+
+    # ----------------------------------------------------------------
+    # WAITLIST
+    # ----------------------------------------------------------------
+
+    @staticmethod
+    def insert_waitlist(data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """Insert a waitlist entry in Supabase"""
+        client = SupabaseService.get_client()
+        if not client: return None
+        try:
+            response = client.table("waitlist").upsert(data, on_conflict="email").execute()
+            return response.data[0] if response.data else None
+        except Exception as e:
+            logger.error(f"Error inserting waitlist entry: {e}")
+            return None
+
+    @staticmethod
+    def get_waitlist(limit: int = 1000) -> List[Dict[str, Any]]:
+        """Get all waitlist entries"""
+        client = SupabaseService.get_client()
+        if not client: return []
+        try:
+            response = client.table("waitlist").select("*").order("created_at", desc=True).limit(limit).execute()
+            return response.data
+        except Exception as e:
+            logger.error(f"Error fetching waitlist: {e}")
+            return []
+
+    # ----------------------------------------------------------------
+    # SUBSCRIPTIONS
+    # ----------------------------------------------------------------
+
+    @staticmethod
+    def upsert_subscription(data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """Upsert a subscription record by user_email + provider_id"""
+        client = SupabaseService.get_client()
+        if not client: return None
+        try:
+            from datetime import datetime
+            data["updated_at"] = datetime.utcnow().isoformat()
+            response = client.table("subscriptions").upsert(data, on_conflict="user_email,provider_id").execute()
+            return response.data[0] if response.data else None
+        except Exception as e:
+            logger.error(f"Error upserting subscription: {e}")
+            return None
+
+    @staticmethod
+    def get_subscription_by_user(user_email: str) -> Optional[Dict[str, Any]]:
+        """Get the active subscription for a user"""
+        client = SupabaseService.get_client()
+        if not client: return None
+        try:
+            response = (
+                client.table("subscriptions")
+                .select("*")
+                .eq("user_email", user_email)
+                .order("created_at", desc=True)
+                .limit(1)
+                .execute()
+            )
+            return response.data[0] if response.data else None
+        except Exception as e:
+            logger.error(f"Error fetching subscription: {e}")
+            return None
+
+    # ----------------------------------------------------------------
+    # WEBHOOK EVENTS
+    # ----------------------------------------------------------------
+
+    @staticmethod
+    def insert_webhook_event(event_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """Record a webhook event in Supabase"""
+        client = SupabaseService.get_client()
+        if not client: return None
+        try:
+            response = client.table("webhook_events").insert(event_data).execute()
+            return response.data[0] if response.data else None
+        except Exception as e:
+            logger.error(f"Error inserting webhook event: {e}")
+            return None
+
+    # ----------------------------------------------------------------
+    # PAYMENTS
+    # ----------------------------------------------------------------
+
+    @staticmethod
+    def insert_payment(payment_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """Record a payment in Supabase"""
+        client = SupabaseService.get_client()
+        if not client: return None
+        try:
+            response = client.table("payments").insert(payment_data).execute()
+            return response.data[0] if response.data else None
+        except Exception as e:
+            logger.error(f"Error inserting payment: {e}")
+            return None
+
+    @staticmethod
+    def get_payments_by_user(user_email: str) -> List[Dict[str, Any]]:
+        """Get payment history for a user"""
+        client = SupabaseService.get_client()
+        if not client: return []
+        try:
+            response = (
+                client.table("payments")
+                .select("*")
+                .eq("user_email", user_email)
+                .order("created_at", desc=True)
+                .execute()
+            )
+            return response.data
+        except Exception as e:
+            logger.error(f"Error fetching payments: {e}")
+            return []
+
+    # ----------------------------------------------------------------
+    # STATUS CHECKS
+    # ----------------------------------------------------------------
+
+    @staticmethod
+    def insert_status_check(client_name: str) -> Optional[Dict[str, Any]]:
+        """Insert a status check record"""
+        client = SupabaseService.get_client()
+        if not client: return None
+        try:
+            response = client.table("status_checks").insert({"client_name": client_name}).execute()
+            return response.data[0] if response.data else None
+        except Exception as e:
+            logger.error(f"Error inserting status check: {e}")
+            return None
+
+    @staticmethod
+    def get_status_checks(limit: int = 100) -> List[Dict[str, Any]]:
+        """Get recent status checks"""
+        client = SupabaseService.get_client()
+        if not client: return []
+        try:
+            response = (
+                client.table("status_checks")
+                .select("*")
+                .order("created_at", desc=True)
+                .limit(limit)
+                .execute()
+            )
+            return response.data
+        except Exception as e:
+            logger.error(f"Error fetching status checks: {e}")
+            return []
+
+    # ----------------------------------------------------------------
+    # SAVED RESUMES — email-based lookup (supplement existing user_id version)
+    # ----------------------------------------------------------------
+
+    @staticmethod
+    def get_saved_resumes_by_email(user_email: str, limit: int = 5) -> List[Dict[str, Any]]:
+        """Get saved resumes by user email"""
+        client = SupabaseService.get_client()
+        if not client: return []
+        try:
+            response = (
+                client.table("saved_resumes")
+                .select("*")
+                .eq("user_email", user_email)
+                .order("created_at", desc=True)
+                .limit(limit)
+                .execute()
+            )
+            return response.data
+        except Exception as e:
+            logger.error(f"Error fetching saved resumes by email: {e}")
+            return []
+
+    @staticmethod
+    def get_saved_resume_by_id(resume_id: str) -> Optional[Dict[str, Any]]:
+        """Get a saved resume by its ID"""
+        client = SupabaseService.get_client()
+        if not client: return None
+        try:
+            response = client.table("saved_resumes").select("*").eq("id", resume_id).execute()
+            return response.data[0] if response.data else None
+        except Exception as e:
+            logger.error(f"Error fetching saved resume by id: {e}")
+            return None
+
+    @staticmethod
+    def delete_saved_resume(resume_id: str, user_email: str) -> bool:
+        """Delete a saved resume (verifies ownership by email)"""
+        client = SupabaseService.get_client()
+        if not client: return False
+        try:
+            client.table("saved_resumes").delete().eq("id", resume_id).eq("user_email", user_email).execute()
+            return True
+        except Exception as e:
+            logger.error(f"Error deleting saved resume: {e}")
             return False

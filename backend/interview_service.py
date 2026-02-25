@@ -168,19 +168,7 @@ class InterviewOrchestrator:
         self.session_id = session_id
     
     async def get_session(self) -> Optional[Dict[str, Any]]:
-        """Get session from MongoDB (primary) with fallback to Supabase"""
-        from server import db  # Import here to avoid circular imports
-        
-        # Try MongoDB first (primary store since we switched)
-        mongo_session = await db.interview_sessions.find_one(
-            {"session_id": self.session_id}
-        )
-        if mongo_session:
-            # Normalize field names to match what the rest of the code expects
-            mongo_session["id"] = mongo_session.get("session_id")
-            return mongo_session
-        
-        # Fallback: try Supabase
+        """Get session from Supabase"""
         session = SupabaseService.get_interview_session(self.session_id)
         if not session:
             return None
@@ -196,39 +184,6 @@ class InterviewOrchestrator:
         
         return session
 
-    async def _update_mongo_session(self, update_data: dict):
-        """Update session in MongoDB"""
-        try:
-            from server import db
-            await db.interview_sessions.update_one(
-                {"session_id": self.session_id},
-                {"$set": update_data}
-            )
-        except Exception as e:
-            logger.warning(f"MongoDB session update failed: {e}")
-
-    async def _push_mongo_turn(self, turn: dict):
-        """Append a turn to the session in MongoDB"""
-        try:
-            from server import db
-            await db.interview_sessions.update_one(
-                {"session_id": self.session_id},
-                {"$push": {"turns": turn}, "$inc": {"question_count": 1}}
-            )
-        except Exception as e:
-            logger.warning(f"MongoDB turn push failed: {e}")
-
-    async def _update_last_answer(self, answer_text: str):
-        """Update the last turn's answer in MongoDB"""
-        try:
-            from server import db
-            await db.interview_sessions.update_one(
-                {"session_id": self.session_id},
-                {"$set": {"turns.$[last].answer_text": answer_text}},
-                array_filters=[{"last.answer_text": None}]
-            )
-        except Exception as e:
-            logger.warning(f"MongoDB answer update failed: {e}")
 
     async def generate_initial_question(self) -> Dict[str, Any]:
         """Generate the first interview question"""
@@ -254,26 +209,16 @@ class InterviewOrchestrator:
         response = AIService.chat(prompt, json_mode=True)
         result = json.loads(response)
         
-        # Save the turn in MongoDB
-        turn = {
+        # Save the turn in Supabase
+        turn_data = {
+            "session_id": self.session_id,
             "turn_number": 1,
             "question_text": result.get('question', ''),
             "answer_text": None,
             "created_at": datetime.utcnow().isoformat()
         }
-        await self._push_mongo_turn(turn)
-        
-        # Also try Supabase as secondary store (failures ignored)
-        try:
-            SupabaseService.insert_interview_turn({
-                "session_id": self.session_id,
-                "turn_number": 1,
-                "question_text": result.get('question', ''),
-                "answer_text": None,
-                "created_at": datetime.utcnow().isoformat()
-            })
-        except Exception:
-            pass
+        SupabaseService.insert_interview_turn(turn_data)
+
         
         return result
     
@@ -287,8 +232,9 @@ class InterviewOrchestrator:
         question_count = session.get('question_count', len(turns))
         target_questions = session.get('target_questions', 5)
         
-        # Update last unanswered turn's answer in MongoDB
-        await self._update_last_answer(answer_text)
+        # Update last unanswered turn's answer in Supabase
+        SupabaseService.update_interview_turn(self.session_id, question_count, {"answer_text": answer_text})
+
         
         # Check if done
         if question_count >= target_questions:
@@ -319,14 +265,16 @@ class InterviewOrchestrator:
         response = AIService.chat(prompt, json_mode=True)
         result = json.loads(response)
         
-        # Save next turn in MongoDB
+        # Save next turn in Supabase
         next_turn = {
+            "session_id": self.session_id,
             "turn_number": question_count + 1,
             "question_text": result.get('question', ''),
             "answer_text": None,
             "created_at": datetime.utcnow().isoformat()
         }
-        await self._push_mongo_turn(next_turn)
+        SupabaseService.insert_interview_turn(next_turn)
+
         
         return {"status": "active", **result}
     
@@ -360,39 +308,28 @@ class InterviewOrchestrator:
         response = AIService.chat(prompt, json_mode=True)
         result = json.loads(response)
         
-        # Save report in MongoDB
-        from server import db
+        # Save report and mark session completed in Supabase
         report_id = str(__import__('uuid').uuid4())
-        report_doc = {
-            "report_id": report_id,
+        report_data = {
+            "id": report_id,
             "session_id": self.session_id,
-            "created_at": datetime.utcnow(),
-            **result
+            "summary": result.get('summary', ''),
+            "strengths": result.get('strengths', []),
+            "gaps": result.get('gaps', []),
+            "repetition_feedback": result.get('repetition', ''),
+            "scores": result.get('scores', {}),
+            "rewritten_answers": result.get('rewrittenAnswers', []),
+            "role_fit_score": result.get('roleFitScore', 0),
+            "created_at": datetime.utcnow().isoformat()
         }
-        await db.interview_reports.insert_one(report_doc)
+        SupabaseService.insert_evaluation_report(report_data)
         
-        # Mark session completed
-        await self._update_mongo_session({
+        # Mark session completed in Supabase
+        SupabaseService.update_interview_session(self.session_id, {
             "status": "completed",
             "report_id": report_id
         })
-        
-        # Also try Supabase
-        try:
-            report_data = {
-                "session_id": self.session_id,
-                "summary": result.get('summary', ''),
-                "strengths": result.get('strengths', []),
-                "gaps": result.get('gaps', []),
-                "repetition_feedback": result.get('repetition', ''),
-                "scores": result.get('scores', {}),
-                "rewritten_answers": result.get('rewrittenAnswers', []),
-                "role_fit_score": result.get('roleFitScore', 0),
-                "created_at": datetime.utcnow().isoformat()
-            }
-            SupabaseService.insert_evaluation_report(report_data)
-        except Exception:
-            pass
+
         
         result['id'] = report_id
         return result
