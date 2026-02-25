@@ -219,6 +219,8 @@ class InterviewOrchestrator:
         }
         SupabaseService.insert_interview_turn(turn_data)
 
+        # Update session progress
+        SupabaseService.update_interview_session(self.session_id, {"question_count": 1})
         
         return result
     
@@ -229,15 +231,16 @@ class InterviewOrchestrator:
             raise ValueError(f"Session not found: {self.session_id}")
         
         turns = session.get('turns', [])
-        question_count = session.get('question_count', len(turns))
+        # Determine the current turn number (the one being answered)
+        current_turn_number = len(turns)
         target_questions = session.get('target_questions', 5)
         
         # Update last unanswered turn's answer in Supabase
-        SupabaseService.update_interview_turn(self.session_id, question_count, {"answer_text": answer_text})
+        SupabaseService.update_interview_turn(self.session_id, current_turn_number, {"answer_text": answer_text})
 
-        
         # Check if done
-        if question_count >= target_questions:
+        if current_turn_number >= target_questions:
+            SupabaseService.update_interview_session(self.session_id, {"status": "completed"})
             return {"status": "completed"}
         
         # Build profile & history
@@ -251,10 +254,17 @@ class InterviewOrchestrator:
         if role:
             jd = f"Role: {role}\n\n{jd}"
         
-        history = "\n\n".join([
-            f"Q: {t.get('question_text', '')}\nA: {t.get('answer_text', '')}"
-            for t in turns if t.get('answer_text')
-        ])
+        # Build history including the current answer
+        history_list = []
+        for t in turns:
+            q = t.get('question_text', '')
+            a = t.get('answer_text', '')
+            if t.get('turn_number') == current_turn_number:
+                a = answer_text # Use the fresh answer
+            if q:
+                history_list.append(f"Q: {q}\nA: {a if a else '[No Answer]'}")
+        
+        history = "\n\n".join(history_list)
         
         prompt = InterviewPrompts.NEXT_TURN\
             .replace('{{profile}}', profile)\
@@ -266,15 +276,18 @@ class InterviewOrchestrator:
         result = json.loads(response)
         
         # Save next turn in Supabase
+        next_turn_number = current_turn_number + 1
         next_turn = {
             "session_id": self.session_id,
-            "turn_number": question_count + 1,
+            "turn_number": next_turn_number,
             "question_text": result.get('question', ''),
             "answer_text": None,
             "created_at": datetime.utcnow().isoformat()
         }
         SupabaseService.insert_interview_turn(next_turn)
 
+        # Update session progress
+        SupabaseService.update_interview_session(self.session_id, {"question_count": next_turn_number})
         
         return {"status": "active", **result}
     
