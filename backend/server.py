@@ -5669,7 +5669,7 @@ async def health_check():
 
     return {
         "status": "ok",
-        "version": "v3_supabase_only_final_fix: 2311",
+        "version": "v3_supabase_only_final_fix: 2315",
         "database": "supabase"
     }
 

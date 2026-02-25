@@ -1,7 +1,7 @@
 import os
 import logging
 from typing import Optional, Dict, Any, List
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from supabase import create_client, Client
 
 logger = logging.getLogger(__name__)
