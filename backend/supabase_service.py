@@ -344,7 +344,7 @@ class SupabaseService:
             return response.data[0] if response.data else None
         except Exception as e:
             logger.error(f"Error fetching interview session: {e}")
-            return None
+            raise
 
     @staticmethod
     def insert_interview_session(session_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
@@ -420,7 +420,7 @@ class SupabaseService:
             return response.data[0] if response.data else None
         except Exception as e:
             logger.error(f"Error inserting interview turn: {e}")
-            return None
+            raise
 
     @staticmethod
     def update_interview_turn(session_id: str, turn_number: int, update_data: Dict[str, Any]) -> bool:
