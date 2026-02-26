@@ -316,7 +316,10 @@ def create_access_token(data: dict):
     to_encode = data.copy()
     expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire})
-    return jwt.encode(to_encode, JWT_SECRET, algorithm=JWT_ALGORITHM)
+    token = jwt.encode(to_encode, JWT_SECRET, algorithm=JWT_ALGORITHM)
+    if isinstance(token, bytes):
+        return token.decode("utf-8")
+    return token
 
 
 def get_current_user_email(token: str = Header(...)):
@@ -5740,7 +5743,8 @@ async def debug_supabase_connection():
                 "bcrypt_import": True,
                 "jwt_import": True,
                 "hash_test": h.startswith("$2b$") if h else False,
-                "jwt_test": test_token is not None,
+                "jwt_return_type": str(type(test_token)),
+                "jwt_sample": test_token[:10] + "..." if isinstance(test_token, str) else "BYTES!",
                 "turnstile_key_present": os.environ.get("CLOUDFLARE_TURNSTILE_SECRET_KEY") is not None
             }
         except Exception as e:
@@ -5786,7 +5790,7 @@ async def health_check():
 
     return {
         "status": "ok",
-        "version": "v3_supabase_only_final_fix: 2405",
+        "version": "v3_supabase_only_final_fix: 2410",
         "database": "supabase"
     }
 
