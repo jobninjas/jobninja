@@ -5716,17 +5716,20 @@ async def debug_supabase_connection():
         except Exception as e:
             summary["lookup_test"] = {"error": str(e), "success": False}
 
-        # Check Dependencies & Environment
+        # Check Dependencies & Utilities
         try:
             import bcrypt
-            import aiohttp
-            summary["deps"] = {
-                "bcrypt": True, 
-                "aiohttp": True,
+            from server import hash_password
+            test_pass = "TestPassword123!"
+            h = hash_password(test_pass)
+            
+            summary["utils"] = {
+                "bcrypt_import": True,
+                "hash_test": h.startswith("$2b$") if h else False,
                 "turnstile_key_present": os.environ.get("CLOUDFLARE_TURNSTILE_SECRET_KEY") is not None
             }
         except Exception as e:
-            summary["deps"] = {"error": str(e)}
+            summary["utils"] = {"error": str(e), "success": False}
 
         # Test Deep Signup Insert (Surface Real Errors)
         try:
@@ -5745,8 +5748,10 @@ async def debug_supabase_connection():
                 "plan": "free",
                 "created_at": datetime.now(timezone.utc).isoformat()
             }
-            res = client.table("profiles").insert(test_user).execute()
-            summary["deep_signup_trial"] = {"success": True, "data": res.data[0] if res.data else "No data"}
+            # Test Service-Level Signup (sign_up_user)
+            res_service = SupabaseService.sign_up_user(test_user)
+            summary["service_signup_trial"] = {"success": res_service is not None, "data": res_service}
+            
             # Clean up
             client.table("profiles").delete().eq("id", test_id).execute()
         except Exception as e:
@@ -5766,7 +5771,7 @@ async def health_check():
 
     return {
         "status": "ok",
-        "version": "v3_supabase_only_final_fix: 2365",
+        "version": "v3_supabase_only_final_fix: 2370",
         "database": "supabase"
     }
 
