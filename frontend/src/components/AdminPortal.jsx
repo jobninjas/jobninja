@@ -219,7 +219,13 @@ const AdminPortal = () => {
                             Refresh
                         </Button>
                         <div className="h-6 w-px bg-slate-200"></div>
-                        <span className="text-sm font-medium text-slate-600">{user?.name} (Admin)</span>
+                        <div className="flex flex-col items-end">
+                            <span className="text-sm font-bold text-slate-800">{user?.email}</span>
+                            <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded ${user?.role === 'admin' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                Role: {user?.role || 'None'}
+                            </span>
+                        </div>
+                        {syncing && <Loader2 className="h-4 w-4 animate-spin text-indigo-600" />}
                         <Button variant="outline" size="sm" onClick={() => logout()} className="text-red-600 border-red-100 hover:bg-red-50">
                             Logout
                         </Button>

@@ -312,6 +312,33 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 
 
+@app.get("/api/admin/deep-check-admin")
+async def deep_check_admin():
+    """Deep diagnostic for admin roles and table structure."""
+    try:
+        emails = ["srkreddy@gmail.com", "srkreddy45@gmail.com", "srkreddy452@gmail.com"]
+        checks = {}
+        client = SupabaseService.get_client()
+        
+        for email in emails:
+            # Check profiles table
+            prof = client.table("profiles").select("*").eq("email", email).execute()
+            checks[email] = {
+                "in_profiles": len(prof.data) > 0,
+                "role": prof.data[0].get("role") if prof.data else None,
+                "id": prof.data[0].get("id") if prof.data else None,
+                "email_exact": prof.data[0].get("email") if prof.data else None
+            }
+            
+        return {
+            "status": "success",
+            "checks": checks,
+            "supabase_connected": client is not None,
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
 def create_access_token(data: dict):
     """Create a signed JWT access token."""
     to_encode = data.copy()
@@ -5700,7 +5727,7 @@ async def health_check():
 
     return {
         "status": "ok",
-        "version": "v3_supabase_only_final_fix: vFinal_Supabase_Safe",
+        "version": "v3_supabase_only_final_fix: 2600",
         "database": "supabase"
     }
 
