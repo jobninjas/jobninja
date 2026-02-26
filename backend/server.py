@@ -5710,7 +5710,7 @@ async def debug_supabase_connection():
             summary["lookup_srk"] = {
                 "email": target_email,
                 "found": existing is not None,
-                "match": existing.get("email") if existing else None,
+                "data": existing, # Show the full dict
                 "success": True
             }
         except Exception as e:
@@ -5777,7 +5777,7 @@ async def health_check():
 
     return {
         "status": "ok",
-        "version": "v3_supabase_only_final_fix: 2385",
+        "version": "v3_supabase_only_final_fix: 2390",
         "database": "supabase"
     }
 
