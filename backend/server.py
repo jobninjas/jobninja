@@ -5703,6 +5703,27 @@ async def debug_supabase_connection():
             except Exception as e:
                 summary[table] = {"error": str(e), "success": False}
         
+        # Test Specific User Lookup (srkreddy45@gmail.com)
+        try:
+            target_email = "srkreddy45@gmail.com"
+            existing = SupabaseService.get_user_by_email(target_email)
+            summary["lookup_test"] = {
+                "email": target_email,
+                "found": existing is not None,
+                "match": existing.get("email") if existing else None,
+                "success": True
+            }
+        except Exception as e:
+            summary["lookup_test"] = {"error": str(e), "success": False}
+
+        # Check Dependencies
+        try:
+            import bcrypt
+            import aiohttp
+            summary["deps"] = {"bcrypt": True, "aiohttp": True}
+        except Exception as e:
+            summary["deps"] = {"error": str(e)}
+
         # Test Deep Signup Insert (Surface Real Errors)
         try:
             import uuid
@@ -5713,7 +5734,7 @@ async def debug_supabase_connection():
                 "name": "Deep Debug Test",
                 "password_hash": "dummy_hash",
                 "verification_token": "dummy_token",
-                "referral_code": "REF-TEST",
+                "referral_code": f"REF-{test_id[:4].upper()}",
                 "referred_by": None,
                 "is_verified": False,
                 "role": "customer",
@@ -5741,7 +5762,7 @@ async def health_check():
 
     return {
         "status": "ok",
-        "version": "v3_supabase_only_final_fix: 2350",
+        "version": "v3_supabase_only_final_fix: 2360",
         "database": "supabase"
     }
 
