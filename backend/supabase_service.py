@@ -1065,50 +1065,42 @@ class SupabaseService:
 
     @staticmethod
     def get_admin_stats() -> Dict[str, Any]:
-        """Compute high-level admin stats from Supabase tables"""
+        """Compute high-level admin stats from Supabase tables for the React dashboard"""
         client = SupabaseService.get_client()
         if not client: return {}
         
         try:
-            thirty_days_ago = (datetime.now(timezone.utc) - timedelta(days=30)).isoformat()
+            now = datetime.now(timezone.utc)
+            twenty_four_hours_ago = (now - timedelta(hours=24)).isoformat()
             
             # --- Users ---
-            all_users = client.table("profiles").select("id, plan, created_at", count="exact").execute()
+            all_users = client.table("profiles").select("id, created_at", count="exact").execute()
             total_users = all_users.count or 0
-            recent_users = sum(1 for r in (all_users.data or []) if r.get("created_at") and r["created_at"] >= thirty_days_ago)
+            new_users_24h = sum(1 for r in (all_users.data or []) if r.get("created_at") and r["created_at"] >= twenty_four_hours_ago)
             
-            pro_plans = {"pro", "unlimited", "ai-yearly", "ai-monthly"}
-            pro_count = sum(1 for r in (all_users.data or []) if (r.get("plan") or "").lower() in pro_plans)
+            # --- Resumes ---
+            resumes_all = client.table("saved_resumes").select("id", count="exact").execute()
+            total_resumes = resumes_all.count or 0
             
             # --- Applications ---
-            apps_all = client.table("applications").select("id, status, created_at", count="exact").execute()
+            apps_all = client.table("applications").select("id", count="exact").execute()
             total_apps = apps_all.count or 0
-            recent_apps = sum(1 for r in (apps_all.data or []) if r.get("created_at") and r["created_at"] >= thirty_days_ago)
             
-            status_breakdown = {}
-            for r in (apps_all.data or []):
-                s = r.get("status") or "pending"
-                status_breakdown[s] = status_breakdown.get(s, 0) + 1
-                
-            # --- Interviews ---
-            interviews_all = client.table("interview_sessions").select("id, created_at", count="exact").execute()
-            total_interviews = interviews_all.count or 0
-            recent_interviews = sum(1 for r in (interviews_all.data or []) if r.get("created_at") and r["created_at"] >= thirty_days_ago)
-            
-            # --- Engagement (Active Users 30d) ---
-            usage_resp = client.table("daily_usage").select("email").gte("date", thirty_days_ago[:10]).execute()
-            active_emails = set(r["email"] for r in (usage_resp.data or []))
-            active_users_30d = len(active_emails)
-
+            # Return flattened structure for AdminDashboard.jsx
             return {
-                "users": {"total": total_users, "recent_30d": recent_users, "pro": pro_count},
-                "applications": {"total": total_apps, "recent_30d": recent_apps, "by_status": status_breakdown},
-                "interviews": {"total_sessions": total_interviews, "recent_30d": recent_interviews},
-                "engagement": {"active_users_30d": active_users_30d}
+                "total_users": total_users,
+                "new_users_24h": new_users_24h,
+                "total_resumes_tailored": total_resumes,
+                "total_jobs_applied": total_apps
             }
         except Exception as e:
             logger.error(f"Error computing comprehensive admin stats: {e}")
-            return {}
+            return {
+                "total_users": 0,
+                "new_users_24h": 0,
+                "total_resumes_tailored": 0,
+                "total_jobs_applied": 0
+            }
 
 
     @staticmethod
