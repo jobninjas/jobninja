@@ -198,9 +198,19 @@ const AdminPortal = () => {
         <div className="min-h-screen bg-slate-50">
             {/* Show Global Error if any */}
             {error && (
-                <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 sticky top-16 z-50">
-                    <p className="font-bold">Error Loading Data</p>
-                    <p>{error}</p>
+                <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 sticky top-16 z-50 shadow-md">
+                    <p className="font-bold flex items-center gap-2">
+                        <XCircle className="h-5 w-5" /> Access Error
+                    </p>
+                    <p className="mt-1">{error}</p>
+                    <div className="mt-2 text-xs bg-red-200/50 p-2 rounded">
+                        Logged in as: <strong>{user?.email}</strong> | Role: <strong>{user?.role}</strong>
+                        {user?.role !== 'admin' && (
+                            <p className="mt-1 text-red-900">
+                                This account does not have admin privileges. Please log out and sign in as <strong>srkreddy452@gmail.com</strong>.
+                            </p>
+                        )}
+                    </div>
                 </div>
             )}
 
@@ -214,6 +224,21 @@ const AdminPortal = () => {
                         <h1 className="text-xl font-bold text-slate-900 tracking-tight">Admin<span className="text-indigo-600">Portal</span></h1>
                     </div>
                     <div className="flex items-center gap-4">
+                        {user?.role !== 'admin' && (
+                            <Button
+                                onClick={async () => {
+                                    setSyncing(true);
+                                    await refreshUser();
+                                    setSyncing(false);
+                                    fetchData();
+                                }}
+                                variant="destructive"
+                                size="sm"
+                                className="bg-orange-600 hover:bg-orange-700 animate-pulse"
+                            >
+                                <Users className="h-4 w-4 mr-2" /> Sync Admin Status
+                            </Button>
+                        )}
                         <Button variant="ghost" size="sm" onClick={fetchData} disabled={loading} className="text-slate-600">
                             <Loader2 className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
                             Refresh
