@@ -5689,97 +5689,6 @@ async def get_interview_report(session_id: str, user: dict = Depends(get_current
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/api/admin/debug-db")
-async def debug_supabase_connection():
-    """Diagnostic endpoint to verify Supabase connectivity and table access."""
-    try:
-        client = SupabaseService.get_client()
-        if not client: return {"error": "Supabase client initialization failed"}
-        summary = {}
-        # Checks
-        for table in ["profiles", "applications", "interview_sessions", "daily_usage", "saved_resumes"]:
-            try:
-                # Use 'email' for daily_usage
-                col = "id" if table != "daily_usage" else "email"
-                res = client.table(table).select(col, count="exact").limit(1).execute()
-                summary[table] = {"count": res.count, "success": True}
-            except Exception as e:
-                summary[table] = {"error": str(e), "success": False}
-        
-        # Test and Promote Admin Roles
-        try:
-            admin_emails = ["srkreddy@gmail.com", "srkreddy45@gmail.com", "srkreddy452@gmail.com"]
-            admin_check = {}
-            for email in admin_emails:
-                user = SupabaseService.get_user_by_email(email)
-                if user and user.get("role") != "admin":
-                    # Promotion!
-                    SupabaseService.update_user_by_email(email, {"role": "admin"})
-                    user = SupabaseService.get_user_by_email(email) # Re-fetch
-                
-                admin_check[email] = {
-                    "found": user is not None,
-                    "role": user.get("role") if user else None,
-                    "id": user.get("id") if user else None
-                }
-            summary["admin_check"] = admin_check
-            
-            # Verify Stats directly
-            summary["stats_direct"] = SupabaseService.get_admin_stats()
-        except Exception as e:
-            summary["admin_check"] = {"error": str(e), "success": False}
-
-        # Check Dependencies & Utilities
-        try:
-            import bcrypt
-            import jwt
-            test_pass = "TestPassword123!"
-            h = hash_password(test_pass)
-            
-            # Test JWT Generation
-            test_token = create_access_token(data={"sub": "test@example.com", "id": "test-id"})
-            
-            summary["utils"] = {
-                "bcrypt_import": True,
-                "jwt_import": True,
-                "hash_test": h.startswith("$2b$") if h else False,
-                "jwt_return_type": str(type(test_token)),
-                "jwt_sample": test_token[:10] + "..." if isinstance(test_token, str) else "BYTES!",
-                "turnstile_key_present": os.environ.get("CLOUDFLARE_TURNSTILE_SECRET_KEY") is not None
-            }
-        except Exception as e:
-            summary["utils"] = {"error": f"{type(e).__name__}: {str(e)}", "success": False}
-
-        # Test Deep Signup Insert (Surface Real Errors)
-        try:
-            import uuid
-            test_id = str(uuid.uuid4())
-            test_user = {
-                "id": test_id,
-                "email": f"deep_debug_{test_id[:8]}@example.com",
-                "name": "Deep Debug Test",
-                "password_hash": "dummy_hash",
-                "verification_token": "dummy_token",
-                "referral_code": f"REF-{test_id[:4].upper()}",
-                "referred_by": None,
-                "is_verified": False,
-                "role": "customer",
-                "plan": "free",
-                "created_at": datetime.now(timezone.utc).isoformat()
-            }
-            # Test Service-Level Signup (sign_up_user)
-            res_service = SupabaseService.sign_up_user(test_user)
-            summary["service_signup_trial"] = {"success": res_service is not None, "data": res_service}
-            
-            # Clean up
-            client.table("profiles").delete().eq("id", test_id).execute()
-        except Exception as e:
-            import traceback
-            summary["deep_signup_trial"] = {"success": False, "error": str(e), "trace": traceback.format_exc()}
-
-        return summary
-    except Exception as e:
-        return {"error": str(e)}
 
 @app.get("/api/health-check")
 async def health_check():
@@ -5790,7 +5699,7 @@ async def health_check():
 
     return {
         "status": "ok",
-        "version": "v3_supabase_only_final_fix: 2410",
+        "version": "v3_supabase_only_final_fix: vFinal_Supabase_Safe",
         "database": "supabase"
     }
 
