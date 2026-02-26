@@ -1339,7 +1339,7 @@ async def send_admin_booking_notification(booking):
 # ============ AUTH ENDPOINTS ============
 
 
-@api_router.post("/auth/signup", response_model=UserResponse)
+@api_router.post("/auth/signup")
 @limiter.limit("5/minute")
 async def signup(request: Request, user_data: UserSignup):
     """
@@ -5710,7 +5710,6 @@ async def debug_supabase_connection():
             summary["lookup_srk"] = {
                 "email": target_email,
                 "found": existing is not None,
-                "data": existing, # Show the full dict
                 "success": True
             }
         except Exception as e:
@@ -5723,7 +5722,7 @@ async def debug_supabase_connection():
             test_pass = "TestPassword123!"
             h = hash_password(test_pass)
             
-            # Test JWT Generation and Type
+            # Test JWT Generation
             test_token = create_access_token(data={"sub": "test@example.com", "id": "test-id"})
             
             summary["utils"] = {
@@ -5731,7 +5730,6 @@ async def debug_supabase_connection():
                 "jwt_import": True,
                 "hash_test": h.startswith("$2b$") if h else False,
                 "jwt_test": test_token is not None,
-                "jwt_type": str(type(test_token)),
                 "turnstile_key_present": os.environ.get("CLOUDFLARE_TURNSTILE_SECRET_KEY") is not None
             }
         except Exception as e:
@@ -5777,7 +5775,7 @@ async def health_check():
 
     return {
         "status": "ok",
-        "version": "v3_supabase_only_final_fix: 2390",
+        "version": "v3_supabase_only_final_fix: 2395",
         "database": "supabase"
     }
 
