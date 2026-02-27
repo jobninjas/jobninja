@@ -464,19 +464,27 @@ class SupabaseService:
         client = SupabaseService.get_client()
         if not client: return []
         try:
-            query = client.table("applications").select("*, jobs(*)")
+            # Removed jobs(*) join because the table is currently unused for tracking 
+            # and might not exist or be linked correctly. Pure applications fetch.
+            query = client.table("applications").select("*")
+            
             if user_id:
                 query = query.eq("user_id", user_id)
             elif user_email:
-                # Need to lookup user_id if only email provided, or join on profiles
-                profile = SupabaseService.get_user_by_email(user_email)
-                if profile:
-                    query = query.eq("user_id", profile["id"])
-                else:
-                    return []
-            
+                # Primary lookup for email-based tracking
+                query = query.eq("user_email", user_email)
+                
             response = query.order("created_at", desc=True).limit(limit).execute()
-            return response.data
+            apps = response.data or []
+            
+            # Map platform -> company if company is missing (for legacy rows)
+            for app in apps:
+                if not app.get("company") and app.get("platform"):
+                    app["company"] = app["platform"]
+                if not app.get("job_title") and app.get("role"):
+                    app["job_title"] = app["role"]
+                    
+            return apps
         except Exception as e:
             logger.error(f"Error fetching applications: {e}")
             return []

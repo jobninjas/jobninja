@@ -3558,11 +3558,15 @@ async def ai_ninja_apply(request: Request, user: dict = Depends(get_current_user
         # Save application to Supabase
         app_doc = {
             "user_id": userId,
+            "user_email": user.get("email"),
             "job_id": jobId if jobId and len(jobId) > 30 else None,
+            "job_title": job_title,
+            "company": company,
             "status": "applied",
             "resume_id": resume_id,
-            "platform": company, # simplified
-            "applied_at": datetime.now(timezone.utc).isoformat()
+            "platform": company, # Legacy fallback
+            "applied_at": datetime.now(timezone.utc).isoformat(),
+            "created_at": datetime.now(timezone.utc).isoformat()
         }
 
         app_result = SupabaseService.create_application(app_doc)
@@ -5727,7 +5731,7 @@ async def health_check():
 
     return {
         "status": "ok",
-        "version": "v3_supabase_only_final_fix: 2605",
+        "version": "v3_supabase_only_final_fix: 2700",
         "database": "supabase"
     }
 
