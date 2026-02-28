@@ -1121,6 +1121,7 @@ const AIApplyFlow = ({ isScanner = false }) => {
                     {detailedCv || tailoredResume ? (
                       <ResumePaper
                         content={detailedCv || tailoredResume}
+                        originalContent={resumeText || selectedResume?.resumeText || ''}
                         scale={1}
                         fontFamily={selectedFont}
                         template={selectedTemplate}
