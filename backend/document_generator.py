@@ -16,7 +16,7 @@ import aiohttp
 import asyncio
 import json
 from pydantic import BaseModel, Field
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Union
 from resume_analyzer import call_groq_api, unified_api_call, clean_json_response
 
 logger = logging.getLogger(__name__)
@@ -161,11 +161,14 @@ def render_ats_resume_from_json(r: ResumeDataSchema) -> str:
         r.header.linkedin,
         r.header.portfolio
     ]
-    header_line = " | ".join([p for p in header_parts if p and p.strip()])
+    header_line = " | ".join([p for p in header_parts if p and str(p).strip() and str(p).lower() != "undefined"])
+    import re
+    header_line = re.sub(r'(?i)undefined', '', header_line)
 
     out = []
     # Force string and handle potential "undefined" or "None" leftovers
     fullName = str(r.header.full_name or "").strip()
+    fullName = re.sub(r'(?i)^undefined\s*', '', fullName).strip()
     if not fullName or fullName.lower() in ["undefined", "none", "null"]:
         fullName = "Your Name"
     out.append(fullName)
@@ -531,7 +534,9 @@ async def generate_expert_documents(
     f = facts_json
     
     def get_clean_val(val, default):
+        import re
         v = str(val or "").strip()
+        v = re.sub(r'(?i)^undefined\s*', '', v).strip()
         if not v or v.lower() in ["undefined", "none", "null"]:
             return default
         return v
@@ -545,58 +550,270 @@ async def generate_expert_documents(
         "portfolio": f.get("links", {}).get("portfolio", "")
     }
 
-    # Stage 2: Drafting with JD-driven tailoring
-    selective_instructions = ""
-    if selected_sections:
-        selective_instructions += f"\n- ONLY enhance these sections: {', '.join(selected_sections)}. Keep others verbatim."
-    if selected_keywords:
-        selective_instructions += f"\n- PRIORITIZE these keywords: {', '.join(selected_keywords)}."
+    missing_skills_str = json.dumps(selected_keywords or [])
+    selected_sections_str = json.dumps(selected_sections or [])
 
     resume_prompt = f"""
 SYSTEM:
-You are an Elite Resume Architect. Create a JD-mirrored structured JSON.
+You are a resume tailoring engine. You will be given a resume and a job description.
+Your ONLY goal is to make this resume competitive for THIS specific job.
 
-ABSOLUTE SCHEMA RULES:
-1. Include EVERY item from [FACTS_JSON]. Do NOT truncate bullets.
-2. Mapping: [FACTS_JSON].employers -> "experience".
-3. Mapping: [FACTS_JSON].projects -> "projects".
-4. Mapping: [FACTS_JSON].education -> "education".
-5. Mapping: [FACTS_JSON].skills -> "core_skills".
+═══════════════════════════════════════════
+⚠️ GROUNDING CONSTRAINT — READ THIS FIRST
+THIS IS THE MOST IMPORTANT INSTRUCTION
+═══════════════════════════════════════════
 
-[JOB_DESCRIPTION]
-{job_description}
+You are an EDITOR, not a writer. You are NOT creating a resume. 
+You are EDITING an existing resume that already exists below.
 
-[FACTS_JSON]
+THE FOLLOWING ARE LOCKED AND CANNOT CHANGE UNDER ANY CIRCUMSTANCES:
+- Candidate full name: must be copied EXACTLY from [RESUME_JSON]
+- Email and phone: must be copied EXACTLY from [RESUME_JSON]  
+- Every company name: must be copied EXACTLY from [RESUME_JSON]
+- Every job title: must be copied EXACTLY from [RESUME_JSON]
+- Every date range: must be copied EXACTLY from [RESUME_JSON]
+- Every location: must be copied EXACTLY from [RESUME_JSON]
+- Number of jobs: you CANNOT add or remove any job
+- Number of projects: you CANNOT add or remove any project
+- All metrics/numbers: must be copied EXACTLY from [RESUME_JSON]
+- Education entries: must be copied EXACTLY from [RESUME_JSON]
+
+IF A COMPANY, TITLE, OR NAME DOES NOT EXIST IN [RESUME_JSON], 
+YOU ARE FORBIDDEN FROM USING IT. NO EXCEPTIONS.
+
+BEFORE YOU WRITE A SINGLE WORD, verify:
+- What is the candidate's real name in [RESUME_JSON]? → Use only that
+- How many jobs are in [RESUME_JSON]? → Output must have exactly that many
+- What are the exact company names? → Copy them character by character
+
+VIOLATION TEST: After generating output, check every company name, 
+every job title, and the candidate name against [RESUME_JSON]. 
+If ANY of them don't match exactly, you have failed. Start over.
+
+CRITICAL: Read the job description COMPLETELY before touching a single word of the resume.
+CRITICAL: Every single change must be traceable to a specific requirement in the job description.
+CRITICAL: Do NOT just reformat or relabel. Actually rewrite content to mirror JD language.
+
+═══════════════════════════════════════════
+YOUR INPUTS
+═══════════════════════════════════════════
+
+- [RESUME_JSON]: The candidate's full resume content
 {json.dumps(facts_json, indent=2)}
 
-[TAILORING_RULES]
-{selective_instructions}
-- [STRICT HISTORICAL ACCURACY & ZERO HALLUCINATION] (MANDATORY):
-    1. FOR EXPERIENCE & PROJECTS: You MUST NOT add any technical skills, frameworks, tools, or software that are not explicitly mentioned in the [FACTS_JSON] for that specific role or project. 
-    2. REWRITING: You may rewrite bullets for impact and alignment, but ONLY using the tools and tech mentioned in the original text for that period. 
-    3. TIMELINE CHECK: Ensure the resume is 100% authentic to the candidate's history. Do not inject modern tech (like LLMs, Generative AI, RAG, Llama-3, etc.) into roles ending before 2022 unless they are explicitly in the source text.
-    4. DATA INTEGRITY: Do not invent metrics or outcomes. If a JD requires a skill not in the resume, DO NOT fabribate it. Highlight a transferable existing skill instead.
-- SKILLS: MERGE existing skills with those found in the resume. DO NOT add skills from the [JOB_DESCRIPTION] that the candidate does not have.
-- EXPERIENCE: For each role, 4–6 bullets max. Start each bullet with a strong verb. Use the EXACT dates provided.
-- PROJECTS: 3 projects max. Preserve the exact tech stack mentioned in [FACTS_JSON].
-- QUALITY BAR: Tight, readable, high-signal. ABSOLUTELY NO BLANK LINES BETWEEN BULLETS OR SECTIONS.
-- Keep output JSON valid and complete.
+- [JD_TEXT]: The job description
+{job_description}
 
-Return JSON structure ONLY:
+- [MISSING_SKILLS]: Array of skills the user selected to inject
+{missing_skills_str}
+
+- [SELECTED_SECTIONS]: Array of sections the user chose to enhance (if empty, assume ALL sections)
+{selected_sections_str if selected_sections_str and selected_sections_str != "[]" else '["summary", "skills", "work_experience", "projects"]'}
+
+═══════════════════════════════════════════
+STEP 0 — READ AND EXTRACT FROM JD FIRST
+═══════════════════════════════════════════
+
+Before writing anything, extract and internally note:
+
+A) JOB_TITLE: What is the exact role title?
+B) TOP_5_KEYWORDS: What are the 5 most repeated or emphasized technical terms in the JD?
+C) CORE_MISSION: What is the #1 problem this company is trying to solve with this hire?
+D) REQUIRED_SKILLS: List every technical skill, framework, or methodology mentioned
+E) PERSONA: What kind of engineer are they describing? (researcher? builder? both?)
+F) MISSING_SKILLS_TO_ADD: {missing_skills_str}
+G) SELECTED_SECTIONS: {selected_sections_str}
+
+You must complete this extraction before proceeding to any section.
+
+═══════════════════════════════════════════
+STEP 1 — REWRITE SUMMARY
+(only if "summary" is in SELECTED_SECTIONS)
+═══════════════════════════════════════════
+
+Rewrite the summary following this exact structure:
+
+LINE 1 — Identity statement using JOB_TITLE language from the JD + candidate's years of experience
+LINE 2 — Most relevant technical strength mapped to JD's CORE_MISSION  
+LINE 3 — Second strongest alignment point with specific tools/methods from the JD
+LINE 4 — (optional) Differentiator or scope statement
+
+RULES:
+✅ Use the exact terminology from the JD, not generic AI buzzwords
+✅ If JD says "multi-agent systems" use "multi-agent systems" not "agentic workflows"
+✅ If JD says "evaluation pipelines and guardrails" use that exact phrase
+✅ Reference MISSING_SKILLS_TO_ADD naturally if candidate has adjacent experience
+❌ Do NOT use phrases like "Proven track record" or "Delivering scalable solutions"
+❌ Do NOT make the summary longer than 4 lines
+❌ Do NOT invent experience that doesn't exist in the resume body
+
+═══════════════════════════════════════════
+STEP 2 — REBUILD SKILLS SECTION
+(only if "skills" is in SELECTED_SECTIONS)
+═══════════════════════════════════════════
+
+Reorganize skills so the most JD-relevant categories appear FIRST.
+Add ALL items from MISSING_SKILLS_TO_ADD to the appropriate category.
+If a skill from the JD tech stack appears in MISSING_SKILLS_TO_ADD, it goes in skills.
+
+Category order (most to least JD-relevant):
+1. Agentic & Multi-Agent Systems (most JD-relevant category — list first)
+2. LLM & GenAI
+3. ML & Deep Learning  
+4. Cloud & Infrastructure
+5. Languages & APIs
+
+RULES:
+✅ Add every item from MISSING_SKILLS_TO_ADD
+✅ Keep all existing skills — do not remove anything
+✅ Group logically — don't dump everything in "Other"
+❌ Do NOT create a category called "Other" — find the right home for every skill
+
+═══════════════════════════════════════════
+STEP 3 — TAILOR EXPERIENCE BULLETS
+(only if "work_experience" is in SELECTED_SECTIONS)
+═══════════════════════════════════════════
+
+For EACH role, apply these 4 operations IN ORDER:
+
+OPERATION A — REORDER
+Move bullets that use JD keywords to the top.
+Most JD-relevant bullet = position 1.
+
+OPERATION B — SURFACE HIDDEN KEYWORDS
+Look for bullets that describe JD concepts but use different words.
+Update ONLY the terminology — keep the action and outcome identical.
+
+Mandatory surfacing for this JD:
+- Any bullet about "LangGraph/LangChain/CrewAI multi-step" 
+  → add "multi-agent systems orchestration" to that bullet
+- Any bullet about "citation verification" or "evidence gating" 
+  → reframe as "guardrails for auditable, deterministic execution"  
+- Any bullet about "evaluation harness" or "quality checks"
+  → use "evaluation pipelines" (exact JD language)
+- Any bullet about "RAG + retrieval"
+  → connect to "reasoning and memory systems" (JD language)
+
+OPERATION C — ADD IMPACT FRAMING
+If a bullet has no business outcome, add one using the JD's domain.
+
+OPERATION D — UPGRADE VERBS
+Replace weak verbs with research-engineer level verbs matching JD persona:
+"Collaborated on" → "Partnered to architect"
+"Utilized" → "Engineered"  
+"Developed" → "Designed and implemented"
+"Enhanced" → "Optimized"
+
+IF "work_experience" is NOT in SELECTED_SECTIONS:
+- Only perform OPERATION A (reorder) — do not change any text
+
+═══════════════════════════════════════════
+STEP 4 — TAILOR PROJECTS
+═══════════════════════════════════════════
+
+ALWAYS tailor projects regardless of section selection.
+
+Reorder projects so most JD-relevant appears first.
+For this JD, correct order is:
+1. JobNinjas AI Copilot (most relevant — agentic workflow, end-to-end builder)
+2. Enterprise Patent Assistant (RAG + evaluation)
+3. Text-to-SQL Copilot (guardrails + evaluation)
+
+For each project bullet:
+✅ Surface multi-agent / agentic language where it genuinely exists
+✅ Keep ALL metrics exactly as written — never change numbers
+✅ Connect project outcomes to JD pain points where honest
+
+═══════════════════════════════════════════
+ABSOLUTE RULES — NEVER VIOLATE THESE
+═══════════════════════════════════════════
+
+❌ NEVER leave summary blank or with a dash
+❌ NEVER fabricate tools, companies, dates, or metrics
+❌ NEVER add new bullet points — only edit and reorder existing ones  
+❌ NEVER change company names, job titles, locations, or dates
+❌ NEVER change any metric numbers
+❌ NEVER add skills to experience bullets that have zero supporting evidence
+❌ NEVER use filler phrases: "proven track record", "results-driven", "passionate about"
+✅ ALWAYS return a complete resume — no section left empty or with placeholder
+✅ ALWAYS use the JD's exact terminology when the candidate's experience supports it
+✅ ALWAYS add every item from MISSING_SKILLS_TO_ADD to the skills section
+
+═══════════════════════════════════════════
+SELF-CHECK BEFORE RETURNING OUTPUT
+═══════════════════════════════════════════
+
+Before returning, verify:
+[ ] Summary mentions the JD role title or close equivalent
+[ ] Summary contains at least 2 phrases from the JD (not from the original resume)
+[ ] Every item in MISSING_SKILLS_TO_ADD appears in the skills section
+[ ] At least 3 experience bullets have been updated with JD terminology
+[ ] No section is blank or contains only a dash
+[ ] No metrics were changed
+[ ] No new bullet points were added
+[ ] Projects are reordered with most JD-relevant first
+
+If ANY of these checks fail, fix before returning.
+
+═══════════════════════════════════════════
+OUTPUT FORMAT — STRICT JSON
+═══════════════════════════════════════════
+
 {{
-  "alignment_highlights": ["Fit bullet 1", "Fit bullet 2"],
-  "cover_letter": "3-paragraph letter text",
-  "resume_data": {{
-    "header": {json.dumps(header_info)},
-    "target_title": "Optimized title",
-    "positioning_statement": "3-line summary",
-    "core_skills": {{"languages": [], "data_etl": [], "cloud": [], "databases": [], "devops_tools": [], "other": []}},
-    "experience": [{{ "company": "", "job_title": "", "city_state_or_remote": "", "start": "", "end": "", "bullets": [] }}],
-    "projects": [{{ "name": "", "tech_stack": [], "link": "", "bullets": [] }}],
-    "education": [{{ "degree": "", "major": "", "university": "", "year": "" }}],
-    "certifications": []
-  }}
+  "jd_extraction": {{
+    "job_title": "...",
+    "top_5_keywords": ["...", "...", "...", "...", "..."],
+    "core_mission": "...",
+    "persona": "..."
+  }},
+  "tailored_resume": {{
+    "name": "SAIRAM KUMAR",
+    "contact": "...",
+    "summary": ["line 1", "line 2", "line 3"],
+    "skills": {{
+      "Agentic & Multi-Agent Systems": ["..."],
+      "LLM & GenAI": ["..."],
+      "ML & Deep Learning": ["..."],
+      "Cloud & Infrastructure": ["..."],
+      "Languages & APIs": ["..."]
+    }},
+    "experience": [
+      {{
+        "company": "exact name",
+        "title": "exact title",
+        "location": "exact location",
+        "dates": "exact dates",
+        "bullets": ["bullet 1", "bullet 2", "..."]
+      }}
+    ],
+    "projects": [
+      {{
+        "name": "exact name",
+        "tech": "tech stack",
+        "bullets": ["bullet 1", "bullet 2", "bullet 3"]
+      }}
+    ],
+    "education": [
+      {{"degree": "...", "school": "..."}}
+    ]
+  }},
+  "changes": [
+    {{
+      "section": "summary|skills|experience|projects",
+      "company_or_project": "which role/project this applies to",
+      "type": "rewritten|keyword_surfaced|reordered|verb_upgraded|skill_added|impact_added",
+      "original": "exact original text",
+      "updated": "exact new text",
+      "jd_reason": "specific JD phrase or requirement this serves"
+    }}
+  ],
+  "skills_added": ["list of MISSING_SKILLS successfully injected"],
+  "self_check_passed": true
+  "skills_added": ["list of MISSING_SKILLS successfully injected"],
+  "self_check_passed": true
 }}
+
+OUTPUT ONLY VALID JSON. NO PREAMBLE. NO CHAT. NO CONVERSATIONAL TEXT.
 """
 
     try:
@@ -611,25 +828,170 @@ Return JSON structure ONLY:
         cl_text = raw_output.get('cover_letter', "")
         
         # Validate and Render
-        class ResumeOnlyOutput(BaseModel):
-            alignment_highlights: List[str]
-            resume_data: ResumeDataSchema
+        class JDExtraction(BaseModel):
+            job_title: Optional[str] = ""
+            top_5_keywords: Optional[List[str]] = []
+            core_mission: Optional[str] = ""
+            persona: Optional[str] = ""
+            
+        class ResumeChangeItem(BaseModel):
+            section: str
+            company_or_project: Optional[str] = None
+            type: Optional[str] = ""
+            original: Optional[str] = None
+            updated: str
+            jd_reason: Optional[str] = ""
 
-        validated = ResumeOnlyOutput(**raw_output)
-        ats_resume_text = render_ats_resume_from_json(validated.resume_data)
+        class ExperienceNew(BaseModel):
+            company: Optional[str] = ""
+            title: Optional[str] = ""
+            location: Optional[str] = ""
+            dates: Optional[str] = ""
+            start: Optional[str] = ""
+            end: Optional[str] = ""
+            bullets: List[str] = []
+
+        class ProjectNew(BaseModel):
+            name: Optional[str] = ""
+            tech: Optional[str] = ""
+            bullets: List[str] = []
+
+        class EducationNew(BaseModel):
+            degree: Optional[str] = ""
+            school: Optional[str] = ""
+            university: Optional[str] = ""
+            major: Optional[str] = ""
+            year: Optional[str] = ""
+
+        class TailoredResume(BaseModel):
+            name: Optional[str] = ""
+            contact: Optional[Any] = ""
+            location: Optional[str] = ""
+            email: Optional[str] = ""
+            phone: Optional[str] = ""
+            links: Optional[Dict[str, str]] = {}
+            summary: List[str] = []
+            skills: Dict[str, List[str]] = {}
+            experience: List[ExperienceNew] = []
+            projects: List[ProjectNew] = []
+            education: List[EducationNew] = []
+
+        class ExpertResumeOutput(BaseModel):
+            jd_extraction: Optional[JDExtraction] = None
+            tailored_resume: TailoredResume
+            changes: List[ResumeChangeItem] = []
+            skills_added: List[str] = []
+            self_check_passed: Optional[bool] = True
+
+        validated = ExpertResumeOutput(**raw_output)
+        t_resume = validated.tailored_resume
+
+        # Build backward-compatible ResumeDataSchema
+        def safe_clean(val):
+            if not val: return ""
+            import re
+            return re.sub(r'(?i)^undefined\s*', '', str(val)).strip()
+
+        rd_header = {
+            "full_name": safe_clean(t_resume.name) or get_clean_val(header_info.get("full_name"), "Your Name"),
+            "city_state": safe_clean(t_resume.location) or get_clean_val(header_info.get("city_state"), ""),
+            "phone": safe_clean(t_resume.phone) or get_clean_val(header_info.get("phone"), ""),
+            "email": safe_clean(t_resume.email) or get_clean_val(header_info.get("email"), ""),
+            "linkedin": get_clean_val(header_info.get("linkedin"), ""),
+            "portfolio": get_clean_val(header_info.get("portfolio"), "")
+        }
+
+        if t_resume.links:
+            rd_header["linkedin"] = safe_clean(t_resume.links.get("linkedin")) or rd_header["linkedin"]
+            rd_header["portfolio"] = safe_clean(t_resume.links.get("github")) or safe_clean(t_resume.links.get("portfolio")) or rd_header["portfolio"]
+
+        if isinstance(t_resume.contact, dict):
+            rd_header["city_state"] = safe_clean(t_resume.contact.get("location")) or rd_header["city_state"]
+            rd_header["email"] = safe_clean(t_resume.contact.get("email")) or rd_header["email"]
+            rd_header["phone"] = safe_clean(t_resume.contact.get("phone")) or rd_header["phone"]
+            if "links" in t_resume.contact:
+                links = t_resume.contact["links"]
+                rd_header["linkedin"] = safe_clean(links.get("linkedin")) or rd_header["linkedin"]
+                rd_header["portfolio"] = safe_clean(links.get("github")) or safe_clean(links.get("portfolio")) or rd_header["portfolio"]
+
+        derived_title = "Professional"
+        if validated.jd_extraction and validated.jd_extraction.job_title:
+            derived_title = validated.jd_extraction.job_title[:50]
+        else:
+            derived_title = u.get("target_role", "Professional")
+
+        rd = ResumeDataSchema(
+            header=rd_header,
+            target_title=derived_title,
+            positioning_statement="\\n".join(t_resume.summary),
+            core_skills=CoreSkills(
+                languages=t_resume.skills.get("Languages & APIs", []),
+                data_etl=[],
+                cloud=t_resume.skills.get("Cloud & Infrastructure", []),
+                databases=[],
+                devops_tools=t_resume.skills.get("Agentic & Multi-Agent Systems", []) + t_resume.skills.get("Agentic Frameworks", []),
+                other=t_resume.skills.get("AI & LLM", []) + t_resume.skills.get("ML & Deep Learning", [])
+            ),
+            experience=[
+                ExperienceRole(
+                    company=e.company or "",
+                    job_title=e.title or "",
+                    city_state_or_remote=e.location or "",
+                    start=e.start if e.start else (e.dates.split(" - ")[0] if e.dates and " - " in e.dates else e.dates),
+                    end=e.end if e.end else (e.dates.split(" - ")[1] if e.dates and " - " in e.dates else "Present"),
+                    bullets=e.bullets
+                ) for e in t_resume.experience
+            ],
+            projects=[
+                ProjectItem(
+                    name=p.name or "",
+                    tech_stack=p.tech.split(", ") if isinstance(p.tech, str) and p.tech else [],
+                    link="",
+                    bullets=p.bullets
+                ) for p in t_resume.projects
+            ],
+            education=[
+                EducationItem(
+                    degree=ed.degree or "",
+                    university=ed.university or ed.school or "",
+                    major=ed.major or "",
+                    year=ed.year or ""
+                ) for ed in t_resume.education
+            ],
+            certifications=[]
+        )
+
+        ats_resume_text = render_ats_resume_from_json(rd)
         
         return {
-            "alignment_highlights": "\n".join([f"- {h}" for h in validated.alignment_highlights]),
+            "alignment_highlights": "",
             "ats_resume": ats_resume_text, "detailed_cv": ats_resume_text,
-            "cover_letter": cl_text, "resume_json": validated.resume_data.model_dump()
+            "cover_letter": cl_text, "resume_json": rd.model_dump(),
+            "changes": [
+                {
+                    "section": c.section,
+                    "type": c.type,
+                    "original": c.original,
+                    "updated": c.updated,
+                    "reason": c.jd_reason
+                } for c in validated.changes
+            ],
+            "skills_added": validated.skills_added,
+            "skills_skipped": []
         }
     except Exception as e:
         logger.error(f"Stage 2 Expert failed: {e}")
+        import traceback
+        with open("debug_expert_error.txt", "w", encoding="utf-8") as tf:
+            tf.write("ERROR:\\n" + traceback.format_exc() + "\\n\\n")
+            tf.write("RAW JSON:\\n" + str(locals().get('json_text', 'No json_text')))
+            
         simple_text = await generate_simple_tailored_resume(resume_text, job_description, "Position", "Company", byok_config=byok_config)
         return {
             "alignment_highlights": "- Tailored analysis complete",
             "ats_resume": simple_text, "detailed_cv": simple_text,
-            "cover_letter": None, "resume_json": {}
+            "cover_letter": None, "resume_json": {},
+            "changes": [], "skills_added": [], "skills_skipped": []
         }
 
     return None

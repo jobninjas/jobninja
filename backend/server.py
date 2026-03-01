@@ -3333,15 +3333,27 @@ async def get_user_usage_limits(identifier: str) -> dict:
     current_daily_apps = daily_usage.get("apps", 0)
     current_daily_autofills = daily_usage.get("autofills", 0)
 
-    limit = 10  # Default for free
-    autofills_limit = 5 # Default for free
+    limit = 1  # Default for free
+    autofills_limit = 1 # Default for free
     current_count = current_daily_apps
     can_generate = False
     reset_date = None
 
     tier_lower = str(tier).strip().lower()
 
-    if tier_lower in ["pro", "unlimited", "ai-pro", "ai-yearly", "ai-monthly", "ai-quarterly", "ai-weekly", "human-starter", "human-growth", "human-scale"]:
+    if tier_lower in ["pro-max", "ai-pro-max"]:
+        limit = 55
+        autofills_limit = 80
+        can_generate = True
+    elif tier_lower in ["pro-plus", "ai-pro-plus"]:
+        limit = 35
+        autofills_limit = 50
+        can_generate = True
+    elif tier_lower in ["pro", "ai-pro", "ai-yearly", "ai-monthly", "ai-quarterly", "ai-weekly"]:
+        limit = 25
+        autofills_limit = 35
+        can_generate = True
+    elif tier_lower in ["unlimited", "human-starter", "human-growth", "human-scale"]:
         limit = "Unlimited"
         autofills_limit = "Unlimited"
         can_generate = True
@@ -3379,14 +3391,14 @@ async def get_user_usage_limits(identifier: str) -> dict:
             can_generate = True
         else:
             # No key configured? Fall back to Free limits
-            limit = 10
-            autofills_limit = 5
+            limit = 1
+            autofills_limit = 1
             current_count = current_daily_apps
             can_generate = current_count < limit
     else:  # free, expired, or ai-free
-        # User requested 14-day trial paywall
-        limit = 0
-        autofills_limit = 0
+        # Trial limits (14-day free trial)
+        limit = 10
+        autofills_limit = 10
         current_count = current_daily_apps
         can_generate = False
 
@@ -3596,12 +3608,22 @@ async def ai_ninja_apply(request: Request, user: dict = Depends(get_current_user
         app_result = SupabaseService.create_application(app_doc)
         new_app_id = (app_result or {}).get("id", str(uuid.uuid4()))
 
+        logger.info(f"EXPERT DOCS CHANGES: {expert_docs.get('changes', [])}")
+        try:
+            with open("changes_log.json", "w") as f:
+                json.dump(expert_docs.get("changes", []), f, indent=2)
+        except Exception as e:
+            logger.error(f"Could not dump changes log: {e}")
+
         return {
             "applicationId": new_app_id,
             "resumeId": resume_id,
             "tailoredResume": tailoredResume,
             "detailedCv": detailedCv,
             "tailoredCoverLetter": tailoredCoverLetter,
+            "changes": expert_docs.get("changes", []),
+            "skillsAdded": expert_docs.get("skills_added", []),
+            "skillsSkipped": expert_docs.get("skills_skipped", []),
             "suggestedAnswers": [], # Simplified for now
             "usage": await get_user_usage_limits(user["email"]),
         }

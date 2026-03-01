@@ -1,0 +1,151 @@
+ERROR:\nTraceback (most recent call last):
+  File "C:\Users\vsair\Downloads\novasquar-main\novasquad-main\nova-ninjas\backend\document_generator.py", line 829, in generate_expert_documents
+    class TailoredResume(BaseModel):
+  File "C:\Users\vsair\Downloads\novasquar-main\novasquad-main\nova-ninjas\backend\document_generator.py", line 831, in TailoredResume
+    contact: Optional[Union[str, Dict]] = ""
+                      ^^^^^
+NameError: name 'Union' is not defined
+\n\nRAW JSON:\n{
+  "jd_extraction": {
+    "job_title": "AI-native Software Engineer",
+    "top_5_keywords": ["AI", "LLM", "ML", "Cloud", "Healthcare"],
+    "core_mission": "Streamline clinical documentation workflows and improve daily practice efficiencies for eye care professionals",
+    "persona": "AI-native builder",
+    "required_skills": ["Python", "NumPy", "Pandas", "PyTorch", "Data Preprocessing", "Data Augmentation", "AWS", "GCP", "Azure", "ChromaDB", "Kubernetes", "CI/CD", "FastAPI", "LLM frameworks", "OpenAI APIs", "Transformers and RNNs"],
+    "missing_skills_to_add": []
+  },
+  "tailored_resume": {
+    "name": "SAIRAM KUMAR",
+    "location": "",
+    "email": "vsairamkumarreddy@gmail.com",
+    "phone": "(217)-862-4693",
+    "links": {
+      "linkedin": "",
+      "github": "",
+      "portfolio": ""
+    },
+    "summary": [
+      "AI-native Software Engineer with 3+ years of experience delivering real-world AI-powered products",
+      "Skilled in designing and implementing production-grade AI services, integrating third-party LLMs, and building custom ML models",
+      "Strong understanding of model evaluation and production tradeoffs, with experience working with structured and unstructured datasets",
+      "Proficient in cloud platforms, including AWS, Azure, and GCP, with a solid foundation in data structures, algorithms, and APIs"
+    ],
+    "skills": {
+      "Agentic & Multi-Agent Systems": ["LangChain", "LangGraph", "CrewAI"],
+      "LLM & GenAI": ["OpenAI", "Azure OpenAI", "Hugging Face"],
+      "ML & Deep Learning": ["PyTorch", "TensorFlow", "Scikit-learn"],
+      "Cloud & Infrastructure": ["AWS", "Azure", "GCP", "Kubernetes", "CI/CD"],
+      "Languages & APIs": ["Python", "NumPy", "Pandas", "FastAPI"]
+    },
+    "experience": [
+      {
+        "company": "Ai Talent Inc",
+        "title": "Lead Software Engineer Gen AI",
+        "location": "Alpharetta, Georgia",
+        "start": "03/2025",
+        "end": "Present",
+        "bullets": [
+          "Designed and developed internal R&D initiatives focused on building and experimenting with Generative AI solutions, integrating third-party LLMs and building custom ML models",
+          "Implemented prototype pipelines using LangChain, LangGraph, and CrewAI, focusing on retrieval, validation, and multi-agent collaboration, with a strong emphasis on model evaluation and production tradeoffs",
+          "Worked on fine-tuning experiments with LoRA and PEFT techniques on AWS SageMaker to enhance domain-specific model adaptability, with a focus on improving model performance, latency, and cost",
+          "Assisted in integrating AI components with Azure and AWS services for scalable deployment, monitoring, and performance optimization, with a strong understanding of cloud platforms and data structures",
+          "Collaborated with senior architects to evaluate AI governance, model validation, and data preprocessing frameworks, with a focus on ensuring the reliability and accuracy of AI-powered solutions"
+        ]
+      },
+      {
+        "company": "Precisesoft Inc",
+        "title": "AI Developer",
+        "location": "Dallas, Texas",
+        "start": "07/2024",
+        "end": "03/2025",
+        "bullets": [
+          "Conducted research utilizing RAG technology to enhance information retrieval efficiency, with a focus on improving model performance and reducing latency",
+          "Executed translation tasks and fine-tuned large language models for improved performance, with a strong emphasis on model evaluation and production tradeoffs",
+          "Developed text-to-SQL engine for streamlined data interaction and analysis, with a focus on improving data accessibility and reducing the complexity of data analysis",
+          "Created RAG solutions tailored for healthcare documents to enhance accessibility, with a strong understanding of the importance of data preprocessing and model validation",
+          "Engineered language modeling techniques to improve text comprehension, with a focus on ensuring the accuracy and reliability of AI-powered solutions"
+        ]
+      },
+      {
+        "company": "Tech Mahindra",
+        "title": "Associate Software Engineer",
+        "location": "India",
+        "start": "08/2020",
+        "end": "07/2022",
+        "bullets": [
+          "Developed and maintained predictive models to identify customer segments for targeted marketing campaigns, with a focus on improving model performance and reducing latency",
+          "Enhanced model performance through iterative testing and optimization strategies, with a strong emphasis on model evaluation and production tradeoffs",
+          "Assisted in deploying machine learning solutions into production environments effectively, with a focus on ensuring the reliability and accuracy of AI-powered solutions",
+          "Implemented supervised learning techniques such as clustering, classification, and feature engineering, with a strong understanding of data structures and algorithms",
+          "Utilized TensorFlow and Keras to build CNNs and RNNs, with a focus on improving model performance and reducing complexity"
+        ]
+      }
+    ],
+    "projects": [
+      {
+        "name": "JobNinjas AI Job Application Copilot (RAG + Agentic Workflow)",
+        "bullets": [
+          "Built a JDto-application copilot generating tailored resume bullets, cover letters, and recruiter cold emails using LangChain/LangGraph and LlamaIndex RAG over user profiles with ChromaDB and OpenAI embeddings",
+          "Added evidence-based validation and ATS-style formatting checks; deployed APIs via FastAPI + Docker with CI/CD, with a focus on ensuring the reliability and accuracy of AI-powered solutions",
+          "Connected project outcomes to JD pain points, including improving the efficiency of job application processes and reducing the complexity of data analysis"
+        ]
+      },
+      {
+        "name": "Enterprise Patent and Research Assistant (LLM RAG Virtual Assistant)",
+        "bullets": [
+          "Designed and built an end-to-end RAG pipeline using LangChain, LlamaIndex, and ChromaDB on Azure OpenAI and AWS Bedrock",
+          "Implemented hybrid retrieval with reranking, Llama 3 fallback via Ollama, citation verification agents, and scalable FastAPI serverless deployment, with a focus on improving model performance and reducing latency"
+        ]
+      },
+      {
+        "name": "Text-to-SQL Analytics Copilot (Agentic LLM + Guarded SQL)",
+        "bullets": [
+          "Built a conversational analytics copilot converting NL queries into SQL using LangChain agents and ChromaDB",
+          "Implemented guardrails, FastAPI APIs, AWS Lambda/Azure Functions, Power BI integration, and evaluation harness, with a focus on ensuring the reliability and accuracy of AI-powered solutions"
+        ]
+      }
+    ],
+    "education": [
+      {
+        "degree": "Bachelor's",
+        "major": "Electronics and Communication Engineering",
+        "university": "ACE Engineering College",
+        "year": ""
+      },
+      {
+        "degree": "Master's",
+        "major": "Management Information Systems",
+        "university": "University of Illinois at Springfield",
+        "year": ""
+      }
+    ]
+  },
+  "changes": [
+    {
+      "section": "summary",
+      "company_or_project": "",
+      "type": "rewritten",
+      "original": "Platform Engineer — Highly skilled AI developer with expertise in GenAI, LLMs, and cloud deployment, delivering scalable and secure AI solutions with strong API design and microservices architecture skills.",
+      "updated": "AI-native Software Engineer with 3+ years of experience delivering real-world AI-powered products",
+      "jd_reason": "Job title and required experience"
+    },
+    {
+      "section": "experience",
+      "company_or_project": "Ai Talent Inc",
+      "type": "keyword_surfaced",
+      "original": "Designed and developed internal R&D initiatives focused on building and experimenting with Generative AI solutions",
+      "updated": "Designed and developed internal R&D initiatives focused on building and experimenting with Generative AI solutions, integrating third-party LLMs and building custom ML models",
+      "jd_reason": "Integrating third-party LLMs and building custom ML models"
+    },
+    {
+      "section": "projects",
+      "company_or_project": "JobNinjas AI Job Application Copilot (RAG + Agentic Workflow)",
+      "type": "reordered",
+      "original": "",
+      "updated": "",
+      "jd_reason": "Most relevant project"
+    }
+  ],
+  "skills_added": [],
+  "self_check_passed": true
+}

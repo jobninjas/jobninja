@@ -79,3 +79,263 @@ PROFESSIONAL SUMMARY
 AI Archite
 Starting extraction...
 Extraction complete. Keys: ['person', 'address', 'education', 'employment_history', 'skills', 'work_authorization', 'preferences']
+
+--- PARSE RESUME 2026-02-28 11:44:10.695516 ---
+User: sairamveereddy@gmail.com
+Filename: Optimized_Resume_Verizon.docx
+Content Length: 38670
+Parsed Text Length: 3747
+Parsed Text Preview: SAIRAM KUMAR
+(217)-862-4693 | vsairamkumarreddy@gmail.com | Linkedin
+PROFESSIONAL SUMMARY
+AI Securit
+Starting extraction...
+Extraction complete. Keys: ['person', 'address', 'education', 'employment_history', 'skills', 'work_authorization', 'preferences']
+
+--- PARSE RESUME 2026-02-28 11:45:59.880533 ---
+User: sairamveereddy@gmail.com
+Filename: Optimized_Resume_Oracle.docx
+Content Length: 38694
+Parsed Text Length: 3811
+Parsed Text Preview: SAIRAM KUMAR
+(217)-862-4693 | vsairamkumarreddy@gmail.com | Linkedin
+PROFESSIONAL SUMMARY
+AI Enginee
+Starting extraction...
+Extraction complete. Keys: ['person', 'address', 'education', 'employment_history', 'skills', 'work_authorization', 'preferences']
+
+--- PARSE RESUME 2026-02-28 11:46:32.504712 ---
+User: sairamveereddy@gmail.com
+Filename: Optimized_Resume_Oracle (1).docx
+Content Length: 38766
+Parsed Text Length: 3903
+Parsed Text Preview: SAIRAM KUMAR
+(217)-862-4693 | vsairamkumarreddy@gmail.com | Linkedin
+PROFESSIONAL SUMMARY
+AI Enginee
+Starting extraction...
+Extraction complete. Keys: ['error']
+
+--- PARSE RESUME 2026-02-28 11:47:21.782347 ---
+User: sairamveereddy@gmail.com
+Filename: Optimized_Resume_Oracle (1).docx
+Content Length: 38766
+Parsed Text Length: 3903
+Parsed Text Preview: SAIRAM KUMAR
+(217)-862-4693 | vsairamkumarreddy@gmail.com | Linkedin
+PROFESSIONAL SUMMARY
+AI Enginee
+Starting extraction...
+Extraction complete. Keys: ['person', 'address', 'education', 'employment_history', 'skills', 'work_authorization', 'preferences']
+
+--- PARSE RESUME 2026-02-28 12:15:39.788946 ---
+User: sairamveereddy@gmail.com
+Filename: Optimized_Resume_Verizon.docx
+Content Length: 38670
+Parsed Text Length: 3747
+Parsed Text Preview: SAIRAM KUMAR
+(217)-862-4693 | vsairamkumarreddy@gmail.com | Linkedin
+PROFESSIONAL SUMMARY
+AI Securit
+Starting extraction...
+Extraction complete. Keys: ['person', 'address', 'education', 'employment_history', 'skills', 'work_authorization', 'preferences']
+
+--- PARSE RESUME 2026-02-28 12:47:56.037951 ---
+User: sairamveereddy@gmail.com
+Filename: Optimized_Resume_Oracle.docx
+Content Length: 38694
+Parsed Text Length: 3811
+Parsed Text Preview: SAIRAM KUMAR
+(217)-862-4693 | vsairamkumarreddy@gmail.com | Linkedin
+PROFESSIONAL SUMMARY
+AI Enginee
+Starting extraction...
+Extraction complete. Keys: ['person', 'address', 'education', 'employment_history', 'skills', 'work_authorization', 'preferences']
+
+--- PARSE RESUME 2026-02-28 13:33:23.240958 ---
+User: sairamveereddy@gmail.com
+Filename: Optimized_Resume_Verizon.docx
+Content Length: 38670
+Parsed Text Length: 3747
+Parsed Text Preview: SAIRAM KUMAR
+(217)-862-4693 | vsairamkumarreddy@gmail.com | Linkedin
+PROFESSIONAL SUMMARY
+AI Securit
+Starting extraction...
+Extraction complete. Keys: ['person', 'address', 'education', 'employment_history', 'skills', 'work_authorization', 'preferences']
+
+--- PARSE RESUME 2026-02-28 14:05:39.567140 ---
+User: sairamveereddy@gmail.com
+Filename: Optimized_Resume_Oracle.docx
+Content Length: 38694
+Parsed Text Length: 3811
+Parsed Text Preview: SAIRAM KUMAR
+(217)-862-4693 | vsairamkumarreddy@gmail.com | Linkedin
+PROFESSIONAL SUMMARY
+AI Enginee
+Starting extraction...
+Extraction complete. Keys: ['person', 'address', 'education', 'employment_history', 'skills', 'work_authorization', 'preferences']
+
+--- PARSE RESUME 2026-02-28 14:06:53.030506 ---
+User: srkreddy452@gmail.com
+Filename: Optimized_Resume_Oracle (1).docx
+Content Length: 38766
+Parsed Text Length: 3903
+Parsed Text Preview: SAIRAM KUMAR
+(217)-862-4693 | vsairamkumarreddy@gmail.com | Linkedin
+PROFESSIONAL SUMMARY
+AI Enginee
+Starting extraction...
+Extraction complete. Keys: ['person', 'address', 'education', 'employment_history', 'skills', 'work_authorization', 'preferences']
+
+--- PARSE RESUME 2026-02-28 14:15:34.436769 ---
+User: srkreddy452@gmail.com
+Filename: Optimized_Resume_Verizon.docx
+Content Length: 38670
+Parsed Text Length: 3747
+Parsed Text Preview: SAIRAM KUMAR
+(217)-862-4693 | vsairamkumarreddy@gmail.com | Linkedin
+PROFESSIONAL SUMMARY
+AI Securit
+Starting extraction...
+Extraction complete. Keys: ['person', 'address', 'education', 'employment_history', 'skills', 'work_authorization', 'preferences']
+
+--- PARSE RESUME 2026-02-28 14:20:20.923341 ---
+User: srkreddy452@gmail.com
+Filename: Optimized_Resume_Verizon.docx
+Content Length: 38670
+Parsed Text Length: 3747
+Parsed Text Preview: SAIRAM KUMAR
+(217)-862-4693 | vsairamkumarreddy@gmail.com | Linkedin
+PROFESSIONAL SUMMARY
+AI Securit
+Starting extraction...
+Extraction complete. Keys: ['person', 'address', 'education', 'employment_history', 'skills', 'work_authorization', 'preferences']
+
+--- PARSE RESUME 2026-02-28 14:24:50.084061 ---
+User: srkreddy452@gmail.com
+Filename: Optimized_Resume_Verizon.docx
+Content Length: 38670
+Parsed Text Length: 3747
+Parsed Text Preview: SAIRAM KUMAR
+(217)-862-4693 | vsairamkumarreddy@gmail.com | Linkedin
+PROFESSIONAL SUMMARY
+AI Securit
+Starting extraction...
+Extraction complete. Keys: ['person', 'address', 'education', 'employment_history', 'skills', 'work_authorization', 'preferences']
+
+--- PARSE RESUME 2026-02-28 21:09:42.571538 ---
+User: srkreddy452@gmail.com
+Filename: Sairam_Kumar_AWS_Neuron_ML Resum.docx
+Content Length: 29712
+Parsed Text Length: 4948
+Parsed Text Preview: SAIRAM KUMAR
+(217) 862-4693  |  vsairamkumarreddy@gmail.com  |  LinkedIn: linkedin.com/in/sairam-kum
+Starting extraction...
+Extraction complete. Keys: ['error']
+
+--- PARSE RESUME 2026-03-01 10:31:48.735859 ---
+User: srkreddy452@gmail.com
+Filename: Optimized_Resume_Verizon.docx
+Content Length: 38670
+Parsed Text Length: 3747
+Parsed Text Preview: SAIRAM KUMAR
+(217)-862-4693 | vsairamkumarreddy@gmail.com | Linkedin
+PROFESSIONAL SUMMARY
+AI Securit
+Starting extraction...
+Extraction complete. Keys: ['person', 'address', 'education', 'employment_history', 'skills', 'work_authorization', 'preferences']
+
+--- PARSE RESUME 2026-03-01 10:32:05.504211 ---
+User: srkreddy452@gmail.com
+Filename: Optimized_Resume_Oracle.docx
+Content Length: 38694
+Parsed Text Length: 3811
+Parsed Text Preview: SAIRAM KUMAR
+(217)-862-4693 | vsairamkumarreddy@gmail.com | Linkedin
+PROFESSIONAL SUMMARY
+AI Enginee
+Starting extraction...
+Extraction complete. Keys: ['person', 'address', 'education', 'employment_history', 'skills', 'work_authorization', 'preferences']
+
+--- PARSE RESUME 2026-03-01 10:44:05.390251 ---
+User: srkreddy452@gmail.com
+Filename: Optimized_Resume_Oracle (1).docx
+Content Length: 38766
+Parsed Text Length: 3903
+Parsed Text Preview: SAIRAM KUMAR
+(217)-862-4693 | vsairamkumarreddy@gmail.com | Linkedin
+PROFESSIONAL SUMMARY
+AI Enginee
+Starting extraction...
+Extraction complete. Keys: ['person', 'address', 'education', 'employment_history', 'skills', 'work_authorization', 'preferences']
+
+--- PARSE RESUME 2026-03-01 11:22:32.195181 ---
+User: srkreddy452@gmail.com
+Filename: Optimized_Resume_Oracle.docx
+Content Length: 38694
+Parsed Text Length: 3811
+Parsed Text Preview: SAIRAM KUMAR
+(217)-862-4693 | vsairamkumarreddy@gmail.com | Linkedin
+PROFESSIONAL SUMMARY
+AI Enginee
+Starting extraction...
+Extraction complete. Keys: ['person', 'address', 'education', 'employment_history', 'skills', 'work_authorization', 'preferences']
+
+--- PARSE RESUME 2026-03-01 11:22:59.888914 ---
+User: srkreddy452@gmail.com
+Filename: Optimized_Resume_Verizon.docx
+Content Length: 38670
+Parsed Text Length: 3747
+Parsed Text Preview: SAIRAM KUMAR
+(217)-862-4693 | vsairamkumarreddy@gmail.com | Linkedin
+PROFESSIONAL SUMMARY
+AI Securit
+Starting extraction...
+Extraction complete. Keys: ['person', 'address', 'education', 'employment_history', 'skills', 'work_authorization', 'preferences']
+
+--- PARSE RESUME 2026-03-01 11:27:14.582047 ---
+User: srkreddy452@gmail.com
+Filename: Optimized_Resume_Verizon.docx
+Content Length: 38670
+Parsed Text Length: 3747
+Parsed Text Preview: SAIRAM KUMAR
+(217)-862-4693 | vsairamkumarreddy@gmail.com | Linkedin
+PROFESSIONAL SUMMARY
+AI Securit
+Starting extraction...
+Extraction complete. Keys: ['person', 'address', 'education', 'employment_history', 'skills', 'work_authorization', 'preferences']
+
+--- PARSE RESUME 2026-03-01 11:28:03.882626 ---
+User: srkreddy452@gmail.com
+Filename: Optimized_Resume_Radley_James.docx
+Content Length: 28917
+Parsed Text Length: 3751
+Parsed Text Preview: SAIRAM KUMAR
+(217)-862-4693 | vsairamkumarreddy@gmail.com 
+PROFESSIONAL SUMMARY
+Platform Engineer — 
+Starting extraction...
+Extraction complete. Keys: ['error']
+
+--- PARSE RESUME 2026-03-01 11:59:28.045976 ---
+User: srkreddy452@gmail.com
+Filename: Optimized_Resume_Voya_Financial.docx
+Content Length: 37262
+Parsed Text Length: 1064
+Parsed Text Preview: Professional Resume for AI Architect at Voya Financial (Tailored)
+SAI RAM VEEREDDY vsairamkumarreddy
+Starting extraction...
+Extraction complete. Keys: ['person', 'address', 'education', 'employment_history', 'skills', 'work_authorization', 'preferences']
+
+--- PARSE RESUME 2026-03-01 12:06:18.255812 ---
+User: srkreddy452@gmail.com
+Filename: Optimized_Resume_Oracle (1).docx
+Content Length: 38766
+Parsed Text Length: 3903
+Parsed Text Preview: SAIRAM KUMAR
+(217)-862-4693 | vsairamkumarreddy@gmail.com | Linkedin
+PROFESSIONAL SUMMARY
+AI Enginee
+Starting extraction...
+Extraction complete. Keys: ['person', 'address', 'education', 'employment_history', 'skills', 'work_authorization', 'preferences']

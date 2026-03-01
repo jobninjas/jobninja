@@ -112,6 +112,7 @@ const AIApplyFlow = ({ isScanner = false }) => {
   const [isSavingApplication, setIsSavingApplication] = useState(false);
   const [applicationSaved, setApplicationSaved] = useState(false);
   const [tailoredResume, setTailoredResume] = useState('');
+  const [resumeChanges, setResumeChanges] = useState([]);
   const [detailedCv, setDetailedCv] = useState('');
   const [tailoredCoverLetter, setTailoredCoverLetter] = useState('');
   const [suggestedAnswers, setSuggestedAnswers] = useState([]);
@@ -420,6 +421,7 @@ const AIApplyFlow = ({ isScanner = false }) => {
 
       // Set results for display
       setTailoredResume(applyData.tailoredResume);
+      setResumeChanges(applyData.changes || []);
       setDetailedCv(applyData.detailedCv || '');
       setTailoredCoverLetter(applyData.tailoredCoverLetter);
       setSuggestedAnswers(applyData.suggestedAnswers);
@@ -1121,7 +1123,7 @@ const AIApplyFlow = ({ isScanner = false }) => {
                     {detailedCv || tailoredResume ? (
                       <ResumePaper
                         content={detailedCv || tailoredResume}
-                        originalContent={resumeText || selectedResume?.resumeText || ''}
+                        resumeChanges={resumeChanges}
                         scale={1}
                         fontFamily={selectedFont}
                         template={selectedTemplate}

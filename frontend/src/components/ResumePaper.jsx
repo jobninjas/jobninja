@@ -1,31 +1,37 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from './ui/button';
 import { Maximize2, Edit3, Loader2 } from 'lucide-react';
-import { diffWords } from 'diff';
 
-const DiffText = ({ originalText = '', newText = '' }) => {
-    if (!originalText) return <>{newText}</>;
-    try {
-        const differences = diffWords(originalText, newText);
-        return (
-            <>
-                {differences.map((part, index) => {
-                    if (part.removed) return null;
-                    if (part.added && part.value.trim().length > 0) {
-                        return <span key={index} className="bg-[#bbf7d0] text-inherit transition-colors" title="AI Addition">{part.value}</span>;
-                    }
-                    return <span key={index}>{part.value}</span>;
-                })}
-            </>
-        );
-    } catch (e) {
-        return <>{newText}</>;
+const HighlightChange = ({ text = '', changes = [] }) => {
+    if (!text || !changes || changes.length === 0) return <>{text}</>;
+
+    const normalize = (str) => {
+        if (!str) return '';
+        // Remove all non-alphanumeric chars (including spaces, punctuation, bullets)
+        return str.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+    };
+
+    const normText = normalize(text);
+    if (!normText) return <>{text}</>;
+
+    // Check if this specific line text matches any updated change ignoring formatting
+    const matchedChange = changes.find(c => {
+        if (!c.updated) return false;
+        const normUpdate = normalize(c.updated);
+        // Minimum length to prevent false positives on tiny strings
+        if (normUpdate.length < 5) return false;
+        return normText === normUpdate || normText.includes(normUpdate) || normUpdate.includes(normText);
+    });
+
+    if (matchedChange) {
+        return <span className="bg-[#bbf7d0] transition-colors" title={matchedChange.reason || 'AI Optimized'}>{text}</span>;
     }
+
+    return <>{text}</>;
 };
 
-const ResumePaper = ({ content, originalContent, scale = 1, onContentChange, fontFamily = '"Times New Roman", Times, serif', template = 'standard', editable = true }) => {
+const ResumePaper = ({ content, resumeChanges = [], scale = 1, onContentChange, fontFamily = '"Times New Roman", Times, serif', template = 'standard', editable = true }) => {
     const [parsed, setParsed] = useState(null);
-    const [parsedOriginal, setParsedOriginal] = useState(null);
     const containerRef = useRef(null);
 
     // Map font family names to actual CSS values
@@ -140,12 +146,7 @@ const ResumePaper = ({ content, originalContent, scale = 1, onContentChange, fon
 
     useEffect(() => {
         setParsed(parseResumeContent(content));
-        if (originalContent) {
-            setParsedOriginal(parseResumeContent(originalContent));
-        } else {
-            setParsedOriginal(null);
-        }
-    }, [content, originalContent]);
+    }, [content]);
 
     if (!parsed) return <div className="p-10 text-center">Loading document...</div>;
 
@@ -205,7 +206,7 @@ const ResumePaper = ({ content, originalContent, scale = 1, onContentChange, fon
                             <div style={{ margin: '8px 0 0 0', padding: 0 }}>
                                 <h2 style={{ fontSize: '11pt', fontWeight: 'bold', textTransform: 'uppercase', borderBottom: isModern ? 'none' : '1px solid black', margin: 0, padding: 0, color: isModern ? '#3b82f6' : '#000' }}>Professional Summary</h2>
                                 <p style={{ fontSize: '10pt', lineHeight: '1.2', textAlign: 'justify', margin: '2px 0 0 0', padding: 0 }}>
-                                    <DiffText originalText={parsedOriginal?.summary} newText={String(parsed.summary || '').trim()} />
+                                    <HighlightChange changes={resumeChanges} text={String(parsed.summary || '').trim()} />
                                 </p>
                             </div>
                         )}
@@ -215,7 +216,7 @@ const ResumePaper = ({ content, originalContent, scale = 1, onContentChange, fon
                                 <h2 style={{ fontSize: '11pt', fontWeight: 'bold', textTransform: 'uppercase', borderBottom: isModern ? 'none' : '1px solid black', margin: 0, padding: 0, color: isModern ? '#3b82f6' : '#000' }}>Skills</h2>
                                 <div style={{ fontSize: '10pt', lineHeight: '1.2', margin: '2px 0 0 0', padding: 0 }}>
                                     {String(parsed.skills || '').split('\n').filter(l => l.trim()).map((skillLine, i) => (
-                                        <div key={i} style={{ margin: 0, padding: 0 }}>• <DiffText originalText={parsedOriginal?.skills} newText={String(skillLine || '').replace(/^([•\-\*]|#+)\s*/, '')} /></div>
+                                        <div key={i} style={{ margin: 0, padding: 0 }}>• <HighlightChange changes={resumeChanges} text={String(skillLine || '').replace(/^([•\-\*]|#+)\s*/, '')} /></div>
                                     ))}
                                 </div>
                             </div>
@@ -230,9 +231,9 @@ const ResumePaper = ({ content, originalContent, scale = 1, onContentChange, fon
                                         if (!trimmed) return null;
                                         const isBullet = trimmed.startsWith('-') || trimmed.startsWith('•') || trimmed.startsWith('*');
                                         if (isBullet) {
-                                            return <div key={i} style={{ paddingLeft: '12px' }}><DiffText originalText={parsedOriginal?.experience} newText={trimmed} /></div>;
+                                            return <div key={i} style={{ paddingLeft: '12px' }}><HighlightChange changes={resumeChanges} text={trimmed} /></div>;
                                         } else {
-                                            return <div key={i} style={{ fontWeight: 'bold', marginTop: '4px' }}><DiffText originalText={parsedOriginal?.experience} newText={trimmed} /></div>;
+                                            return <div key={i} style={{ fontWeight: 'bold', marginTop: '4px' }}><HighlightChange changes={resumeChanges} text={trimmed} /></div>;
                                         }
                                     })}
                                 </div>
@@ -248,9 +249,9 @@ const ResumePaper = ({ content, originalContent, scale = 1, onContentChange, fon
                                         if (!trimmed) return null;
                                         const isBullet = trimmed.startsWith('-') || trimmed.startsWith('•') || trimmed.startsWith('*');
                                         if (isBullet) {
-                                            return <div key={i} style={{ paddingLeft: '12px' }}><DiffText originalText={parsedOriginal?.projects} newText={trimmed} /></div>;
+                                            return <div key={i} style={{ paddingLeft: '12px' }}><HighlightChange changes={resumeChanges} text={trimmed} /></div>;
                                         } else {
-                                            return <div key={i} style={{ fontWeight: 'bold', marginTop: '4px' }}><DiffText originalText={parsedOriginal?.projects} newText={trimmed} /></div>;
+                                            return <div key={i} style={{ fontWeight: 'bold', marginTop: '4px' }}><HighlightChange changes={resumeChanges} text={trimmed} /></div>;
                                         }
                                     })}
                                 </div>
