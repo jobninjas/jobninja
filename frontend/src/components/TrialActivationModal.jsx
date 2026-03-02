@@ -60,7 +60,7 @@ const TrialActivationModal = ({ isOpen, onClose, expiresAt }) => {
                 {/* Main message */}
                 <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-6 mb-6">
                     <p className="text-xl font-semibold text-center text-gray-900 mb-2">
-                        You have free access for 2 weeks
+                        You have free access for 1 week
                     </p>
                     <div className="flex items-center justify-center gap-2 text-gray-600">
                         <Calendar className="w-5 h-5" />
@@ -70,7 +70,7 @@ const TrialActivationModal = ({ isOpen, onClose, expiresAt }) => {
 
                 {/* Payment info */}
                 <p className="text-center text-gray-600 mb-6">
-                    You can make the payment after 2 weeks to continue using all features.
+                    You can make the payment after 1 week to continue using all features.
                 </p>
 
                 {/* CTA buttons */}

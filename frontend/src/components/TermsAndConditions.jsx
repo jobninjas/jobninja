@@ -49,7 +49,7 @@ const TermsAndConditions = () => {
                         <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
                         <div>
                             <p className="font-semibold text-green-800 text-sm">Free Trial</p>
-                            <p className="text-green-700 text-sm">2 weeks free with up to 20 job applications per day. No credit card required to start.</p>
+                            <p className="text-green-700 text-sm">1 week free with up to 20 job applications per day. No credit card required to start.</p>
                         </div>
                     </div>
                     <div className="bg-blue-50 border border-blue-200 rounded-2xl p-5 flex gap-3">

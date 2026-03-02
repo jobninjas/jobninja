@@ -685,7 +685,7 @@ async def activate_trial(
         
         # Activate 2-week trial
         now = datetime.now(timezone.utc)
-        trial_expires_at = now + timedelta(days=14)  # 2 weeks
+        trial_expires_at = now + timedelta(days=7)  # 1 week
         
         update_data = {
             "subscription_status": "trial",
@@ -706,7 +706,7 @@ async def activate_trial(
             "success": True,
             "message": "Trial activated successfully",
             "trial_expires_at": trial_expires_at.isoformat(),
-            "days_remaining": 14
+            "days_remaining": 7
         }
         
     except HTTPException:
@@ -2669,6 +2669,114 @@ async def create_checkout(request: CheckoutRequest):
         raise HTTPException(status_code=400, detail=str(e))
 
 
+@api_router.post("/dodo-checkout")
+async def create_dodo_checkout(request: dict, user: dict = Depends(get_current_user)):
+    """
+    Create a Dodo Payments checkout link.
+    """
+    from dodopayments import AsyncDodoPayments
+    try:
+        plan_id = request.get("plan_id")
+        DODO_PRICING = {
+            'ai-yearly': 'pdt_0NZdskVVIhaRIFib0pvKX',
+            'ai-pro-plus': 'pdt_0NZdskeTK6brGEax0h2cX',
+            'ai-pro-max': 'pdt_0NZdskimkgkJlRKi7MK0g'
+        }
+        
+        if plan_id not in DODO_PRICING:
+            raise HTTPException(status_code=400, detail="Invalid Dodo plan ID")
+
+        dodo_client = AsyncDodoPayments(bearer_token="VlSrQp7v8yEwy3UB.Lzvf3GZC-wqETu11N-S8paVhoWjfyJfUHmPVDi-6g8HrvTaC")
+        frontend_url = os.environ.get("FRONTEND_URL", "http://localhost:3000")
+        
+        # 1. Ensure user is registered as a customer
+        # Dodo strictly requires a name field alongside an email
+        try:
+            fallback_name = user.get("name") or user.get("full_name") or user.get("email", "").split("@")[0] or "JobNinjas User"
+            cust = await dodo_client.customers.create(email=user.get("email"), name=fallback_name)
+            customer_id = cust.customer_id
+        except Exception as e:
+            logger.warning(f"Error creating customer, trying to proceed anyway: {e}")
+            customer_id = None
+        
+        # 2. Subscription Link Creation (Supports Trials natively)
+        create_kwargs = {
+            "billing": {"country": "US", "city": "NY", "state": "NY", "street": "Broadway", "zipcode": "10001"},
+            "product_id": DODO_PRICING[plan_id],
+            "quantity": 1,
+            "payment_link": True,
+            "trial_period_days": 7,
+            "return_url": f"{frontend_url}/dashboard?dodo_success=true"
+        }
+        
+        if customer_id:
+            create_kwargs["customer"] = {"customer_id": customer_id}
+        else:
+            # Fallback for NewCustomerParam if Dodo later patches their Python SDK enum validation
+            create_kwargs["customer"] = {"email": user.get("email")}
+            
+        link = await dodo_client.subscriptions.create(**create_kwargs)
+        return {"url": getattr(link, 'payment_link', getattr(link, 'url', None))}
+    except Exception as e:
+        logger.error(f"Error creating dodo checkout: {str(e)}")
+        raise HTTPException(status_code=400, detail="Failed to create Dodo checkout link")
+
+@api_router.post("/webhooks/dodo")
+async def dodo_webhook(request: Request):
+    """
+    Webhook endpoint for Dodo Payments events.
+    Handles successful payments and updates the user's subscription in Supabase.
+    """
+    try:
+        payload = await request.json()
+        logger.info(f"Received Dodo Webhook: {payload.get('type')}")
+        
+        # Dodo uses events like 'payment.succeeded' or 'subscription.active'
+        event_type = payload.get("data", {}).get("webhook_event_type") or payload.get("type", "")
+        event_data = payload.get("data", payload)
+        
+        if "succeeded" in event_type.lower() or "active" in event_type.lower():
+            customer = event_data.get("customer", {})
+            customer_email = customer.get("email") or event_data.get("customer_email")
+            
+            # Map product_id to our internal plan IDs
+            product_cart = event_data.get("product_cart", [])
+            product_id = product_cart[0].get("product_id") if isinstance(product_cart, list) and len(product_cart) > 0 else None
+            
+            plan_id = "ai-yearly"  # Default
+            if product_id == 'pdt_0NZdskeTK6brGEax0h2cX':
+                plan_id = "ai-pro-plus"
+            elif product_id == 'pdt_0NZdskimkgkJlRKi7MK0g':
+                plan_id = "ai-pro-max"
+                
+            if customer_email:
+                SupabaseService.update_user_by_email(customer_email, {
+                    "subscription_status": "active",
+                    "plan": plan_id
+                })
+                from datetime import datetime
+                from datetime import timezone
+                from dateutil.relativedelta import relativedelta
+                
+                # Also create/update subscription record
+                SupabaseService.upsert_subscription(
+                    customer_email,
+                    {
+                        "plan_id": plan_id,
+                        "status": "active",
+                        "provider": "dodo",
+                        "dodo_product_id": product_id,
+                        "activated_at": datetime.now(timezone.utc).isoformat(),
+                        "expires_at": (datetime.now(timezone.utc) + relativedelta(years=1)).isoformat()
+                    }
+                )
+                logger.info(f"Dodo success: Updated user {customer_email} to {plan_id}")
+                
+        return {"status": "success"}
+    except Exception as e:
+        logger.error(f"Dodo webhook error: {e}")
+        return {"status": "error", "message": str(e)}
+
 async def grant_referral_bonus(user_id: str):
     """
     Find the user who referred this user and grant them a bonus.
@@ -3396,7 +3504,7 @@ async def get_user_usage_limits(identifier: str) -> dict:
             current_count = current_daily_apps
             can_generate = current_count < limit
     else:  # free, expired, or ai-free
-        # Trial limits (14-day free trial)
+        # Trial limits (7-day free trial)
         limit = 10
         autofills_limit = 10
         current_count = current_daily_apps

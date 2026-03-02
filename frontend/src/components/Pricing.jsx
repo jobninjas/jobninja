@@ -15,7 +15,7 @@ import NumberFlow from "@number-flow/react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import './SideMenu.css';
-import { API_URL } from '../config/api';
+import { API_URL, apiCall } from '../config/api';
 
 const PricingSwitch = ({
   selected,
@@ -95,7 +95,9 @@ const Pricing = () => {
   };
 
   const aiNinjaPlans = [
-    { ...PRICING.AI_YEARLY, popular: true, buttonVariant: 'default', description: PRICING.AI_YEARLY.description },
+    { ...PRICING.AI_YEARLY, popular: false, buttonVariant: 'outline', description: PRICING.AI_YEARLY.description },
+    { ...PRICING.AI_PRO_PLUS, popular: true, buttonVariant: 'default', description: PRICING.AI_PRO_PLUS.description },
+    { ...PRICING.AI_PRO_MAX, popular: false, buttonVariant: 'outline', description: PRICING.AI_PRO_MAX.description },
   ];
 
   const humanNinjaPlans = [
@@ -107,7 +109,7 @@ const Pricing = () => {
 
   const currentPlans = planType === 'ai' ? aiNinjaPlans : humanNinjaPlans;
 
-  const handleActivateTrial = async () => {
+  const handleDodoCheckout = async (planId) => {
     if (!isAuthenticated) {
       navigate('/signup');
       return;
@@ -115,26 +117,22 @@ const Pricing = () => {
 
     try {
       const token = localStorage.getItem('auth_token');
-      const response = await fetch(`${API_URL}/api/subscription/activate-trial`, {
+      const data = await apiCall('/api/dodo-checkout', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'token': token
         },
-        body: JSON.stringify({ plan_id: 'ai-yearly' })
+        body: JSON.stringify({ plan_id: planId })
       });
 
-      const data = await response.json();
-
-      if (response.ok) {
-        alert("You have unlocked 2 weeks access without any payment!");
-        await refreshUser();
-        navigate('/dashboard'); // Or wherever appropriate
+      if (data && data.url) {
+        window.location.href = data.url;
       } else {
-        alert(data.detail || "Failed to activate trial.");
+        alert(data.detail || "Failed to initiate checkout.");
       }
     } catch (error) {
-      console.error("Trial activation error:", error);
+      console.error("Checkout error:", error);
       alert("An error occurred. Please try again.");
     }
   };
@@ -188,7 +186,7 @@ const Pricing = () => {
           </TimelineContent>
         </article>
 
-        <div className={`grid gap-4 py-6 ${planType === 'ai' ? 'max-w-md mx-auto' : 'md:grid-cols-2 lg:grid-cols-4'}`}>
+        <div className={`grid gap-4 py-6 ${planType === 'ai' ? 'md:grid-cols-3 max-w-6xl mx-auto' : 'md:grid-cols-2 lg:grid-cols-4'}`}>
           {currentPlans.map((plan, index) => (
             <TimelineContent
               key={plan.id}
@@ -199,10 +197,10 @@ const Pricing = () => {
             >
               <Card
                 className={`relative border h-full flex flex-col transition-all duration-300 ${(planType === 'ai' && user?.subscription_status === 'trial' && new Date(user?.trial_expires_at) > new Date())
-                    ? "border-green-500 bg-green-50 shadow-2xl scale-105"
-                    : plan.popular
-                      ? "border-neutral-200 ring-2 ring-blue-500 bg-blue-50 shadow-xl"
-                      : "border-neutral-200 bg-white shadow-sm"
+                  ? "border-green-500 bg-green-50 shadow-2xl scale-105"
+                  : plan.popular
+                    ? "border-neutral-200 ring-2 ring-blue-500 bg-blue-50 shadow-xl"
+                    : "border-neutral-200 bg-white shadow-sm"
                   }`}
               >
                 <CardHeader className="text-left">
@@ -236,7 +234,7 @@ const Pricing = () => {
                   {planType === 'ai' && (
                     <div className="mb-3">
                       <span className="inline-block bg-gradient-to-r from-green-500 to-emerald-500 text-white px-4 py-2 rounded-full text-sm font-bold shadow-lg">
-                        ✨ 2 Weeks Free Trial
+                        ✨ 1 Week Free Trial
                       </span>
                     </div>
                   )}
@@ -252,10 +250,10 @@ const Pricing = () => {
                     {planType === 'ai' && user?.subscription_status === 'trial' && new Date(user?.trial_expires_at) > new Date() ? (
                       <div className="flex flex-col">
                         <span className="text-3xl font-bold text-green-700">
-                          You got 2 weeks free!
+                          You got 1 week free!
                         </span>
                         <span className="text-sm text-gray-600 mt-1">
-                          Pay after 2 weeks of using.
+                          Pay after 1 week of using.
                         </span>
                       </div>
                     ) : (
@@ -309,7 +307,7 @@ const Pricing = () => {
                       } else if (planType === 'human') {
                         setIsBookCallModalOpen(true);
                       } else if (planType === 'ai') {
-                        handleActivateTrial();
+                        handleDodoCheckout(plan.id);
                       } else if (plan.price === 0) {
                         navigate('/ai-ninja');
                       } else {
@@ -321,7 +319,7 @@ const Pricing = () => {
                     {planType === 'ai'
                       ? (user?.subscription_status === 'trial' && new Date(user?.trial_expires_at) > new Date()
                         ? '✅ Trial Active - Enjoy!'
-                        : 'Start 2 Weeks Free')
+                        : 'Start 1 Week Free')
                       : (plan.price === 0 ? 'Try Free' : (plan.id === 'human-enterprise' ? 'Contact Us' : 'Get Started'))}
                   </button>
 

@@ -45,7 +45,7 @@ const RefundPolicy = () => {
                     <div className="grid md:grid-cols-3 gap-4">
                         <div className="bg-blue-50 border border-blue-200 rounded-2xl p-5 text-center">
                             <CheckCircle className="w-7 h-7 text-blue-600 mx-auto mb-2" />
-                            <p className="font-bold text-blue-800 text-sm">Free for 2 Weeks</p>
+                            <p className="font-bold text-blue-800 text-sm">Free for 1 Week</p>
                             <p className="text-blue-700 text-xs mt-1">Try the full platform free — 20 jobs/day, no card required.</p>
                         </div>
                         <div className="bg-green-50 border border-green-200 rounded-2xl p-5 text-center">
