@@ -688,7 +688,7 @@ const AIApplyFlow = ({ isScanner = false }) => {
 
         {/* Progress Steps */}
         {currentStep < 5 && (
-          <div className="progress-steps-new mb-10">
+          <div className="progress-steps-new mb-4">
             {[
               { step: 1, label: 'Upload' },
               { step: 2, label: 'Analysis' },
@@ -825,14 +825,14 @@ const AIApplyFlow = ({ isScanner = false }) => {
               </div>
 
               {/* Job Details Section */}
-              <div className="job-details-review mt-12 pt-8 border-t border-slate-100">
+              <div className="job-details-review mt-6 pt-4 border-t border-slate-100">
                 <h3 className="flex items-center gap-2 mb-6 text-lg font-bold text-slate-900">
                   <Briefcase className="w-5 h-5 text-indigo-600" />
                   Review Job Details
                 </h3>
 
                 {!jobData.description && (
-                  <div className="url-fetch-box mb-8 p-4 bg-slate-50 rounded-xl border border-slate-200">
+                  <div className="url-fetch-box mb-4 p-4 bg-slate-50 rounded-xl border border-slate-200">
                     <Label className="text-sm font-bold text-slate-600 mb-2 block">Paste the job link to auto-fill</Label>
                     <div className="flex gap-2">
                       <Input
@@ -852,7 +852,7 @@ const AIApplyFlow = ({ isScanner = false }) => {
                   </div>
                 )}
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                   <div className="form-group text-left">
                     <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1.5 block">Company Name</Label>
                     <Input
@@ -879,12 +879,12 @@ const AIApplyFlow = ({ isScanner = false }) => {
                     placeholder="Paste the full job description here..."
                     value={customJobDescription}
                     onChange={(e) => setCustomJobDescription(e.target.value)}
-                    className="min-h-[200px] bg-slate-50/50 leading-relaxed text-sm"
+                    className="min-h-[120px] bg-slate-50/50 leading-relaxed text-sm"
                   />
                 </div>
               </div>
 
-              <div className="card-actions mt-10">
+              <div className="card-actions mt-6">
                 <Button
                   className="btn-primary btn-large w-full h-14 text-lg font-bold rounded-2xl shadow-lg shadow-green-100"
                   onClick={handleRunAnalysis}
