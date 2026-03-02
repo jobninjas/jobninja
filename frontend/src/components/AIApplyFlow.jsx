@@ -686,33 +686,7 @@ const AIApplyFlow = ({ isScanner = false }) => {
       <div className={currentStep === 5 ? "ai-apply-container-full" : "ai-apply-container"}>
         <JobHeader />
 
-        {/* Progress Steps */}
-        {currentStep < 5 && (
-          <div className="progress-steps-new mb-4">
-            {[
-              { step: 1, label: 'Upload' },
-              { step: 2, label: 'Analysis' },
-              { step: 3, label: 'Tailor' },
-              { step: 4, label: 'Generating' }
-            ].map((s, idx) => {
-              let status = 'pending';
-              if (currentStep === s.step) status = 'active';
-              if (currentStep > s.step) status = 'completed';
 
-              return (
-                <React.Fragment key={s.step}>
-                  <div className={`step-item ${status}`}>
-                    <div className="step-count">
-                      {status === 'completed' ? <Check className="w-4 h-4" /> : s.step}
-                    </div>
-                    <span className="step-label">{s.label}</span>
-                  </div>
-                  {idx < 3 && <div className={`step-connector ${status === 'completed' ? 'filled' : ''}`} />}
-                </React.Fragment>
-              );
-            })}
-          </div>
-        )}
 
         {/* Step 1: Upload Existing/New Resume */}
         {currentStep === 1 && (
