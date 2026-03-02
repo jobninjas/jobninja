@@ -6,9 +6,10 @@
 }
 
 .ai-apply-container {
-  max-width: 1400px;
+  max-width: 1200px;
   margin: 0 auto;
-  padding: 2rem 1.5rem;
+  padding: 1rem 1.5rem;
+  zoom: 0.90;
 }
 
 .ai-apply-container-full {
