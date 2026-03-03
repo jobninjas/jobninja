@@ -2753,6 +2753,10 @@ async def create_dodo_checkout(request: dict, user: dict = Depends(get_current_u
         logger.error(f"Error creating dodo checkout: {str(e)}")
         raise HTTPException(status_code=400, detail="Failed to create Dodo checkout link")
 
+@api_router.get("/test-dodo")
+async def test_dodo():
+    return {"status": "ok", "message": "Dodo router is active"}
+
 @api_router.post("/dodo-portal")
 async def create_dodo_portal(user: dict = Depends(get_current_user)):
     """
