@@ -2720,34 +2720,31 @@ async def create_dodo_checkout(request: dict, user: dict = Depends(get_current_u
         dodo_client = AsyncDodoPayments(bearer_token="VlSrQp7v8yEwy3UB.Lzvf3GZC-wqETu11N-S8paVhoWjfyJfUHmPVDi-6g8HrvTaC")
         frontend_url = os.environ.get("FRONTEND_URL", "http://localhost:3000")
         
-        # 1. Ensure user is registered as a customer
-        # Dodo strictly requires a name field alongside an email
+        # 1. Register/Retrieve Customer
         try:
             fallback_name = user.get("name") or user.get("full_name") or user.get("email", "").split("@")[0] or "JobNinjas User"
             cust = await dodo_client.customers.create(email=user.get("email"), name=fallback_name)
             customer_id = cust.customer_id
         except Exception as e:
-            logger.warning(f"Error creating customer, trying to proceed anyway: {e}")
-            customer_id = None
+            logger.warning(f"Error creating customer, searching by email: {e}")
+            try:
+                # Fallback: search for existing customer
+                existing = await dodo_client.customers.list(email=user.get("email"))
+                customer_id = existing.items[0].customer_id if existing.items else None
+            except:
+                customer_id = None
         
-        # 2. Subscription Link Creation (Supports Trials natively)
-        create_kwargs = {
+        # 2. Unified Checkout Session Creation
+        checkout_payload = {
             "billing": {"country": "US", "city": "NY", "state": "NY", "street": "Broadway", "zipcode": "10001"},
-            "product_id": DODO_PRICING[plan_id],
-            "quantity": 1,
-            "payment_link": True,
-            "trial_period_days": 7,
+            "product_cart": [{"product_id": DODO_PRICING[plan_id], "quantity": 1}],
+            "customer": {"customer_id": customer_id} if customer_id else {"email": user.get("email"), "name": user.get("name", "User")},
+            "subscription_data": {"trial_period_days": 7},
             "return_url": f"{frontend_url}/dashboard?dodo_success=true"
         }
-        
-        if customer_id:
-            create_kwargs["customer"] = {"customer_id": customer_id}
-        else:
-            # Fallback for NewCustomerParam if Dodo later patches their Python SDK enum validation
-            create_kwargs["customer"] = {"email": user.get("email")}
             
-        link = await dodo_client.subscriptions.create(**create_kwargs)
-        return {"url": getattr(link, 'payment_link', getattr(link, 'url', None))}
+        session = await dodo_client.checkout_sessions.create(**checkout_payload)
+        return {"url": session.checkout_url}
     except Exception as e:
         logger.error(f"Error creating dodo checkout: {str(e)}")
         raise HTTPException(status_code=400, detail="Failed to create Dodo checkout link")
