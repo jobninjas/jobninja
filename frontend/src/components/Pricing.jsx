@@ -275,7 +275,7 @@ const Pricing = () => {
                         {plan.price !== null && (
                           <div className="flex flex-col">
                             <span className="text-gray-600">
-                              {planType === 'ai' ? 'USD ' : ''}/{plan.period ? plan.period.replace('/', '') : (planType === 'human' ? 'package' : 'total')}
+                              {planType === 'ai' ? `USD ${plan.period}` : `/${plan.period ? plan.period.replace('/', '') : 'package'}`}
                             </span>
                             {planType === 'ai' && (
                               <span className="text-xs text-gray-400 line-through italic">
