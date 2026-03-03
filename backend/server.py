@@ -2755,7 +2755,7 @@ async def create_dodo_checkout(request: dict, user: dict = Depends(get_current_u
         return {"url": session.checkout_url}
     except Exception as e:
         logger.error(f"Error creating dodo checkout: {str(e)}")
-        raise HTTPException(status_code=400, detail="Failed to create Dodo checkout link")
+        raise HTTPException(status_code=400, detail=f"Dodo Error: {str(e)}")
 
 @api_router.get("/test-dodo")
 async def test_dodo():

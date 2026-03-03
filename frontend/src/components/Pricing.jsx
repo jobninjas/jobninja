@@ -133,7 +133,7 @@ const Pricing = () => {
       }
     } catch (error) {
       console.error("Checkout error:", error);
-      alert("An error occurred. Please try again.");
+      alert(error.message || "An error occurred. Please try again.");
     }
   };
 
