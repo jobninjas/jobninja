@@ -427,8 +427,18 @@ async def check_and_increment_daily_usage(user_email: str, usage_type: str, limi
 
 
 
+
+async def get_decrypted_byok_key(email: str):
+    """
+    Dummy function for BYOK keys.
+    The BYOK feature has been removed, so this always returns None.
+    This prevents NameErrors if any stale calls persist in the codebase.
+    """
+    return None
+
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
+
 
 
 # Define Models
