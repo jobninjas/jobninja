@@ -3490,7 +3490,7 @@ async def ai_ninja_apply(request: Request, user: dict = Depends(get_current_user
             # Sync if target_role or resume_text is missing
             if not user.get("target_role") or not user.get("resume_text"):
                 from resume_analyzer import extract_resume_data
-                byok_config = await get_decrypted_byok_key(profile_email)
+                byok_config = None
                 extracted_data = await extract_resume_data(resumeText, byok_config=byok_config)
                 
                 if extracted_data and not extracted_data.get("error"):
@@ -4585,7 +4585,7 @@ async def scan_resume(
             )
 
         # Check for BYOK - safely handle if email is missing
-        byok_config = await get_decrypted_byok_key(email or "")
+        byok_config = None
 
         # Analyze with Gemini / BYOK
         from resume_analyzer import analyze_resume
@@ -4668,7 +4668,7 @@ async def parse_resume_endpoint(
             )
 
         # Check for BYOK - use authenticated user email
-        byok_config = await get_decrypted_byok_key(user.get("email", ""))
+        byok_config = None
 
         # Extract structured data with Gemini / BYOK
         from resume_analyzer import extract_resume_data
