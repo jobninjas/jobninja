@@ -2538,7 +2538,6 @@ async def create_dodo_checkout(request: Request, user: dict = Depends(get_curren
         checkout_payload = {
             "product_cart": [{"product_id": DODO_PRICING[plan_id], "quantity": 1}],
             "customer": {"customer_id": customer_id} if customer_id else {"email": user.get("email"), "name": user.get("name", "User")},
-            "subscription_data": {"trial_period_days": 7},
             "return_url": f"{frontend_url}/dashboard?dodo_success=true"
         }
             
@@ -2614,62 +2613,37 @@ async def dodo_webhook(request: Request):
             elif product_id == 'pdt_0NZUIq5YeOwMHJLTzi24o':
                 plan_id = "ai-monthly"
                 
-            status = event_data.get("status")
-            if not status:
-                # Try to get from subscription object if nested
-                status = event_data.get("subscription", {}).get("status")
-            
-            # If dodo doesn't explicitly send "trialing", we check if it's a new subscription with trial
-            # In create_dodo_checkout we set trial_period_days: 7
-            is_trial = (status == "trialing")
-            
-            subscription_status = "trial" if is_trial else "active"
-            
             if customer_email:
                 from datetime import datetime, timezone
                 from dateutil.relativedelta import relativedelta
                 
-                update_payload = {
-                    "subscription_status": subscription_status,
-                    "plan": plan_id
-                }
-                
-                # Calculate standard expiration based on plan
+                # Calculate expiration based on plan
                 if "monthly" in plan_id:
                     delta = relativedelta(months=1)
                 else:
                     delta = relativedelta(years=1)
 
-                if is_trial:
-                    # Calculate trial expiration (7 days from now)
-                    trial_end = datetime.now(timezone.utc) + relativedelta(days=7)
-                    update_payload["trial_activated_at"] = datetime.now(timezone.utc).isoformat()
-                    update_payload["trial_expires_at"] = trial_end.isoformat()
-                    # Also set plan_expires_at to trial end + delta to be safe
-                    update_payload["plan_expires_at"] = (trial_end + delta).isoformat()
-                else:
-                    # Regular active subscription
-                    update_payload["plan_expires_at"] = (datetime.now(timezone.utc) + delta).isoformat()
+                update_payload = {
+                    "subscription_status": "active",
+                    "plan": plan_id,
+                    "plan_expires_at": (datetime.now(timezone.utc) + delta).isoformat()
+                }
 
                 SupabaseService.update_user_by_email(customer_email, update_payload)
                 
                 # Also create/update subscription record
-                # subscriptions table uses 'plan', profiles uses 'subscription_plan' (mapped to 'plan' in some places)
-                # Looking at supabase_schema.sql, profiles has subscription_status and subscription_plan.
-                # subscriptions table has plan and status.
-                
                 SupabaseService.upsert_subscription(
                     {
                         "user_email": customer_email,
                         "plan": plan_id,
-                        "status": subscription_status,
+                        "status": "active",
                         "provider": "dodo",
                         "provider_id": event_data.get("subscription_id") or event_data.get("id"),
                         "activated_at": datetime.now(timezone.utc).isoformat(),
                         "expires_at": (datetime.now(timezone.utc) + delta).isoformat()
                     }
                 )
-                logger.info(f"Dodo {subscription_status}: Updated user {customer_email} to {plan_id}")
+                logger.info(f"Dodo ACTIVE: Updated user {customer_email} to plan {plan_id}")
                 
         return {"status": "success"}
     except Exception as e:

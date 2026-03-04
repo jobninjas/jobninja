@@ -196,11 +196,9 @@ const Pricing = () => {
               customVariants={revealVariants}
             >
               <Card
-                className={`relative border h-full flex flex-col transition-all duration-300 ${(planType === 'ai' && user?.subscription_status === 'trial' && new Date(user?.trial_expires_at) > new Date())
-                  ? "border-green-500 bg-green-50 shadow-2xl scale-105"
-                  : plan.popular
-                    ? "border-neutral-200 ring-2 ring-blue-500 bg-blue-50 shadow-xl"
-                    : "border-neutral-200 bg-white shadow-sm"
+                className={`relative border h-full flex flex-col transition-all duration-300 ${plan.popular
+                  ? "border-neutral-200 ring-2 ring-blue-500 bg-blue-50 shadow-xl"
+                  : "border-neutral-200 bg-white shadow-sm"
                   }`}
               >
                 <CardHeader className="text-left">
@@ -230,14 +228,7 @@ const Pricing = () => {
                     {plan.description}
                   </p>
 
-                  {/* Free Trial Badge - Only for AI Ninja */}
-                  {planType === 'ai' && (
-                    <div className="mb-3">
-                      <span className="inline-block bg-gradient-to-r from-green-500 to-emerald-500 text-white px-4 py-2 rounded-full text-sm font-bold shadow-lg">
-                        ✨ 1 Week Free Trial
-                      </span>
-                    </div>
-                  )}
+
 
                   {plan.originalPrice && (
                     <div className="mb-2">
@@ -247,61 +238,44 @@ const Pricing = () => {
                     </div>
                   )}
                   <div className="flex items-baseline gap-2">
-                    {planType === 'ai' && user?.subscription_status === 'trial' && new Date(user?.trial_expires_at) > new Date() ? (
-                      <div className="flex flex-col">
-                        <span className="text-3xl font-bold text-green-700">
-                          You got 1 week free!
-                        </span>
-                        <span className="text-sm text-gray-600 mt-1">
-                          Pay after 1 week of using.
-                        </span>
-                      </div>
-                    ) : (
-                      <>
-                        <span className="text-4xl font-semibold text-gray-900">
-                          {plan.price !== null ? (
-                            <>
-                              $
-                              <NumberFlow
-                                format={{ minimumFractionDigits: plan.price % 1 === 0 ? 0 : 2 }}
-                                value={plan.price}
-                                className="text-4xl font-semibold"
-                              />
-                            </>
-                          ) : (
-                            "Contact Us"
-                          )}
-                        </span>
-                        {plan.price !== null && (
-                          <div className="flex flex-col">
-                            <span className="text-gray-600">
-                              {planType === 'ai' ? `USD ${plan.period}` : `/${plan.period ? plan.period.replace('/', '') : 'package'}`}
-                            </span>
-                            {planType === 'ai' && (
-                              <span className="text-xs text-gray-400 line-through italic">
-                                not /month
-                              </span>
-                            )}
-                          </div>
+                    <>
+                      <span className="text-4xl font-semibold text-gray-900">
+                        {plan.price !== null ? (
+                          <>
+                            $
+                            <NumberFlow
+                              format={{ minimumFractionDigits: plan.price % 1 === 0 ? 0 : 2 }}
+                              value={plan.price}
+                              className="text-4xl font-semibold"
+                            />
+                          </>
+                        ) : (
+                          "Contact Us"
                         )}
-                      </>
-                    )}
+                      </span>
+                      {plan.price !== null && (
+                        <div className="flex flex-col">
+                          <span className="text-gray-600">
+                            {planType === 'ai' ? `USD ${plan.period}` : `/${plan.period ? plan.period.replace('/', '') : 'package'}`}
+                          </span>
+                          {planType === 'ai' && (
+                            <span className="text-xs text-gray-400 line-through italic">
+                              not /month
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </>
                   </div>
                 </CardHeader>
 
                 <CardContent className="pt-0 flex-1 flex flex-col">
                   <button
-                    className={`w-full mb-4 p-3 text-lg font-semibold rounded-xl transition-all ${(user?.subscription_status === 'trial' && new Date(user?.trial_expires_at) > new Date() && planType === 'ai')
-                      ? "bg-green-600 text-white cursor-default"
-                      : plan.popular
-                        ? "bg-gradient-to-t from-blue-600 to-blue-700 shadow-lg shadow-blue-500 border border-blue-400 text-white"
-                        : "bg-gradient-to-t from-neutral-900 to-neutral-700 shadow-lg shadow-neutral-900 border border-neutral-700 text-white"
+                    className={`w-full mb-4 p-3 text-lg font-semibold rounded-xl transition-all ${plan.popular
+                      ? "bg-gradient-to-t from-blue-600 to-blue-700 shadow-lg shadow-blue-500 border border-blue-400 text-white"
+                      : "bg-gradient-to-t from-neutral-900 to-neutral-700 shadow-lg shadow-neutral-900 border border-neutral-700 text-white"
                       }`}
                     onClick={() => {
-                      if (user?.subscription_status === 'trial' && new Date(user?.trial_expires_at) > new Date() && planType === 'ai') {
-                        return; // Already active
-                      }
-
                       if (plan.id === 'human-enterprise') {
                         setIsBookCallModalOpen(true);
                       } else if (planType === 'human') {
@@ -314,12 +288,9 @@ const Pricing = () => {
                         navigate(`/checkout?plan=${plan.id}&auto=true`);
                       }
                     }}
-                    disabled={planType === 'ai' && user?.subscription_status === 'trial' && new Date(user?.trial_expires_at) > new Date()}
                   >
                     {planType === 'ai'
-                      ? (user?.subscription_status === 'trial' && new Date(user?.trial_expires_at) > new Date()
-                        ? '✅ Trial Active - Enjoy!'
-                        : 'Start 1 Week Free')
+                      ? (user?.subscription_status === 'active' ? '✅ Subscribed' : 'Subscribe Now')
                       : (plan.price === 0 ? 'Try Free' : (plan.id === 'human-enterprise' ? 'Contact Us' : 'Get Started'))}
                   </button>
 

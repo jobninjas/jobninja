@@ -70,8 +70,9 @@ export const PRICING = {
     features: [
       'Access to all Free Tools',
       'AI Resume Scanner',
-      '1 Job Application per day',
-      '1 Auto Fill per day',
+      '5 Resume Tailoring per day',
+      '5 Auto Fill per day',
+      'Full access to Job Board',
       'Store 1 base resume',
     ],
   },
@@ -83,7 +84,7 @@ export const PRICING = {
     period: '/month',
     applications: 'Unlimited',
     popular: false,
-    description: 'Full access to all tools. 1 week free trial.',
+    description: 'Full access to all tools.',
     features: [
       'Unlimited AI-powered job applications',
       'Full access to Auto Fill',
