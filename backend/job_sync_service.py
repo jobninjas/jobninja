@@ -166,8 +166,16 @@ class JobSyncService:
             if "United States" not in display_name and "USA" not in display_name:
                 display_name = f"{display_name}, United States"
                 
+        # Create a stable content hash for job_id for cross-source deduplication
+        import hashlib
+        title = job_data.get("title", "").strip().lower()
+        company = job_data.get("company", {}).get("display_name", "").strip().lower()
+        loc = display_name.strip().lower()
+        unique_string = f"{title}|{company}|{loc}"
+        stable_id = hashlib.md5(unique_string.encode()).hexdigest()[:24]
+        
         return {
-            "job_id": f"adzuna_{job_data.get('id', '')}",
+            "job_id": stable_id,
             "source": "adzuna",
             "title": job_data.get("title", ""),
             "company": job_data.get("company", {}).get("display_name", ""),
@@ -183,8 +191,16 @@ class JobSyncService:
     
     def _normalize_jsearch_job(self, job_data: Dict) -> Dict:
         """Normalize JSearch job data to common format"""
+        # Create a stable content hash for job_id for cross-source deduplication
+        import hashlib
+        title = job_data.get("job_title", "").strip().lower()
+        company = job_data.get("employer_name", "").strip().lower()
+        loc = f"{job_data.get('job_city', '')}, {job_data.get('job_state', '')}".strip().lower()
+        unique_string = f"{title}|{company}|{loc}"
+        stable_id = hashlib.md5(unique_string.encode()).hexdigest()[:24]
+        
         return {
-            "job_id": f"jsearch_{job_data.get('job_id', '')}",
+            "job_id": stable_id,
             "source": "jsearch",
             "title": job_data.get("job_title", ""),
             "company": job_data.get("employer_name", ""),

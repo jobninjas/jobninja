@@ -151,8 +151,8 @@ const AINinjaChat = ({ isOpen: propIsOpen, onClose }) => {
                         <div className={`max-w-[85%] space-y-2`}>
                             <div className={`p-3 text-sm leading-relaxed rounded-2xl shadow-sm
                                 ${msg.role === 'user'
-                                    ? 'bg-blue-600 text-white rounded-tr-sm'
-                                    : 'bg-white border border-gray-100 text-gray-700 rounded-tl-sm'
+                                    ? 'bg-emerald-600 text-white rounded-tr-sm'
+                                    : 'bg-white border border-slate-100 text-slate-700 rounded-tl-sm'
                                 }`}>
                                 {(() => {
                                     const content = typeof msg.content === 'string' ? msg.content : String(msg.content || '');
@@ -192,26 +192,26 @@ const AINinjaChat = ({ isOpen: propIsOpen, onClose }) => {
                 )}
             </div>
 
-            <div className="p-4 border-t border-gray-100 bg-white">
+            <div className="p-4 border-t border-slate-100 bg-white">
                 <div className="relative">
                     <Input
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
                         onKeyDown={handleKeyPress}
                         placeholder="Ask anything..."
-                        className="pr-10 rounded-xl border-gray-200 focus:ring-blue-500 focus:border-blue-500"
+                        className="pr-10 h-11 rounded-xl border-slate-200 focus:ring-emerald-500 focus:border-emerald-500 bg-slate-50 focus:bg-white transition-all"
                     />
                     <Button
                         size="icon"
-                        className="absolute right-1 top-1 h-8 w-8 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                        className="absolute right-1.5 top-1.5 h-8 w-8 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-all shadow-sm"
                         onClick={() => handleSend()}
                         disabled={!input.trim() || isLoading}
                     >
                         <Send className="w-4 h-4" />
                     </Button>
                 </div>
-                <p className="text-[10px] text-center text-gray-400 mt-2">
-                    AI can make mistakes. Check important info.
+                <p className="text-[10px] text-center text-slate-400 mt-3 font-medium">
+                    AI Ninja can make mistakes. Check important info.
                 </p>
             </div>
         </div>

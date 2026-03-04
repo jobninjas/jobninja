@@ -1427,9 +1427,16 @@ async def update_jobs_in_database(jobs: List[Dict[str, Any]]) -> int:
         SupabaseService.mark_jobs_inactive(sources)
         
         # Format jobs for Supabase (ensure job_id and ISO dates)
+        import hashlib
         for job in jobs:
             job["is_active"] = True
-            job["job_id"] = job.get("externalId") or job.get("job_id")
+            
+            # Use stable content hash for job_id for cross-source deduplication
+            title = (job.get('title') or '').strip().lower()
+            company = (job.get('company') or '').strip().lower()
+            location = (job.get('location') or '').strip().lower()
+            unique_string = f"{title}|{company}|{location}"
+            job["job_id"] = hashlib.md5(unique_string.encode()).hexdigest()[:24]
             # Cleanup camelCase if present
             job.pop("isActive", None)
             job.pop("externalId", None)

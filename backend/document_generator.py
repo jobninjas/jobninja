@@ -222,7 +222,7 @@ def render_ats_resume_from_json(r: ResumeDataSchema) -> str:
     return "\n".join([line for line in out if line.strip()]).strip()
 
 
-async def generate_simple_tailored_resume(resume_text: str, job_description: str, job_title: str, company: str, byok_config: Optional[Dict] = None) -> str:
+async def generate_simple_tailored_resume(resume_text: str, job_description: str, job_title: str, company: str) -> str:
     """Integrated the user's Expert Resume Writer prompt for high-quality, compact output"""
     
     prompt = f"""
@@ -288,7 +288,7 @@ Now generate the resume from RAW_INPUT:
 """
     try:
         logger.info(f"Running user-requested 'Expert' prompt tailoring for {company}")
-        response = await unified_api_call(prompt, byok_config=byok_config, max_tokens=6000, model="llama-3.3-70b-versatile")
+        response = await unified_api_call(prompt, max_tokens=6000, model="llama-3.3-70b-versatile")
         
         if response and len(response.strip()) > 500:
             # Flatten to remove ALL excessive newlines
@@ -305,7 +305,7 @@ Now generate the resume from RAW_INPUT:
         return resume_text
 
 
-async def generate_optimized_resume_content(resume_text: str, job_description: str, analysis: Dict, byok_config: Optional[Dict] = None, target_score: int = 85) -> Optional[Dict]:
+async def generate_optimized_resume_content(resume_text: str, job_description: str, analysis: Dict, target_score: int = 85) -> Optional[Dict]:
     """Generate optimized resume content using AI - achieves target ATS score while preserving authenticity"""
     
     missing_skills = []
@@ -404,8 +404,8 @@ GENERATE THE {target_score}% OPTIMIZED RESUME JSON NOW:
 """
 
     try:
-        # Use unified call with BYOK support
-        response = await unified_api_call(prompt, byok_config=byok_config, max_tokens=8000, model="llama-3.1-8b-instant")
+        # Use unified call
+        response = await unified_api_call(prompt, max_tokens=8000, model="llama-3.1-8b-instant")
         if not response:
             return None
         
@@ -418,7 +418,7 @@ GENERATE THE {target_score}% OPTIMIZED RESUME JSON NOW:
         return None
 
 
-async def generate_cover_letter_content(resume_text: str, job_description: str, job_title: str, company: str, byok_config: Optional[Dict] = None) -> Optional[str]:
+async def generate_cover_letter_content(resume_text: str, job_description: str, job_title: str, company: str) -> Optional[str]:
     """Generate a cover letter using AI"""
     
     prompt = f"""
@@ -444,14 +444,14 @@ Return ONLY the cover letter text, no JSON or markdown.
 """
 
     try:
-        response = await unified_api_call(prompt, byok_config=byok_config)
+        response = await unified_api_call(prompt)
         return response
     except Exception as e:
         logger.error(f"Failed to generate cover letter: {e}")
         return None
 
 
-async def extract_compliance_facts(resume_text: str, byok_config: Optional[Dict] = None) -> Optional[Dict]:
+async def extract_compliance_facts(resume_text: str) -> Optional[Dict]:
     """Stage 1: Extract verbatim facts from resume into a strict JSON schema"""
     # Truncate resume text only if massive
     truncated_resume = resume_text[:15000]
@@ -491,7 +491,7 @@ Return JSON with this exact schema:
 """
     try:
         # Use 70B for extraction to ensure NO content loss (Step 1 Optimization Reverted for Stability)
-        response_text = await unified_api_call(prompt, byok_config=byok_config, max_tokens=3500, model="llama-3.3-70b-versatile")
+        response_text = await unified_api_call(prompt, max_tokens=3500, model="llama-3.3-70b-versatile")
         if not response_text:
             return {}
         
@@ -506,7 +506,6 @@ async def generate_expert_documents(
     resume_text: str, 
     job_description: str, 
     user_info: Optional[Dict] = None, 
-    byok_config: Optional[Dict] = None,
     selected_sections: Optional[List[str]] = None,
     selected_keywords: Optional[List[str]] = None
 ) -> Optional[Dict[str, Any]]:
@@ -518,12 +517,12 @@ async def generate_expert_documents(
     
     # Stage 1: Verbatim Fact Extraction
     logger.info("Stage 1: Extracting verbatim facts")
-    facts_json = await extract_compliance_facts(resume_text, byok_config=byok_config)
+    facts_json = await extract_compliance_facts(resume_text)
     
     if not facts_json or not facts_json.get("employers"):
         logger.warning("Fact extraction flaked - rescuing with simple tailoring")
-        simple_text = await generate_simple_tailored_resume(resume_text, job_description, "Target Role", "Target Company", byok_config=byok_config)
-        cl_text = await generate_cover_letter_content(resume_text, job_description, "Target Role", "Target Company", byok_config=byok_config)
+        simple_text = await generate_simple_tailored_resume(resume_text, job_description, "Target Role", "Target Company")
+        cl_text = await generate_cover_letter_content(resume_text, job_description, "Target Role", "Target Company")
         return {
             "alignment_highlights": "- Full resume generated via rescue mode",
             "ats_resume": simple_text, "detailed_cv": simple_text,
@@ -819,7 +818,7 @@ OUTPUT ONLY VALID JSON. NO PREAMBLE. NO CHAT. NO CONVERSATIONAL TEXT.
 """
 
     try:
-        response_text = await unified_api_call(resume_prompt, byok_config=byok_config, max_tokens=6000, model=drafting_model)
+        response_text = await unified_api_call(resume_prompt, max_tokens=6000, model=drafting_model)
         if not response_text:
             raise ValueError("Drafting failed")
             
@@ -989,8 +988,8 @@ OUTPUT ONLY VALID JSON. NO PREAMBLE. NO CHAT. NO CONVERSATIONAL TEXT.
             tf.write("ERROR:\\n" + traceback.format_exc() + "\\n\\n")
             tf.write("RAW JSON:\\n" + str(locals().get('json_text', 'No json_text')))
             
-        simple_text = await generate_simple_tailored_resume(resume_text, job_description, "Position", "Company", byok_config=byok_config)
-        cl_text = await generate_cover_letter_content(resume_text, job_description, "Position", "Company", byok_config=byok_config)
+        simple_text = await generate_simple_tailored_resume(resume_text, job_description, "Position", "Company")
+        cl_text = await generate_cover_letter_content(resume_text, job_description, "Position", "Company")
         return {
             "alignment_highlights": "- Tailored analysis complete",
             "ats_resume": simple_text, "detailed_cv": simple_text,

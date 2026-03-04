@@ -34,18 +34,6 @@ const Dashboard = () => {
   const [sideMenuOpen, setSideMenuOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
-  // BYOK state
-  const [byokProvider, setByokProvider] = useState('openai');
-  const [byokApiKey, setByokApiKey] = useState('');
-  const [showByokKey, setShowByokKey] = useState(false);
-  const [byokTesting, setByokTesting] = useState(false);
-  const [byokSaving, setByokSaving] = useState(false);
-  const [byokRemoving, setByokRemoving] = useState(false);
-  const [byokTestResult, setByokTestResult] = useState(null);
-  const [byokSaveResult, setByokSaveResult] = useState(null);
-  const [currentByokConfig, setCurrentByokConfig] = useState(null);
-  const [byokLoading, setByokLoading] = useState(true);
-
   const [kpis, setKpis] = useState({
     applicationsThisWeek: 0,
     totalJobsApplied: 0,
@@ -317,27 +305,6 @@ const Dashboard = () => {
     fetchProfile();
   }, [user?.email]);
 
-  // Fetch BYOK Status
-  const fetchBYOKStatus = async () => {
-    try {
-      const data = await apiCall('/byok/status');
-      setCurrentByokConfig(data);
-      if (data.configured) {
-        setByokProvider(data.provider);
-      }
-    } catch (error) {
-      console.error('Error fetching BYOK status:', error);
-    } finally {
-      setByokLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (activeTab === 'settings') {
-      fetchBYOKStatus();
-    }
-  }, [activeTab]);
-
   const handleLogout = () => {
     logout();
     navigate('/');
@@ -540,88 +507,6 @@ const Dashboard = () => {
       setSaveMessage('Failed to save profile. Please try again.');
     } finally {
       setIsSaving(false);
-    }
-  };
-
-  const handleTestKey = async () => {
-    if (!byokApiKey.trim()) {
-      setByokTestResult({ success: false, message: 'Please enter an API key' });
-      return;
-    }
-
-    setByokTesting(true);
-    setByokTestResult(null);
-
-    try {
-      const data = await apiCall('/byok/test', {
-        method: 'POST',
-        body: JSON.stringify({ provider: byokProvider, apiKey: byokApiKey })
-      });
-
-      setByokTestResult({ success: true, message: data.message });
-    } catch (error) {
-      console.error('BYOK Test Error:', error);
-      setByokTestResult({
-        success: false,
-        message: error.message && !error.message.includes('API Error')
-          ? `Network error: ${error.message}`
-          : error.message || 'Network error. Please try again.'
-      });
-    } finally {
-      setByokTesting(false);
-    }
-  };
-
-  const handleSaveKey = async () => {
-    if (!byokApiKey.trim()) {
-      setByokSaveResult({ success: false, message: 'Please enter an API key' });
-      return;
-    }
-
-    setByokSaving(true);
-    setByokSaveResult(null);
-
-    try {
-      const data = await apiCall('/byok/save', {
-        method: 'POST',
-        body: JSON.stringify({ provider: byokProvider, apiKey: byokApiKey })
-      });
-
-      setByokSaveResult({ success: true, message: data.message });
-      setByokApiKey(''); // Clear the key from state
-      await fetchBYOKStatus(); // Refresh status
-    } catch (error) {
-      console.error('BYOK Save Error:', error);
-      setByokSaveResult({
-        success: false,
-        message: error.message || 'Network error. Please try again.'
-      });
-    } finally {
-      setByokSaving(false);
-    }
-  };
-
-  const handleRemoveKey = async () => {
-    if (!window.confirm('Are you sure you want to remove your API key? This will disable BYOK mode.')) {
-      return;
-    }
-
-    setByokRemoving(true);
-
-    try {
-      const data = await apiCall('/byok/remove', { method: 'DELETE' });
-
-      setByokSaveResult({ success: true, message: data.message });
-      setByokApiKey('');
-      await fetchBYOKStatus();
-    } catch (error) {
-      console.error('BYOK Remove Error:', error);
-      setByokSaveResult({
-        success: false,
-        message: error.message || 'Network error. Please try again.'
-      });
-    } finally {
-      setByokRemoving(false);
     }
   };
 
@@ -2136,116 +2021,6 @@ const Dashboard = () => {
 
             {activeTab === 'settings' && (
               <div className="space-y-6">
-                {/* AI Integration (BYOK) - Placed at the top for immediate accessibility */}
-                <Card className="glass-card">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Key className="w-5 h-5 text-blue-600" />
-                      AI Integration (BYOK)
-                    </CardTitle>
-                    <p className="text-sm text-gray-500">
-                      Use your own API key for unlimited AI applications. Keys are stored encrypted.
-                    </p>
-                  </CardHeader>
-                  <CardContent className="space-y-6">
-                    {/* Current BYOK Status */}
-                    {currentByokConfig?.configured && (
-                      <div className="p-4 bg-green-50 border border-green-100 rounded-lg flex items-center justify-between">
-                        <div>
-                          <p className="font-medium text-green-800 flex items-center gap-2">
-                            <CheckCircle className="w-4 h-4" /> BYOK Mode Active
-                          </p>
-                          <p className="text-xs text-green-700 capitalize">Provider: {currentByokConfig.provider}</p>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                          onClick={handleRemoveKey}
-                          disabled={byokRemoving}
-                        >
-                          {byokRemoving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4 mr-2" />}
-                          Remove
-                        </Button>
-                      </div>
-                    )}
-
-                    <div className="space-y-4">
-                      <div>
-                        <Label>AI Provider</Label>
-                        <Select
-                          value={byokProvider}
-                          onValueChange={setByokProvider}
-                          disabled={currentByokConfig?.configured}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select Provider" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="openai">OpenAI (GPT-4o Mini)</SelectItem>
-                            <SelectItem value="google">Google Gemini 1.5 Flash</SelectItem>
-                            <SelectItem value="anthropic">Anthropic Claude 3 Haiku</SelectItem>
-                            <SelectItem value="groq">Groq (Llama 3)</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div>
-                        <Label>API Key</Label>
-                        <div className="relative">
-                          <Input
-                            type={showByokKey ? 'text' : 'password'}
-                            value={byokApiKey}
-                            onChange={(e) => setByokApiKey(e.target.value)}
-                            placeholder={`Enter your ${byokProvider} API key`}
-                            className="pr-10"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setShowByokKey(!showByokKey)}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500"
-                          >
-                            {showByokKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                          </button>
-                        </div>
-                      </div>
-
-                      {byokTestResult && (
-                        <div className={`p-3 rounded-md text-sm flex items-center gap-2 ${byokTestResult.success ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
-                          {byokTestResult.success ? <CheckCircle className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
-                          {byokTestResult.message}
-                        </div>
-                      )}
-
-                      {byokSaveResult && (
-                        <div className={`p-3 rounded-md text-sm flex items-center gap-2 ${byokSaveResult.success ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
-                          {byokSaveResult.success ? <CheckCircle className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
-                          {byokSaveResult.message}
-                        </div>
-                      )}
-
-                      <div className="flex gap-3">
-                        <Button
-                          variant="outline"
-                          className="flex-1"
-                          onClick={handleTestKey}
-                          disabled={byokTesting || !byokApiKey.trim()}
-                        >
-                          {byokTesting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Shield className="w-4 h-4 mr-2" />}
-                          Test Key
-                        </Button>
-                        <Button
-                          className="flex-1 bg-green-600 hover:bg-green-700"
-                          onClick={handleSaveKey}
-                          disabled={byokSaving || !byokApiKey.trim()}
-                        >
-                          {byokSaving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
-                          Save Key
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
                 <Card>
                   <CardHeader>
                     <CardTitle>Account Settings</CardTitle>

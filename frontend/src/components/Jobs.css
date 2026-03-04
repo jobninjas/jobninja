@@ -54,71 +54,30 @@
 
 /* Filters Section */
 .jobs-filters-section {
-  padding: 0 2rem;
-  margin-top: -1rem;
-}
-
-.filters-card {
-  padding: 1.5rem;
-  border: 1px solid var(--border-light);
-  background: white;
-  border-radius: 16px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
-  transition: box-shadow 0.3s ease;
-}
-
-.filters-card:hover {
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
-}
-
-.filters-grid {
-  display: grid;
-  grid-template-columns: 2fr 1fr 1fr 1fr;
-  gap: 1.25rem;
-  align-items: end;
-}
-
-.filter-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+  padding: 0;
+  width: 100%;
 }
 
 .search-input-wrapper {
-  position: relative;
+  @apply relative;
 }
 
-.search-icon {
-  position: absolute;
-  left: 0.75rem;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 18px;
-  height: 18px;
-  color: var(--text-muted);
+.filter-pill-group {
+  @apply flex items-center;
 }
 
-.search-input {
-  padding-left: 2.5rem;
-}
-
-.filters-actions {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 1rem;
-  padding-top: 1rem;
-  border-top: 1px solid var(--border-light);
+.filter-pill-select {
+  @apply min-w-[140px];
 }
 
 .filter-count-text {
-  font-size: 0.875rem;
-  color: var(--text-muted);
+  @apply text-sm font-semibold text-slate-400;
 }
 
 /* Job List Section */
 .job-list-section {
-  padding: 2rem;
+  padding: 0;
+  width: 100%;
 }
 
 /* Loading State */

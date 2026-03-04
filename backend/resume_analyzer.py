@@ -208,25 +208,10 @@ async def call_google_api(prompt: str, api_key: str, max_tokens: int = 4000) -> 
         logger.error(f"Error calling Google Gemini API: {e}")
         return None
 
-async def unified_api_call(prompt: str, byok_config: Optional[Dict] = None, max_tokens: int = 4000, model: str = None) -> Optional[str]:
+async def unified_api_call(prompt: str, max_tokens: int = 4000, model: str = None) -> Optional[str]:
     """
-    Unified AI call point. Uses BYOK if provided, otherwise falls back to internal Groq pooling.
+    Unified AI call point. Falls back to internal Groq pooling.
     """
-    if byok_config and byok_config.get('api_key'):
-        provider = byok_config.get('provider', '').lower()
-        api_key = byok_config['api_key']
-        
-        logger.info(f"Using BYOK for request (Provider: {provider})")
-        
-        if provider == 'openai':
-            return await call_openai_api(prompt, api_key, max_tokens)
-        elif provider == 'anthropic':
-            return await call_anthropic_api(prompt, api_key, max_tokens)
-        elif provider == 'google':
-            return await call_google_api(prompt, api_key, max_tokens)
-        elif provider == 'groq':
-            return await call_groq_api(prompt, max_tokens=max_tokens, model=model, api_key=api_key)
-            
     # Fallback to internal Groq key pooling
     return await call_groq_api(prompt, max_tokens=max_tokens, model=model)
 
@@ -260,20 +245,19 @@ def clean_json_response(text: str) -> str:
     return text
 
 
-async def analyze_resume(resume_text: str, job_description: str, byok_config: Optional[Dict] = None, target_score: int = 85) -> Dict[str, Any]:
+async def analyze_resume(resume_text: str, job_description: str, target_score: int = 85) -> Dict[str, Any]:
     """
-    Analyze a resume against a job description using Groq AI or BYOK
+    Analyze a resume against a job description using Groq AI
     
     Args:
         resume_text: The extracted text from the resume
         job_description: The job description text
-        byok_config: Optional user API key configuration
         target_score: User's desired ATS score (e.g. 90, 95, 100)
         
     Returns:
         Analysis results including match score, skills comparison, and suggestions
     """
-    if not GROQ_API_KEYS and not byok_config and not os.environ.get('GROQ_API_KEY'):
+    if not GROQ_API_KEYS and not os.environ.get('GROQ_API_KEY'):
         return {
             "error": "GROQ_API_KEY not configured. Please add it to environment variables.",
             "matchScore": 0
@@ -379,7 +363,7 @@ Important:
 
     try:
         # Use unified call with fallback support
-        response_text = await unified_api_call(prompt, byok_config=byok_config, model="llama-3.1-8b-instant")
+        response_text = await unified_api_call(prompt, model="llama-3.1-8b-instant")
         
         if not response_text:
             logger.warning("Resume analysis failed (rate limit). Using basic fallback.")
@@ -411,18 +395,17 @@ Important:
         }
 
 
-async def extract_resume_data(resume_text: str, byok_config: Optional[Dict] = None) -> Dict[str, Any]:
+async def extract_resume_data(resume_text: str) -> Dict[str, Any]:
     """
-    Extract structured data from resume text using Groq AI or BYOK
+    Extract structured data from resume text using Groq AI
     
     Args:
         resume_text: The extracted text from the resume
-        byok_config: Optional user API key configuration
         
     Returns:
         Structured resume data
     """
-    if not GROQ_API_KEYS and not byok_config:
+    if not GROQ_API_KEYS:
         return {"error": "GROQ_API_KEY not configured"}
     
     prompt = f"""
@@ -498,8 +481,8 @@ Return ONLY the JSON, no other text.
 """
 
     try:
-        # Use high-speed model / BYOK for extraction
-        response_text = await unified_api_call(prompt, byok_config=byok_config, max_tokens=1000, model="llama-3.1-8b-instant")
+        # Use high-speed model for extraction
+        response_text = await unified_api_call(prompt, max_tokens=1000, model="llama-3.1-8b-instant")
         if not response_text:
             return {"error": "Failed to get response from AI"}
         json_text = clean_json_response(response_text)
@@ -510,19 +493,18 @@ Return ONLY the JSON, no other text.
         return {"error": str(e)}
 
 
-async def generate_optimized_resume(resume_text: str, job_description: str, byok_config: Optional[Dict] = None) -> Dict[str, Any]:
+async def generate_optimized_resume(resume_text: str, job_description: str) -> Dict[str, Any]:
     """
     Generate suggestions for an optimized resume tailored to the job
     
     Args:
         resume_text: The original resume text
         job_description: The target job description
-        byok_config: Optional user API key configuration
         
     Returns:
         Optimized resume suggestions
     """
-    if not GROQ_API_KEYS and not byok_config:
+    if not GROQ_API_KEYS:
         return {"error": "GROQ_API_KEY not configured"}
     
     prompt = f"""
@@ -552,7 +534,7 @@ Return ONLY the JSON, no other text.
 """
 
     try:
-        response_text = await unified_api_call(prompt, byok_config=byok_config)
+        response_text = await unified_api_call(prompt)
         if not response_text:
             return {"error": "Failed to get response from AI"}
         json_text = clean_json_response(response_text)

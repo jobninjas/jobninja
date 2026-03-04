@@ -6,27 +6,21 @@
 }
 
 .dashboard-top-nav {
-    background: white;
-    border-bottom: 1px solid #e2e8f0;
-    height: 64px;
+    background: var(--bg-sidebar);
+    border-bottom: 1px solid var(--border-light);
+    height: 56px;
     display: flex;
     align-items: center;
-    justify-content: flex-start;
-    /* Align to start (left) */
     position: sticky;
     top: 0;
     z-index: 50;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .dashboard-nav-container {
     width: 100%;
     max-width: 100%;
-    /* Full width */
-    /* Increased max-width */
     display: flex;
     align-items: center;
-    /* Vertically center */
     padding: 0 1.5rem;
 }
 
@@ -49,49 +43,65 @@
 }
 
 .logo-text-static {
-    font-size: 1.25rem;
-    font-weight: 700;
-    color: #1e293b;
-    /* Match SideMenu text color */
-    letter-spacing: -0.025em;
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--jobninjas-primary);
+    letter-spacing: -0.8px;
     white-space: nowrap;
 }
 
-/* BrandLogo component styles usually handle the text font, 
-   but we ensure it's visible here */
 .logo-text {
     display: flex !important;
     align-items: center;
 }
 
 .dashboard-layout {
-    display: grid;
-    grid-template-columns: 260px 1fr 320px;
-    /* Left Sidebar | Main | Right Sidebar */
+    display: block;
+    /* Switch from grid to block for fixed positioning logic */
     flex: 1;
-    /* Take remaining height */
-    background-color: #f8fafc;
-    align-items: start;
-    /* Ensure columns start at top */
+    background-color: var(--bg-main);
+    position: relative;
 }
 
-/* Ensure Sidebars subtract header height */
-.dashboard-sidebar-left,
-.dashboard-sidebar-right {
-    top: 73px;
-    /* Approximate header height */
-    height: calc(100vh - 73px);
-}
-
-/* Left Sidebar Wrapper */
+/* Sidebars - FIXED AND LOCKED */
 .dashboard-sidebar-left {
+    position: fixed;
+    left: 0;
+    top: 56px;
+    width: 210px;
+    height: calc(100vh - 56px);
     background-color: #fff;
-    border-right: 1px solid #e2e8f0;
-    position: sticky;
-    top: 0;
-    height: 100vh;
+    border-right: 1px solid var(--border-light);
     overflow-y: auto;
-    z-index: 20;
+    z-index: 40;
+    scrollbar-width: none;
+}
+
+.dashboard-sidebar-right {
+    position: fixed;
+    right: 0;
+    top: 56px;
+    width: 280px;
+    height: calc(100vh - 56px);
+    background-color: #fff;
+    border-left: 1px solid #e2e8f0;
+    overflow-y: auto;
+    z-index: 40;
+    scrollbar-width: none;
+}
+
+.dashboard-sidebar-left::-webkit-scrollbar,
+.dashboard-sidebar-right::-webkit-scrollbar {
+    display: none;
+}
+
+/* Main Content - SCROLLS NORMALLY WITH PAGE */
+.dashboard-main {
+    margin-left: 210px;
+    margin-right: 280px;
+    padding: 1rem;
+    min-height: calc(100vh - 56px);
+    background-color: var(--bg-main);
 }
 
 /* Force SideMenu to look static inside the wrapper */
@@ -109,49 +119,23 @@
     display: none !important;
 }
 
-/* Main Content */
-.dashboard-main {
-    padding: 0;
-    overflow-x: hidden;
-    zoom: 0.90;
-}
-
-/* Right Sidebar */
-.dashboard-sidebar-right {
-    background-color: #fff;
-    border-left: 1px solid #e2e8f0;
-    position: sticky;
-    top: 0;
-    height: 100vh;
-    z-index: 20;
-}
-
 /* Responsive Breakpoints */
 @media (max-width: 1200px) {
-
-    /* Hide Right Sidebar on medium screens */
-    .dashboard-layout {
-        grid-template-columns: 240px 1fr;
-    }
-
     .dashboard-sidebar-right {
         display: none;
+    }
+
+    .dashboard-main {
+        margin-right: 0;
     }
 }
 
 @media (max-width: 768px) {
-
-    /* Mobile: Single column */
-    .dashboard-layout {
-        display: block;
-    }
-
     .dashboard-sidebar-left {
         display: none;
-        /* Use mobile drawer trigger instead */
     }
 
-    .dashboard-sidebar-right {
-        display: none;
+    .dashboard-main {
+        margin-left: 0;
     }
 }

@@ -305,15 +305,16 @@ class JobAggregator:
                 job['created_at'] = now_iso
                 job['updated_at'] = now_iso
                 
-                # Determine external ID (job_id in Supabase)
-                ext_id = job.get('externalId') or job.get('job_id')
-                if not ext_id:
-                    # Fallback unique ID
-                    import hashlib
-                    unique_string = f"{job.get('source','gen')}-{job.get('title','')}-{job.get('company','')}".lower()
-                    ext_id = hashlib.md5(unique_string.encode()).hexdigest()[:16]
+                # Determine stable job_id for cross-source deduplication
+                import hashlib
+                title = (job.get('title') or '').strip().lower()
+                company = (job.get('company') or '').strip().lower()
+                location = (job.get('location') or '').strip().lower()
                 
-                job['job_id'] = ext_id
+                # Create a stable content hash (title + company + location)
+                # This ensures the same job from different sources results in a single entry
+                unique_string = f"{title}|{company}|{location}"
+                job['job_id'] = hashlib.md5(unique_string.encode()).hexdigest()[:24]
                 
                 # Check for existing job to perform smart update
                 existing = SupabaseService.get_job_by_external_id(ext_id)

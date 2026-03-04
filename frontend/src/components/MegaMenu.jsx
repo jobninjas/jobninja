@@ -155,13 +155,6 @@ const MegaMenu = () => {
                 <Briefcase className="w-4 h-4" />
                 Job Board
             </button>
-            <button
-                className="menu-trigger nav-button"
-                onClick={() => navigate('/human-ninja')}
-            >
-                <Users className="w-4 h-4" />
-                Human Ninjas
-            </button>
         </nav>
     );
 };

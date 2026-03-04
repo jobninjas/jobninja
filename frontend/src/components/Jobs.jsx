@@ -302,85 +302,72 @@ const Jobs = () => {
         )}
 
         {/* Filters Section */}
-        <section className="jobs-filters-section">
-          <div className="container">
-            <Card className="filters-card">
-              <div className="filters-grid">
-                <div className="filter-group">
-                  <Label>Keywords</Label>
-                  <div className="search-input-wrapper">
-                    <Search className="search-icon" />
-                    <Input
-                      placeholder="Job title, skills, or company..."
-                      value={searchKeyword}
-                      onChange={(e) => setSearchKeyword(e.target.value)}
-                      className="search-input"
-                    />
-                  </div>
-                </div>
+        {/* Filters Section */}
+        <section className="jobs-filters-section mb-4">
+          <div className="flex flex-col gap-3">
+            {/* Search Bar - Prompt Style (Ultra-Compact) */}
+            <div className="relative group">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 group-focus-within:text-emerald-500 transition-colors">
+                <Search className="w-3.5 h-3.5" />
+              </div>
+              <input
+                type="text"
+                placeholder="Search jobs..."
+                value={searchKeyword}
+                onChange={(e) => setSearchKeyword(e.target.value)}
+                className="w-full pl-9 pr-3 py-2.5 bg-white border border-slate-200 rounded-lg shadow-sm focus:ring-1 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all text-sm font-medium placeholder:text-slate-400"
+              />
+            </div>
 
-                <div className="filter-group">
-                  <Label>Country/Region</Label>
-                  <Select value="us" disabled>
-                    <SelectTrigger>
-                      <SelectValue placeholder="🇺🇸 USA Only" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="us">🇺🇸 USA Only</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="filter-group">
-                  <Label>City/State</Label>
-                  <Input
-                    placeholder="City, state, or remote..."
-                    value={locationFilter}
-                    onChange={(e) => setLocationFilter(e.target.value)}
-                  />
-                </div>
-
-                <div className="filter-group">
-                  <Label>Visa Sponsorship</Label>
-                  <Select value={sponsorshipFilter} onValueChange={setSponsorshipFilter}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="All jobs" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Jobs</SelectItem>
-                      <SelectItem value="visa-friendly">Visa-friendly / Sponsoring</SelectItem>
-                      <SelectItem value="no-sponsorship">No Sponsorship Required</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="filter-group">
-                  <Label>Work Type</Label>
-                  <Select value={workTypeFilter} onValueChange={setWorkTypeFilter}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="All types" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Types</SelectItem>
-                      <SelectItem value="remote">Remote</SelectItem>
-                      <SelectItem value="hybrid">Hybrid</SelectItem>
-                      <SelectItem value="onsite">On-site</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+            {/* Pill Filters Row */}
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="filter-pill-group">
+                <Input
+                  placeholder="Location"
+                  value={locationFilter}
+                  onChange={(e) => setLocationFilter(e.target.value)}
+                  className="h-8 px-3 rounded-md border-slate-200 focus:border-emerald-500 w-32 text-xs"
+                />
               </div>
 
-              {hasActiveFilters && (
-                <div className="filters-actions">
-                  <span className="filter-count-text">
-                    {pagination.total.toLocaleString()} job{pagination.total !== 1 ? 's' : ''} found
-                  </span>
-                  <Button variant="ghost" size="sm" onClick={clearFilters}>
-                    <X className="w-4 h-4 mr-1" /> Clear filters
+              <div className="filter-pill-select">
+                <Select value={workTypeFilter} onValueChange={setWorkTypeFilter}>
+                  <SelectTrigger className="h-8 px-3 rounded-md border-slate-200 bg-white text-xs">
+                    <SelectValue placeholder="Work Type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Types</SelectItem>
+                    <SelectItem value="remote">Remote</SelectItem>
+                    <SelectItem value="hybrid">Hybrid</SelectItem>
+                    <SelectItem value="onsite">On-site</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="filter-pill-select">
+                <Select value={sponsorshipFilter} onValueChange={setSponsorshipFilter}>
+                  <SelectTrigger className="h-8 px-3 rounded-md border-slate-200 bg-white text-xs">
+                    <SelectValue placeholder="Sponsorship" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Any Sponsorship</SelectItem>
+                    <SelectItem value="visa-friendly">Visa Sponsoring</SelectItem>
+                    <SelectItem value="no-sponsorship">No Sponsorship</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="ml-auto flex items-center gap-2">
+                <span className="text-[10px] font-bold text-slate-400">
+                  {pagination.total.toLocaleString()} total
+                </span>
+                {hasActiveFilters && (
+                  <Button variant="ghost" size="sm" onClick={clearFilters} className="text-emerald-600 h-7 px-2 text-[10px] font-bold">
+                    <X className="w-3 h-3 mr-1" /> Clear
                   </Button>
-                </div>
-              )}
-            </Card>
+                )}
+              </div>
+            </div>
           </div>
         </section>
 
@@ -410,7 +397,7 @@ const Jobs = () => {
             {/* Job List */}
             {!isLoading && !error && (
               <>
-                <div className="job-list space-y-4">
+                <div className="job-list space-y-1.5">
                   {displayJobs.map(job => (
                     <JobCardOrion key={job.id} job={job} onAskNova={handleAskNova} />
                   ))}

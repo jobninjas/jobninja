@@ -73,9 +73,7 @@ export const PRICING = {
       '1 Job Application per day',
       '1 Auto Fill per day',
       'Store 1 base resume',
-      '✨ Use it for free unlimited with your own API key',
     ],
-    byokNote: 'Your usage is billed by your provider. Keys are stored encrypted.',
   },
   AI_MONTHLY: {
     id: 'ai-monthly',

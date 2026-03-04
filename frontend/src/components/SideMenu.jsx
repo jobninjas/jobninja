@@ -38,11 +38,9 @@ const SideMenu = ({ isOpen, onClose, isStatic = false }) => {
   };
 
   const menuItems = [
-    { icon: Home, label: 'Home', path: '/' },
     { icon: ScanLine, label: 'Resume Scanner', path: '/scanner', highlight: true },
     { icon: Briefcase, label: 'Jobs / Job Search', path: '/jobs' },
     { icon: Bot, label: 'AI Ninja', path: '/ai-ninja' },
-    { icon: UserCheck, label: 'Human Ninja', path: '/human-ninja' },
     { icon: ClipboardList, label: 'Application Tracker', path: '/dashboard', requiresAuth: true },
     { icon: FileText, label: 'My Resumes', path: '/resumes', requiresAuth: true },
     { icon: Mic, label: 'Interview Prep', path: '/interview-prep' },
@@ -53,7 +51,6 @@ const SideMenu = ({ isOpen, onClose, isStatic = false }) => {
 
   const accountItems = [
     { icon: User, label: 'My Profile', path: '/dashboard?tab=profile', requiresAuth: true },
-    { icon: Bot, label: 'AI Settings (BYOK)', path: '/dashboard?tab=settings', requiresAuth: true },
   ];
 
   return (

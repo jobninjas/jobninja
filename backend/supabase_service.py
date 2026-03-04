@@ -87,6 +87,7 @@ class SupabaseService:
         offset: int = 0, 
         search: Optional[str] = None,
         job_type: Optional[str] = None,
+        location: Optional[str] = None,
         visa: bool = False,
         fresh_only: bool = True
     ) -> List[Dict[str, Any]]:
@@ -112,6 +113,10 @@ class SupabaseService:
             # Type filter
             if job_type and job_type != "all":
                 query = query.ilike("job_type", f"%{job_type}%")
+                
+            # Location filter
+            if location:
+                query = query.ilike("location", f"%{location}%")
 
             response = query\
                 .order("created_at", desc=True)\
@@ -126,6 +131,7 @@ class SupabaseService:
     def get_jobs_count(
         search: Optional[str] = None,
         job_type: Optional[str] = None,
+        location: Optional[str] = None,
         visa: bool = False,
         fresh_only: bool = True
     ) -> int:
@@ -145,6 +151,8 @@ class SupabaseService:
                 query = query.contains("categories", ["sponsoring"])
             if job_type and job_type != "all":
                 query = query.ilike("job_type", f"%{job_type}%")
+            if location:
+                query = query.ilike("location", f"%{location}%")
 
             response = query.limit(0).execute()
             return response.count if response.count is not None else 0
@@ -1217,52 +1225,6 @@ class SupabaseService:
             logger.error(f"Error deleting user: {e}")
             return False
 
-    # ----------------------------------------------------------------
-    # BYOK KEYS
-    # ----------------------------------------------------------------
-
-    @staticmethod
-    def save_byok_key(user_email: str, provider: str, encrypted_key: Dict[str, Any]) -> bool:
-        """Save or update a BYOK key in Supabase"""
-        client = SupabaseService.get_client()
-        if not client: return False
-        try:
-            from datetime import datetime
-            data = {
-                "user_email": user_email,
-                "provider": provider,
-                "encrypted_key": encrypted_key,
-                "updated_at": datetime.utcnow().isoformat(),
-            }
-            client.table("byok_keys").upsert(data, on_conflict="user_email").execute()
-            return True
-        except Exception as e:
-            logger.error(f"Error saving BYOK key: {e}")
-            return False
-
-    @staticmethod
-    def get_byok_key(user_email: str) -> Optional[Dict[str, Any]]:
-        """Get a user's BYOK key config from Supabase"""
-        client = SupabaseService.get_client()
-        if not client: return None
-        try:
-            response = client.table("byok_keys").select("*").eq("user_email", user_email).execute()
-            return response.data[0] if response.data else None
-        except Exception as e:
-            logger.error(f"Error fetching BYOK key: {e}")
-            return None
-
-    @staticmethod
-    def delete_byok_key(user_email: str) -> bool:
-        """Delete a user's BYOK key from Supabase"""
-        client = SupabaseService.get_client()
-        if not client: return False
-        try:
-            client.table("byok_keys").delete().eq("user_email", user_email).execute()
-            return True
-        except Exception as e:
-            logger.error(f"Error deleting BYOK key: {e}")
-            return False
 
     # ----------------------------------------------------------------
     # WAITLIST

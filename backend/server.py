@@ -76,15 +76,8 @@ except (ImportError, ModuleNotFoundError) as e:
     RAZORPAY_PLANS = {}
     RAZORPAY_PLANS_USD = {}
 from scraper_service import scrape_job_description
-from byok_crypto import validate_master_key, encrypt_api_key, decrypt_api_key
 from job_sync_service import JobSyncService
 from interview_service import InterviewOrchestrator
-from byok_validators import (
-    validate_openai_key,
-    validate_google_key,
-    validate_anthropic_key,
-    validate_api_key_format,
-)
 from openai import AsyncOpenAI
 from supabase_service import SupabaseService
 # Ensure parser and enrichment are available
@@ -408,7 +401,7 @@ async def check_and_increment_daily_usage(user_email: str, usage_type: str, limi
     Check if user has reached their daily limit for a specific usage type and increment if not.
     Uses Supabase for storage.
     """
-    if limit == "Unlimited" or limit == "Unlimited (BYOK)":
+    if limit == "Unlimited":
         return True
         
     try:
@@ -431,32 +424,6 @@ async def check_and_increment_daily_usage(user_email: str, usage_type: str, limi
         return True
 
 
-async def get_decrypted_byok_key(email: str) -> dict:
-    """Helper to get and decrypt user's BYOK key if it exists"""
-    if not email:
-        return {}
-    
-    try:
-        byok_row = SupabaseService.get_byok_key(email)
-        if not byok_row or not byok_row.get("encrypted_key"):
-            return {}
-        
-        provider = byok_row.get("provider")
-        encrypted_key = byok_row["encrypted_key"]
-        
-        if not encrypted_key or not isinstance(encrypted_key, dict):
-            return {}
-            
-        from byok_crypto import decrypt_api_key
-        api_key = decrypt_api_key(
-            encrypted_key['ciphertext'],
-            encrypted_key['iv'],
-            encrypted_key['tag']
-        )
-        return {"provider": provider, "api_key": api_key}
-    except Exception as e:
-        logger.error(f"BYOK key lookup error for {email}: {e}")
-        return {}
 
 
 
@@ -2394,184 +2361,6 @@ async def calculate_job_match_score(
 
 
 
-# ============ BYOK (Bring Your Own Key) API ============
-
-
-@api_router.post("/byok/test")
-@limiter.limit("10/minute")
-async def test_byok_key(request: Request, user: dict = Depends(get_current_user)):
-    """
-    Test a BYOK API key without saving it.
-    Makes a minimal API call to verify the key works.
-    """
-    try:
-        data = await request.json()
-        provider = data.get("provider", "").lower()
-        api_key = data.get("apiKey", "").strip()
-
-        if not provider or not api_key:
-            raise HTTPException(
-                status_code=400, detail="Provider and apiKey are required"
-            )
-
-        if provider not in ["openai", "google", "anthropic"]:
-            raise HTTPException(
-                status_code=400,
-                detail="Invalid provider. Must be: openai, google, or anthropic",
-            )
-
-        # Basic format validation
-        is_valid_format, format_msg = validate_api_key_format(provider, api_key)
-        if not is_valid_format:
-            raise HTTPException(status_code=400, detail=format_msg)
-
-        # Test with actual provider API
-        if provider == "openai":
-            is_valid, message = await validate_openai_key(api_key)
-        elif provider == "google":
-            is_valid, message = await validate_google_key(api_key)
-        elif provider == "anthropic":
-            is_valid, message = await validate_anthropic_key(api_key)
-
-        if not is_valid:
-            raise HTTPException(status_code=400, detail=message)
-
-        return {"success": True, "message": message}
-
-    except HTTPException as e:
-        logger.warning(f"HTTP error testing BYOK key: {e.detail}")
-        raise
-    except Exception as e:
-        import traceback
-
-        error_details = traceback.format_exc()
-        logger.error(f"Critical error testing BYOK key: {str(e)}\n{error_details}")
-        raise HTTPException(
-            status_code=500, detail=f"Server error during testing: {str(e)}"
-        )
-
-
-@api_router.post("/byok/save")
-@limiter.limit("5/minute")
-async def save_byok_key(request: Request, user: dict = Depends(get_current_user)):
-    """
-    Save an encrypted BYOK API key for the user.
-    Tests the key first, then encrypts and stores it.
-    """
-    try:
-        data = await request.json()
-        provider = data.get("provider", "").lower()
-        api_key = data.get("apiKey", "").strip()
-
-        if not provider or not api_key:
-            raise HTTPException(
-                status_code=400, detail="Provider and apiKey are required"
-            )
-
-        if provider not in ["openai", "google", "anthropic"]:
-            raise HTTPException(
-                status_code=400,
-                detail="Invalid provider. Must be: openai, google, or anthropic",
-            )
-
-        # Basic format validation
-        is_valid_format, format_msg = validate_api_key_format(provider, api_key)
-        if not is_valid_format:
-            raise HTTPException(status_code=400, detail=format_msg)
-
-        # Test with actual provider API
-        if provider == "openai":
-            is_valid, message = await validate_openai_key(api_key)
-        elif provider == "google":
-            is_valid, message = await validate_google_key(api_key)
-        elif provider == "anthropic":
-            is_valid, message = await validate_anthropic_key(api_key)
-
-        if not is_valid:
-            raise HTTPException(status_code=400, detail=message)
-
-        # Encrypt the API key
-        encrypted_data = encrypt_api_key(api_key)
-
-        # Store in database
-        byok_doc = {
-            "user_id": user.get("email"),
-            "provider": provider,
-            "api_key_encrypted": encrypted_data["ciphertext"],
-            "api_key_iv": encrypted_data["iv"],
-            "api_key_tag": encrypted_data["tag"],
-            "is_enabled": True,
-            "created_at": datetime.utcnow(),
-            "updated_at": datetime.utcnow(),
-            "last_tested_at": datetime.utcnow(),
-        }
-
-        # Upsert (update if exists, insert if not)
-        # Save BYOK key to Supabase
-        SupabaseService.save_byok_key(user.get("email"), provider, encrypted)
-
-        # Update user's plan to free_byok in Supabase
-        SupabaseService.update_user_by_email(
-            user.get("email"),
-            {"plan": "free_byok"},
-        )
-
-        logger.info(f"BYOK key saved for user: {user.get('email')} (provider: {provider})")
-
-        return {"success": True, "message": "API key saved successfully"}
-
-    except HTTPException as e:
-        logger.warning(f"HTTP error saving BYOK key: {e.detail}")
-        raise
-    except Exception as e:
-        import traceback
-        error_details = traceback.format_exc()
-        logger.error(f"Critical error saving BYOK key: {str(e)}\n{error_details}")
-        raise HTTPException(
-            status_code=500, detail=f"Server error during save: {str(e)}"
-        )
-
-
-
-@api_router.get("/byok/status")
-async def get_byok_status(user: dict = Depends(get_current_user)):
-    """
-    Get current BYOK configuration status for the user.
-    Does NOT return the actual API key.
-    """
-    try:
-        byok_config = SupabaseService.get_byok_key(user.get("email"))
-
-        if not byok_config:
-            return {"configured": False, "provider": None, "is_enabled": False}
-
-        return {
-            "configured": True,
-            "provider": byok_config.get("provider"),
-            "is_enabled": True,
-        }
-
-    except Exception as e:
-        logger.error(f"Error getting BYOK status: {str(e)}")
-        raise HTTPException(status_code=500, detail="Failed to get BYOK status")
-
-
-
-@api_router.delete("/byok/remove")
-async def remove_byok_key(user: dict = Depends(get_current_user)):
-    """
-    Remove BYOK configuration for the user.
-    """
-    try:
-        SupabaseService.delete_byok_key(user.get("email"))
-        SupabaseService.update_user_by_email(user.get("email"), {"plan": "free"})
-        logger.info(f"BYOK key removed for user: {user.get('email')}")
-        return {"success": True, "message": "API key removed successfully"}
-    except Exception as e:
-        logger.error(f"Error removing BYOK key: {str(e)}")
-        raise HTTPException(status_code=500, detail="Failed to remove API key")
-
-
 
 # ============ GOOGLE SHEETS INTEGRATION ============
 
@@ -2719,6 +2508,7 @@ async def create_dodo_checkout(request: Request, user: dict = Depends(get_curren
         logger.info(f"Received dodo-checkout request: {data}")
         plan_id = data.get("plan_id")
         DODO_PRICING = {
+            'ai-monthly': 'pdt_0NZUIq5YeOwMHJLTzi24o',
             'ai-yearly': 'pdt_0NZdskVVIhaRIFib0pvKX',
             'ai-pro-plus': 'pdt_0NZdskeTK6brGEax0h2cX',
             'ai-pro-max': 'pdt_0NZdskimkgkJlRKi7MK0g'
@@ -2746,7 +2536,6 @@ async def create_dodo_checkout(request: Request, user: dict = Depends(get_curren
         
         # 2. Unified Checkout Session Creation
         checkout_payload = {
-            "billing_address": {"country": "US", "city": "NY", "state": "NY", "street": "Broadway", "zipcode": "10001"},
             "product_cart": [{"product_id": DODO_PRICING[plan_id], "quantity": 1}],
             "customer": {"customer_id": customer_id} if customer_id else {"email": user.get("email"), "name": user.get("name", "User")},
             "subscription_data": {"trial_period_days": 7},
@@ -2822,29 +2611,65 @@ async def dodo_webhook(request: Request):
                 plan_id = "ai-pro-plus"
             elif product_id == 'pdt_0NZdskimkgkJlRKi7MK0g':
                 plan_id = "ai-pro-max"
+            elif product_id == 'pdt_0NZUIq5YeOwMHJLTzi24o':
+                plan_id = "ai-monthly"
                 
+            status = event_data.get("status")
+            if not status:
+                # Try to get from subscription object if nested
+                status = event_data.get("subscription", {}).get("status")
+            
+            # If dodo doesn't explicitly send "trialing", we check if it's a new subscription with trial
+            # In create_dodo_checkout we set trial_period_days: 7
+            is_trial = (status == "trialing")
+            
+            subscription_status = "trial" if is_trial else "active"
+            
             if customer_email:
-                SupabaseService.update_user_by_email(customer_email, {
-                    "subscription_status": "active",
-                    "plan": plan_id
-                })
-                from datetime import datetime
-                from datetime import timezone
+                from datetime import datetime, timezone
                 from dateutil.relativedelta import relativedelta
                 
+                update_payload = {
+                    "subscription_status": subscription_status,
+                    "plan": plan_id
+                }
+                
+                # Calculate standard expiration based on plan
+                if "monthly" in plan_id:
+                    delta = relativedelta(months=1)
+                else:
+                    delta = relativedelta(years=1)
+
+                if is_trial:
+                    # Calculate trial expiration (7 days from now)
+                    trial_end = datetime.now(timezone.utc) + relativedelta(days=7)
+                    update_payload["trial_activated_at"] = datetime.now(timezone.utc).isoformat()
+                    update_payload["trial_expires_at"] = trial_end.isoformat()
+                    # Also set plan_expires_at to trial end + delta to be safe
+                    update_payload["plan_expires_at"] = (trial_end + delta).isoformat()
+                else:
+                    # Regular active subscription
+                    update_payload["plan_expires_at"] = (datetime.now(timezone.utc) + delta).isoformat()
+
+                SupabaseService.update_user_by_email(customer_email, update_payload)
+                
                 # Also create/update subscription record
+                # subscriptions table uses 'plan', profiles uses 'subscription_plan' (mapped to 'plan' in some places)
+                # Looking at supabase_schema.sql, profiles has subscription_status and subscription_plan.
+                # subscriptions table has plan and status.
+                
                 SupabaseService.upsert_subscription(
-                    customer_email,
                     {
-                        "plan_id": plan_id,
-                        "status": "active",
+                        "user_email": customer_email,
+                        "plan": plan_id,
+                        "status": subscription_status,
                         "provider": "dodo",
-                        "dodo_product_id": product_id,
+                        "provider_id": event_data.get("subscription_id") or event_data.get("id"),
                         "activated_at": datetime.now(timezone.utc).isoformat(),
-                        "expires_at": (datetime.now(timezone.utc) + relativedelta(years=1)).isoformat()
+                        "expires_at": (datetime.now(timezone.utc) + delta).isoformat()
                     }
                 )
-                logger.info(f"Dodo success: Updated user {customer_email} to {plan_id}")
+                logger.info(f"Dodo {subscription_status}: Updated user {customer_email} to {plan_id}")
                 
         return {"status": "success"}
     except Exception as e:
@@ -3563,20 +3388,6 @@ async def get_user_usage_limits(identifier: str) -> dict:
             can_generate = current_count < limit
         else:
             can_generate = current_daily_apps < 10 # Fallback
-    elif tier_lower == "free_byok" or user.get("byok_enabled"):
-        # Check if they actually have a key configured in Supabase
-        has_key = SupabaseService.get_byok_key(user.get("email"))
-
-        
-        if has_key:
-            limit = "Unlimited (BYOK)"
-            can_generate = True
-        else:
-            # No key configured? Fall back to Free limits
-            limit = 1
-            autofills_limit = 1
-            current_count = current_daily_apps
-            can_generate = current_count < limit
     else:  # free, expired, or ai-free
         # Free tier limits (5 resumes, 5 autofills)
         limit = 5
@@ -3592,26 +3403,9 @@ async def get_user_usage_limits(identifier: str) -> dict:
         "canGenerate": can_generate,
         "resetDate": reset_date,
         "totalResumes": total_resumes,
-        "byokEnabled": user.get("byok_enabled", False),
     }
 
 
-async def get_decrypted_byok_key(user_email: str):
-    """Retrieve and decrypt a user's BYOK key if available"""
-    try:
-        byok_config = SupabaseService.get_byok_key(user_email)
-        if not byok_config or not byok_config.get("is_enabled", True):
-            return None
-
-        decrypted_key = decrypt_api_key(
-            byok_config["api_key_encrypted"],
-            byok_config["api_key_iv"],
-            byok_config["api_key_tag"],
-        )
-        return {"provider": byok_config["provider"], "api_key": decrypted_key}
-    except Exception as e:
-        logger.error(f"Error decrypting BYOK key for {user_email}: {e}")
-        return None
 
 
 @api_router.get("/usage/limits")
@@ -4649,7 +4443,8 @@ async def verify_razorpay_payment_endpoint(request: RazorpayVerifyRequest, user:
             "activated_at": datetime.now(timezone.utc).isoformat(),
             "provider": "razorpay",
         }
-        SupabaseService.upsert_subscription(user_email, subscription_data)
+        subscription_data["user_email"] = user_email
+        SupabaseService.upsert_subscription(subscription_data)
 
         # Log the payment in Supabase
         payment_doc = {
@@ -5197,10 +4992,6 @@ async def generate_cover_letter_docx(request: GenerateCoverLetterRequest):
         # User said "Resume generation limit", but usually they go together.
         # Let's just do it for resumes for now to be strict about the request.
 
-        # BYOK RESTRICTION: Keep internal keys only
-        # Check for BYOK
-        # byok_config = await get_decrypted_byok_key(user.get("email", ""))
-
         # Generate cover letter content if not provided
         cover_letter_text = request.cover_letter_text
         if not cover_letter_text or not request.is_already_tailored:
@@ -5209,7 +5000,6 @@ async def generate_cover_letter_docx(request: GenerateCoverLetterRequest):
                 request.job_description,
                 request.job_title,
                 request.company,
-                byok_config=None, # Force system keys
             )
 
         if not cover_letter_text:
@@ -5978,14 +5768,6 @@ async def startup_event():
     """Initialize background tasks on startup"""
     logger.info("🚀 Starting Job Ninjas backend...")
 
-    # Validate BYOK master key (fails fast if missing/invalid)
-    try:
-        validate_master_key()
-        logger.info("✅ BYOK master key validated")
-    except ValueError as e:
-        logger.error(f"❌ BYOK master key validation failed: {e}")
-        logger.warning("⚠️  BYOK features will be disabled")
-
     # Start the background job fetcher (runs every 6 hours, including immediately on startup)
     asyncio.create_task(job_fetch_background_task())
     logger.info(
@@ -6257,6 +6039,7 @@ async def get_jobs(
             offset=offset if not target_role else 0, # Manual pagination if boosted
             search=search or target_role,
             job_type=type,
+            location=country,
             visa=visa,
             fresh_only=True
         )
@@ -6269,6 +6052,7 @@ async def get_jobs(
                 offset=offset if not target_role else 0,
                 search=search or target_role,
                 job_type=type,
+                location=country,
                 visa=visa,
                 fresh_only=False
             )
@@ -6276,11 +6060,25 @@ async def get_jobs(
         # 3. SMART SORTING & BOOSTING (PROJECT ORION)
         all_candidates = supabase_jobs or []
         
-        # Apply Match Scores and Format Fields
+        # Apply Match Scores and Format Fields (with deduplication)
         formatted_results = []
+        seen_jobs = set() # Track (title, company) for deduplication
+        
         for job in all_candidates:
             # First map fields
             job = _format_supabase_job(job)
+            
+            # Deduplicate by title and company (case-insensitive)
+            title = (job.get("title") or "").strip().lower()
+            company = (job.get("company") or "").strip().lower()
+            
+            if not title or not company:
+                continue
+                
+            job_key = (title, company)
+            if job_key in seen_jobs:
+                continue
+            seen_jobs.add(job_key)
             
             # Then apply match score
             job["matchScore"] = _calculate_match_score(job, user)
@@ -6325,11 +6123,12 @@ async def get_jobs(
         total = SupabaseService.get_jobs_count(
             search=search, 
             job_type=type, 
+            location=country,
             visa=visa,
             fresh_only=bool(not search and len(results) >= limit)
         )
         if total == 0 and not search:
-            total = SupabaseService.get_jobs_count(search=search, job_type=type, visa=visa, fresh_only=False)
+            total = SupabaseService.get_jobs_count(search=search, job_type=type, location=country, visa=visa, fresh_only=False)
 
         total_pages = (total + limit - 1) // limit
 
