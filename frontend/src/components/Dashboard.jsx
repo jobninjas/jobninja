@@ -1802,7 +1802,11 @@ const Dashboard = () => {
                     </div>
                     <div>
                       <p className="text-sm text-gray-600">Next Renewal</p>
-                      <p className="text-lg">February 24, 2025</p>
+                      <p className="text-lg">
+                        {user?.plan_expires_at
+                          ? new Date(user.plan_expires_at).toLocaleDateString("en-US", { year: 'numeric', month: 'long', day: 'numeric' })
+                          : "No Expiration Data"}
+                      </p>
                     </div>
                     <div className="pt-4">
                       <Button onClick={() => navigate('/pricing')}>

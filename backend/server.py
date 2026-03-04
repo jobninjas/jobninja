@@ -1443,6 +1443,7 @@ async def login(request: Request, credentials: UserLogin):
                 "referral_code": user.get("referral_code"),
                 "subscription_status": user.get("subscription_status"),
                 "trial_expires_at": user.get("trial_expires_at"),
+                "plan_expires_at": user.get("plan_expires_at"),
                 "subscription_expires_at": user.get("subscription_expires_at") or user.get("plan_expires_at"),
                 "ai_applications_bonus": user.get("ai_applications_bonus", 0)
             },
@@ -1473,7 +1474,8 @@ async def get_me(user: dict = Depends(get_current_user)):
             "referral_code": user.get("referral_code"),
             "subscription_status": user.get("subscription_status"),
             "trial_expires_at": user.get("trial_expires_at"),
-            "subscription_expires_at": user.get("subscription_expires_at"),
+            "plan_expires_at": user.get("plan_expires_at"),
+            "subscription_expires_at": user.get("subscription_expires_at") or user.get("plan_expires_at"),
             "ai_applications_bonus": user.get("ai_applications_bonus", 0)
         },
     }
