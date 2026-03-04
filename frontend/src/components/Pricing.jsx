@@ -323,7 +323,7 @@ const Pricing = () => {
             className="text-center mt-6 max-w-2xl mx-auto"
           >
             <p className="text-sm text-gray-500 italic">
-              * Most users land a job within the trial period or first month. We designed this so you won't need to renew!
+              * Most users land a job within the first month. We designed this so you won't need to renew!
             </p>
           </TimelineContent>
         )}

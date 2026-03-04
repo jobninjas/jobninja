@@ -108,7 +108,7 @@ export const PRICING = {
     applications: '25 per day',
     autofills: '35 per day',
     popular: false,
-    description: 'Perfect for most active job seekers. 1 week free trial.',
+    description: 'Perfect for most active job seekers.',
     features: [
       '25 AI-powered job applications per day',
       '35 Auto Fills per day',
@@ -130,7 +130,7 @@ export const PRICING = {
     applications: '35 per day',
     autofills: '50 per day',
     popular: true,
-    description: 'Higher limits for aggressive applications. 1 week free trial.',
+    description: 'Higher limits for aggressive applications.',
     features: [
       '35 AI-powered job applications per day',
       '50 Auto Fills per day',
@@ -152,7 +152,7 @@ export const PRICING = {
     applications: '55 per day',
     autofills: '80 per day',
     popular: false,
-    description: 'Maximum limits for extreme application volume. 1 week free trial.',
+    description: 'Maximum limits for extreme application volume.',
     features: [
       '55 AI-powered job applications per day',
       '80 Auto Fills per day',

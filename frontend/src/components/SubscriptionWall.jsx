@@ -91,7 +91,7 @@ const SubscriptionWall = ({ children }) => {
                             Unlock Ninja Pro
                         </h2>
                         <p className="text-lg text-gray-600 mb-6">
-                            Get unlimited access to AI Cover Letters and all other tools with a <strong>2-week free trial</strong>.
+                            Get unlimited access to AI Cover Letters and all other tools with a <strong>Pro subscription</strong>.
                         </p>
 
                         {/* Feature highlights */}
@@ -122,7 +122,7 @@ const SubscriptionWall = ({ children }) => {
                             className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white border-0 shadow-lg hover:shadow-xl transition-all"
                             onClick={() => navigate('/pricing')}
                         >
-                            Start Free Trial <ArrowRight className="w-5 h-5 ml-2" />
+                            Upgrade Now <ArrowRight className="w-5 h-5 ml-2" />
                         </Button>
                         <p className="text-xs text-gray-400 mt-4">Cancel anytime. No questions asked.</p>
 
