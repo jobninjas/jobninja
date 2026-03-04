@@ -4602,7 +4602,7 @@ async def scan_resume(
         from document_generator import generate_optimized_resume_content
 
         analysis = await analyze_resume(
-            resume_text, job_description, byok_config=byok_config, target_score=target_score
+            resume_text, job_description, target_score=target_score
         )
 
         if "error" in analysis:
@@ -4613,7 +4613,6 @@ async def scan_resume(
             resume_text, 
             job_description, 
             analysis,
-            byok_config=byok_config,
             target_score=target_score
         )
         
@@ -4851,7 +4850,6 @@ async def generate_resume_docx(request: GenerateResumeRequest):
                     request.resume_text,
                     request.job_description,
                     request.analysis,
-                    byok_config=None, # Force system keys
                     target_score=request.targetScore
                 )
                 if not resume_data:
