@@ -717,19 +717,6 @@ const Dashboard = () => {
                     Application Tracker
                   </button>
                   <button
-                    onClick={() => setActiveTab('pipeline')}
-                    style={activeTab === 'pipeline' ? {
-                      backgroundColor: '#15803d',
-                      color: '#ffffff'
-                    } : {
-                      color: '#111827'
-                    }}
-                    className={`w-full text-left px-3 py-2 rounded-md text-sm font-medium flex items-center gap-2 ${activeTab === 'pipeline' ? '' : 'hover:bg-gray-100'}`}
-                  >
-                    <Target className="w-4 h-4" />
-                    Human Ninja Pipeline
-                  </button>
-                  <button
                     onClick={() => setActiveTab('profile')}
                     style={activeTab === 'profile' ? {
                       backgroundColor: '#15803d',
@@ -741,19 +728,6 @@ const Dashboard = () => {
                   >
                     <User className="w-4 h-4" />
                     My Profile
-                  </button>
-                  <button
-                    onClick={() => setActiveTab('queue')}
-                    style={activeTab === 'queue' ? {
-                      backgroundColor: '#15803d',
-                      color: '#ffffff'
-                    } : {
-                      color: '#111827'
-                    }}
-                    className={`w-full text-left px-3 py-2 rounded-md text-sm font-medium flex items-center gap-2 ${activeTab === 'queue' ? '' : 'hover:bg-gray-100'}`}
-                  >
-                    <CheckCircle className="w-4 h-4" />
-                    Approve Queue
                   </button>
                   <button
                     onClick={() => setActiveTab('billing')}
@@ -792,7 +766,7 @@ const Dashboard = () => {
                     className={`w-full text-left px-3 py-2 rounded-md text-sm font-medium flex items-center gap-2 ${activeTab === 'settings' ? '' : 'hover:bg-gray-100'}`}
                   >
                     <Settings className="w-4 h-4" />
-                    Account & AI Settings
+                    Account Settings
                   </button>
                 </nav>
               </CardContent>
@@ -944,64 +918,6 @@ const Dashboard = () => {
               </div>
             )}
 
-            {activeTab === 'pipeline' && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Your Applications</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead>
-                        <tr className="border-b">
-                          <th className="text-left py-3 px-4 font-medium text-sm text-gray-600">Company</th>
-                          <th className="text-left py-3 px-4 font-medium text-sm text-gray-600">Role</th>
-                          <th className="text-left py-3 px-4 font-medium text-sm text-gray-600">Status</th>
-                          <th className="text-left py-3 px-4 font-medium text-sm text-gray-600">Date</th>
-                          <th className="text-left py-3 px-4 font-medium text-sm text-gray-600">Link</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {isLoading ? (
-                          <tr>
-                            <td colSpan="5" className="py-8 text-center">
-                              <Loader2 className="w-6 h-6 animate-spin mx-auto text-primary" />
-                              <p className="text-sm text-gray-500 mt-2">Loading applications...</p>
-                            </td>
-                          </tr>
-                        ) : applications.length === 0 ? (
-                          <tr>
-                            <td colSpan="5" className="py-8 text-center">
-                              <p className="text-gray-500">No applications yet.</p>
-                              <p className="text-sm text-gray-400 mt-1">Our team is working on finding jobs for you!</p>
-                            </td>
-                          </tr>
-                        ) : (
-                          applications.filter(app => app.origin !== 'ai-ninja').map((app) => (
-                            <tr key={app.id} className="border-b hover:bg-gray-50">
-                              <td className="py-3 px-4 font-medium">{app.company}</td>
-                              <td className="py-3 px-4">{app.role}</td>
-                              <td className="py-3 px-4">{getStatusBadge(app.status)}</td>
-                              <td className="py-3 px-4 text-sm text-gray-600">{app.date}</td>
-                              <td className="py-3 px-4">
-                                <a
-                                  href={app.applicationLink}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-primary hover:underline text-sm"
-                                >
-                                  View
-                                </a>
-                              </td>
-                            </tr>
-                          ))
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
 
             {activeTab === 'profile' && (
               <ProfileOrion
@@ -1872,19 +1788,6 @@ const Dashboard = () => {
               </div>
             )}
 
-            {activeTab === 'queue' && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Approve & Submit Queue</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-gray-600">Review prepared applications before submission.</p>
-                  <div className="mt-4 p-4 bg-gray-50 rounded-md text-sm text-gray-600">
-                    This section will show applications that are ready for your approval.
-                  </div>
-                </CardContent>
-              </Card>
-            )}
 
             {activeTab === 'billing' && (
               <Card>
@@ -1933,10 +1836,10 @@ const Dashboard = () => {
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-blue-700">
                       <Gift className="w-6 h-6" />
-                      Invite Friends & Get Bonus AI Applications
+                      Invite Friends & Get 1 Week Bonus
                     </CardTitle>
                     <p className="text-sm text-blue-600 mt-1">
-                      Share the jobNinjas magic! For every friend who signs up and subscribes, you'll earn 5 extra AI-tailored applications.
+                      Invite your friend and get 5 tailored resumes/day and 5 autofills per day for one week!
                     </p>
                   </CardHeader>
                   <CardContent>
@@ -1981,12 +1884,16 @@ const Dashboard = () => {
 
                         <div className="pt-4 flex gap-4">
                           <div className="bg-white p-4 rounded-xl border border-blue-100 flex-1 text-center">
-                            <p className="text-xs text-gray-500 uppercase font-semibold">Bonus AI Applications</p>
-                            <p className="text-3xl font-bold text-blue-600 mt-1">{user?.ai_applications_bonus || 0}</p>
+                            <p className="text-xs text-gray-500 uppercase font-semibold">Bonus Active Until</p>
+                            <p className="text-sm font-bold text-blue-600 mt-1">
+                              {user?.referral_bonus_expires_at
+                                ? new Date(user.referral_bonus_expires_at).toLocaleDateString()
+                                : 'No active bonus'}
+                            </p>
                           </div>
                           <div className="bg-white p-4 rounded-xl border border-blue-100 flex-1 text-center">
                             <p className="text-xs text-gray-500 uppercase font-semibold">Total Referrals</p>
-                            <p className="text-3xl font-bold text-gray-700 mt-1">0</p>
+                            <p className="text-3xl font-bold text-gray-700 mt-1">{user?.total_referrals || 0}</p>
                           </div>
                         </div>
                       </div>
@@ -2000,11 +1907,11 @@ const Dashboard = () => {
                           </div>
                           <div className="flex gap-3">
                             <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center shrink-0 font-bold">2</div>
-                            <p className="text-sm text-gray-600 pt-1">They sign up and start a subscription (Starter, Pro, or Urgent).</p>
+                            <p className="text-sm text-gray-600 pt-1">They sign up and start a subscription.</p>
                           </div>
                           <div className="flex gap-3">
                             <div className="w-8 h-8 rounded-full bg-green-100 text-green-600 flex items-center justify-center shrink-0 font-bold">3</div>
-                            <p className="text-sm text-gray-600 pt-1">You automatically get 5 bonus AI applications added to your account!</p>
+                            <p className="text-sm text-gray-600 pt-1">You get +5 resumes/day and +5 autofills/day for 7 days!</p>
                           </div>
                         </div>
                         <div className="pt-4 border-t">

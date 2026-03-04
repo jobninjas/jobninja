@@ -34,13 +34,6 @@ const Navbar = ({ onOpenSideMenu, rightContent }) => {
           <span>AI Ninja</span>
         </button>
         <button
-          onClick={() => navigate('/human-ninja')}
-          className={`nav-link-modern nav-ninja-btn human ${isActive('/human-ninja') ? 'active' : ''}`}
-        >
-          <UserCheck className="w-5 h-5" />
-          <span>Human Ninja</span>
-        </button>
-        <button
           onClick={() => navigate('/jobs')}
           className={`nav-link-modern ${isActive('/jobs') ? 'text-primary font-semibold' : ''}`}
         >

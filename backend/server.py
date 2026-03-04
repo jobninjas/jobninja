@@ -2328,7 +2328,7 @@ async def calculate_job_match_score(
 
 
 @api_router.get("/sheets/applications/{user_email}")
-async def get_user_applications(user_email: str):
+async def get_sheets_applications_internal(user_email: str):
     """
     Fetch applications for a specific user from Google Sheets.
     Employees update the Google Sheet, and this endpoint reads from it.
@@ -2400,41 +2400,8 @@ async def get_user_applications(user_email: str):
                     except:
                         pass
 
-        # NEW: Also fetch applications from Supabase to merge
-        try:
-            supabase_apps = SupabaseService.get_applications(user_email=user_email)
-            for s_app in supabase_apps:
-                # Map Supabase fields to Sheets-like format for frontend
-                # Sheets format is roughly: [Date, Company, Role, Match, Resume, JobLink, Status]
-                mapped_app = [
-                    s_app.get("applied_at", s_app.get("created_at", "")).split("T")[0], # Date
-                    s_app.get("company", s_app.get("platform", "Unknown")),             # Company
-                    s_app.get("job_title", s_app.get("role", "Unknown")),               # Role
-                    s_app.get("matchScore", s_app.get("match_score", "N/A")),           # Match
-                    "View",                                                             # Resume Link text
-                    s_app.get("job_link", "-"),                                         # Job Link
-                    s_app.get("status", "Applied"),                                     # Status
-                    s_app.get("resume_id", "")                                          # Extra: internal resume ID
-                ]
-                user_applications.append(mapped_app)
-                
-                # Update stats
-                total_count += 1
-                try:
-                    app_date_str = s_app.get("applied_at", s_app.get("created_at", ""))
-                    if app_date_str:
-                        app_dt = datetime.fromisoformat(app_date_str.replace("Z", "+00:00"))
-                        if app_dt > one_week_ago:
-                            week_count += 1
-                except: pass
-                
-                if s_app.get("status", "").lower() == "interview":
-                    interview_count += 1
-        except Exception as sup_err:
-            logger.error(f"Failed to merge Supabase apps in get_user_applications: {sup_err}")
-
         # Final sort by date descending
-        user_applications.sort(key=lambda x: x[0] if x and len(x) > 0 else "", reverse=True)
+        user_applications.sort(key=lambda x: x.get("submitted_date", ""), reverse=True)
 
         return {
             "applications": user_applications,
@@ -2450,7 +2417,143 @@ async def get_user_applications(user_email: str):
         logger.error(f"Error fetching from Google Sheets: {str(e)}")
         return {
             "applications": [],
-            "stats": {"total": 0, "this_week": 0, "interviews": 0},
+            "stats": {"total": 0, "this_week": 0, "interviews": 0, "hours_saved": 0},
+        }
+
+
+@api_router.get("/applications/{user_id_or_email}")
+async def get_unified_applications(user_id_or_email: str):
+    """
+    Unified endpoint to fetch applications from both Supabase and Google Sheets.
+    """
+    try:
+        user_email = user_id_or_email if "@" in user_id_or_email else None
+        
+        # Determine user_id if email provided
+        user_id = None
+        user_profile = None
+        if user_email:
+            user_profile = SupabaseService.get_user_by_email(user_email)
+            if user_profile:
+                user_id = user_profile["id"]
+        else:
+            user_id = user_id_or_email
+            user_profile = SupabaseService.get_user_by_id(user_id)
+            if user_profile:
+                user_email = user_profile.get("email")
+        
+        if not user_email:
+            # Fallback if we only have ID but can't find email
+            logger.warning(f"Could not find email for user {user_id_or_email}")
+
+        # 1. Fetch from Supabase
+        supabase_apps = []
+        try:
+            supabase_apps = SupabaseService.get_applications(user_id=user_id, user_email=user_email)
+        except Exception as e:
+            logger.error(f"Supabase fetch error: {e}")
+
+        # 2. Fetch from Google Sheets
+        sheets_data = {"applications": [], "stats": {}}
+        if user_email:
+            try:
+                sheets_data = await get_sheets_applications_internal(user_email)
+            except Exception as e:
+                logger.error(f"Sheets fetch error: {e}")
+
+        # 3. Merge and Standardize
+        # Note: sheets_data["applications"] currently contains dictionaries or lists depending on row logic.
+        # We will standardize EVERYTHING to dictionaries.
+        
+        unified_list = []
+        total_count = 0
+        interview_count = 0
+        week_count = 0
+        one_week_ago = datetime.now(timezone.utc) - timedelta(days=7)
+
+        # Process Sheets Apps
+        for app in sheets_data.get("applications", []):
+            if isinstance(app, dict):
+                standard_app = {
+                    "id": app.get("id", f"sheet-{total_count}"),
+                    "company": app.get("company_name", "Unknown"),
+                    "job_title": app.get("job_title", "Unknown"),
+                    "status": app.get("status", "materials_ready"),
+                    "application_link": app.get("application_link", ""),
+                    "applied_at": app.get("submitted_date", ""),
+                    "notes": app.get("notes", ""),
+                    "origin": "human-ninja"
+                }
+                unified_list.append(standard_app)
+                total_count += 1
+                if standard_app["status"].lower() in ["interview", "interviewing"]:
+                    interview_count += 1
+            elif isinstance(app, list):
+                # Legacy handling if any lists remain
+                pass
+
+        # Process Supabase Apps
+        for app in supabase_apps:
+            # metadata contains resumeId etc.
+            meta = app.get("metadata") or {}
+            
+            standard_app = {
+                "id": app.get("id"),
+                "company": app.get("company") or app.get("platform") or "Unknown",
+                "job_title": app.get("job_title") or app.get("role") or "Unknown",
+                "status": app.get("status") or "applied",
+                "application_link": app.get("job_link") or "",
+                "applied_at": app.get("applied_at") or app.get("created_at"),
+                "notes": app.get("notes") or "",
+                "resumeId": app.get("resume_id") or meta.get("resumeId"),
+                "matchScore": meta.get("matchScore"),
+                "origin": meta.get("origin") or "ai-ninja"
+            }
+            unified_list.append(standard_app)
+            total_count += 1
+            if standard_app["status"].lower() in ["interview", "interviewing"]:
+                interview_count += 1
+
+        # Calculate this week stats
+        for app in unified_list:
+            try:
+                date_str = app.get("applied_at")
+                if date_str:
+                    if "T" in date_str:
+                        dt = datetime.fromisoformat(date_str.replace("Z", "+00:00"))
+                    else:
+                        dt = datetime.strptime(date_str, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+                    
+                    if dt > one_week_ago:
+                        week_count += 1
+            except: pass
+
+        # Robust Sort by Date Descending
+        def get_sort_date(app):
+            d = app.get("applied_at")
+            if not d: return "0000-00-00"
+            return d
+
+        unified_list.sort(key=get_sort_date, reverse=True)
+
+        return {
+            "success": True,
+            "applications": unified_list,
+            "stats": {
+                "total": total_count,
+                "this_week": week_count,
+                "interviews": interview_count,
+                "hours_saved": total_count * 0.5
+            }
+        }
+
+    except Exception as e:
+        logger.error(f"Error in get_unified_applications: {e}")
+        traceback.print_exc()
+        return {
+            "success": False,
+            "applications": [],
+            "stats": {"total": 0, "this_week": 0, "interviews": 0, "hours_saved": 0}
         }
 
 
@@ -2459,7 +2562,7 @@ async def get_dashboard_stats(user_email: str):
     """
     Get dashboard statistics for a user.
     """
-    data = await get_user_applications(user_email)
+    data = await get_unified_applications(user_email)
     return data["stats"]
 
 
@@ -2650,6 +2753,7 @@ async def dodo_webhook(request: Request):
 async def grant_referral_bonus(user_id: str):
     """
     Find the user who referred this user and grant them a bonus.
+    The bonus is a 7-day boost of +5 resumes/day and +5 autofills/day.
     """
     # Find user by id in Supabase
     user = SupabaseService.get_user_by_id(user_id)
@@ -2660,13 +2764,19 @@ async def grant_referral_bonus(user_id: str):
     referrer = SupabaseService.get_user_by_referral_code(referrer_code)
 
     if referrer:
-        # User gets 5 extra AI tailored applications for referral
-        bonus = (referrer.get("ai_applications_bonus") or 0) + 5
+        # User gets a 7-day boost
+        expiry = (datetime.now(timezone.utc) + timedelta(days=7)).isoformat()
+        total_referrals = (referrer.get("total_referrals") or 0) + 1
+        
         SupabaseService.update_user_by_email(
-            referrer["email"], {"ai_applications_bonus": bonus}
+            referrer["email"], 
+            {
+                "referral_bonus_expires_at": expiry,
+                "total_referrals": total_referrals
+            }
         )
         logger.info(
-            f"Granted 5 bonus apps to referrer {referrer['email']} for user {user['email']}"
+            f"Granted 7-day bonus boost to referrer {referrer['email']} for user {user['email']}. Expiry: {expiry}"
         )
 
 
@@ -3366,6 +3476,26 @@ async def get_user_usage_limits(identifier: str) -> dict:
         current_count = current_daily_apps
         can_generate = current_count < limit
 
+    # Apply Referral Bonus (7-day boost: +5 resumes/day, +5 autofills/day)
+    bonus_expiry = user.get("referral_bonus_expires_at")
+    if bonus_expiry:
+        try:
+            if isinstance(bonus_expiry, str):
+                expiry_dt = datetime.fromisoformat(bonus_expiry.replace("Z", "+00:00"))
+            else:
+                expiry_dt = bonus_expiry
+            
+            if datetime.now(timezone.utc) < expiry_dt:
+                if isinstance(limit, int):
+                    limit += 5
+                if isinstance(autofills_limit, int):
+                    autofills_limit += 5
+                # Re-calculate can_generate with new limit if needed
+                if tier_lower not in ["pro", "pro-plus", "pro-max", "beginner", "standard", "unlimited"]:
+                    can_generate = current_daily_apps < limit
+        except Exception as e:
+            logger.error(f"Error checking referral bonus expiry for {user.get('email')}: {e}")
+
     return {
         "limit": limit,
         "usage": current_count,
@@ -3585,42 +3715,6 @@ async def ai_ninja_apply(request: Request, user: dict = Depends(get_current_user
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@api_router.get("/applications/{user_id_or_email}")
-async def get_user_applications(user_id_or_email: str):
-    """
-    Get all applications for a user (both AI Ninja and Human Ninja) from Supabase.
-    Supports either UUID or email as user_id_or_email.
-    """
-    try:
-        user_email = user_id_or_email if "@" in user_id_or_email else None
-        
-        # Determine user_id if email provided
-        user_id = None
-        if not user_email:
-            user_id = user_id_or_email
-        else:
-            profile = SupabaseService.get_user_by_email(user_email)
-            if profile:
-                user_id = profile["id"]
-        
-        if not user_id and not user_email:
-            raise HTTPException(status_code=404, detail="User not found")
-
-        applications = SupabaseService.get_applications(user_id=user_id, user_email=user_email)
-
-        return {
-            "success": True,
-            "applications": applications, 
-            "total": len(applications),
-            "stats": {
-                "total": len(applications),
-                "applied": len([a for a in applications if a.get("status") == "applied"]),
-                "interviewing": len([a for a in applications if a.get("status") in ["interview", "interviewing"]])
-            }
-        }
-    except Exception as e:
-        logger.error(f"Error fetching applications: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
 
 
 @api_router.patch("/applications/{application_id}/status")
@@ -5977,11 +6071,15 @@ async def get_jobs(
     country: str = Query(None),
     type: str = Query(None),
     visa: bool = Query(None),
+    job_functions: str = Query(None),
+    experience: str = Query(None),
+    cities: str = Query(None),
+    date_posted: str = Query(None),
+    salary: str = Query(None),
     token: str = Header(None)
 ):
     """
     Get jobs from database with filtering and pagination
-    Only returns jobs from last 72 hours, USA-only
     """
     try:
         # 1. AUTHENTICATED USER ENRICHMENT (PROJECT ORION)
@@ -6015,7 +6113,12 @@ async def get_jobs(
             job_type=type,
             location=country,
             visa=visa,
-            fresh_only=True
+            fresh_only=True,
+            job_functions=job_functions,
+            experience=experience,
+            cities=cities,
+            date_posted=date_posted,
+            salary=salary
         )
         
         # Fallback: if no fresh jobs, try fetching older jobs
@@ -6028,7 +6131,12 @@ async def get_jobs(
                 job_type=type,
                 location=country,
                 visa=visa,
-                fresh_only=False
+                fresh_only=False,
+                job_functions=job_functions,
+                experience=experience,
+                cities=cities,
+                date_posted=date_posted,
+                salary=salary
             )
 
         # 3. SMART SORTING & BOOSTING (PROJECT ORION)
@@ -6099,10 +6207,26 @@ async def get_jobs(
             job_type=type, 
             location=country,
             visa=visa,
-            fresh_only=bool(not search and len(results) >= limit)
+            fresh_only=bool(not search and len(results) >= limit),
+            job_functions=job_functions,
+            experience=experience,
+            cities=cities,
+            date_posted=date_posted,
+            salary=salary
         )
         if total == 0 and not search:
-            total = SupabaseService.get_jobs_count(search=search, job_type=type, location=country, visa=visa, fresh_only=False)
+            total = SupabaseService.get_jobs_count(
+                search=search, 
+                job_type=type, 
+                location=country, 
+                visa=visa, 
+                fresh_only=False,
+                job_functions=job_functions,
+                experience=experience,
+                cities=cities,
+                date_posted=date_posted,
+                salary=salary
+            )
 
         total_pages = (total + limit - 1) // limit
 

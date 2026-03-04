@@ -54,24 +54,67 @@
 
 /* Filters Section */
 .jobs-filters-section {
-  padding: 0;
-  width: 100%;
+  @apply mb-8;
 }
 
-.search-input-wrapper {
-  @apply relative;
+.jobs-filters-section .filter-button-active {
+  @apply border-emerald-500 bg-emerald-50/50 text-emerald-700 shadow-sm shadow-emerald-100/50;
 }
 
-.filter-pill-group {
-  @apply flex items-center;
+.jobs-filters-section .filter-badge {
+  @apply bg-emerald-100 text-emerald-700 border-0 font-bold ml-1.5;
 }
 
-.filter-pill-select {
-  @apply min-w-[140px];
+/* Custom Checkbox/Radio styling to match reference */
+.jobs-filters-section [role="checkbox"] {
+  @apply border-slate-200 transition-colors;
 }
 
-.filter-count-text {
-  @apply text-sm font-semibold text-slate-400;
+.jobs-filters-section [role="checkbox"][data-state="checked"] {
+  @apply bg-emerald-500 border-emerald-500;
+}
+
+/* Popover Content Styling */
+.popover-content-premium {
+  @apply shadow-xl border-slate-100 p-5 rounded-xl;
+}
+
+.filter-group-title {
+  @apply text-sm font-bold text-slate-900 mb-1 flex items-center;
+}
+
+.filter-group-subtitle {
+  @apply text-[11px] text-slate-500 mb-4;
+}
+
+/* Search Input inside Popover */
+.popover-container .search-input {
+  @apply h-11 bg-slate-50 border-slate-100 focus:bg-white focus:ring-emerald-500/10 text-sm;
+}
+
+/* Tag/Badge inside Popover */
+.selected-filter-tag {
+  @apply bg-emerald-100 text-emerald-700 border-0 flex items-center gap-1.5 py-1.5 px-3 rounded-md text-xs font-semibold animate-in fade-in zoom-in-95 duration-200;
+}
+
+/* Country Selection */
+.country-radio-group {
+  @apply flex gap-6 mb-6;
+}
+
+.country-option {
+  @apply flex items-center gap-2.5 cursor-pointer hover:text-emerald-600 transition-colors;
+}
+
+/* Mobile Adjustments */
+@media (max-width: 640px) {
+  .jobs-filters-section .flex-wrap {
+    @apply gap-2;
+  }
+
+  .jobs-filters-section button {
+    @apply h-9 px-3 text-xs flex-grow;
+  }
 }
 
 /* Job List Section */

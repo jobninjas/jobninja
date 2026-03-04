@@ -6,7 +6,6 @@ import {
   Home,
   Briefcase,
   Bot,
-  UserCheck,
   ClipboardList,
   Mic,
   CreditCard,

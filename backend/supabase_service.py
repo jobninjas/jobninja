@@ -89,7 +89,12 @@ class SupabaseService:
         job_type: Optional[str] = None,
         location: Optional[str] = None,
         visa: bool = False,
-        fresh_only: bool = True
+        fresh_only: bool = True,
+        job_functions: Optional[str] = None,
+        experience: Optional[str] = None,
+        cities: Optional[str] = None,
+        date_posted: Optional[str] = None,
+        salary: Optional[str] = None
     ) -> List[Dict[str, Any]]:
         client = SupabaseService.get_client()
         if not client: return []
@@ -118,6 +123,44 @@ class SupabaseService:
             if location:
                 query = query.ilike("location", f"%{location}%")
 
+            # NEW ADVANCED FILTERS
+            if job_functions:
+                funcs = [f.strip() for f in job_functions.split(",")]
+                conditions = []
+                for f in funcs:
+                    conditions.append(f"title.ilike.%{f}%")
+                    conditions.append(f"description.ilike.%{f}%")
+                if conditions:
+                    query = query.or_(",".join(conditions))
+            
+            if experience:
+                levels = [l.strip() for l in experience.split(",")]
+                conditions = []
+                for l in levels:
+                    conditions.append(f"title.ilike.%{l}%")
+                    conditions.append(f"description.ilike.%{l}%")
+                if conditions:
+                    query = query.or_(",".join(conditions))
+            
+            if cities:
+                city_list = [c.strip() for c in cities.split(",")]
+                conditions = []
+                for c in city_list:
+                    conditions.append(f"location.ilike.%{c}%")
+                if conditions:
+                    query = query.or_(",".join(conditions))
+            
+            if date_posted and date_posted != "all":
+                hours = 24 if date_posted == "24h" else (168 if date_posted == "7d" else 720)
+                cutoff = (datetime.utcnow() - timedelta(hours=hours)).isoformat()
+                query = query.gte("created_at", cutoff)
+            
+            if salary and salary != "all":
+                # Very basic heuristic: look for numbers in description or salary field if it exists
+                # This is a placeholder as proper salary filtering requires structured numeric data
+                min_val = 120000 if salary == "120k" else (80000 if salary == "80k" else 40000)
+                # query = query.gte("salary_min", min_val) # Assuming a schema update or heuristic
+
             response = query\
                 .order("created_at", desc=True)\
                 .range(offset, offset + limit - 1)\
@@ -133,7 +176,12 @@ class SupabaseService:
         job_type: Optional[str] = None,
         location: Optional[str] = None,
         visa: bool = False,
-        fresh_only: bool = True
+        fresh_only: bool = True,
+        job_functions: Optional[str] = None,
+        experience: Optional[str] = None,
+        cities: Optional[str] = None,
+        date_posted: Optional[str] = None,
+        salary: Optional[str] = None
     ) -> int:
         client = SupabaseService.get_client()
         if not client: return 0
@@ -153,6 +201,38 @@ class SupabaseService:
                 query = query.ilike("job_type", f"%{job_type}%")
             if location:
                 query = query.ilike("location", f"%{location}%")
+
+            # NEW ADVANCED FILTERS
+            if job_functions:
+                funcs = [f.strip() for f in job_functions.split(",")]
+                conditions = []
+                for f in funcs:
+                    conditions.append(f"title.ilike.%{f}%")
+                    conditions.append(f"description.ilike.%{f}%")
+                if conditions:
+                    query = query.or_(",".join(conditions))
+            
+            if experience:
+                levels = [l.strip() for l in experience.split(",")]
+                conditions = []
+                for l in levels:
+                    conditions.append(f"title.ilike.%{l}%")
+                    conditions.append(f"description.ilike.%{l}%")
+                if conditions:
+                    query = query.or_(",".join(conditions))
+            
+            if cities:
+                city_list = [c.strip() for c in cities.split(",")]
+                conditions = []
+                for c in city_list:
+                    conditions.append(f"location.ilike.%{c}%")
+                if conditions:
+                    query = query.or_(",".join(conditions))
+            
+            if date_posted and date_posted != "all":
+                hours = 24 if date_posted == "24h" else (168 if date_posted == "7d" else 720)
+                cutoff = (datetime.utcnow() - timedelta(hours=hours)).isoformat()
+                query = query.gte("created_at", cutoff)
 
             response = query.limit(0).execute()
             return response.count if response.count is not None else 0
