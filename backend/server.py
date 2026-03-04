@@ -2581,7 +2581,7 @@ async def create_dodo_checkout(request: Request, user: dict = Depends(get_curren
         
         # 2. Unified Checkout Session Creation
         checkout_payload = {
-            "product_cart": [{"product_id": DODO_PRICING[plan_id], "quantity": 1}],
+            "product_cart": [{"product_id": DODO_PRICING[plan_id], "quantity": 1, "trial_period_days": 0}],
             "customer": {"customer_id": customer_id} if customer_id else {"email": user.get("email"), "name": user.get("name", "User")},
             "return_url": f"{frontend_url}/dashboard?dodo_success=true"
         }
