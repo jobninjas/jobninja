@@ -833,9 +833,7 @@ async def update_contact_message_status(
         raise HTTPException(status_code=500, detail="Failed to update status")
 
 # Add your routes to the router instead of directly to app
-@api_router.get("/")
-async def root():
-    return {"message": "Hello World"}
+# Redundant root removed
 
 
 @api_router.get("/health")
@@ -1904,8 +1902,8 @@ async def get_call_bookings():
     return SupabaseService.get_call_bookings()
 
 
-@api_router.patch("/call-bookings/{booking_id}")
-async def update_call_booking_status(booking_id: str, status: str):
+@api_router.patch("/calls/{booking_id}/status")
+async def update_call_booking_status_v2(booking_id: str, status: str):
     """Update call booking status (admin use)."""
     ok = SupabaseService.update_call_booking(booking_id, {"status": status})
     if not ok:
@@ -3063,7 +3061,7 @@ async def get_customer_applications(customer_email: str):
 
 
 @api_router.patch("/employee/application/{application_id}")
-async def update_application(
+async def update_application_employee(
     application_id: str, status: str, notes: Optional[str] = None
 ):
     """
@@ -3085,7 +3083,7 @@ async def update_application(
 
 
 @api_router.delete("/employee/application/{application_id}")
-async def delete_application(application_id: str):
+async def delete_application_employee(application_id: str):
     """
     Delete a job application from Supabase.
     """
@@ -5573,7 +5571,7 @@ async def save_application(application: ApplicationData):
 
 @app.put("/api/applications/{application_id}")
 @app.patch("/api/applications/{application_id}")
-async def update_application(
+async def update_application_api(
     application_id: str, status: str = None, notes: str = None, appliedAt: str = None
 ):
     """
@@ -5603,7 +5601,7 @@ async def update_application(
 
 
 @app.delete("/api/applications/{application_id}")
-async def delete_application(application_id: str):
+async def delete_application_api(application_id: str):
     """
     Delete an application from Supabase
     """
@@ -5823,7 +5821,7 @@ async def get_interview_report(session_id: str, user: dict = Depends(get_current
 
 
 @app.get("/api/health-check")
-async def health_check():
+async def health_check_api():
     # from resume_analyzer import GROQ_API_KEY - Removing broken import
     
     groq_key = os.environ.get("GROQ_API_KEY")
@@ -6055,21 +6053,7 @@ async def generate_smart_answer_endpoint(
 
 
 
-def _get_mock_company_data(company_name: str) -> dict:
-    """Helper for premium job cards - generates mock metadata like logos and ratings."""
-    name_clean = (company_name or "Unknown").lower().strip()
-    return {
-        "logo": f"https://logo.clearbit.com/{name_clean.replace(' ', '')}.com",
-        "rating": round(3.8 + (hash(name_clean) % 12) / 10, 1),
-        "reviewCount": int(50 + (hash(name_clean) % 500)),
-        "isVerified": True
-    }
-
-def _get_mock_insider_connections() -> list:
-    """Helper to simulate 1st/2nd degree insider connections on job cards."""
-    return [
-        {"name": "Verified Ninja", "role": "Employee", "type": "1st"}
-    ]
+# Redundant mock helper functions removed
 
 
 # Jobs API Endpoints
