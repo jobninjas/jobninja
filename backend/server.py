@@ -697,7 +697,7 @@ class CallBookingRequest(BaseModel):
     preferred_time: Optional[str] = None
 
 @api_router.post("/contact/submit")
-async def submit_contact_message(request: Request, contact_data: ContactMessageRequest):
+async def submit_contact_message_v2(request: Request, contact_data: ContactMessageRequest):
     """
     Submit a contact form message (public endpoint, no auth required).
     """
@@ -847,20 +847,11 @@ async def health_check_old():
     mongo_error = None
 
     try:
-        # Test MongoDB connection by pinging
-        await client.admin.command("ping")
-        mongo_status = "connected"
+        # MongoDB connection test removed as it's decommissioned
+        mongo_status = "decommissioned"
     except Exception as e:
-        error_msg = str(e)
-        if (
-            "SSL handshake failed" in error_msg
-            or "TLSV1_ALERT_INTERNAL_ERROR" in error_msg
-        ):
-            mongo_status = "ssl_error"
-            mongo_error = "SSL/TLS error - Please whitelist 0.0.0.0/0 in MongoDB Atlas Network Access"
-        else:
-            mongo_status = "error"
-            mongo_error = error_msg[:200]  # Truncate long errors
+        mongo_status = "error"
+        mongo_error = str(e)[:200]
 
     # Check environment variables
     env_check = {
@@ -6102,14 +6093,171 @@ async def get_jobs(
     Get jobs from database with filtering and pagination
     """
     try:
+        # 1. AUTHENTICATED USER ENRICHMENT (PROJECT ORION)
+        user = None
+        if token:
+            try:
+                if not token.startswith("token_"):
+                    # Use get_current_user_email logic directly to avoid dependency issues if needed
+                    payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+                    email = payload.get("sub")
+                    if email:
+                        user = SupabaseService.get_user_by_email(email)
+                        if user:
+                            # Enriched with target_role and resume_text
+                            user = await _get_enriched_user_context(user, db=None)
+            except Exception as e:
+                 logger.error(f"Project Orion Auth Error (get_jobs): {str(e)}")
+                 pass
+
+        # 2. JOB FETCHING (SUPABASE)
+        offset = (page - 1) * limit
+        
+        # Determine if we should perform a boosted search (if user has a target role)
+        target_role = (user.get("preferences") or {}).get("target_role") if user else None
+        
+        # Use target_role as search ONLY if no explicit keyword search AND no explicit job_functions
+        active_search = search
+        if not search and not job_functions:
+            active_search = target_role
+            
+        # Primary fetch (Fresh jobs)
+        supabase_jobs = SupabaseService.get_jobs(
+            limit=limit if not target_role else 100, # Fetch more if we need to filter/score
+            offset=offset if not target_role else 0, # Manual pagination if boosted
+            search=active_search,
+            job_type=type,
+            location=country,
+            visa=visa,
+            fresh_only=True,
+            job_functions=job_functions,
+            experience=experience,
+            cities=cities,
+            date_posted=date_posted,
+            salary=salary
+        )
+        
+        # Fallback: if no fresh jobs, try fetching older jobs
+        if not supabase_jobs:
+            logger.info("No fresh jobs found in last 72h. Falling back to older jobs...")
+            supabase_jobs = SupabaseService.get_jobs(
+                limit=limit if not target_role else 100,
+                offset=offset if not target_role else 0,
+                search=active_search,
+                job_type=type,
+                location=country,
+                visa=visa,
+                fresh_only=False,
+                job_functions=job_functions,
+                experience=experience,
+                cities=cities,
+                date_posted=date_posted,
+                salary=salary
+            )
+
+        # 3. SORTING (PROJECT ORION)
+        all_candidates = supabase_jobs or []
+        
+        # Apply Match Scores and Format Fields
+        formatted_results = []
+        seen_jobs = set()
+        
+        for job in all_candidates:
+            job = _format_supabase_job(job)
+            
+            # Deduplicate
+            title = (job.get("title") or "").strip().lower()
+            company = (job.get("company") or "").strip().lower()
+            if not title or not company: continue
+            
+            job_key = (title, company)
+            if job_key in seen_jobs: continue
+            seen_jobs.add(job_key)
+            
+            # Apply Match Score
+            job["matchScore"] = _calculate_match_score(job, user)
+            job["match_score"] = job["matchScore"]
+            
+            # Enrich
+            job["companyData"] = _get_mock_company_data(job.get("company", "Unknown"))
+            job["insiderConnections"] = _get_mock_insider_connections()
+            formatted_results.append(job)
+
+        # Apply Sort
+        if sort == 'newest':
+            formatted_results.sort(key=lambda x: x.get("created_at") or "", reverse=True)
+        elif user and sort == 'recommended' and formatted_results:
+            formatted_results.sort(key=lambda x: x.get("matchScore", 0), reverse=True)
+
+        # Manual Pagination if we fetched a larger pool
+        if target_role:
+            results = formatted_results[offset:offset + limit]
+        else:
+            results = formatted_results
+
+        # 4. RECOMMENDED FILTERS (PROJECT ORION)
+        recommended_filters = []
+        if user:
+             # Basic Role Tag
+             extracted_role = search if search else target_role
+             if extracted_role:
+                  recommended_filters.append({"type": "role", "value": extracted_role, "label": extracted_role})
+             
+             # Location Tag (if available)
+             location = (user.get("preferences") or {}).get("preferred_locations") or (user.get("address") or {}).get("city")
+             if location:
+                  recommended_filters.append({"type": "location", "value": location, "label": location})
+                  
+             # Level Tag (Heuristic)
+             resume_txt = (user.get("resume_text") or "").lower()
+             if "senior" in resume_txt or "lead" in resume_txt or "principal" in resume_txt:
+                  recommended_filters.append({"type": "level", "value": "mid-senior", "label": "Mid-Senior Level"})
+             else:
+                  recommended_filters.append({"type": "level", "value": "entry", "label": "Associate/Entry"})
+
+        # Get total count for pagination
+        total = SupabaseService.get_jobs_count(
+            search=search, 
+            job_type=type, 
+            location=country,
+            visa=visa,
+            fresh_only=bool(not search and len(results) >= limit),
+            job_functions=job_functions,
+            experience=experience,
+            cities=cities,
+            date_posted=date_posted,
+            salary=salary
+        )
+        if total == 0 and not search:
+            total = SupabaseService.get_jobs_count(
+                search=search, 
+                job_type=type, 
+                location=country, 
+                visa=visa, 
+                fresh_only=False,
+                job_functions=job_functions,
+                experience=experience,
+                cities=cities,
+                date_posted=date_posted,
+                salary=salary
+            )
+
+        total_pages = (total + limit - 1) // limit
+
         return {
             "success": True,
-            "jobs": [],
-            "message": "DEBUG MODE: Simple response works."
+            "jobs": results,
+            "recommendedFilters": recommended_filters,
+            "pagination": {
+                "page": page,
+                "limit": limit,
+                "total": total,
+                "pages": total_pages
+            }
         }
     except Exception as e:
-        logger.error(f"Project Orion Job Fetch Error (DEBUG): {str(e)}")
-        raise HTTPException(status_code=500, detail=f"DEBUG MODE FAILED: {str(e)}")
+        logger.error(f"Project Orion Job Fetch Error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Job fetch failed: {str(e)}")
         # Raise here to avoid falling through to MongoDB logic
 
 # Job Sync Endpoints
