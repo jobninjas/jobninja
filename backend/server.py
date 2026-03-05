@@ -5329,7 +5329,10 @@ async def google_login(request: Request, login_data: GoogleLoginRequest, backgro
                 }
             )
 
-            result = SupabaseService.sign_up_user(user_dict)
+            result = SupabaseService.create_profile(user_dict)
+            if not result:
+                # Fallback: try upsert (handles race conditions / existing profile)
+                result = SupabaseService.update_user_by_email(email, user_dict)
             if not result:
                 logger.error(f"FAILED to create user profile in Supabase for {email}")
                 raise HTTPException(
