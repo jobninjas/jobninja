@@ -417,6 +417,10 @@ async def get_decrypted_byok_key(email: str):
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
 
+@api_router.get("/health")
+async def api_health():
+    return {"status": "ok", "source": "api_router"}
+
 
 
 # Define Models
