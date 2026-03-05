@@ -423,6 +423,8 @@ async def api_health():
     logger.info("Health check hit: /api/health")
     return {"status": "ok", "source": "api_router", "env": os.environ.get("ENVIRONMENT", "unknown")}
 
+print("DEBUG: Progress 10% - Router and basic routes defined")
+
 
 
 # Define Models
@@ -995,6 +997,7 @@ async def send_waitlist_email(name: str, email: str):
     )
 
 
+print("DEBUG: Progress 20% - reaching booking system")
 async def send_booking_email(name: str, email: str):
     """
     Send a confirmation email to users who book a call.
@@ -1993,6 +1996,7 @@ Return ONLY the 10 headlines, one per line, no numbering or extra text."""
 @api_router.post("/ai/career-gap")
 async def generate_career_gap_explanations(request: dict):
     """Generate professional career gap explanations"""
+    print("DEBUG: Progress 40% - reaching career tools")
     try:
         prompt = f"""Create professional explanations for a career gap:
 - Duration: {request.get('gapDuration')}
@@ -2995,6 +2999,7 @@ async def add_job_application(input: JobApplicationCreate, employee_email: str =
 
     # Adapt to Supabase table column names if needed, 
     # but I'll use a generic insert or create_application
+    print("DEBUG: Progress 60% - reaching app service")
     result = SupabaseService.create_application(app_dict)
 
     if result:
@@ -4995,6 +5000,7 @@ async def generate_cv_docx(request: GenerateResumeRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+print("DEBUG: Progress 90% - reaching models section")
 class GenerateCoverLetterRequest(BaseModel):
     userId: str
     resume_text: str
@@ -6434,6 +6440,7 @@ async def force_job_fetch_v2(background_tasks: BackgroundTasks):
         raise HTTPException(status_code=500, detail=str(e))
 
 # Include the API router with all /api/* routes
+print("DEBUG: Progress 100% - All routes defined, including router")
 app.include_router(api_router)
 
 # MongoDB decommissioned - no shutdown needed
