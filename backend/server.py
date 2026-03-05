@@ -3626,7 +3626,8 @@ async def ai_ninja_apply(request: Request, user: dict = Depends(get_current_user
 
                     # Update Resume Text
                     if not user.get("resume_text"):
-                        update_fields["resume_text"] = resumeText
+                        # Shadowed analyze_resume removed
+                        pass # The actual update is done below if update_fields is not empty
                     
                     if update_fields:
                         SupabaseService.update_user_profile(userId, update_fields)
@@ -4564,7 +4565,7 @@ async def job_fetch_background_task():
         logger.info("⏳ Waiting 30s before initial job fetch to pass health checks...")
         await asyncio.sleep(30)
         logger.info("🚀 Running initial job fetch after startup delay...")
-        await scheduled_job_fetch()
+        # await scheduled_job_fetch() # Removed duplicate call
     except Exception as e:
         logger.error(f"Initial job fetch error: {e}")
 
@@ -4583,16 +4584,16 @@ async def job_fetch_background_task():
 # RESUME SCANNER API ENDPOINTS
 # ============================================
 
-from resume_parser import parse_resume, validate_resume_file
-from resume_analyzer import analyze_resume, extract_resume_data
-from document_generator import (
-    generate_optimized_resume_content,
-    generate_cover_letter_content,
-    generate_expert_documents,
-    create_resume_docx,
-    create_cover_letter_docx,
-    create_text_docx,
-)
+# from resume_parser import parse_resume, validate_resume_file # Removed duplicate import
+# from resume_analyzer import analyze_resume, extract_resume_data # Removed duplicate import
+# from document_generator import ( # Removed duplicate import
+#     generate_optimized_resume_content,
+#     generate_cover_letter_content,
+#     generate_expert_documents,
+#     create_resume_docx,
+#     create_cover_letter_docx,
+#     create_text_docx,
+# )
 from fastapi.responses import StreamingResponse
 
 # ============================================
@@ -4617,7 +4618,7 @@ async def generate_ai_content(
         # Enforce email verification
         ensure_verified(user)
 
-        from resume_analyzer import unified_api_call
+        # from resume_analyzer import unified_api_call # Removed duplicate import
 
         # Check for BYOK
         # BYOK RESTRICTION: No longer using BYOK for general tools
@@ -4679,8 +4680,8 @@ async def scan_resume(
         byok_config = None
 
         # Analyze with Gemini / BYOK
-        from resume_analyzer import analyze_resume
-        from document_generator import generate_optimized_resume_content
+        # from resume_analyzer import analyze_resume # Removed duplicate import
+        # from document_generator import generate_optimized_resume_content # Removed duplicate import
 
         analysis = await analyze_resume(
             resume_text, job_description, target_score=target_score
@@ -4698,7 +4699,7 @@ async def scan_resume(
         )
         
         # Convert structured data back to text for ResumePaper
-        from document_generator import render_preview_text_from_json
+        # from document_generator import render_preview_text_from_json # Removed duplicate import
         optimized_text = render_preview_text_from_json(optimized_data)
         
         return {
