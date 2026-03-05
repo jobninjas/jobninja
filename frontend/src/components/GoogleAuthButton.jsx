@@ -33,10 +33,18 @@ const GoogleAuthButton = ({ mode = 'login' }) => {
                 // Navigate to home page
                 navigate('/');
             } else {
-                // Show the actual error message from backend
-                const errorMessage = data.detail || 'Google authentication failed';
-                console.error('Google auth backend error:', data);
-                alert(`Authentication Error: ${errorMessage}`);
+                // Show more descriptive error message
+                const errorDetail = data.detail || data.error || data.message || JSON.stringify(data);
+                console.error('Google auth backend error status:', response.status);
+                console.error('Google auth backend error data:', data);
+
+                if (response.status === 429) {
+                    alert('Too many login attempts. Please wait a minute and try again.');
+                } else if (response.status === 502) {
+                    alert('The authentication server is currently busy or updating. Please try again in 30 seconds.');
+                } else {
+                    alert(`Authentication Error (${response.status}): ${errorDetail}`);
+                }
             }
         } catch (error) {
             console.error('Google auth error:', error);
