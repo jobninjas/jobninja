@@ -183,7 +183,6 @@ scheduler = AsyncIOScheduler()
 from job_fetcher import scheduled_job_fetch
 
 scheduler.add_job(scheduled_job_fetch, 'interval', hours=1, id='scheduled_job_fetch')
-scheduler.add_job(cleanup_old_jobs, 'interval', hours=24, id='cleanup_old_jobs')  # Run daily
 scheduler.start()
 logger.info("Job sync scheduler started successfully (Scheduled Fetch: 1hr, Cleanup: daily)")
 
