@@ -836,42 +836,8 @@ async def update_contact_message_status(
 # Redundant root removed
 
 
-@api_router.get("/health")
-async def health_check_old():
-    """
-    Health check endpoint that also tests MongoDB connection.
-    """
-    mongo_status = "unknown"
-    mongo_error = None
 
-    try:
-        # MongoDB connection test removed as it's decommissioned
-        mongo_status = "decommissioned"
-    except Exception as e:
-        mongo_status = "error"
-        mongo_error = str(e)[:200]
-
-    # Check environment variables
-    env_check = {
-        "MONGO_URL": "set" if os.environ.get("MONGO_URL") else "missing",
-        "DB_NAME": os.environ.get("DB_NAME", "not set"),
-        "RESEND_API_KEY": "set" if os.environ.get("RESEND_API_KEY") else "missing",
-        "ADMIN_EMAIL": os.environ.get("ADMIN_EMAIL", "not set"),
-    }
-
-    return {
-        "status": "healthy" if mongo_status == "connected" else "degraded",
-        "mongodb": mongo_status,
-        "mongodb_error": mongo_error,
-        "environment": env_check,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-        "fix_instructions": (
-            "If mongodb shows ssl_error, go to MongoDB Atlas > Network Access > Add IP > Allow Access from Anywhere (0.0.0.0/0)"
-            if mongo_status == "ssl_error"
-            else None
-        ),
-    }
-
+# Redundant health_check_old in api_router removed to fix route duplicate error
 
 @api_router.get("/test-email/{email}")
 async def test_email_endpoint(email: str):
