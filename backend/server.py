@@ -135,7 +135,8 @@ async def root():
 
 @app.get("/health")
 async def health_check():
-    return {"status": "ok", "version": "v1.0.7"}
+    logger.info("Health check hit: /health")
+    return {"status": "ok", "version": "v1.0.7", "env": os.environ.get("ENVIRONMENT", "unknown")}
 
 # Security Middleware
 @app.middleware("http")
@@ -419,7 +420,8 @@ api_router = APIRouter(prefix="/api")
 
 @api_router.get("/health")
 async def api_health():
-    return {"status": "ok", "source": "api_router"}
+    logger.info("Health check hit: /api/health")
+    return {"status": "ok", "source": "api_router", "env": os.environ.get("ENVIRONMENT", "unknown")}
 
 
 
@@ -5232,7 +5234,7 @@ async def google_login(request: Request, login_data: GoogleLoginRequest, backgro
     """
     try:
         # Check if auth libraries are verified
-        # Verify imports
+        logger.info(f"Google login attempt for mode: {login_data.mode}")
         if id_token is None or google_requests is None:
             logger.error("Google auth libraries missing at runtime.")
             raise HTTPException(
