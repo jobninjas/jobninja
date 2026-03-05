@@ -58,7 +58,7 @@
 }
 
 .chat-send-btn:hover {
-    background-color: var(--jobninjas-primary-hover);
+    background: var(--jobninjas-primary-hover);
     transform: scale(1.05);
 }
 

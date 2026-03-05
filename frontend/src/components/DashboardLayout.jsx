@@ -14,9 +14,12 @@ const DashboardLayout = ({ children, activePage = 'jobs' }) => {
         <div className="dashboard-wrapper">
             <header className="dashboard-top-nav">
                 <div className="dashboard-nav-container">
-                    <button onClick={() => { navigate('/'); window.scrollTo(0, 0); }} className="nav-logo mr-8">
-                        <img src={BRAND.logoPath} alt={BRAND.logoAlt} className="logo-image" />
-                        <span className="logo-text-static">{BRAND.name}</span>
+                    <button onClick={() => { navigate('/'); window.scrollTo(0, 0); }} className="nav-logo mr-8 flex items-center">
+                        <img src={BRAND.logoPath} alt={BRAND.logoAlt} className="logo-image mr-2" />
+                        <div className="flex items-baseline">
+                            <span className="text-[1.25rem] font-extrabold text-slate-900 tracking-tight">jobNinjas</span>
+                            <span className="text-[1.25rem] font-extrabold text-[var(--logo-mint)] tracking-tight">.ai</span>
+                        </div>
                     </button>
                     <MegaMenu />
                 </div>

@@ -1,171 +1,196 @@
 /* ═══════════════════════════════════════════════════════════
-   JobCardOrion — Mobile-first responsive job card
+   JobCardOrion — Modern Wave Style Mobile-first responsive job card
    ═══════════════════════════════════════════════════════════ */
 
-/* Card container - Bento Box Style (Super-Compact) */
 .jobcard-orion {
     position: relative;
     padding: 0 !important;
-    border: 1px solid var(--border-light);
-    border-radius: 8px;
-    /* Tighter corners */
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
     background: white;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
     transition: all 0.2s ease;
     overflow: hidden;
     display: flex;
     flex-direction: row;
-    min-height: 90px;
-    /* Ultra-reduced from 140px */
+    min-height: 140px;
 }
 
 .jobcard-orion:hover {
-    box-shadow: 0 4px 12px -4px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08);
+    transform: translateY(-2px);
+    border-color: #bae6fd;
 }
 
 /* Left side: Content */
 .jobcard-main-content {
     flex: 1;
-    padding: 0.5rem 0.75rem;
-    /* Ultra-reduced */
+    padding: 1.25rem 1.5rem;
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    justify-content: space-between;
+    position: relative;
+    z-index: 10;
 }
 
-/* Right side: Match Stats (Ultra-Slim Block) */
+/* Right side: Match Stats (Blue Block) */
 .jobcard-stats-block {
-    width: 70px;
-    /* Reduced from 100px */
+    width: 100px;
     background: #0f172a;
+    position: relative;
+    z-index: 10;
+}
+
+.match-score-button {
+    background: #0f172a;
+    color: white;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 0.5rem;
-    color: white;
-    text-align: center;
-    border-top-right-radius: 8px;
-    border-bottom-right-radius: 8px;
+    height: 100%;
+    width: 100%;
+}
+
+.match-score-value {
+    font-size: 1.5rem;
+    font-weight: 800;
+    line-height: 1;
+    margin-bottom: 0.25rem;
 }
 
 .jobcard-stats-label {
-    font-size: 0.5rem;
+    font-size: 0.55rem;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.2px;
-    opacity: 0.6;
-    margin-top: 0.125rem;
+    letter-spacing: 0.5px;
+    opacity: 0.9;
+}
+
+.jobcard-view-count {
+    margin-top: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #64748b;
 }
 
 /* Header Section */
 .jobcard-header {
     display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin-bottom: 0.25rem;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-bottom: 0.75rem;
 }
 
 .jobcard-logo {
-    width: 28px;
-    /* Reduced */
-    height: 28px;
-    min-width: 28px;
-    border-radius: 6px;
-    background: var(--bg-main);
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    border-radius: 8px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
     display: flex;
     align-items: center;
     justify-content: center;
     overflow: hidden;
+    margin-top: 2px;
 }
 
 .jobcard-title {
-    font-size: 0.85rem;
-    /* Reduced */
+    font-size: 1.1rem;
     font-weight: 700;
-    line-height: 1.1;
-    color: #1e293b;
-    margin-bottom: 0;
+    line-height: 1.2;
+    color: #000000;
+    margin-bottom: 0.15rem;
 }
 
 .jobcard-company-line {
     display: flex;
     align-items: center;
     gap: 0.25rem;
-    font-size: 0.7rem;
-    /* Reduced */
-    color: var(--text-muted);
+    font-size: 0.85rem;
+    color: #1e293b;
+    font-weight: 700;
 }
 
 /* Metadata */
-.jobcard-meta-grid {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.25rem 0.75rem;
-    margin-bottom: 0.5rem;
-}
-
-.jobcard-meta-item {
+.jobcard-meta-row {
     display: flex;
     align-items: center;
-    gap: 0.2rem;
-    font-size: 0.7rem;
-    /* Reduced */
-    color: var(--text-muted);
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    font-size: 0.8rem;
+    color: #64748b;
+    font-weight: 500;
 }
 
-/* Tags */
-.jobcard-tags {
+.jobcard-meta-pill {
     display: flex;
-    flex-wrap: wrap;
-    gap: 0.2rem;
-    margin-bottom: 0.5rem;
+    align-items: center;
+    gap: 0.4rem;
 }
 
 /* Actions */
 .jobcard-actions {
     display: flex;
-    gap: 0.375rem;
-    margin-top: 0;
+    gap: 0.75rem;
+    margin-top: auto;
 }
 
 .jobcard-btn-apply {
-    background: var(--jobninjas-primary) !important;
-    border-radius: 6px !important;
-    padding: 0.25rem 0.625rem !important;
+    background: #18c991 !important;
+    border-radius: 8px !important;
+    padding: 0.25rem 1.5rem !important;
     font-weight: 700 !important;
-    font-size: 0.7rem !important;
-    height: 28px !important;
+    font-size: 0.8rem !important;
+    height: 36px !important;
+    border: 0 !important;
+}
+
+.jobcard-btn-apply:hover {
+    background: #12a678 !important;
 }
 
 .jobcard-btn-ask {
     background: white !important;
-    border: 1px solid var(--border-subtle) !important;
-    border-radius: 6px !important;
-    padding: 0.25rem 0.625rem !important;
-    color: var(--jobninjas-primary) !important;
+    border: 1px solid #18c991 !important;
+    border-radius: 8px !important;
+    padding: 0.25rem 1rem !important;
+    color: #18c991 !important;
     font-weight: 700 !important;
-    font-size: 0.7rem !important;
-    height: 28px !important;
+    font-size: 0.8rem !important;
+    height: 36px !important;
+}
+
+.jobcard-btn-ask:hover {
+    background: #f0fdf4 !important;
 }
 
 /* Responsive */
 @media (max-width: 768px) {
     .jobcard-orion {
         flex-direction: column;
-        min-height: auto;
+        background-size: 150% 100%, 150% 120%;
     }
 
     .jobcard-stats-block {
         width: 100%;
         flex-direction: row;
-        justify-content: space-between;
-        padding: 1rem 1.5rem;
-        border-radius: 0;
-        border-bottom-left-radius: 20px;
-        border-bottom-right-radius: 20px;
+        justify-content: flex-end;
+        padding: 0.5rem 1.5rem 1.5rem;
     }
 
-    .jobcard-stats-label {
-        margin-top: 0;
+    .match-score-button {
+        width: 120px;
+        flex-direction: row;
+        gap: 0.5rem;
+    }
+
+    .match-score-value {
+        font-size: 1.25rem;
+        margin-bottom: 0;
     }
 }

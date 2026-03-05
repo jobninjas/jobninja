@@ -68,9 +68,12 @@ const SideMenu = ({ isOpen, onClose, isStatic = false }) => {
         {/* Header - Only show if NOT static (static mode has logo in top nav) */}
         {!isStatic && (
           <div className="side-menu-header">
-            <button onClick={() => handleNavigation('/')} className="side-menu-logo">
-              <img src={BRAND.logoPath} alt={BRAND.logoAlt} className="side-menu-logo-img" />
-              <span className="side-menu-logo-text">{BRAND.name}</span>
+            <button onClick={() => handleNavigation('/')} className="side-menu-logo flex items-center">
+              <img src={BRAND.logoPath} alt={BRAND.logoAlt} className="side-menu-logo-img mr-2" />
+              <div className="flex items-baseline">
+                <span className="text-[1.25rem] font-extrabold text-slate-900 tracking-tight">jobNinjas</span>
+                <span className="text-[1.25rem] font-extrabold text-[var(--logo-mint)] tracking-tight">.ai</span>
+              </div>
             </button>
             <button onClick={onClose} className="side-menu-close">
               <X className="w-6 h-6" />
@@ -93,7 +96,7 @@ const SideMenu = ({ isOpen, onClose, isStatic = false }) => {
                     if (item.locked) return; // Prevent navigation if locked
                     handleNavigation(item.path);
                   }}
-                  className={`side-menu-item ${isActive ? 'active' : ''} ${item.locked ? 'opacity-60 cursor-not-allowed' : ''}`}
+                  className={`side-menu-item ${isActive ? 'active' : ''} ${item.locked ? 'opacity-80 cursor-not-allowed' : ''}`}
                 >
                   <div className="relative">
                     {typeof item.icon === 'string' ? (

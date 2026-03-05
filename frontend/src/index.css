@@ -18,11 +18,13 @@ code {
 
 /* JobRight-inspired Design System */
 :root {
-  /* Colors - Sophisticated Teal/Emerald */
+  /* Colors - Bright Emerald/Green */
   --jobninjas-primary: #10b981;
   --jobninjas-primary-hover: #059669;
   --jobninjas-primary-light: rgba(16, 185, 129, 0.1);
   --jobninjas-secondary: #0ea5e9;
+  --logo-mint: #18c991;
+  /* Specifically for the .ai logo suffix */
 
   /* Neutral Palette */
   --bg-main: #f8fafc;
@@ -31,9 +33,10 @@ code {
   --border-light: #f1f5f9;
   --border-subtle: #e2e8f0;
 
-  /* Text */
-  --text-main: #0f172a;
-  --text-muted: #64748b;
+  /* Text - High Contrast / Bright Dark Black */
+  --text-main: #000000;
+  --text-muted: #111827;
+  /* Near black instead of grey */
   --text-inverse: #ffffff;
 
   /* Shadows & Bento Effects */

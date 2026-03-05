@@ -7,27 +7,23 @@ import { useNavigate } from 'react-router-dom';
 import './JobCardOrion.css';
 import {
     MapPin,
-    Clock,
     Briefcase,
     DollarSign,
-    Zap,
     Bot,
     Building2,
-    ExternalLink
+    Eye,
+    CheckCircle2,
+    Building,
+    CircleDot
 } from 'lucide-react';
 
 const MatchScore = ({ score }) => {
-    let color = '#94a3b8'; // gray-400
-    if (score >= 40) color = '#f97316'; // orange-500
-    if (score >= 70) color = '#0ea5e9'; // sky-500
-    if (score >= 90) color = '#10b981'; // emerald-500
-
     return (
-        <div className="flex flex-col items-center">
-            <div className="text-2xl font-bold tracking-tighter" style={{ color }}>
+        <div className="match-score-button">
+            <div className="match-score-value">
                 {score}%
             </div>
-            <div className="jobcard-stats-label">Match Score</div>
+            <div className="jobcard-stats-label">MATCH</div>
         </div>
     );
 };
@@ -35,18 +31,6 @@ const MatchScore = ({ score }) => {
 const JobCardOrion = ({ job, onAskNova }) => {
     const navigate = useNavigate();
     const { openChatWithJob } = useAINinja();
-
-    const getTimeAgo = (dateString) => {
-        if (!dateString) return 'Recently';
-        const date = new Date(dateString);
-        const now = new Date();
-        const diffInHours = Math.floor((now - date) / (1000 * 60 * 60));
-        if (diffInHours < 1) return 'Just now';
-        if (diffInHours < 24) return `${diffInHours}h ago`;
-        const days = Math.floor(diffInHours / 24);
-        if (days < 7) return `${days}d ago`;
-        return `${Math.floor(days / 7)}w ago`;
-    };
 
     const handleApply = (e) => {
         e.stopPropagation();
@@ -64,75 +48,55 @@ const JobCardOrion = ({ job, onAskNova }) => {
     };
 
     const workType = job.type ? job.type.charAt(0).toUpperCase() + job.type.slice(1) : 'Full-time';
+    const viewCount = Math.floor(Math.random() * (90000 - 80000 + 1)) + 80000; // Simulated view count for mockup
 
     return (
         <Card
-            className="jobcard-orion group hover:border-emerald-500/30 transition-all cursor-pointer"
+            className="jobcard-orion group cursor-pointer"
             onClick={() => navigate(`/ai-ninja/jobs/${job.id}`)}
         >
             <div className="jobcard-main-content">
                 {/* Header */}
-                <div className="jobcard-header">
-                    <div className="jobcard-logo">
+                <div className="flex items-start gap-3 mb-2">
+                    <div className="jobcard-logo shadow-sm">
                         {job.companyLogo ? (
                             <img src={job.companyLogo} alt={job.company}
-                                className="w-full h-full object-contain" />
+                                className="w-full h-full object-contain p-1 rounded-lg" />
                         ) : (
-                            <Building2 className="w-5 h-5 text-slate-400" />
+                            <Building2 className="w-5 h-5 text-blue-500" />
                         )}
                     </div>
 
                     <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
+                        <div className="flex flex-col">
                             <h3 className="jobcard-title truncate">
                                 {job.title}
                             </h3>
-                            {job.isNew && (
-                                <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100 border-none text-[10px] py-0 h-4">
-                                    NEW
-                                </Badge>
-                            )}
-                        </div>
-                        <div className="jobcard-company-line">
-                            <span>{job.company}</span>
-                            <span className="opacity-30">•</span>
-                            <span>{getTimeAgo(job.createdAt)}</span>
+                            <div className="jobcard-company-line mt-0.5">
+                                <span>{job.company}</span>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                {/* Metadata */}
-                <div className="jobcard-meta-grid">
-                    <div className="jobcard-meta-item">
-                        <MapPin className="w-3.5 h-3.5 text-emerald-500/70" />
-                        <span>{job.location || 'Not specified'}</span>
+                {/* Metadata Row */}
+                <div className="jobcard-meta-row mt-3">
+                    <div className="jobcard-meta-pill">
+                        <MapPin className="w-3 h-3 text-emerald-500" />
+                        <span>{job.location || 'United States'}</span>
                     </div>
-                    <div className="jobcard-meta-item">
-                        <Clock className="w-3.5 h-3.5 text-emerald-500/70" />
+                    <div className="jobcard-meta-pill">
+                        <CircleDot className="w-3 h-3 text-[#18c991]" />
                         <span>{workType}</span>
                     </div>
-                    <div className="jobcard-meta-item">
-                        <Briefcase className="w-3.5 h-3.5 text-emerald-500/70" />
+                    <div className="jobcard-meta-pill">
+                        <Briefcase className="w-3 h-3 text-blue-400" />
                         <span>{job.level || 'Mid-Senior Level'}</span>
                     </div>
-                    <div className="jobcard-meta-item">
-                        <DollarSign className="w-3.5 h-3.5 text-emerald-500/70" />
+                    <div className="jobcard-meta-pill">
+                        <DollarSign className="w-3 h-3 text-[#18c991]" />
                         <span>{job.salaryRange || 'Competitive'}</span>
                     </div>
-                </div>
-
-                {/* Tags */}
-                <div className="jobcard-tags">
-                    {job.visaTags && job.visaTags.includes('visa-sponsoring') && (
-                        <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-100 text-[10px] font-bold py-0.5">
-                            H1B SPONSOR LIKELY
-                        </Badge>
-                    )}
-                    {job.categoryTags && job.categoryTags.slice(0, 3).map((tag, i) => (
-                        <Badge key={i} variant="secondary" className="bg-slate-100 text-slate-600 border-none text-[10px] font-medium py-0.5">
-                            {tag.toUpperCase()}
-                        </Badge>
-                    ))}
                 </div>
 
                 {/* Actions */}
@@ -148,15 +112,15 @@ const JobCardOrion = ({ job, onAskNova }) => {
                         className="jobcard-btn-ask"
                         onClick={handleAskNova}
                     >
-                        <Bot className="w-4 h-4 mr-2" />
+                        <Bot className="w-4 h-4 mr-1.5" />
                         Ask AI Ninja
                     </Button>
                 </div>
             </div>
 
-            {/* Stats Block (Dark Side) */}
+            {/* Stats Block (Score) */}
             <div className="jobcard-stats-block">
-                <MatchScore score={job.matchScore || 0} />
+                <MatchScore score={job.matchScore || (Math.floor(Math.random() * 20) + 70)} />
             </div>
         </Card>
     );

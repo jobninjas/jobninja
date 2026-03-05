@@ -110,11 +110,14 @@
   padding: 0 0.75rem;
   margin-bottom: 0.75rem;
   font-size: 0.7rem;
-  font-weight: 700;
+  font-weight: 800;
+  /* Bolder */
   text-transform: uppercase;
-  letter-spacing: 1px;
-  color: var(--text-muted);
-  opacity: 0.6;
+  letter-spacing: 1.5px;
+  color: #000000;
+  /* Pure Black */
+  opacity: 1;
+  /* Remove transparency */
 }
 
 .side-menu-item {
@@ -129,7 +132,8 @@
   cursor: pointer;
   text-align: left;
   font-size: 0.875rem;
-  font-weight: 600;
+  font-weight: 700;
+  /* Increased weight for 'brightness' */
   color: var(--text-muted);
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   border-radius: 12px;
@@ -137,7 +141,7 @@
 
 .side-menu-item:hover {
   background: var(--bg-main);
-  color: var(--jobninjas-primary);
+  color: var(--jobninjas-primary) !important;
 }
 
 .side-menu-item.active {
@@ -151,9 +155,11 @@
 }
 
 .side-menu-icon {
-  width: 20px;
-  height: 20px;
+  width: 22px;
+  height: 22px;
   flex-shrink: 0;
+  color: #1e293b;
+  /* Sharp dark icons */
   transition: color 0.2s;
 }
 
