@@ -91,6 +91,7 @@ class JSearchService:
                             ),
                             "datePosted": job.get('job_posted_at_datetime_utc', datetime.now().isoformat()),
                             "source": "JSearch",
+                            "publisher": job.get('job_publisher', ''),
                             "workType": job.get('job_employment_type', 'Full-time'),
                             "sponsorship": "Yes" if job.get('job_is_remote') else "Unknown"
                         }

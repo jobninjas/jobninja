@@ -584,6 +584,16 @@ class SupabaseService:
                     app["matchScore"] = meta["matchScore"]
                 if "origin" in meta and "origin" not in app:
                     app["origin"] = meta["origin"]
+                if "jobUrl" in meta and not app.get("source_url"):
+                    app["source_url"] = meta["jobUrl"]
+                if "resumeText" in meta and not app.get("resumeText"):
+                    app["resumeText"] = meta["resumeText"]
+                if "jobTitle" in meta and not app.get("job_title"):
+                    app["job_title"] = meta["jobTitle"]
+                if "company" in meta and not app.get("company"):
+                    app["company"] = meta["company"]
+                if "jobDescription" in meta and not app.get("jobDescription"):
+                    app["jobDescription"] = meta["jobDescription"]
                     
             return apps
         except Exception as e:
@@ -901,7 +911,7 @@ class SupabaseService:
         allowed_columns = {
             'id', 'job_id', 'title', 'company', 'description', 'location', 
             'source', 'job_type', 'salary', 'is_active', 'keywords', 
-            'source_url', 'posted_at', 'created_at', 'categories'
+            'source_url', 'posted_at', 'created_at', 'categories', 'hr_contacts'
         }
         
         # Map URL fields to source_url

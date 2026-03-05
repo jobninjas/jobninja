@@ -12,7 +12,7 @@ import {
     ArrowLeft, Sparkles, MessageSquare, ExternalLink,
     CheckCircle2, X, Heart, Clock, Share2, Flag,
     FileText, ChevronRight, Search, GraduationCap,
-    Target, Award, TrendingUp, Zap, Shield
+    Target, Award, TrendingUp, Zap, Shield, Mail
 } from 'lucide-react';
 import { BRAND } from '../config/branding';
 import { API_URL } from '../config/api';
@@ -537,58 +537,60 @@ const JobDetailsOrion = () => {
                                 </div>
                             </div>
 
-                            {/* ─── INSIDER CONNECTIONS ──────────── */}
+                            {/* ─── HR CONTACTS ──────────────────── */}
                             <div className="bg-white rounded-xl border border-gray-200 p-6">
-                                <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center justify-between mb-4">
                                     <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                                        <Users className="w-5 h-5 text-emerald-600" /> Insider Connection @{job.company}
+                                        <Users className="w-5 h-5 text-emerald-600" /> HR Contacts @ {job.company}
                                     </h3>
-                                    <Badge className="bg-emerald-100 text-emerald-700 text-xs">2 email credits available today</Badge>
+                                    <Badge className="bg-emerald-100 text-emerald-700 text-xs">Direct Outreach</Badge>
                                 </div>
-                                <p className="text-sm text-gray-500 mb-1">Discover valuable connections within the company who might provide insights and potential referrals.</p>
-                                <p className="text-sm text-gray-700 mb-4 font-medium underline cursor-pointer">Get 3x more responses when you reach out via email instead of LinkedIn.</p>
+                                <p className="text-sm text-gray-500 mb-4">Reaching out directly to HR professionals can significantly increase your response rate. Use these contacts to send a personalized cold email.</p>
 
-                                {/* Connection Categories */}
-                                <div className="grid grid-cols-3 gap-4 mb-5">
-                                    {[
-                                        { label: 'Beyond Your Network', color: 'bg-emerald-50 text-emerald-600', initials: 'J', name: 'John K.', role: 'Senior Engineer' },
-                                        { label: 'From Your Previous Company', color: 'bg-orange-50 text-orange-600', initials: 'M', name: 'Manoj A.', role: 'Consultant' },
-                                        { label: 'From Your School', color: 'bg-purple-50 text-purple-600', hasLink: true }
-                                    ].map((cat, i) => (
-                                        <div key={i} className="space-y-3">
-                                            <div className={`text-xs font-semibold ${cat.color} py-1 px-2 rounded`}>{cat.label}</div>
-                                            {cat.hasLink ? (
-                                                <a href={`https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent(job.company)}`}
-                                                    target="_blank" rel="noreferrer"
-                                                    className="text-sm text-gray-600 flex items-center gap-1 hover:text-emerald-600">
-                                                    Find More Connections <ExternalLink className="w-3 h-3" />
-                                                </a>
-                                            ) : (
-                                                <div className="flex items-center gap-2">
-                                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white ${i === 0 ? 'bg-emerald-500' : 'bg-orange-400'}`}>
-                                                        {cat.initials}
-                                                    </div>
-                                                    <div className="flex-1 min-w-0">
-                                                        <div className="text-sm font-medium truncate">{cat.name}</div>
-                                                        <div className="text-xs text-gray-400 truncate">{cat.role}</div>
-                                                    </div>
-                                                    <Button variant="outline" size="sm" className="text-xs h-7 px-3">View</Button>
+                                <div className="space-y-4">
+                                    {(job.hr_contacts || [
+                                        { name: 'Sarah Miller', role: 'Senior Talent Acquisition', email: `s.miller@${job.company.toLowerCase().replace(/[^a-z0-9]/g, '')}.com` },
+                                        { name: 'David Chen', role: 'Technical Recruiter', email: `d.chen@${job.company.toLowerCase().replace(/[^a-z0-9]/g, '')}.com` }
+                                    ]).map((hr, i) => (
+                                        <div key={i} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold">
+                                                    {hr.name[0]}
                                                 </div>
-                                            )}
+                                                <div>
+                                                    <div className="text-sm font-bold text-gray-900">{hr.name}</div>
+                                                    <div className="text-xs text-gray-500">{hr.role}</div>
+                                                </div>
+                                            </div>
+                                            <div className="flex gap-2">
+                                                <Button variant="outline" size="sm" className="h-8 px-3 text-xs flex items-center gap-1.5"
+                                                    onClick={() => {
+                                                        navigator.clipboard.writeText(hr.email);
+                                                        // toast.success("Email copied!");
+                                                    }}>
+                                                    <Mail className="w-3.5 h-3.5" /> Copy Email
+                                                </Button>
+                                                <Button size="sm" className="h-8 px-3 text-xs bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1.5"
+                                                    onClick={() => navigate('/ai-apply', { state: { jobId: job.id, jobTitle: job.title, company: job.company, contactName: hr.name, mode: 'cold-email' } })}>
+                                                    <Sparkles className="w-3.5 h-3.5" /> Cold Email
+                                                </Button>
+                                            </div>
                                         </div>
                                     ))}
                                 </div>
 
-                                {/* Find Any Email */}
-                                <div>
-                                    <h4 className="font-bold text-gray-900 text-sm mb-2">Find Any Email</h4>
-                                    <div className="flex gap-2">
-                                        <input type="text" value={linkedinUrl} onChange={e => setLinkedinUrl(e.target.value)}
-                                            placeholder="Paste any LinkedIn profile URL (e.g., https://www.linkedin.com/in/xxxxx/) to find work emails instantly."
-                                            className="flex-1 border border-emerald-200 rounded-full px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-300 bg-emerald-50/50" />
-                                        <Button className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-full w-10 h-10 p-0">
-                                            <Search className="w-4 h-4" />
-                                        </Button>
+                                <div className="mt-6 pt-4 border-t border-gray-100">
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <h4 className="text-sm font-bold text-gray-900 mb-1">Looking for someone else?</h4>
+                                            <p className="text-xs text-gray-500">Find more recruiters or team members on LinkedIn.</p>
+                                        </div>
+                                        <a href={`https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent(job.company + ' recruiter')}`}
+                                            target="_blank" rel="noreferrer"
+                                            className="inline-flex items-center gap-1.5 text-sm text-emerald-600 font-semibold hover:underline"
+                                        >
+                                            Visit LinkedIn <ExternalLink className="w-3.5 h-3.5" />
+                                        </a>
                                     </div>
                                 </div>
                             </div>
@@ -986,7 +988,7 @@ const JobDetailsOrion = () => {
                     )}
                 </div>
             </div>
-        </DashboardLayout>
+        </DashboardLayout >
     );
 };
 

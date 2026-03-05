@@ -2660,6 +2660,7 @@ async def test_dodo():
 async def create_dodo_portal(user: dict = Depends(get_current_user)):
     """
     Create a Dodo Payments portal link for managing active subscriptions.
+    Handles users with multiple customer records by picking the one with active subscriptions.
     """
     from dodopayments import AsyncDodoPayments
     try:
@@ -2673,15 +2674,29 @@ async def create_dodo_portal(user: dict = Depends(get_current_user)):
         if not customers.items:
             raise HTTPException(status_code=400, detail="No billing profile found. Please subscribe first.")
             
-        customer_id = customers.items[0].customer_id
-        portal = await dodo_client.customers.customer_portal.create(customer_id=customer_id)
+        # If multiple customers exist, find the one with subscriptions
+        target_customer_id = customers.items[0].customer_id
+        
+        if len(customers.items) > 1:
+            logger.info(f"Multiple Dodo customers ({len(customers.items)}) found for {email}. Searching for active subscription...")
+            for cust in customers.items:
+                try:
+                    subs = await dodo_client.subscriptions.list(customer_id=cust.customer_id)
+                    if subs.items:
+                        logger.info(f"Found active/past subscriptions for Dodo customer {cust.customer_id}")
+                        target_customer_id = cust.customer_id
+                        break
+                except Exception as sub_err:
+                    logger.warning(f"Failed to list subscriptions for customer {cust.customer_id}: {sub_err}")
+
+        portal = await dodo_client.customers.customer_portal.create(customer_id=target_customer_id)
         
         portal_dict = portal.model_dump()
         return {"url": portal_dict.get('link') or portal_dict.get('url')}
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error creating dodo portal: {str(e)}")
+        logger.error(f"Error creating dodo portal for {user.get('email')}: {str(e)}", exc_info=True)
         raise HTTPException(status_code=400, detail=f"Failed to create subscription portal: {str(e)}")
 
 @app.get("/api/debug-routes")
@@ -3607,6 +3622,7 @@ async def ai_ninja_apply(request: Request, user: dict = Depends(get_current_user
             raise HTTPException(status_code=400, detail="Company name is required")
 
         jobDescription = form.get("jobDescription", "")
+        jobUrl = form.get("jobUrl", "")
         
         # ... (rest of tailoring logic remains the same) ...
         resumeText = form.get("resumeText", "")
@@ -3685,11 +3701,15 @@ async def ai_ninja_apply(request: Request, user: dict = Depends(get_current_user
             "status": "applied",
             "resume_id": resume_id,
             "platform": company, # Legacy fallback
+            "source_url": jobUrl,
             "applied_at": datetime.now(timezone.utc).isoformat(),
             "created_at": datetime.now(timezone.utc).isoformat(),
             "metadata": {
                 "origin": "ai-ninja",
-                "resumeId": resume_id
+                "resumeId": resume_id,
+                "jobUrl": jobUrl,
+                "resumeText": tailoredResume,
+                "jobDescription": jobDescription
             }
         }
 
@@ -5542,15 +5562,20 @@ async def save_application(application: ApplicationData):
         
         app_doc = {
             "user_id": user_id,
+            "user_email": application.userEmail,
             "job_id": job_id,
+            "job_title": application.jobTitle,
+            "company": application.company,
             "status": application.status or "materials_ready",
             "notes": application.notes,
             "platform": application.location,
+            "source_url": application.sourceUrl,
             "applied_at": application.appliedAt,
             "metadata": {
                 "jobUrl": application.sourceUrl,
                 "resumeText": application.resumeText,
                 "coverLetterText": application.coverLetterText,
+                "jobDescription": application.jobDescription,
                 "matchScore": application.matchScore,
                 "company": application.company,
                 "jobTitle": application.jobTitle,

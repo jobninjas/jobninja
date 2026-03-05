@@ -214,6 +214,7 @@ const AIApply = () => {
       formDataToSend.append('visaStatus', formData.visaStatus);
       formDataToSend.append('targetSalary', formData.targetSalary);
       formDataToSend.append('preferredWorkType', formData.preferredWorkType);
+      formDataToSend.append('jobUrl', job.sourceUrl || '');
       if (formData.resumeFile) {
         formDataToSend.append('resume', formData.resumeFile);
       }
