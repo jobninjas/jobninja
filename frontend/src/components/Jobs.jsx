@@ -92,12 +92,16 @@ const Jobs = () => {
           // Set defaults if currently empty
           const targetRole = data.profile.preferences?.target_role || data.profile.targetRole;
           const preferredLocation = data.profile.preferences?.preferred_locations || data.profile.address?.city || data.profile.city;
+          const savedJobFunctions = data.profile.preferences?.job_functions || [];
 
           if (targetRole && !searchKeyword) {
             setSearchKeyword(targetRole);
           }
           if (preferredLocation && !locationFilter) {
             setLocationFilter(preferredLocation);
+          }
+          if (savedJobFunctions.length > 0 && selectedJobFunctions.length === 0) {
+            setSelectedJobFunctions(savedJobFunctions);
           }
         }
       }
@@ -291,6 +295,48 @@ const Jobs = () => {
     setCurrentPage(1);
   };
 
+  const saveJobPreferences = async (roles) => {
+    try {
+      const storedToken = token || localStorage.getItem('auth_token');
+      if (!storedToken) return;
+
+      const response = await fetch(`${API_URL}/api/user/profile`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'token': storedToken
+        },
+        body: JSON.stringify({
+          preferences: {
+            ...userProfile?.preferences,
+            job_functions: roles
+          }
+        })
+      });
+
+      if (response.ok) {
+        console.log('Job preferences saved successfully');
+        // Refresh profile state
+        fetchUserProfile();
+      }
+    } catch (err) {
+      console.error('Error saving job preferences:', err);
+    }
+  };
+
+  const toggleJobFunction = (role) => {
+    const updated = selectedJobFunctions.includes(role)
+      ? selectedJobFunctions.filter(r => r !== role)
+      : [...selectedJobFunctions, role];
+
+    setSelectedJobFunctions(updated);
+  };
+
+  const handleConfirmJobFunctions = () => {
+    saveJobPreferences(selectedJobFunctions);
+    fetchJobs(1);
+  };
+
   const hasActiveFilters = searchKeyword || locationFilter || countryFilter !== 'usa' || sponsorshipFilter !== 'all' || workTypeFilter !== 'all';
 
   const handleAskNova = (job) => {
@@ -345,16 +391,14 @@ const Jobs = () => {
                         </div>
                       </div>
                       {!allLocationsToggle && (
-                        <div className="space-y-3">
-                          <div className="relative">
-                            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                            <Input
-                              placeholder="Enter City"
-                              className="pl-9 h-10 text-sm border-gray-200"
-                              value={cityInput}
-                              onChange={(e) => setCityInput(e.target.value)}
-                            />
-                          </div>
+                        <div className="relative">
+                          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                          <Input
+                            placeholder="Enter City"
+                            className="pl-9 h-10 text-sm border-gray-200"
+                            value={cityInput}
+                            onChange={(e) => setCityInput(e.target.value)}
+                          />
                         </div>
                       )}
                     </div>
@@ -366,19 +410,62 @@ const Jobs = () => {
               <Popover>
                 <PopoverTrigger asChild>
                   <button className="rounded-full h-9 px-4 border border-gray-200 bg-white hover:bg-gray-50 text-xs font-medium text-gray-700 shadow-sm flex items-center gap-2">
-                    {searchKeyword || (selectedJobFunctions.length > 0 ? selectedJobFunctions[0] : 'Job Function')}
+                    {selectedJobFunctions.length > 0
+                      ? `${selectedJobFunctions.length} Roles`
+                      : (searchKeyword || 'Job Function')}
                     <ChevronDown className="w-3.5 h-3.5 opacity-50" />
                   </button>
                 </PopoverTrigger>
                 <PopoverContent className="w-80 p-4" align="start">
                   <div className="space-y-4">
-                    <Input
-                      placeholder="Search functions..."
-                      className="h-10 text-sm border-gray-200"
-                      value={jobFunctionInput}
-                      onChange={(e) => setJobFunctionInput(e.target.value)}
-                    />
-                    <Button size="sm" className="w-full text-xs bg-black text-white" onClick={() => fetchJobs(1)}>Confirm</Button>
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="Add a role (e.g. AI Engineer)"
+                        className="h-10 text-sm border-gray-200"
+                        value={jobFunctionInput}
+                        onChange={(e) => setJobFunctionInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && jobFunctionInput.trim()) {
+                            toggleJobFunction(jobFunctionInput.trim());
+                            setJobFunctionInput('');
+                          }
+                        }}
+                      />
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          if (jobFunctionInput.trim()) {
+                            toggleJobFunction(jobFunctionInput.trim());
+                            setJobFunctionInput('');
+                          }
+                        }}
+                      >
+                        Add
+                      </Button>
+                    </div>
+
+                    {selectedJobFunctions.length > 0 && (
+                      <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto p-1">
+                        {selectedJobFunctions.map(role => (
+                          <Badge
+                            key={role}
+                            variant="secondary"
+                            className="bg-gray-100 text-gray-700 hover:bg-gray-200 flex items-center gap-1 py-1 px-2"
+                          >
+                            {role}
+                            <X
+                              className="w-3 h-3 cursor-pointer"
+                              onClick={() => toggleJobFunction(role)}
+                            />
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+
+                    <Button size="sm" className="w-full text-xs bg-black text-white" onClick={handleConfirmJobFunctions}>
+                      Confirm & Save
+                    </Button>
                   </div>
                 </PopoverContent>
               </Popover>
