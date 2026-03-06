@@ -45,6 +45,7 @@ import traceback
 from dateutil.relativedelta import relativedelta
 import aiohttp
 import re
+from urllib.parse import quote
 from models import CheckoutRequest, SubscriptionData, WebhookEvent
 from payment_service import (
     create_checkout_session,
@@ -1058,8 +1059,9 @@ async def send_welcome_email(
     """
     logger.info(f"Attempting to send welcome email to {email} (Name: {name})")
     frontend_url = os.environ.get("FRONTEND_URL", "https://www.jobninjas.ai")
+    encoded_email = quote(email)
     verify_link = (
-        f"{frontend_url}/verify-email?token={token}&email={email}"
+        f"{frontend_url}/verify-email?token={token}&email={encoded_email}"
         if token
         else f"{frontend_url}/dashboard"
     )
@@ -1183,11 +1185,16 @@ async def send_welcome_email(
     """
 
     try:
-        return await send_email_resend(
+        success = await send_email_resend(
             email, f"Welcome to jobNinjas, {name}! 🥷", html_content
         )
+        if success:
+            logger.info(f"✅ Welcome email sent successfully to {email}")
+        else:
+            logger.error(f"❌ Failed to send welcome email to {email}")
+        return success
     except Exception as e:
-        logger.error(f"Failed to generate/send welcome email: {e}")
+        logger.error(f"Failed to generate/send welcome email for {email}: {e}")
         return False
 
 
@@ -1251,7 +1258,7 @@ async def send_admin_booking_notification(booking):
 
 @api_router.post("/auth/signup")
 @limiter.limit("5/minute")
-async def signup(request: Request, user_data: UserSignup):
+async def signup(request: Request, user_data: UserSignup, background_tasks: BackgroundTasks):
     """
     Register a new user and send welcome email.
     """
@@ -1298,10 +1305,9 @@ async def signup(request: Request, user_data: UserSignup):
 
         # Send welcome email in background (don't wait)
         try:
-            asyncio.create_task(
-                send_welcome_email(
-                    user_data.name, user_data.email, verification_token, referral_code
-                )
+            background_tasks.add_task(
+                send_welcome_email,
+                user_data.name, user_data.email, verification_token, referral_code
             )
         except Exception as email_error:
             logger.error(f"Error sending welcome email: {email_error}")
@@ -1456,7 +1462,7 @@ async def verify_email(token: str, email: str = None):
 
 @api_router.post("/auth/resend-verification")
 @limiter.limit("3/minute")
-async def resend_verification(request: Request, user: dict = Depends(get_current_user)):
+async def resend_verification(request: Request, background_tasks: BackgroundTasks, user: dict = Depends(get_current_user)):
     """
     Resend verification email to the logged-in user.
     """
@@ -1474,13 +1480,12 @@ async def resend_verification(request: Request, user: dict = Depends(get_current
             )
 
         # Send email in background
-        asyncio.create_task(
-            send_welcome_email(
-                user["name"],
-                user["email"],
-                verification_token,
-                user.get("referral_code"),
-            )
+        background_tasks.add_task(
+            send_welcome_email,
+            user["name"],
+            user["email"],
+            verification_token,
+            user.get("referral_code"),
         )
 
         return {"success": True, "message": "Verification email resent"}
