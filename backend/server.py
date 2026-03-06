@@ -132,12 +132,12 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 @app.get("/")
 async def root():
-    return {"status": "ok", "message": "Backend version v1.0.9-debug"}
+    return {"status": "ok", "message": "Backend version v1.0.10-deep-debug"}
 
 @app.get("/health")
 async def health_check():
     logger.info("Health check hit: /health")
-    return {"status": "ok", "version": "v1.0.9-debug", "env": os.environ.get("ENVIRONMENT", "unknown")}
+    return {"status": "ok", "version": "v1.0.10-deep-debug", "env": os.environ.get("ENVIRONMENT", "unknown")}
 
 # Security Middleware
 @app.middleware("http")
@@ -422,7 +422,7 @@ api_router = APIRouter(prefix="/api")
 @api_router.get("/health")
 async def api_health():
     logger.info("Health check hit: /api/health")
-    return {"status": "ok", "source": "api_router", "version": "v1.0.9-debug", "env": os.environ.get("ENVIRONMENT", "unknown")}
+    return {"status": "ok", "source": "api_router", "version": "v1.0.10-deep-debug", "env": os.environ.get("ENVIRONMENT", "unknown")}
 
 print("DEBUG: Progress 10% - Router and basic routes defined")
 
@@ -6486,6 +6486,38 @@ async def force_job_fetch_v2(background_tasks: BackgroundTasks):
         logger.error(f"Force fetch failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@api_router.get("/debug/test-email-active")
+async def test_email_active(email: str):
+    """Attempt a real email send and show the raw API response."""
+    resend_api_key = os.environ.get("RESEND_API_KEY")
+    from_email = os.environ.get("FROM_EMAIL", "jobNinjas <hello@jobninjas.io>")
+    
+    payload = {
+        "from": from_email,
+        "to": [email],
+        "subject": "Deep Debug Test",
+        "html": "<strong>Testing from v1.0.9-debug</strong>"
+    }
+    
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.post(
+                "https://api.resend.com/emails",
+                headers={
+                    "Authorization": f"Bearer {resend_api_key}",
+                    "Content-Type": "application/json",
+                },
+                json=payload,
+            ) as response:
+                result = await response.json()
+                return {
+                    "status_code": response.status,
+                    "payload_sent": payload,
+                    "response": result
+                }
+    except Exception as e:
+        return {"error": str(e)}
+
 @api_router.get("/debug/inspect-email-config")
 async def inspect_email_config():
     """Verify runtime email configuration."""
@@ -6496,7 +6528,7 @@ async def inspect_email_config():
         "api_key_prefix": key[:7] if key else None,
         "from_email": from_email,
         "env": os.environ.get("ENVIRONMENT", "unknown"),
-        "version": "v1.0.9-debug"
+        "version": "v1.0.10-deep-debug"
     }
 
 # Include the API router with all /api/* routes
