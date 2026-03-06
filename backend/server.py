@@ -1288,9 +1288,8 @@ async def signup(request: Request, user_data: UserSignup):
         }
 
         # Save ONLY to Supabase (no MongoDB)
-        # Note: do not pass a custom 'id' — profiles.id FK must match auth.users.
-        # Remove 'id' key so Supabase auto-generates it.
-        user_dict.pop("id", None)
+        # Note: Profiles.id FK must match a valid UUID (usually from auth.users, 
+        # but here we manage our own UUIDs).
         new_user = SupabaseService.create_profile(user_dict)
         if not new_user:
             raise HTTPException(status_code=500, detail="Failed to create user account. Please try again.")
@@ -5332,6 +5331,7 @@ async def google_login(request: Request, login_data: GoogleLoginRequest, backgro
             new_user_id = str(uuid.uuid4())  # Used only for the JWT token below
 
             profile_dict = {
+                "id": new_user_id,
                 "email": email,
                 "name": name,
                 "password_hash": "google-oauth",
