@@ -132,12 +132,12 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 @app.get("/")
 async def root():
-    return {"status": "ok", "message": "Backend version v1.0.8"}
+    return {"status": "ok", "message": "Backend version v1.0.9-debug"}
 
 @app.get("/health")
 async def health_check():
     logger.info("Health check hit: /health")
-    return {"status": "ok", "version": "v1.0.8", "env": os.environ.get("ENVIRONMENT", "unknown")}
+    return {"status": "ok", "version": "v1.0.9-debug", "env": os.environ.get("ENVIRONMENT", "unknown")}
 
 # Security Middleware
 @app.middleware("http")
@@ -422,7 +422,7 @@ api_router = APIRouter(prefix="/api")
 @api_router.get("/health")
 async def api_health():
     logger.info("Health check hit: /api/health")
-    return {"status": "ok", "source": "api_router", "version": "v1.0.8", "env": os.environ.get("ENVIRONMENT", "unknown")}
+    return {"status": "ok", "source": "api_router", "version": "v1.0.9-debug", "env": os.environ.get("ENVIRONMENT", "unknown")}
 
 print("DEBUG: Progress 10% - Router and basic routes defined")
 
@@ -6485,6 +6485,19 @@ async def force_job_fetch_v2(background_tasks: BackgroundTasks):
     except Exception as e:
         logger.error(f"Force fetch failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/debug/inspect-email-config")
+async def inspect_email_config():
+    """Verify runtime email configuration."""
+    key = os.environ.get("RESEND_API_KEY", "")
+    from_email = os.environ.get("FROM_EMAIL", "NOT SET")
+    return {
+        "api_key_set": len(key) > 0,
+        "api_key_prefix": key[:7] if key else None,
+        "from_email": from_email,
+        "env": os.environ.get("ENVIRONMENT", "unknown"),
+        "version": "v1.0.9-debug"
+    }
 
 # Include the API router with all /api/* routes
 print("DEBUG: Progress 100% - All routes defined, including router")
