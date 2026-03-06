@@ -906,7 +906,7 @@ async def send_email_resend(to_email: str, subject: str, html_content: str):
     Send email using Resend API (HTTP-based, works on Railway).
     """
     resend_api_key = os.environ.get("RESEND_API_KEY")
-    from_email = os.environ.get("FROM_EMAIL", "jobNinjas <hello@jobninjas.io>")
+    from_email = os.environ.get("FROM_EMAIL", "jobNinjas <hello@jobninjas.ai>")
 
     if not resend_api_key:
         logger.warning("RESEND_API_KEY not configured, skipping email")
@@ -1057,7 +1057,7 @@ async def send_welcome_email(
     Send a refined welcome email to new users who sign up.
     """
     logger.info(f"Attempting to send welcome email to {email} (Name: {name})")
-    frontend_url = os.environ.get("FRONTEND_URL", "https://jobninjas.io")
+    frontend_url = os.environ.get("FRONTEND_URL", "https://www.jobninjas.ai")
     verify_link = (
         f"{frontend_url}/verify-email?token={token}&email={email}"
         if token
@@ -1288,7 +1288,10 @@ async def signup(request: Request, user_data: UserSignup):
         }
 
         # Save ONLY to Supabase (no MongoDB)
-        new_user = SupabaseService.sign_up_user(user_dict)
+        # Note: do not pass a custom 'id' — profiles.id FK must match auth.users.
+        # Remove 'id' key so Supabase auto-generates it.
+        user_dict.pop("id", None)
+        new_user = SupabaseService.create_profile(user_dict)
         if not new_user:
             raise HTTPException(status_code=500, detail="Failed to create user account. Please try again.")
         
