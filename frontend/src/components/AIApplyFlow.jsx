@@ -137,7 +137,12 @@ const AIApplyFlow = ({ isScanner = false }) => {
 
   // New Jobright Flow state
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [selectedSections, setSelectedSections] = useState(['summary', 'skills', 'experience']);
+  const [selectedSections, setSelectedSections] = useState(['summary', 'skills', 'work_experience']);
+  const sectionLabels = {
+    'summary': 'Summary',
+    'skills': 'Skills',
+    'work_experience': 'Experience'
+  };
   const [selectedKeywords, setSelectedKeywords] = useState([]);
   const [matchImprovement, setMatchImprovement] = useState(0);
 
@@ -475,7 +480,7 @@ const AIApplyFlow = ({ isScanner = false }) => {
         resume_name: resumeName || `Resume_${new Date().toLocaleDateString().replace(/\//g, '-')}`,
         resume_text: textToSave,
         file_name: resumeFile?.name || '',
-        replace_id: resumeToReplace?.id || null
+        replace_id: null
       };
 
       console.log('Saving resume:', { ...resumeData, resume_text: `[${textToSave.length} chars]` });
@@ -978,26 +983,27 @@ const AIApplyFlow = ({ isScanner = false }) => {
               </div>
 
               <div className="space-y-4">
-                {['Summary', 'Skills', 'Work Experience'].map(section => (
+                {Object.keys(sectionLabels).map(sectionKey => (
                   <div
-                    key={section}
-                    className={`group p-5 rounded-2xl border-2 cursor-pointer transition-all duration-300 ${selectedSections.includes(section.toLowerCase())
+                    key={sectionKey}
+                    className={`group p-5 rounded-2xl border-2 cursor-pointer transition-all duration-300 ${selectedSections.includes(sectionKey)
                       ? 'border-indigo-600 bg-indigo-50/30'
                       : 'border-slate-100 hover:border-indigo-200 bg-white'
                       }`}
                     onClick={() => {
-                      const low = section.toLowerCase();
                       setSelectedSections(prev =>
-                        prev.includes(low) ? prev.filter(s => s !== low) : [...prev, low]
+                        prev.includes(sectionKey) ? prev.filter(s => s !== sectionKey) : [...prev, sectionKey]
                       );
                     }}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-4">
-                        <div className={`w-6 h-6 rounded-lg flex items-center justify-center transition-colors ${selectedSections.includes(section.toLowerCase()) ? 'bg-indigo-600 text-white shadow-md' : 'bg-slate-100'}`}>
-                          {selectedSections.includes(section.toLowerCase()) && <Check className="w-4 h-4" />}
+                        <div className={`w-6 h-6 rounded-lg flex items-center justify-center transition-colors ${selectedSections.includes(sectionKey) ? 'bg-indigo-600 text-white shadow-md' : 'bg-slate-100'}`}>
+                          {selectedSections.includes(sectionKey) && <Check className="w-4 h-4" />}
                         </div>
-                        <span className="font-bold text-slate-700 text-lg group-hover:text-indigo-600 transition-colors">{section}</span>
+                        <span className="font-bold text-slate-700 text-lg group-hover:text-indigo-600 transition-colors">
+                          {sectionLabels[sectionKey]}
+                        </span>
                       </div>
                       <div className="px-3 py-1 bg-green-50 text-green-600 text-xs font-bold rounded-lg">+1.2 pts</div>
                     </div>

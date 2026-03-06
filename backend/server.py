@@ -3629,9 +3629,26 @@ async def ai_ninja_apply(request: Request, user: dict = Depends(get_current_user
         except Exception as profile_err:
             logger.error(f"Failed to proactive sync profile in ai_ninja_apply: {profile_err}")
 
+        # Extra tailoring params
+        selected_sections = None
+        selected_keywords = None
+        
+        try:
+            sections_raw = form.get("selectedSections")
+            if sections_raw:
+                selected_sections = json.loads(sections_raw)
+            
+            keywords_raw = form.get("selectedKeywords")
+            if keywords_raw:
+                selected_keywords = json.loads(keywords_raw)
+        except Exception as e:
+            logger.error(f"Failed to parse tailoring params: {e}")
+
         # Tailoring logic
         expert_docs = await generate_expert_documents(
-            resumeText, jobDescription, user_info=user
+            resumeText, jobDescription, user_info=user,
+            selected_sections=selected_sections,
+            selected_keywords=selected_keywords
         )
         
         tailoredResume = expert_docs.get("ats_resume", "")
