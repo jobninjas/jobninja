@@ -5309,63 +5309,73 @@ async def google_login(request: Request, login_data: GoogleLoginRequest, backgro
             }
         else:
             # New user - create account in Supabase
-            new_user_obj = User(
-                email=email, name=name, password_hash="google-oauth", is_verified=True
-            )
+            # Build a minimal profile dict — do NOT include 'id' since profiles.id must
+            # match an auth.users row (FK constraint). Let the DB auto-generate the UUID.
+            now_iso = datetime.now(timezone.utc).isoformat()
+            new_user_id = str(uuid.uuid4())  # Used only for the JWT token below
 
-            user_dict = new_user_obj.model_dump()
-            user_dict.update(
-                {
-                    "google_id": google_id,
-                    "profile_picture": picture,
-                    "auth_method": "google",
-                    "plan": "free", # Explicitly set plan to match signup default
-                    "created_at": (
-                        user_dict["created_at"].isoformat()
-                        if isinstance(user_dict["created_at"], datetime)
-                        else user_dict["created_at"]
-                    ),
-                    "is_verified": True
-                }
-            )
+            profile_dict = {
+                "email": email,
+                "name": name,
+                "password_hash": "google-oauth",
+                "google_id": google_id,
+                "profile_picture": picture,
+                "auth_method": "google",
+                "plan": "free",
+                "role": "customer",
+                "is_verified": True,
+                "referral_code": f"INV-{uuid.uuid4().hex[:6].upper()}",
+                "created_at": now_iso,
+            }
 
-            result = SupabaseService.create_profile(user_dict)
-            if not result:
-                # Fallback: try upsert (handles race conditions / existing profile)
-                result = SupabaseService.update_user_by_email(email, user_dict)
+            try:
+                client = SupabaseService.get_client()
+                if client:
+                    resp = client.table("profiles").upsert(
+                        profile_dict, on_conflict="email"
+                    ).execute()
+                    result = resp.data[0] if resp.data else None
+                    if result:
+                        new_user_id = result.get("id", new_user_id)
+                else:
+                    result = None
+            except Exception as e:
+                logger.error(f"Supabase upsert error for Google user {email}: {e}")
+                result = None
+
             if not result:
                 logger.error(f"FAILED to create user profile in Supabase for {email}")
                 raise HTTPException(
                     status_code=500,
                     detail="Failed to create your user profile. Please try again or contact support."
                 )
-            
+
             logger.info(f"New user created via Google OAuth in Supabase: {email}")
 
 
             # Send welcome email in background
             try:
                 background_tasks.add_task(
-                    send_welcome_email, name, email, None, new_user_obj.referral_code
+                    send_welcome_email, name, email, None, profile_dict.get("referral_code")
                 )
             except Exception as email_error:
                 logger.error(
                     f"Error sending welcome email to Google user: {email_error}"
                 )
 
-            token = create_access_token(data={"sub": email, "id": new_user_obj.id})
+            token = create_access_token(data={"sub": email, "id": new_user_id})
 
             return {
                 "success": True,
                 "token": token,
                 "user": {
-                    "id": new_user_obj.id,
+                    "id": new_user_id,
                     "email": email,
                     "name": name,
-                    "role": new_user_obj.role,
+                    "role": "customer",
                     "plan": "free",
                     "is_verified": True,
-                    "referral_code": new_user_obj.referral_code,
+                    "referral_code": profile_dict.get("referral_code"),
                     "profile_picture": picture,
                 },
             }
