@@ -132,12 +132,12 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 @app.get("/")
 async def root():
-    return {"status": "ok", "message": "Backend version v1.0.10-deep-debug"}
+    return {"status": "ok", "message": "Backend version v1.0.11-strip-debug"}
 
 @app.get("/health")
 async def health_check():
     logger.info("Health check hit: /health")
-    return {"status": "ok", "version": "v1.0.10-deep-debug", "env": os.environ.get("ENVIRONMENT", "unknown")}
+    return {"status": "ok", "version": "v1.0.11-strip-debug", "env": os.environ.get("ENVIRONMENT", "unknown")}
 
 # Security Middleware
 @app.middleware("http")
@@ -422,7 +422,7 @@ api_router = APIRouter(prefix="/api")
 @api_router.get("/health")
 async def api_health():
     logger.info("Health check hit: /api/health")
-    return {"status": "ok", "source": "api_router", "version": "v1.0.10-deep-debug", "env": os.environ.get("ENVIRONMENT", "unknown")}
+    return {"status": "ok", "source": "api_router", "version": "v1.0.11-strip-debug", "env": os.environ.get("ENVIRONMENT", "unknown")}
 
 print("DEBUG: Progress 10% - Router and basic routes defined")
 
@@ -849,8 +849,8 @@ async def test_email_endpoint(email: str):
     """
     Test endpoint to debug email sending on Railway using Resend.
     """
-    resend_api_key = os.environ.get("RESEND_API_KEY")
-    from_email = os.environ.get("FROM_EMAIL", "onboarding@resend.dev")
+    resend_api_key = os.environ.get("RESEND_API_KEY", "").strip()
+    from_email = os.environ.get("FROM_EMAIL", "hello@jobninjas.io").strip()
 
     if not resend_api_key:
         return {"success": False, "error": "RESEND_API_KEY not configured"}
@@ -906,8 +906,8 @@ async def send_email_resend(to_email: str, subject: str, html_content: str):
     """
     Send email using Resend API (HTTP-based, works on Railway).
     """
-    resend_api_key = os.environ.get("RESEND_API_KEY")
-    from_email = os.environ.get("FROM_EMAIL", "jobNinjas <hello@jobninjas.io>")
+    resend_api_key = os.environ.get("RESEND_API_KEY", "").strip()
+    from_email = os.environ.get("FROM_EMAIL", "jobNinjas <hello@jobninjas.io>").strip()
 
     if not resend_api_key:
         error_msg = "RESEND_API_KEY not configured in environment variables"
@@ -6489,8 +6489,8 @@ async def force_job_fetch_v2(background_tasks: BackgroundTasks):
 @api_router.get("/debug/test-email-active")
 async def test_email_active(email: str):
     """Attempt a real email send and show the raw API response."""
-    resend_api_key = os.environ.get("RESEND_API_KEY")
-    from_email = os.environ.get("FROM_EMAIL", "jobNinjas <hello@jobninjas.io>")
+    resend_api_key = os.environ.get("RESEND_API_KEY", "").strip()
+    from_email = os.environ.get("FROM_EMAIL", "jobNinjas <hello@jobninjas.io>").strip()
     
     payload = {
         "from": from_email,
@@ -6521,14 +6521,14 @@ async def test_email_active(email: str):
 @api_router.get("/debug/inspect-email-config")
 async def inspect_email_config():
     """Verify runtime email configuration."""
-    key = os.environ.get("RESEND_API_KEY", "")
-    from_email = os.environ.get("FROM_EMAIL", "NOT SET")
+    key = os.environ.get("RESEND_API_KEY", "").strip()
+    from_email = os.environ.get("FROM_EMAIL", "NOT SET").strip()
     return {
         "api_key_set": len(key) > 0,
         "api_key_prefix": key[:7] if key else None,
         "from_email": from_email,
         "env": os.environ.get("ENVIRONMENT", "unknown"),
-        "version": "v1.0.10-deep-debug"
+        "version": "v1.0.11-strip-debug"
     }
 
 # Include the API router with all /api/* routes

@@ -17,8 +17,8 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-RESEND_API_KEY = os.environ.get("RESEND_API_KEY")
-FROM_EMAIL = os.environ.get("FROM_EMAIL", "jobNinjas <hello@jobninjas.io>")  # Verified Resend sender domain
+RESEND_API_KEY = os.environ.get("RESEND_API_KEY", "").strip()
+FROM_EMAIL = os.environ.get("FROM_EMAIL", "jobNinjas <hello@jobninjas.io>").strip()
 FRONTEND_URL = os.environ.get("FRONTEND_URL", "https://www.jobninjas.ai")
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
 SUPABASE_SERVICE_ROLE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
