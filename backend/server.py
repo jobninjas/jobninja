@@ -933,11 +933,12 @@ async def send_email_resend(to_email: str, subject: str, html_content: str):
                     logger.info(f"Email sent successfully to {to_email}")
                     return True
                 else:
-                    logger.error(f"Failed to send email: {result}")
-                    return False
+                    error_msg = f"Resend API error: {response.status} - {result}"
+                    logger.error(error_msg)
+                    raise Exception(error_msg)
     except Exception as e:
         logger.error(f"Error sending email: {e}")
-        return False
+        raise e
 
 
 async def send_waitlist_email(name: str, email: str):
@@ -1203,6 +1204,7 @@ async def send_welcome_email(
         return success
     except Exception as e:
         logger.error(f"Failed to generate/send welcome email for {email}: {e}")
+        raise e
         return False
 
 
@@ -1488,14 +1490,16 @@ async def resend_verification(request: Request, background_tasks: BackgroundTask
                 {"verification_token": verification_token},
             )
 
-        # Send email in background
-        background_tasks.add_task(
-            send_welcome_email,
+        # Send email - WAIT synchronously to catch errors for debugging
+        success = await send_welcome_email(
             user["name"],
             user["email"],
             verification_token,
             user.get("referral_code"),
         )
+
+        if not success:
+            raise HTTPException(status_code=500, detail="Failed to send verification email. Please check server logs.")
 
         return {"success": True, "message": "Verification email resent"}
     except HTTPException:
