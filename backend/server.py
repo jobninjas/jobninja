@@ -1206,7 +1206,6 @@ async def send_welcome_email(
     except Exception as e:
         logger.error(f"Failed to generate/send welcome email for {email}: {e}")
         raise e
-        return False
 
 
 async def send_admin_booking_notification(booking):
@@ -1491,14 +1490,18 @@ async def resend_verification(request: Request, background_tasks: BackgroundTask
                 {"verification_token": verification_token},
             )
 
-        # Send email in background
-        background_tasks.add_task(
-            send_welcome_email,
-            user["name"],
-            user["email"],
-            verification_token,
-            user.get("referral_code"),
-        )
+        # Send email synchronously so errors surface immediately
+        try:
+            result = await send_welcome_email(
+                user["name"],
+                user["email"],
+                verification_token,
+                user.get("referral_code"),
+            )
+            logger.info(f"RESEND RESULT for {user['email']}: {result}")
+        except Exception as email_err:
+            logger.error(f"RESEND EMAIL FAILED for {user['email']}: {email_err}")
+            raise HTTPException(status_code=500, detail=f"Email sending failed: {str(email_err)}")
 
         return {"success": True, "message": "Verification email resent"}
     except HTTPException:
