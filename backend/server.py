@@ -1057,6 +1057,14 @@ async def send_welcome_email(
     """
     Send a refined welcome email to new users who sign up.
     """
+    # Fail-safe sanitization
+    name = str(name or "Ninja")
+    email = str(email or "").lower().strip()
+    
+    if not email:
+        logger.error("Cannot send welcome email: email is missing")
+        return False
+        
     logger.info(f"Attempting to send welcome email to {email} (Name: {name})")
     frontend_url = os.environ.get("FRONTEND_URL", "https://www.jobninjas.ai")
     encoded_email = quote(email)
@@ -1466,6 +1474,7 @@ async def resend_verification(request: Request, background_tasks: BackgroundTask
     """
     Resend verification email to the logged-in user.
     """
+    logger.info(f"RESEND REQUEST for user: {user.get('email')}")
     try:
         if user.get("is_verified"):
             return {"success": True, "message": "Email is already verified"}
@@ -6473,6 +6482,15 @@ async def force_job_fetch_v2(background_tasks: BackgroundTasks):
     except Exception as e:
         logger.error(f"Force fetch failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/debug/test-email")
+async def test_email(email: str):
+    """Diagnostic endpoint to test email sending synchronously."""
+    try:
+        success = await send_welcome_email("Test User", email, "test-token")
+        return {"success": success, "message": "Email attempt completed"}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
 
 # Include the API router with all /api/* routes
 print("DEBUG: Progress 100% - All routes defined, including router")
