@@ -422,7 +422,7 @@ api_router = APIRouter(prefix="/api")
 @api_router.get("/health")
 async def api_health():
     logger.info("Health check hit: /api/health")
-    return {"status": "ok", "source": "api_router", "env": os.environ.get("ENVIRONMENT", "unknown")}
+    return {"status": "ok", "source": "api_router", "version": "v1.0.8", "env": os.environ.get("ENVIRONMENT", "unknown")}
 
 print("DEBUG: Progress 10% - Router and basic routes defined")
 
