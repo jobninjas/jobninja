@@ -5302,6 +5302,20 @@ async def google_login(request: Request, login_data: GoogleLoginRequest, backgro
             user_id = existing_user.get("id")
             token = create_access_token(data={"sub": email, "id": user_id})
 
+            # Send welcome email if this is their first time using Google login
+            # (i.e., they originally signed up via email, now linking Google)
+            if existing_user.get("auth_method") != "google":
+                try:
+                    background_tasks.add_task(
+                        send_welcome_email,
+                        existing_user.get("name", name),
+                        email,
+                        None,
+                        existing_user.get("referral_code"),
+                    )
+                except Exception as email_error:
+                    logger.error(f"Error sending welcome email to existing Google user: {email_error}")
+
             return {
                 "success": True,
                 "token": token,
