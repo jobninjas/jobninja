@@ -4579,16 +4579,16 @@ async def job_fetch_background_task():
 # RESUME SCANNER API ENDPOINTS
 # ============================================
 
-# from resume_parser import parse_resume, validate_resume_file # Removed duplicate import
-# from resume_analyzer import analyze_resume, extract_resume_data # Removed duplicate import
-# from document_generator import ( # Removed duplicate import
-#     generate_optimized_resume_content,
-#     generate_cover_letter_content,
-#     generate_expert_documents,
-#     create_resume_docx,
-#     create_cover_letter_docx,
-#     create_text_docx,
-# )
+from resume_parser import parse_resume, validate_resume_file
+from resume_analyzer import analyze_resume, extract_resume_data
+from document_generator import (
+    generate_optimized_resume_content,
+    generate_cover_letter_content,
+    generate_expert_documents,
+    create_resume_docx,
+    create_cover_letter_docx,
+    create_text_docx,
+)
 from fastapi.responses import StreamingResponse
 
 # ============================================
@@ -4694,7 +4694,7 @@ async def scan_resume(
         )
         
         # Convert structured data back to text for ResumePaper
-        # from document_generator import render_preview_text_from_json # Removed duplicate import
+        from document_generator import render_preview_text_from_json
         optimized_text = render_preview_text_from_json(optimized_data)
         
         return {
