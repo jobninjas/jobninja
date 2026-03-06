@@ -1185,7 +1185,7 @@ async def send_welcome_email(
                 <div class="footer-links">
                     If you prefer not to receive these emails, you can <a href="#">unsubscribe</a>.
                 </div>
-                <p>Copyright © 2026 jobNinjas.io. All rights reserved.</p>
+                <p>Copyright © 2026 jobNinjas.ai. All rights reserved.</p>
                 <p>Fast. Accurate. Human-Powered & AI-Driven.</p>
             </div>
         </div>
@@ -1491,16 +1491,14 @@ async def resend_verification(request: Request, background_tasks: BackgroundTask
                 {"verification_token": verification_token},
             )
 
-        # Send email - WAIT synchronously to catch errors for debugging
-        success = await send_welcome_email(
+        # Send email in background
+        background_tasks.add_task(
+            send_welcome_email,
             user["name"],
             user["email"],
             verification_token,
             user.get("referral_code"),
         )
-
-        if not success:
-            raise HTTPException(status_code=500, detail="Failed to send verification email. Please check server logs.")
 
         return {"success": True, "message": "Verification email resent"}
     except HTTPException:
@@ -6487,27 +6485,6 @@ async def force_job_fetch_v2(background_tasks: BackgroundTasks):
     except Exception as e:
         logger.error(f"Force fetch failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
-
-@api_router.post("/debug/test-email")
-async def test_email(email: str):
-    """Diagnostic endpoint to test email sending synchronously."""
-    try:
-        success = await send_welcome_email("Test User", email, "test-token")
-        return {"success": success, "message": "Email attempt completed"}
-    except Exception as e:
-        return {"success": False, "error": str(e)}
-
-@api_router.get("/debug/resend-config")
-async def check_resend_config():
-    """Check if Resend is configured on this server instance."""
-    key = os.environ.get("RESEND_API_KEY", "")
-    from_email = os.environ.get("FROM_EMAIL", "NOT SET")
-    return {
-        "api_key_set": len(key) > 0,
-        "api_key_prefix": key[:7] if key else None,
-        "from_email": from_email,
-        "env": os.environ.get("ENVIRONMENT", "development")
-    }
 
 # Include the API router with all /api/* routes
 print("DEBUG: Progress 100% - All routes defined, including router")

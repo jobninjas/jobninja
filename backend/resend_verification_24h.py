@@ -82,7 +82,7 @@ async def send_verification_email(name: str, email: str, token: str, referral_co
         Or invite friends: <a href="{invite_link}">{invite_link}</a>
       </p>
     </div>
-    <div class="footer">jobNinjas · hello@jobninjas.io</div>
+    <div class="footer">jobNinjas · hello@jobninjas.ai</div>
   </div>
 </body>
 </html>
