@@ -910,8 +910,9 @@ async def send_email_resend(to_email: str, subject: str, html_content: str):
     from_email = os.environ.get("FROM_EMAIL", "jobNinjas <hello@jobninjas.io>")
 
     if not resend_api_key:
-        logger.warning("RESEND_API_KEY not configured, skipping email")
-        return False
+        error_msg = "RESEND_API_KEY not configured in environment variables"
+        logger.warning(error_msg)
+        raise Exception(error_msg)
 
     try:
         async with aiohttp.ClientSession() as session:
@@ -6495,6 +6496,18 @@ async def test_email(email: str):
         return {"success": success, "message": "Email attempt completed"}
     except Exception as e:
         return {"success": False, "error": str(e)}
+
+@api_router.get("/debug/resend-config")
+async def check_resend_config():
+    """Check if Resend is configured on this server instance."""
+    key = os.environ.get("RESEND_API_KEY", "")
+    from_email = os.environ.get("FROM_EMAIL", "NOT SET")
+    return {
+        "api_key_set": len(key) > 0,
+        "api_key_prefix": key[:7] if key else None,
+        "from_email": from_email,
+        "env": os.environ.get("ENVIRONMENT", "development")
+    }
 
 # Include the API router with all /api/* routes
 print("DEBUG: Progress 100% - All routes defined, including router")
