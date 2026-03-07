@@ -422,7 +422,7 @@ api_router = APIRouter(prefix="/api")
 @api_router.get("/health")
 async def api_health():
     logger.info("Health check hit: /api/health")
-    return {"status": "ok", "source": "api_router", "version": "v1.0.12-resume-fix", "env": os.environ.get("ENVIRONMENT", "unknown")}
+    return {"status": "ok", "source": "api_router", "version": "v1.0.13-tailoring-fix", "env": os.environ.get("ENVIRONMENT", "unknown")}
 
 print("DEBUG: Progress 10% - Router and basic routes defined")
 
@@ -6548,7 +6548,7 @@ async def inspect_email_config():
         "api_key_prefix": key[:7] if key else None,
         "from_email": from_email,
         "env": os.environ.get("ENVIRONMENT", "unknown"),
-        "version": "v1.0.12-resume-fix"
+        "version": "v1.0.13-tailoring-fix"
     }
 
 # Include the API router with all /api/* routes
