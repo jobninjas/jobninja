@@ -132,12 +132,12 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 @app.get("/")
 async def root():
-    return {"status": "ok", "message": "Backend version v1.0.12-resume-fix"}
+    return {"status": "ok", "message": "Backend version v1.0.13-tailoring-fix"}
 
 @app.get("/health")
 async def health_check():
     logger.info("Health check hit: /health")
-    return {"status": "ok", "version": "v1.0.12-resume-fix", "env": os.environ.get("ENVIRONMENT", "unknown")}
+    return {"status": "ok", "version": "v1.0.13-tailoring-fix", "env": os.environ.get("ENVIRONMENT", "unknown")}
 
 # Security Middleware
 @app.middleware("http")
