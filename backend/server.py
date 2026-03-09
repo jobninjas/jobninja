@@ -5332,15 +5332,15 @@ async def google_login(request: Request, login_data: GoogleLoginRequest, backgro
                 "google_id": google_id,
                 "profile_picture": picture,
                 "is_verified": True,
+                "auth_method": "google",
             }
             SupabaseService.update_user_by_email(email, update_data)
 
             user_id = existing_user.get("id")
             token = create_access_token(data={"sub": email, "id": user_id})
 
-            # Send welcome email if this is their first time using Google login
-            # (i.e., they originally signed up via email, now linking Google)
-            if existing_user.get("auth_method") != "google":
+            # Send welcome email only if they weren't already verified and this is their first Google login
+            if existing_user.get("auth_method") != "google" and not existing_user.get("is_verified"):
                 try:
                     background_tasks.add_task(
                         send_welcome_email,
@@ -5362,10 +5362,8 @@ async def google_login(request: Request, login_data: GoogleLoginRequest, backgro
             }
         else:
             # New user - create account in Supabase
-            # Build a minimal profile dict — do NOT include 'id' since profiles.id must
-            # match an auth.users row (FK constraint). Let the DB auto-generate the UUID.
             now_iso = datetime.now(timezone.utc).isoformat()
-            new_user_id = str(uuid.uuid4())  # Used only for the JWT token below
+            new_user_id = str(uuid.uuid4())
 
             profile_dict = {
                 "id": new_user_id,
@@ -5383,25 +5381,19 @@ async def google_login(request: Request, login_data: GoogleLoginRequest, backgro
             }
 
             try:
-                client = SupabaseService.get_client()
-                if client:
-                    resp = client.table("profiles").upsert(
-                        profile_dict, on_conflict="email"
-                    ).execute()
-                    result = resp.data[0] if resp.data else None
-                    if result:
-                        new_user_id = result.get("id", new_user_id)
-                else:
-                    result = None
+                # Use standard create_profile for consistency
+                result = SupabaseService.create_profile(profile_dict)
+                if result:
+                    new_user_id = result.get("id", new_user_id)
             except Exception as e:
-                logger.error(f"Supabase upsert error for Google user {email}: {e}")
+                logger.error(f"Supabase creation error for Google user {email}: {e}")
                 result = None
 
             if not result:
                 logger.error(f"FAILED to create user profile in Supabase for {email}")
                 raise HTTPException(
                     status_code=500,
-                    detail="Failed to create your user profile. Please try again or contact support."
+                    detail="Failed to create your user profile. The database may be missing required columns. Please contact support."
                 )
 
             logger.info(f"New user created via Google OAuth in Supabase: {email}")

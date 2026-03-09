@@ -35,6 +35,11 @@ ALTER TABLE profiles ADD COLUMN IF NOT EXISTS is_verified         BOOLEAN DEFAUL
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS plan                TEXT DEFAULT 'free';
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS role                TEXT DEFAULT 'customer';
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS name                TEXT;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS google_id            TEXT;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS auth_method          TEXT;
+
+COMMENT ON COLUMN profiles.google_id IS 'External Google sub ID for OAuth users';
+COMMENT ON COLUMN profiles.auth_method IS 'Authentication provider (google, email)';
 
 -- unique index on email (safe if already exists)
 CREATE UNIQUE INDEX IF NOT EXISTS profiles_email_idx ON profiles(email);
