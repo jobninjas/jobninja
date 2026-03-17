@@ -798,69 +798,6 @@ class SupabaseService:
             logger.error(f"Error fetching tailored resume: {e}")
             return None
 
-    @staticmethod
-    def get_interview_turns(session_id: str) -> List[Dict[str, Any]]:
-        """Get all turns for a session"""
-        client = SupabaseService.get_client()
-        if not client: return []
-        try:
-            response = client.table("interview_turns")\
-                .select("*")\
-                .eq("session_id", session_id)\
-                .order("turn_number", desc=False)\
-                .execute()
-            return response.data
-        except Exception as e:
-            logger.error(f"Error fetching interview turns: {e}")
-            return []
-
-    @staticmethod
-    def insert_interview_turn(turn_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-        """Insert a new interview turn"""
-        client = SupabaseService.get_client()
-        if not client: return None
-        try:
-            response = client.table("interview_turns").insert(turn_data).execute()
-            return response.data[0] if response.data else None
-        except Exception as e:
-            logger.error(f"Error inserting interview turn: {e}")
-            return None
-
-    @staticmethod
-    def update_interview_turn(turn_id: str, update_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-        """Update an existing interview turn"""
-        client = SupabaseService.get_client()
-        if not client: return None
-        try:
-            response = client.table("interview_turns").update(update_data).eq("id", turn_id).execute()
-            return response.data[0] if response.data else None
-        except Exception as e:
-            logger.error(f"Error updating interview turn: {e}")
-            return None
-
-    @staticmethod
-    def update_interview_session(session_id: str, update_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-        """Update interview session status or count"""
-        client = SupabaseService.get_client()
-        if not client: return None
-        try:
-            response = client.table("interview_sessions").update(update_data).eq("id", session_id).execute()
-            return response.data[0] if response.data else None
-        except Exception as e:
-            logger.error(f"Error updating interview session: {e}")
-            return None
-
-    @staticmethod
-    def insert_evaluation_report(report_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-        """Insert evaluation report"""
-        client = SupabaseService.get_client()
-        if not client: return None
-        try:
-            response = client.table("evaluation_reports").insert(report_data).execute()
-            return response.data[0] if response.data else None
-        except Exception as e:
-            logger.error(f"Error inserting evaluation report: {e}")
-            return None
 
     # --- JOB SYNC & MANAGEMENT ---
 

@@ -78,6 +78,7 @@ class InterviewPrompts:
     2. Do NOT repeat questions.
     
     OUTPUT FORMAT:
+    You must return a valid JSON object matching this schema:
     {
       "question": "The next question text",
       "intent": "follow_up|skill_drill|behavioral|situational",
@@ -100,6 +101,7 @@ class InterviewPrompts:
     TASK: Generate a comprehensive evaluation report.
     
     OUTPUT FORMAT:
+    You must return a valid JSON object matching this schema:
     {
       "summary": "Overall performance summary (2-3 sentences)",
       "roleFitScore": 75,
