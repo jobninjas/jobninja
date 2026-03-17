@@ -1,0 +1,126 @@
+.resume-section-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.section-instruction {
+    font-size: 0.85rem;
+    color: #64748b;
+    font-weight: 500;
+}
+
+.sections-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.section-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem;
+    background: #f8fafc;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 12px;
+    transition: all 0.2s;
+}
+
+.section-item:hover {
+    border-color: #cbd5e1;
+    background: white;
+    transform: translateX(4px);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.02);
+}
+
+.section-main {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.drag-handle {
+    color: #cbd5e1;
+    cursor: grab;
+    padding: 4px;
+}
+
+.section-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.section-icon-box {
+    width: 32px;
+    height: 32px;
+    background: white;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #64748b;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+}
+
+.section-label {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #1e293b;
+}
+
+.section-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.ai-btn-small {
+    padding: 0.5rem;
+    border-radius: 8px;
+    background: #eff6ff;
+    color: #3b82f6;
+    border: 1px solid rgba(59, 130, 246, 0.1);
+    transition: all 0.2s;
+}
+
+.ai-btn-small:hover {
+    background: #3b82f6;
+    color: white;
+}
+
+.visibility-btn {
+    padding: 0.5rem;
+    color: #94a3b8;
+    transition: all 0.2s;
+}
+
+.visibility-btn:hover {
+    color: #64748b;
+}
+
+.hidden-section {
+    opacity: 0.5;
+    background: #f1f5f9;
+}
+
+.add-section-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    border-radius: 12px;
+    border: 1.5px dashed #cbd5e1;
+    color: #64748b;
+    font-weight: 700;
+    font-size: 0.9rem;
+    background: transparent;
+    transition: all 0.2s;
+}
+
+.add-section-btn:hover {
+    background: #f8fafc;
+    border-color: #94a3b8;
+    color: #1e293b;
+}

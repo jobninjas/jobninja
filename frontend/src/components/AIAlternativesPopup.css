@@ -1,0 +1,227 @@
+.ai-alternatives-popup {
+    width: 480px;
+    background: white;
+    border-radius: 20px;
+    border: 1px solid #e2e8f0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: absolute;
+    left: 2rem;
+    top: 5rem;
+    z-index: 200;
+}
+
+.popup-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.pagination {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    background: #f8fafc;
+    padding: 0.25rem;
+    border-radius: 100px;
+}
+
+.page-nav {
+    padding: 0.25rem;
+    border-radius: 100px;
+    color: #64748b;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+}
+
+.page-nav:hover {
+    background: white;
+    color: #1e293b;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.page-info {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #1e293b;
+    min-width: 45px;
+    text-align: center;
+}
+
+.close-popup {
+    padding: 0.5rem;
+    color: #94a3b8;
+    background: none;
+    border: none;
+    cursor: pointer;
+}
+
+/* Body */
+.popup-body {
+    padding: 1.5rem;
+    background: #eff6ff;
+    position: relative;
+}
+
+.current-suggestion {
+    font-size: 0.95rem;
+    line-height: 1.6;
+    color: #1e293b;
+    font-weight: 500;
+}
+
+.inline-edit-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    background: transparent;
+    border: none;
+    color: #3b82f6;
+    font-size: 0.8rem;
+    font-weight: 700;
+    margin-top: 1rem;
+    cursor: pointer;
+    padding: 0;
+}
+
+/* Alternatives List */
+.popup-sub-info {
+    padding: 1rem 1.5rem 0.5rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #64748b;
+}
+
+.alternatives-list {
+    max-height: 180px;
+    overflow-y: auto;
+    padding: 0 1.5rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.alt-thumb {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.75rem 1rem;
+    background: #f8fafc;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.alt-thumb:hover {
+    background: #eff6ff;
+    border-color: #3b82f6;
+}
+
+.alt-thumb.active {
+    background: #eff6ff;
+    border-color: #3b82f6;
+    border-width: 2px;
+}
+
+.alt-number {
+    width: 24px;
+    height: 24px;
+    background: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 800;
+    color: #64748b;
+    border: 1px solid #e2e8f0;
+}
+
+.alt-preview {
+    flex: 1;
+    font-size: 0.85rem;
+    color: #475569;
+}
+
+/* Footer */
+.popup-footer {
+    padding: 1.25rem 1.5rem;
+    border-top: 1px solid #f1f5f9;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.show-original {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    color: #64748b;
+    font-size: 0.85rem;
+    font-weight: 700;
+    background: none;
+    border: none;
+    cursor: pointer;
+}
+
+.footer-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.regenerate-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #64748b;
+    background: none;
+    border: none;
+    font-size: 0.9rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.apply-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    background: #4f46e5;
+    color: white;
+    border-radius: 12px;
+    font-size: 0.9rem;
+    font-weight: 800;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.apply-btn:hover {
+    background: #4338ca;
+    transform: scale(1.02);
+}
+
+/* Shortcuts */
+.shortcut-hints {
+    display: flex;
+    justify-content: center;
+    gap: 1.5rem;
+    padding: 0.75rem;
+    background: #f8fafc;
+    border-top: 1px solid #f1f5f9;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #94a3b8;
+}
+
+.text-truncate {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
