@@ -30,7 +30,8 @@ def create_checkout_session(
     user_email: str,
     user_id: str,
     success_url: str,
-    cancel_url: str
+    cancel_url: str,
+    has_used_free_trial: bool = False
 ) -> dict:
     """
     Create a Stripe Checkout Session for subscription.
@@ -81,6 +82,11 @@ def create_checkout_session(
                 'plan_id': plan_id,
             },
         }
+
+        if not has_used_free_trial:
+            session_kwargs['subscription_data'] = {
+                'trial_period_days': 7
+            }
 
         checkout_session = stripe.checkout.Session.create(**session_kwargs)
         

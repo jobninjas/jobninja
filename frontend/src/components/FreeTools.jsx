@@ -22,23 +22,21 @@ import {
     Globe,
     CheckCircle,
     ArrowRight,
-    Sparkles,
     DollarSign,
     Linkedin,
     Clock,
     FileSearch,
-    Scale
+    Scale,
+    Gift
 } from 'lucide-react';
+import NinjaIcon from './NinjaIcon';
 import { BRAND } from '../config/branding';
 import { API_URL } from '../config/api';
-import SideMenu from './SideMenu';
-import Header from './Header';
 import './SideMenu.css';
 
 const FreeTools = () => {
     const navigate = useNavigate();
     const { user, isAuthenticated } = useAuth();
-    const [sideMenuOpen, setSideMenuOpen] = useState(false);
     const [consent, setConsent] = useState(false);
     const [showConsentModal, setShowConsentModal] = useState(false);
     const [selectedTool, setSelectedTool] = useState(null);
@@ -59,7 +57,7 @@ const FreeTools = () => {
     const freeTools = [
         {
             id: 'linkedin-mockup',
-            icon: <Sparkles className="w-8 h-8" />,
+            icon: <NinjaIcon className="w-8 h-8" />,
             name: 'LinkedIn Extension Demo',
             description: 'See how jobNinjas integrates with LinkedIn in our live simulation.',
             path: '/linkedin-mockup',
@@ -200,9 +198,6 @@ const FreeTools = () => {
 
     return (
         <div className="free-tools-page" style={{ fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", background: '#f8fafc' }}>
-            <SideMenu isOpen={sideMenuOpen} onClose={() => setSideMenuOpen(false)} />
-            <Header onMenuClick={() => setSideMenuOpen(true)} />
-
             {/* Hero Section */}
             <section style={{
                 background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
@@ -366,7 +361,7 @@ const FreeTools = () => {
                                 justifyContent: 'center',
                                 margin: '0 auto 1rem'
                             }}>
-                                <Sparkles className="w-8 h-8" style={{ color: 'white' }} />
+                                <Gift className="w-8 h-8" style={{ color: 'white' }} />
                             </div>
                             <h2 style={{
                                 fontSize: '1.5rem',

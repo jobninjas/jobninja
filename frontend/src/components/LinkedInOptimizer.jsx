@@ -7,12 +7,12 @@ import {
     Loader2,
     Copy,
     Check,
-    Sparkles,
     RefreshCw,
     User,
     Briefcase,
     FileText
 } from 'lucide-react';
+import NinjaIcon from './NinjaIcon';
 import { API_URL } from '../config/api';
 import SideMenu from './SideMenu';
 import Header from './Header';
@@ -156,7 +156,7 @@ I'm open to connecting with fellow professionals and exploring new opportunities
                                 }}
                                 onClick={() => navigate('/linkedin-mockup')}
                             >
-                                <Sparkles className="w-4 h-4 mr-2" />
+                                <NinjaIcon className="w-4 h-4 mr-2" />
                                 See Simulation on LinkedIn
                             </Button>
                         </div>
@@ -235,7 +235,7 @@ I'm open to connecting with fellow professionals and exploring new opportunities
                                         </>
                                     ) : (
                                         <>
-                                            <Sparkles className="w-5 h-5" />
+                                            <NinjaIcon className="w-5 h-5" />
                                             Generate {tabs.find(t => t.id === activeTab)?.label}
                                         </>
                                     )}

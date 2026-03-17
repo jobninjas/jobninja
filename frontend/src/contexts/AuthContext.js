@@ -36,11 +36,19 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Check for existing auth on mount
   useEffect(() => {
     const initAuth = async () => {
       const token = localStorage.getItem('auth_token');
       const userData = localStorage.getItem('user_data');
+
+      // Set user immediately if we have cached data to prevent flicker
+      if (userData) {
+        try {
+          setUser(JSON.parse(userData));
+        } catch (e) {
+          console.error('Failed to parse cached user data:', e);
+        }
+      }
 
       if (token && userData) {
         try {
@@ -63,14 +71,11 @@ export const AuthProvider = ({ children }) => {
             if (data.user) {
               localStorage.setItem('user_data', JSON.stringify(data.user));
             }
-          } else {
-            // Server error or other issue, keep local state but log it
-            console.error('Auth verification server error:', response.status);
-            setUser(JSON.parse(userData));
           }
+          // If server is slow/down (not 401/403/ok), we keep the local state set above
         } catch (e) {
           console.error('Auth verification error:', e);
-          setUser(JSON.parse(userData));
+          // Keep local state on network error
         }
       } else {
         setUser(null);

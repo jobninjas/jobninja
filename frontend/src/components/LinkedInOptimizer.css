@@ -180,6 +180,18 @@
     color: #0f172a;
 }
 
+.linkedin-opt-footer {
+    background: transparent;
+    padding: 3rem 0;
+    color: #64748b;
+    text-align: center;
+}
+
+.linkedin-opt-footer p {
+    font-size: 0.875rem;
+    margin: 0;
+}
+
 .linkedin-page .empty-state {
     text-align: center;
     padding: 3rem;

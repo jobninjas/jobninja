@@ -3,8 +3,9 @@ import {
     User, Mail, Phone, MapPin, Linkedin, Github, Globe,
     GraduationCap, Briefcase, Code, Users, Shield,
     Plus, Trash2, Save, Upload, CheckCircle2,
-    ExternalLink, FileText, ChevronRight, Loader2, AlertCircle, Sparkles
+    ExternalLink, FileText, ChevronRight, Loader2, AlertCircle
 } from 'lucide-react';
+import NinjaIcon from './NinjaIcon';
 import { Card, CardHeader, CardContent, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -578,7 +579,7 @@ const ProfileOrion = ({
                     <div className="bg-indigo-600 rounded-[40px] p-10 relative overflow-hidden text-white shadow-xl shadow-indigo-100">
                         <div className="relative z-10">
                             <div className="w-14 h-14 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center mb-8 border border-white/10">
-                                {completion === 100 ? <CheckCircle2 className="w-8 h-8 text-white" /> : <Sparkles className="w-8 h-8 text-emerald-300" />}
+                                {completion === 100 ? <CheckCircle2 className="w-8 h-8 text-white" /> : <NinjaIcon className="w-8 h-8 text-emerald-300" />}
                             </div>
 
                             <div className="space-y-2 mb-8">
@@ -648,7 +649,7 @@ const ProfileOrion = ({
                         <div className="p-8 bg-gradient-to-br from-gray-900 to-black rounded-[32px] mt-8 text-white relative overflow-hidden border border-white/5">
                             <div className="relative z-10">
                                 <div className="flex items-center gap-2 text-emerald-400 mb-4 font-black text-[10px] tracking-widest uppercase">
-                                    <Sparkles className="w-3.5 h-3.5" />
+                                    <NinjaIcon className="w-3.5 h-3.5" />
                                     Ninja Insight
                                 </div>
                                 <p className="text-sm font-bold text-gray-300 leading-relaxed mb-6">

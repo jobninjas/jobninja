@@ -1,7 +1,7 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Outlet } from 'react-router-dom';
 import SideMenu from './SideMenu';
-import AINinjaChat from './AINinjaChat';
+// Removed AINinjaChat import
 import MegaMenu from './MegaMenu';
 import { BRAND } from '../config/branding';
 import BrandLogo from './BrandLogo';
@@ -39,13 +39,10 @@ const DashboardLayout = ({ children, activePage = 'jobs' }) => {
 
                 {/* Main Content Area */}
                 <main className="dashboard-main">
-                    {children}
+                    <Outlet />
                 </main>
 
-                {/* Right Sidebar - Chat */}
-                <aside className="dashboard-sidebar-right">
-                    <AINinjaChat isOpen={true} />
-                </aside>
+                {/* Removed Right Sidebar (Chatbot) */}
             </div>
         </div>
     );

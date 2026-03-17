@@ -21,9 +21,9 @@ import {
     Info,
     ChevronDown,
     Building2,
-    CheckCircle2,
-    Sparkles
+    CheckCircle2
 } from 'lucide-react';
+import NinjaIcon from './NinjaIcon';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
 import { Badge } from './ui/badge';
@@ -111,7 +111,7 @@ const LinkedInMockup = () => {
                                         <span className="bold">11 out of 11</span> keywords are present in your resume!
                                     </p>
                                     <Button className="match-action-btn-blue">
-                                        <Sparkles className="w-4 h-4 mr-2" />
+                                    <NinjaIcon className="w-4 h-4 mr-2" />
                                         Tailor Resume Now
                                     </Button>
                                 </div>

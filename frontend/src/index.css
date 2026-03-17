@@ -2,111 +2,138 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  margin: 0;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto",
-    "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans",
-    "Helvetica Neue", sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap');
 
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New",
-    monospace;
-}
-
-/* JobRight-inspired Design System */
 :root {
-  /* Colors - Bright Emerald/Green */
-  --jobninjas-primary: #10b981;
-  --jobninjas-primary-hover: #059669;
-  --jobninjas-primary-light: rgba(16, 185, 129, 0.1);
+  /* Antigravity Pro Color Palette */
+  --jobninjas-primary: #00C896;
+  --jobninjas-primary-hover: #00A97E;
+  --jobninjas-primary-light: #E6FAF5;
   --jobninjas-secondary: #0ea5e9;
-  --logo-mint: #18c991;
-  /* Specifically for the .ai logo suffix */
-
-  /* Neutral Palette */
+  
+  /* Neutral Palette - Slate Based */
   --bg-main: #f8fafc;
   --bg-card: #ffffff;
-  --bg-sidebar: #ffffff;
-  --border-light: #f1f5f9;
-  --border-subtle: #e2e8f0;
+  --bg-sidebar: rgba(255, 255, 255, 0.75);
+  
+  /* High-end Borders */
+  --border-light: rgba(226, 232, 240, 0.6);
+  --border-subtle: rgba(226, 232, 240, 0.8);
+  --border-active: #00C896;
 
-  /* Text - High Contrast / Bright Dark Black */
-  --text-main: #000000;
-  --text-muted: #111827;
-  /* Near black instead of grey */
+  /* Text - High Contrast Deep Slate */
+  --text-main: #0f172a;
+  --text-muted: #64748b;
   --text-inverse: #ffffff;
 
-  /* Shadows & Bento Effects */
-  --shadow-bento: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
-  --shadow-bento-hover: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-  --radius-bento: 1rem;
+  /* Premium Depth & Glassmorphism */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-premium: 0 15px 30px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+  --shadow-bento: 0 4px 10px -2px rgba(0, 0, 0, 0.05);
+  
   --glass-bg: rgba(255, 255, 255, 0.7);
-  --glass-blur: blur(8px);
-}
+  --glass-border: rgba(255, 255, 255, 0.4);
+  --glass-blur: blur(16px);
+  
+  --radius-bento: 1.25rem;
+  --radius-pill: 9999px;
+  
+  --transition-fast: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-smooth: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 
-@layer base {
-  :root {
-    --background: 0 0% 98%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 161 72% 39%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 161 72% 39%;
-    --radius: 0.75rem;
-  }
-}
-
-@layer components {
-  .bento-card {
-    @apply bg-white border border-slate-100 rounded-2xl shadow-sm transition-all duration-300;
-  }
-
-  .bento-card:hover {
-    @apply shadow-md border-emerald-100/50;
-  }
-
-  .glass-panel {
-    @apply bg-white/70 backdrop-blur-md border border-white/20;
-  }
-
-  .pill-button {
-    @apply px-4 py-2 rounded-full font-medium transition-all;
-  }
+  /* Job Listing Component Theme */
+  --background: 250, 249, 245;
+  --foreground: 61, 57, 41;
+  --card: 250, 249, 245;
+  --card-foreground: 20, 20, 19;
+  --primary: 201, 100, 66;
+  --primary-foreground: 255, 255, 255;
+  --radius: 0.5rem;
+  --shadow-xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
 }
 
 @layer base {
   * {
-    @apply border-border;
+    @apply border-gray-200;
   }
 
   body {
+    margin: 0;
+    font-family: 'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
     @apply bg-slate-50 text-slate-900;
-    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    text-rendering: optimizeLegibility;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-bold tracking-tight text-slate-900;
   }
 }
 
-/* Reduce motion for accessibility */
-@media (prefers-reduced-motion: reduce) {
+@layer components {
+  .glass-card {
+    @apply bg-white/70 backdrop-blur-xl border border-white/40 shadow-sm rounded-2xl;
+    transition: var(--transition-smooth);
+  }
 
-  *,
-  *::before,
-  *::after {
+  .glass-card:hover {
+    @apply shadow-lg border-white/60 bg-white/80;
+    transform: translateY(-2px);
+  }
+
+  .bento-card {
+    @apply bg-white border border-slate-100 rounded-2xl shadow-sm transition-all duration-300 overflow-hidden;
+  }
+
+  .bento-card:hover {
+    @apply shadow-md border-emerald-100/50;
+    transform: translateY(-4px);
+  }
+
+  .btn-pro {
+    @apply px-5 py-2.5 rounded-xl font-bold transition-all duration-200 active:scale-95 flex items-center justify-center gap-2;
+  }
+
+  .btn-pro-primary {
+    @apply btn-pro bg-[#00C896] text-white shadow-sm hover:bg-[#00A97E] hover:shadow-md;
+  }
+
+  .btn-pro-outline {
+    @apply btn-pro bg-white border border-slate-200 text-slate-700 hover:border-[#00C896] hover:text-[#00C896] hover:bg-slate-50;
+  }
+
+  .pill-badge {
+    @apply px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider;
+  }
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-out forwards;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-slate-200 rounded-full hover:bg-slate-300;
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;

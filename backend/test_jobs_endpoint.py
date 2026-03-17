@@ -2,7 +2,7 @@ import requests
 import json
 
 # Test the /api/jobs endpoint
-url = "http://127.0.0.1:8001/api/jobs?limit=5"
+url = "http://127.0.0.1:8000/api/jobs?limit=5"
 
 try:
     response = requests.get(url)

@@ -43,7 +43,6 @@ const SideMenu = ({ isOpen, onClose, isStatic = false }) => {
     { icon: ClipboardList, label: 'Application Tracker', path: '/dashboard', requiresAuth: true },
     { icon: FileText, label: 'My Resumes', path: '/resumes', requiresAuth: true },
     { icon: Mic, label: 'Interview Prep', path: '/interview-prep' },
-    { icon: Sparkles, label: 'Free Tools', path: '/free-tools', highlight: true },
     { icon: MousePointerClick, label: 'Auto-Fill Applications', path: '/dashboard?tab=profile', requiresAuth: true, locked: true },
     { icon: CreditCard, label: 'Pricing', path: '/pricing' },
   ];

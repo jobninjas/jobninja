@@ -39,13 +39,24 @@ const Login = () => {
   useEffect(() => {
     const renderTurnstile = () => {
       if (window.turnstile && turnstileRef.current) {
-        window.turnstile.render(turnstileRef.current, {
-          sitekey: '0x4AAAAAAACeyHCDFw5HGsmjQ',
-          callback: function (token) {
-            setTurnstileToken(token);
-            setError('');
-          },
-        });
+        try {
+          window.turnstile.render(turnstileRef.current, {
+            sitekey: '0x4AAAAAAACeyHCDFw5HGsmjQ',
+            callback: function (token) {
+              setTurnstileToken(token);
+              setError('');
+            },
+            'error-callback': function() {
+              console.warn('Turnstile failed to load, falling back to permissive mode for dev/local.');
+              // In dev/local, we can auto-set a dummy token if needed or just show a warning
+              if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                setTurnstileToken('local-dev-token');
+              }
+            }
+          });
+        } catch (e) {
+          console.error('Turnstile render error:', e);
+        }
       }
     };
 
@@ -74,7 +85,8 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    if (!turnstileToken) {
+    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    if (!turnstileToken && !isLocal) {
       setError('Please complete the security check.');
       return;
     }
@@ -82,7 +94,7 @@ const Login = () => {
     setSubmitting(true);
 
     try {
-      const result = await login(formData.email, formData.password, turnstileToken);
+      const result = await login(formData.email, formData.password, turnstileToken || 'local-bypass');
       if (result.success) {
         // Redirect based on user role
         if (result.user.role === 'customer') {

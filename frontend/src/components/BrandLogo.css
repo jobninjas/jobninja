@@ -1,35 +1,20 @@
 .brand-logo-container {
     display: inline-flex;
     align-items: baseline;
-    font-weight: 700;
-    font-size: 1.25rem;
-    color: #0f172a;
+    font-weight: 800;
+    font-size: 1.4rem;
+    color: #1e293b;
     line-height: 1;
+    letter-spacing: -0.01em;
 }
 
 .brand-name-static {
     white-space: nowrap;
 }
 
-.brand-suffix-animating {
+.brand-suffix-ai {
     color: #10b981;
-    margin-left: 0.1em;
-    display: inline-block;
-    min-width: 1.85em;
-    text-align: left;
-    animation: suffixFade 0.5s ease-in-out;
-}
-
-@keyframes suffixFade {
-    from {
-        opacity: 0;
-        transform: translateY(2px);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+    margin-left: 0.02em;
 }
 
 /* Side Menu / Footer adjustments if needed */

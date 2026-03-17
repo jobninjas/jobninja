@@ -20,9 +20,9 @@ const Navbar = ({ onOpenSideMenu, rightContent }) => {
         <button className="hamburger-btn" onClick={onOpenSideMenu}>
           <Menu className="w-5 h-5" />
         </button>
-        <button onClick={() => { navigate('/'); window.scrollTo(0, 0); }} className="nav-logo">
-          <img src={BRAND.logoPath} alt={BRAND.logoAlt} className="logo-image" />
-          <BrandLogo className="logo-text" />
+        <button onClick={() => { navigate('/'); window.scrollTo(0, 0); }} className="nav-logo flex items-center">
+          <img src={BRAND.logoPath} alt={BRAND.logoAlt} className="logo-image mr-2" />
+          <BrandLogo />
         </button>
       </div>
       <nav className="nav-links-modern">

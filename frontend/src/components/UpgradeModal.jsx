@@ -2,10 +2,13 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
-import { X, Zap } from 'lucide-react';
+import { X, Zap, Gift } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
 
 const UpgradeModal = ({ tier, limit, resetDate, onClose }) => {
     const navigate = useNavigate();
+    const { user } = useAuth();
+    const hasUsedTrial = user?.has_used_free_trial;
 
     return (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] px-4">
@@ -18,18 +21,27 @@ const UpgradeModal = ({ tier, limit, resetDate, onClose }) => {
                 </button>
 
                 <div className="text-center mb-6">
-                    <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <Zap className="w-8 h-8 text-orange-500" />
+                    <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        {hasUsedTrial ? (
+                            <Zap className="w-8 h-8 text-blue-600" />
+                        ) : (
+                            <Gift className="w-8 h-8 text-blue-600" />
+                        )}
                     </div>
                     <h2 className="text-2xl font-bold mb-2">Resume Limit Reached</h2>
 
-                    {tier === 'free' ? (
+                    {!hasUsedTrial ? (
+                        <div className="space-y-2">
+                            <p className="text-gray-600 font-medium">
+                                You've reached your daily free limit.
+                            </p>
+                            <p className="text-blue-600 font-bold bg-blue-50 py-2 rounded-lg">
+                                Good news! You're eligible for a 7-day FREE trial of AI Ninja Pro.
+                            </p>
+                        </div>
+                    ) : tier === 'free' ? (
                         <p className="text-gray-600">
                             You've used all {limit} free resumes. Upgrade to a paid plan to keep generating tailored resumes!
-                        </p>
-                    ) : tier === 'pro' || limit === 'Unlimited' ? (
-                        <p className="text-gray-600">
-                            It looks like there was a glitch fetching your Unlimited access. Please try refreshing the page.
                         </p>
                     ) : (
                         <>
@@ -46,41 +58,39 @@ const UpgradeModal = ({ tier, limit, resetDate, onClose }) => {
                 </div>
 
                 <div className="space-y-4 mb-6">
-                    <div className="p-4 bg-green-50 rounded-xl border border-green-200">
-                        <h3 className="font-bold text-green-900 mb-2">
-                            {tier === 'free' ? 'Unlock AI Ninja Beginner' : 'Unlock AI Ninja Pro'}
+                    <div className="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                        <h3 className="font-bold text-slate-900 mb-2">
+                            What you get with AI Ninja Pro:
                         </h3>
-                        <ul className="text-sm text-green-800 space-y-2">
+                        <ul className="text-sm text-slate-700 space-y-2">
                             <li className="flex items-start gap-2">
-                                <div className="mt-1 w-1.5 h-1.5 rounded-full bg-green-500 shrink-0" />
-                                <span>{tier === 'free' ? '200 resumes per month' : 'Unlimited resumes per month'}</span>
+                                <div className="mt-1 w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0" />
+                                <span>Unlimited tailored resumes & cover letters</span>
                             </li>
                             <li className="flex items-start gap-2">
-                                <div className="mt-1 w-1.5 h-1.5 rounded-full bg-green-500 shrink-0" />
-                                <span>Voice AI Interview practice</span>
+                                <div className="mt-1 w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0" />
+                                <span>Custom job description analysis</span>
                             </li>
-                            {tier === 'beginner' && (
-                                <li className="flex items-start gap-2">
-                                    <div className="mt-1 w-1.5 h-1.5 rounded-full bg-green-500 shrink-0" />
-                                    <span>AI Video Call Interview Prep</span>
-                                </li>
-                            )}
+                            <li className="flex items-start gap-2">
+                                <div className="mt-1 w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0" />
+                                <span>AI Interview Practice & Prep</span>
+                            </li>
                         </ul>
                     </div>
                 </div>
 
                 <Button
-                    className="w-full h-12 bg-green-600 hover:bg-green-700 text-white font-bold text-lg rounded-xl shadow-lg shadow-green-200 transition-all border-none"
+                    className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-bold text-lg rounded-xl shadow-lg shadow-blue-200 transition-all border-none"
                     onClick={() => {
                         onClose();
                         navigate('/pricing');
                     }}
                 >
-                    Upgrade Now
+                    {!hasUsedTrial ? 'Start 1-Week Free Trial' : 'Upgrade to AI Ninja Pro'}
                 </Button>
 
                 <p className="text-center mt-4 text-sm text-gray-400">
-                    Cancel anytime. 100% money back guarantee.
+                    {!hasUsedTrial ? 'No commitment. Cancel anytime before trial ends.' : 'Cancel anytime. Boost your job search today.'}
                 </p>
             </Card>
         </div>

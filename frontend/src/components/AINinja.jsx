@@ -21,7 +21,12 @@ import {
   Users,
   ArrowRight,
   Check,
-  ChevronRight
+  ChevronRight,
+  DollarSign,
+  Linkedin,
+  Clock,
+  FileSearch,
+  Scale
 } from 'lucide-react';
 import { BRAND } from '../config/branding';
 import SideMenu from './SideMenu';
@@ -72,6 +77,13 @@ const AINinja = () => {
           description: "AI-powered resume writing assistant",
           path: "/chatgpt-resume",
           color: "bg-indigo-50"
+        },
+        {
+          icon: "/tool-icons/career-gap.png",
+          name: "Career Gap Explainer",
+          description: "Turn your career gap into a professional story",
+          path: "/career-gap",
+          color: "bg-amber-50"
         }
       ]
     },
@@ -98,6 +110,13 @@ const AINinja = () => {
           description: "Browse professional LinkedIn examples",
           path: "/linkedin-examples",
           color: "bg-teal-50"
+        },
+        {
+          icon: "/tool-icons/linkedin-headline.png",
+          name: "LinkedIn Headline Optimizer",
+          description: "10+ headline options with recruiter keywords",
+          path: "/linkedin-headline",
+          color: "bg-blue-50"
         }
       ]
     },
@@ -131,6 +150,27 @@ const AINinja = () => {
           description: "Practice common interview questions",
           path: "/interview-prep",
           color: "bg-red-50"
+        },
+        {
+          icon: "/tool-icons/job-decoder.png",
+          name: "Job Description Decoder",
+          description: "Spot red flags and hidden requirements",
+          path: "/job-decoder",
+          color: "bg-purple-50"
+        },
+        {
+          icon: "/tool-icons/offer-comparator.png",
+          name: "Offer Comparison Calculator",
+          description: "Analyze multiple offers and total compensation",
+          path: "/offer-comparator",
+          color: "bg-teal-50"
+        },
+        {
+          icon: "/tool-icons/salary-negotiator.png",
+          name: "Salary Negotiation Script",
+          description: "Personalized script to negotiate your best offer",
+          path: "/salary-negotiator",
+          color: "bg-green-50"
         }
       ]
     },
@@ -169,6 +209,27 @@ const AINinja = () => {
           description: "Learn how to beat applicant tracking systems",
           path: "/ats-guides",
           color: "bg-amber-50"
+        },
+        {
+          icon: "/tool-icons/networking-templates.png",
+          name: "Networking Message Templates",
+          description: "LinkedIn, email, and networking templates",
+          path: "/networking-templates",
+          color: "bg-indigo-50"
+        },
+        {
+          icon: "/tool-icons/interview-framework.png",
+          name: "Interview Answer Framework",
+          description: "Master STAR, CAR, and SOAR methods",
+          path: "/interview-framework",
+          color: "bg-pink-50"
+        },
+        {
+          icon: "/tool-icons/reference-prep.png",
+          name: "Reference Check Prep",
+          description: "Prepare references for the best recommendation",
+          path: "/reference-prep",
+          color: "bg-green-50"
         }
       ]
     }
@@ -181,153 +242,23 @@ const AINinja = () => {
       <SideMenu isOpen={sideMenuOpen} onClose={() => setSideMenuOpen(false)} />
       <Header onMenuClick={() => setSideMenuOpen(true)} />
 
-      {/* Hero Section with Ninja Image */}
-      <section style={{
-        background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%)',
-        padding: '5rem 0',
-        position: 'relative',
-        overflow: 'hidden'
-      }}>
-        <div className="container" style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 2rem', position: 'relative', zIndex: 10 }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4rem', alignItems: 'center' }}>
-            {/* Left: Text Content */}
-            <div>
-              <div style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                background: 'rgba(139, 92, 246, 0.1)',
-                border: '1px solid rgba(139, 92, 246, 0.3)',
-                padding: '0.5rem 1rem',
-                borderRadius: '50px',
-                marginBottom: '1.5rem'
-              }}>
-                <Bot className="w-5 h-5" style={{ color: '#a78bfa' }} />
-                <span style={{ color: '#c4b5fd', fontSize: '0.875rem', fontWeight: 600 }}>AI-Powered Tools</span>
-              </div>
-
-              <h1 style={{
-                fontSize: '3.5rem',
-                fontWeight: 800,
-                lineHeight: 1.1,
-                marginBottom: '1.5rem',
-                color: 'white',
-                letterSpacing: '-0.02em'
-              }}>
-                {totalTools}+ Tools to <span style={{
-                  background: 'linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  backgroundClip: 'text'
-                }}>Land Your Dream Job</span>
-              </h1>
-
-              <p style={{
-                fontSize: '1.25rem',
-                lineHeight: 1.7,
-                color: '#cbd5e1',
-                marginBottom: '2rem',
-                fontWeight: 400
-              }}>
-                From resume optimization to interview prep, we've got everything you need to stand out and get hired faster.
-              </p>
-
-              <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-                <Button
-                  className="btn-primary"
-                  onClick={() => navigate('/scanner')}
-                  style={{
-                    background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
-                    padding: '1rem 2rem',
-                    fontSize: '1.1rem',
-                    fontWeight: 600,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.5rem'
-                  }}
-                >
-                  <Sparkles className="w-5 h-5" />
-                  Start with Resume Scanner
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => navigate('/pricing')}
-                  style={{
-                    background: 'rgba(255, 255, 255, 0.1)',
-                    border: '1px solid rgba(255, 255, 255, 0.2)',
-                    color: 'white',
-                    padding: '1rem 2rem',
-                    fontSize: '1.1rem',
-                    fontWeight: 600
-                  }}
-                >
-                  View Pricing
-                </Button>
-              </div>
-            </div>
-
-            {/* Right: Ninja Hero Image */}
-            <div style={{ position: 'relative' }}>
-              <div style={{
-                position: 'absolute',
-                top: '50%',
-                left: '50%',
-                transform: 'translate(-50%, -50%)',
-                width: '400px',
-                height: '400px',
-                background: 'radial-gradient(circle, rgba(139, 92, 246, 0.3) 0%, transparent 70%)',
-                filter: 'blur(60px)',
-                zIndex: 0
-              }}></div>
-              <img
-                src="/ninja-hero.jpg"
-                alt="AI Ninja Tools"
-                style={{
-                  width: '100%',
-                  height: 'auto',
-                  borderRadius: '20px',
-                  boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
-                  position: 'relative',
-                  zIndex: 1
-                }}
-                onError={(e) => {
-                  e.target.style.display = 'none';
-                  e.target.nextSibling.style.display = 'flex';
-                }}
-              />
-              <div style={{
-                display: 'none',
-                width: '100%',
-                height: '400px',
-                background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.2) 0%, rgba(236, 72, 153, 0.2) 100%)',
-                borderRadius: '20px',
-                alignItems: 'center',
-                justifyContent: 'center',
-                position: 'relative',
-                zIndex: 1
-              }}>
-                <Bot className="w-48 h-48" style={{ color: 'rgba(139, 92, 246, 0.3)' }} />
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      <Header onMenuClick={() => setSideMenuOpen(true)} />
 
       {/* All Tools Grid */}
-      <section style={{ padding: '5rem 0', background: '#f8fafc' }}>
+      <section style={{ padding: '2rem 0', background: '#f8fafc' }}>
         <div className="container" style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 2rem' }}>
-          <div style={{ textAlign: 'center', marginBottom: '4rem' }}>
+          <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
             <h2 style={{
-              fontSize: '2.5rem',
+              fontSize: '2rem',
               fontWeight: 800,
-              marginBottom: '1rem',
+              marginBottom: '0.5rem',
               color: '#0f172a',
               letterSpacing: '-0.02em'
             }}>
               Complete AI Toolkit
             </h2>
             <p style={{
-              fontSize: '1.125rem',
+              fontSize: '1rem',
               color: '#64748b',
               maxWidth: '600px',
               margin: '0 auto'
@@ -337,11 +268,11 @@ const AINinja = () => {
           </div>
 
           {toolCategories.map((category, idx) => (
-            <div key={idx} style={{ marginBottom: '4rem' }}>
+            <div key={idx} style={{ marginBottom: '2rem' }}>
               <h3 style={{
-                fontSize: '1.5rem',
+                fontSize: '1.25rem',
                 fontWeight: 700,
-                marginBottom: '1.5rem',
+                marginBottom: '1rem',
                 color: '#1e293b',
                 display: 'flex',
                 alignItems: 'center',
@@ -358,15 +289,15 @@ const AINinja = () => {
 
               <div style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-                gap: '1.5rem'
+                gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+                gap: '1rem'
               }}>
                 {category.tools.map((tool, toolIdx) => (
                   <Card
                     key={toolIdx}
                     onClick={() => navigate(tool.path)}
                     style={{
-                      padding: '1.5rem',
+                      padding: '1rem',
                       cursor: 'pointer',
                       transition: 'all 0.3s ease',
                       border: '1px solid #e2e8f0',
@@ -385,36 +316,23 @@ const AINinja = () => {
                     }}
                   >
 
-
                     <h4 style={{
-                      fontSize: '1.125rem',
+                      fontSize: '1rem',
                       fontWeight: 700,
-                      marginBottom: '0.5rem',
+                      marginBottom: '0.25rem',
                       color: '#0f172a'
                     }}>
                       {tool.name}
                     </h4>
 
                     <p style={{
-                      fontSize: '0.875rem',
+                      fontSize: '0.8rem',
                       color: '#64748b',
-                      lineHeight: 1.6,
-                      marginBottom: '1rem'
+                      lineHeight: 1.4,
+                      marginBottom: '0'
                     }}>
                       {tool.description}
                     </p>
-
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.5rem',
-                      color: '#8b5cf6',
-                      fontSize: '0.875rem',
-                      fontWeight: 600
-                    }}>
-                      Try it now
-                      <ChevronRight className="w-4 h-4" />
-                    </div>
                   </Card>
                 ))}
               </div>
@@ -423,63 +341,9 @@ const AINinja = () => {
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section style={{
-        padding: '5rem 0',
-        background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
-        position: 'relative'
-      }}>
-        <div className="container" style={{ maxWidth: '800px', margin: '0 auto', padding: '0 2rem', textAlign: 'center' }}>
-          <h2 style={{
-            fontSize: '2.5rem',
-            fontWeight: 800,
-            marginBottom: '1.5rem',
-            color: 'white',
-            letterSpacing: '-0.02em'
-          }}>
-            Ready to Transform Your Job Search?
-          </h2>
-          <p style={{
-            fontSize: '1.25rem',
-            color: '#cbd5e1',
-            marginBottom: '2rem',
-            lineHeight: 1.7
-          }}>
-            Join thousands of job seekers who are landing interviews faster with our AI-powered tools
-          </p>
-          <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-            <Button
-              className="btn-primary"
-              onClick={() => navigate('/signup')}
-              style={{
-                background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
-                padding: '1rem 2.5rem',
-                fontSize: '1.1rem',
-                fontWeight: 600
-              }}
-            >
-              Get Started Free
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => navigate('/pricing')}
-              style={{
-                background: 'rgba(255, 255, 255, 0.1)',
-                border: '1px solid rgba(255, 255, 255, 0.2)',
-                color: 'white',
-                padding: '1rem 2.5rem',
-                fontSize: '1.1rem',
-                fontWeight: 600
-              }}
-            >
-              View All Plans
-            </Button>
-          </div>
-        </div>
-      </section>
 
       {/* Footer */}
-      <footer style={{ background: '#0f172a', padding: '3rem 0', color: '#94a3b8' }}>
+      <footer style={{ background: 'transparent', padding: '2rem 0', color: '#64748b' }}>
         <div className="container" style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 2rem', textAlign: 'center' }}>
           <p style={{ fontSize: '0.875rem' }}>{BRAND.copyright}</p>
         </div>

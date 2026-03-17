@@ -21,7 +21,6 @@ import {
   DollarSign,
   Globe,
   ArrowLeft,
-  Sparkles,
   FileText,
   MessageSquare,
   Upload,
@@ -34,6 +33,7 @@ import {
   Target,
   CheckCircle
 } from 'lucide-react';
+import NinjaIcon from './NinjaIcon';
 import { BRAND, VISA_TYPES, WORK_TYPES } from '../config/branding';
 import { API_URL } from '../config/api';
 import SideMenu from './SideMenu';
@@ -472,7 +472,7 @@ const AIApply = () => {
                 </div>
 
                 <div className="form-info-box">
-                  <Sparkles className="w-5 h-5" />
+                  <NinjaIcon className="w-5 h-5" />
                   <div>
                     <strong>AI Ninja will use your base resume and this job description to generate:</strong>
                     <ul>
@@ -484,7 +484,7 @@ const AIApply = () => {
                 </div>
 
                 <Button type="submit" className="btn-primary btn-large w-full">
-                  <Sparkles className="w-5 h-5" /> Generate Application Materials
+                  <NinjaIcon className="w-5 h-5" /> Generate Application Materials
                 </Button>
               </form>
             </Card>
@@ -624,7 +624,7 @@ const AIApply = () => {
                   className={`pb-2 px-4 font-medium ${activeTab === 'qa' ? 'border-b-2 border-primary text-primary' : 'text-gray-500 hover:text-gray-700'}`}
                   onClick={() => setActiveTab('qa')}
                 >
-                  <Sparkles className="w-4 h-4 inline-block mr-2" />
+                  <NinjaIcon className="w-4 h-4 inline-block mr-2" />
                   Interview Q&A
                 </button>
               </div>
@@ -696,7 +696,7 @@ const AIApply = () => {
                 {activeTab === 'qa' && (
                   <Card className="result-card">
                     <div className="result-card-header">
-                      <Sparkles className="w-6 h-6" />
+                      <NinjaIcon className="w-6 h-6" />
                       <h3>Suggested Answers</h3>
                     </div>
                     <div className="suggested-answers">

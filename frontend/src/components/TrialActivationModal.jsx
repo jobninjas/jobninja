@@ -2,7 +2,8 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
-import { Sparkles, Calendar, ArrowRight } from 'lucide-react';
+import { Calendar, ArrowRight } from 'lucide-react';
+import NinjaIcon from './NinjaIcon';
 
 /**
  * TrialActivationModal Component
@@ -49,7 +50,7 @@ const TrialActivationModal = ({ isOpen, onClose, expiresAt }) => {
 
                 {/* Success icon */}
                 <div className="w-20 h-20 bg-gradient-to-br from-green-400 to-emerald-500 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <Sparkles className="w-10 h-10 text-white" />
+                    <NinjaIcon className="w-10 h-10 text-white" />
                 </div>
 
                 {/* Title */}

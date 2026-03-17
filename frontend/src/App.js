@@ -2,6 +2,7 @@ import React from "react";
 import "./App.css";
 import "./LandingPage.css";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import posthog from "posthog-js";
 import { AuthProvider } from "./contexts/AuthContext";
 import { AINinjaProvider } from "./contexts/AINinjaContext";
 import ErrorBoundary from "./components/ErrorBoundary";
@@ -33,7 +34,7 @@ import InterviewRoom from "./components/InterviewRoom";
 import InterviewReport from "./components/InterviewReport";
 import AdminAnalytics from "./components/AdminAnalytics";
 import Checkout from "./components/Checkout";
-import ResumeScanner from "./components/ResumeScanner";
+import ResumeEditorPage from "./components/ResumeEditorPage";
 import AIApplyFlow from "./components/AIApplyFlow";
 import RefundPolicy from "./components/RefundPolicy";
 import PrivacyPolicy from "./components/PrivacyPolicy";
@@ -54,7 +55,7 @@ import LinkedInExamples from "./components/LinkedInExamples";
 import ResumeTemplates from "./components/ResumeTemplates";
 import CoverLetterTemplates from "./components/CoverLetterTemplates";
 import ATSGuides from "./components/ATSGuides";
-import FreeTools from "./components/FreeTools";
+// Removed FreeTools import
 // Free Tools Components
 import NetworkingTemplates from "./components/NetworkingTemplates";
 import InterviewFramework from "./components/InterviewFramework";
@@ -67,11 +68,57 @@ import OfferComparator from "./components/OfferComparator";
 import ContactPage from "./components/ContactPage";
 import "./components/Jobs.css";
 import "./components/InterviewPrep.css";
-import "./components/ResumeScanner.css";
 import "./components/AIApplyFlow.css";
 import LinkedInMockup from "./components/LinkedInMockup";
+import DashboardLayout from "./components/DashboardLayout";
+
+// Initialize PostHog
+if (process.env.REACT_APP_POSTHOG_KEY) {
+  posthog.init(process.env.REACT_APP_POSTHOG_KEY, {
+    api_host: process.env.REACT_APP_POSTHOG_HOST || 'https://us.i.posthog.com',
+    person_profiles: 'identified_only',
+    capture_pageview: true,
+  });
+}
 
 function App() {
+  // Global Event Tracking
+  React.useEffect(() => {
+    const handleButtonClick = (e) => {
+      const target = e.target.closest('button, a.btn, .clickable-element');
+      if (target) {
+        posthog.capture('button_clicked', {
+          text: target.innerText || target.getAttribute('aria-label'),
+          id: target.id,
+          class: target.className
+        });
+      }
+    };
+
+    const handleFormSubmit = (e) => {
+      posthog.capture('form_submitted', {
+        form_id: e.target.id,
+        action: e.target.action
+      });
+    };
+
+    const handleScroll = () => {
+      const scrollPercent = (window.scrollY + window.innerHeight) / document.documentElement.scrollHeight * 100;
+      if (scrollPercent > 90) posthog.capture('scroll_depth', { depth: '90%' });
+      else if (scrollPercent > 50) posthog.capture('scroll_depth', { depth: '50%' });
+    };
+
+    document.addEventListener('click', handleButtonClick);
+    document.addEventListener('submit', handleFormSubmit);
+    window.addEventListener('scroll', handleScroll);
+
+    return () => {
+      document.removeEventListener('click', handleButtonClick);
+      document.removeEventListener('submit', handleFormSubmit);
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, []);
+
   return (
     <div className="App">
       <ErrorBoundary>
@@ -80,11 +127,11 @@ function App() {
             <BrowserRouter>
               <ScrollToTop />
               <Routes>
-                {/* Public Routes */}
+                {/* Standalone Public Pages */}
                 <Route path="/" element={<LandingPage />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/signup" element={<Signup />} />
-                <Route path="/pricing" element={<Pricing />} />
+
                 <Route path="/payment/success" element={<PaymentSuccess />} />
                 <Route path="/payment/canceled" element={<PaymentCanceled />} />
                 <Route path="/checkout" element={<Checkout />} />
@@ -92,191 +139,57 @@ function App() {
                 <Route path="/privacy-policy" element={<PrivacyPolicy />} />
                 <Route path="/terms" element={<TermsAndConditions />} />
                 <Route path="/verify-email" element={<VerifyEmail />} />
-
-                {/* AI Ninja Routes */}
-                <Route path="/ai-ninja" element={<AINinja />} />
-                <Route path="/ai-ninja/jobs/:id" element={<JobDetailsOrion />} />
-                <Route path="/ai-ninja/apply/:id" element={<AIApply />} />
-                <Route
-                  path="/ai-apply"
-                  element={
-                    <ProtectedRoute allowedRoles={['customer', 'admin']} requireVerification={false}>
-                      <AIApplyFlow />
-                    </ProtectedRoute>
-                  }
-                />
-
-                {/* Human Ninja Route */}
-                <Route path="/human-ninja" element={<HumanNinja />} />
-
-                {/* Jobs Route */}
-                <Route path="/jobs" element={<Jobs />} />
-
-                {/* Free Tools Route */}
-                <Route path="/free-tools" element={<FreeTools />} />
-                <Route path="/networking-templates" element={<NetworkingTemplates />} />
-                <Route path="/interview-framework" element={<InterviewFramework />} />
-                <Route path="/reference-prep" element={<ReferenceCheckPrep />} />
-                <Route path="/salary-negotiator" element={<SalaryNegotiator />} />
-                <Route path="/linkedin-headline" element={<LinkedInHeadlineOptimizer />} />
-                <Route path="/career-gap" element={<CareerGapExplainer />} />
-                <Route path="/job-decoder" element={<JobDescriptionDecoder />} />
-                <Route path="/offer-comparator" element={<OfferComparator />} />
-
-
-                {/* Interview Prep Route */}
-                <Route path="/interview-prep" element={<InterviewPrep />} />
-                <Route path="/interview-prep/:sessionId" element={<InterviewRoom />} />
-                <Route path="/interview-prep/:sessionId/report" element={<InterviewReport />} />
-
-                {/* Admin Analytics Route */}
-                <Route
-                  path="/admin/analytics"
-                  element={
-                    <ProtectedRoute allowedRoles={['customer', 'admin']} requireVerification={false}>
-                      <AdminAnalytics />
-                    </ProtectedRoute>
-                  }
-                />
-
-                {/* Phase 1 Tools Routes */}
-                <Route
-                  path="/one-click-optimize"
-                  element={
-                    <ProtectedRoute allowedRoles={['customer', 'admin']} requireVerification={false}>
-                      <OneClickOptimize />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/bullet-points"
-                  element={
-                    <ProtectedRoute allowedRoles={['customer', 'admin']} requireVerification={false}>
-                      <BulletPointsGenerator />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/summary-generator"
-                  element={
-                    <ProtectedRoute allowedRoles={['customer', 'admin']} requireVerification={false}>
-                      <SummaryGenerator />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/linkedin-optimizer"
-                  element={
-                    <ProtectedRoute allowedRoles={['customer', 'admin']} requireVerification={false}>
-                      <LinkedInOptimizer />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/career-change"
-                  element={
-                    <ProtectedRoute allowedRoles={['customer', 'admin']} requireVerification={false}>
-                      <CareerChangeTool />
-                    </ProtectedRoute>
-                  }
-                />
-
-                {/* Phase 2 Tools Routes */}
-                <Route
-                  path="/chatgpt-resume"
-                  element={
-                    <ProtectedRoute allowedRoles={['customer', 'admin']} requireVerification={false}>
-                      <ChatGPTResume />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/chatgpt-cover-letter"
-                  element={
-                    <ProtectedRoute allowedRoles={['customer', 'admin']} requireVerification={false}>
-                      <ChatGPTCoverLetter />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route path="/linkedin-examples" element={<LinkedInExamples />} />
-                <Route path="/resume-examples" element={<LinkedInExamples />} />
-                <Route path="/linkedin-mockup" element={<LinkedInMockup />} />
-
-                {/* Phase 3 Tools Routes */}
-                <Route path="/resume-templates" element={<ResumeTemplates />} />
-                <Route path="/cover-letter-templates" element={<CoverLetterTemplates />} />
-                <Route path="/ats-guides" element={<ATSGuides />} />
-
-                {/* Resume Scanner Route */}
-                <Route
-                  path="/scanner"
-                  element={
-                    <ProtectedRoute allowedRoles={['customer', 'admin']} requireVerification={false}>
-                      <ResumeScanner />
-                    </ProtectedRoute>
-                  }
-                />
-
-                {/* My Resumes - Protected */}
-                <Route
-                  path="/resumes"
-                  element={
-                    <ProtectedRoute allowedRoles={['customer', 'admin']} requireVerification={false}>
-                      <MyResumes />
-                    </ProtectedRoute>
-                  }
-                />
-
-                {/* Protected Routes - Customer */}
-                <Route
-                  path="/dashboard"
-                  element={
-                    <ProtectedRoute allowedRoles={['customer', 'admin']}>
-                      <Dashboard />
-                    </ProtectedRoute>
-                  }
-                />
-
-                {/* Protected Routes - Employee */}
-                <Route
-                  path="/employee"
-                  element={
-                    <ProtectedRoute allowedRoles={['employee']}>
-                      <Employee />
-                    </ProtectedRoute>
-                  }
-                />
-
-                {/* Protected Routes - Admin */}
-                <Route
-                  path="/admin"
-                  element={
-                    <ProtectedRoute allowedRoles={['admin']}>
-                      <Admin />
-                    </ProtectedRoute>
-                  }
-                />
-
-                {/* Hidden Admin Portal - ACCESSIBLE WITH PASSWORD 1010 */}
-                <Route
-                  path="/job-ninjas-admin-portal"
-                  element={<AdminPortal />}
-                />
-
-                {/* Live Dashboard - STRICT ADMIN ONLY */}
-                <Route
-                  path="/live-dashboard"
-                  element={
-                    <ProtectedRoute allowedRoles={['admin']}>
-                      <LiveDashboard />
-                    </ProtectedRoute>
-                  }
-                />
-
-                {/* Contact Route */}
                 <Route path="/contact" element={<ContactPage />} />
 
-                {/* Catch all - redirect to home */}
+                {/* Internal App Routes (Wrapped in DashboardLayout) */}
+                <Route element={<DashboardLayout />}>
+                  <Route path="/pricing" element={<Pricing />} />
+                  <Route path="/dashboard" element={<ProtectedRoute allowedRoles={['customer', 'admin']}><Dashboard /></ProtectedRoute>} />
+                  <Route path="/ai-ninja" element={<AINinja />} />
+                  <Route path="/ai-ninja/jobs/:id" element={<JobDetailsOrion />} />
+                  <Route path="/ai-ninja/apply/:id" element={<AIApply />} />
+                  <Route path="/ai-apply" element={<ProtectedRoute allowedRoles={['customer', 'admin']} requireVerification={false}><AIApplyFlow /></ProtectedRoute>} />
+                  <Route path="/human-ninja" element={<HumanNinja />} />
+                  <Route path="/jobs" element={<Jobs />} />
+                  <Route path="/resumes" element={<ProtectedRoute allowedRoles={['customer', 'admin']} requireVerification={false}><MyResumes /></ProtectedRoute>} />
+                  <Route path="/interview-prep" element={<InterviewPrep />} />
+                  <Route path="/interview-prep/:sessionId" element={<InterviewRoom />} />
+                  <Route path="/interview-prep/:sessionId/report" element={<InterviewReport />} />
+                  <Route path="/admin/analytics" element={<ProtectedRoute allowedRoles={['customer', 'admin']} requireVerification={false}><AdminAnalytics /></ProtectedRoute>} />
+                  <Route path="/one-click-optimize" element={<ProtectedRoute allowedRoles={['customer', 'admin']} requireVerification={false}><OneClickOptimize /></ProtectedRoute>} />
+                  <Route path="/bullet-points" element={<ProtectedRoute allowedRoles={['customer', 'admin']} requireVerification={false}><BulletPointsGenerator /></ProtectedRoute>} />
+                  <Route path="/summary-generator" element={<ProtectedRoute allowedRoles={['customer', 'admin']} requireVerification={false}><SummaryGenerator /></ProtectedRoute>} />
+                  <Route path="/linkedin-optimizer" element={<ProtectedRoute allowedRoles={['customer', 'admin']} requireVerification={false}><LinkedInOptimizer /></ProtectedRoute>} />
+                  <Route path="/career-change" element={<ProtectedRoute allowedRoles={['customer', 'admin']} requireVerification={false}><CareerChangeTool /></ProtectedRoute>} />
+                  <Route path="/chatgpt-resume" element={<ProtectedRoute allowedRoles={['customer', 'admin']} requireVerification={false}><ChatGPTResume /></ProtectedRoute>} />
+                  <Route path="/chatgpt-cover-letter" element={<ProtectedRoute allowedRoles={['customer', 'admin']} requireVerification={false}><ChatGPTCoverLetter /></ProtectedRoute>} />
+                  <Route path="/scanner" element={<ProtectedRoute allowedRoles={['customer', 'admin']} requireVerification={false}><ResumeEditorPage /></ProtectedRoute>} />
+                  <Route path="/editor" element={<ProtectedRoute allowedRoles={['customer', 'admin']} requireVerification={false}><ResumeEditorPage /></ProtectedRoute>} />
+                  
+                  {/* Tools and Guides */}
+                  <Route path="/networking-templates" element={<NetworkingTemplates />} />
+                  <Route path="/interview-framework" element={<InterviewFramework />} />
+                  <Route path="/reference-prep" element={<ReferenceCheckPrep />} />
+                  <Route path="/salary-negotiator" element={<SalaryNegotiator />} />
+                  <Route path="/linkedin-headline" element={<LinkedInHeadlineOptimizer />} />
+                  <Route path="/career-gap" element={<CareerGapExplainer />} />
+                  <Route path="/job-decoder" element={<JobDescriptionDecoder />} />
+                  <Route path="/offer-comparator" element={<OfferComparator />} />
+                  <Route path="/linkedin-examples" element={<LinkedInExamples />} />
+                  <Route path="/resume-examples" element={<LinkedInExamples />} />
+                  <Route path="/linkedin-mockup" element={<LinkedInMockup />} />
+                  <Route path="/resume-templates" element={<ResumeTemplates />} />
+                  <Route path="/cover-letter-templates" element={<CoverLetterTemplates />} />
+                  <Route path="/ats-guides" element={<ATSGuides />} />
+                </Route>
+
+                {/* Admin/Employee Portal (Standalone) */}
+                <Route path="/employee" element={<ProtectedRoute allowedRoles={['employee']}><Employee /></ProtectedRoute>} />
+                <Route path="/admin" element={<ProtectedRoute allowedRoles={['admin']}><Admin /></ProtectedRoute> } />
+                <Route path="/job-ninjas-admin-portal" element={<AdminPortal />} />
+                <Route path="/live-dashboard" element={<ProtectedRoute allowedRoles={['admin']}><LiveDashboard /></ProtectedRoute>} />
+
+                {/* Catch all */}
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </BrowserRouter>

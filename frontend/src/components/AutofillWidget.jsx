@@ -8,9 +8,9 @@ import {
     Settings,
     MessageSquare,
     CheckCircle2,
-    FileText,
-    Sparkles
+    FileText
 } from 'lucide-react';
+import NinjaIcon from './NinjaIcon';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
 import { Badge } from './ui/badge';
@@ -89,7 +89,7 @@ const AutofillWidget = ({ jobTitle, company, companyLogo = "https://logo.clearbi
                                         className="generate-custom-resume-btn"
                                         onClick={handleGenerateResume}
                                     >
-                                        <Sparkles className="w-4 h-4 mr-2" />
+                                        <NinjaIcon className="w-4 h-4 mr-2" />
                                         Generate Custom Resume
                                     </Button>
 

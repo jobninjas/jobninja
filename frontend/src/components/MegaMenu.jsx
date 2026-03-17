@@ -2,21 +2,21 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     ChevronDown,
-    Sparkles,
     FileSearch,
     Wand2,
     ListChecks,
-    FileType,
-    Mail,
-    Download,
-    TrendingUp,
-    GraduationCap,
-    Linkedin,
-    Briefcase,
-    Users,
-    Scan,
-    Zap
+    Search,
+    CheckCircle,
+    FileText,
+    MousePointerClick,
+    Layout,
+    Zap,
+    Globe,
+    Settings,
+    MoreHorizontal,
+    Briefcase
 } from 'lucide-react';
+import NinjaIcon from './NinjaIcon';
 import './MegaMenu.css';
 
 const MegaMenu = () => {
@@ -41,7 +41,7 @@ const MegaMenu = () => {
                 {
                     title: 'Resume Tools',
                     items: [
-                        { icon: "/tool-icons/resume-scanner.png", label: 'Resume Scanner', desc: 'ATS score & insights', path: '/scanner', color: '#3b82f6' },
+                        { icon: "/tool-icons/resume-scanner.png", label: 'Resume Scanner', desc: 'ATS score & insights', path: '/editor', color: '#3b82f6' },
                         { icon: "/tool-icons/one-click-optimize.png", label: 'One-Click Optimize', desc: 'Instant optimization', path: '/one-click-optimize', color: '#8b5cf6' },
                         { icon: "/tool-icons/bullet-points.png", label: 'Bullet Points Generator', desc: 'Impact-driven bullets', path: '/bullet-points', color: '#ec4899' },
                         { icon: "/tool-icons/summary-generator.png", label: 'Summary Generator', desc: 'Professional summaries', path: '/summary-generator', color: '#f59e0b' }
@@ -70,7 +70,7 @@ const MegaMenu = () => {
                     title: 'Build & Optimize',
                     items: [
                         { icon: "/tool-icons/one-click-optimize.png", label: 'One-Click Optimize', desc: 'Instant ATS boost', path: '/one-click-optimize', color: '#8b5cf6' },
-                        { icon: "/tool-icons/resume-scanner.png", label: 'Resume Scanner', desc: 'Score your resume', path: '/scanner', color: '#3b82f6' },
+                        { icon: "/tool-icons/resume-scanner.png", label: 'Resume Scanner', desc: 'Score your resume', path: '/editor', color: '#3b82f6' },
                         { icon: "/tool-icons/chatgpt-resume.png", label: 'ChatGPT Resume', desc: 'AI resume writer', path: '/chatgpt-resume', color: '#10b981' }
                     ]
                 },

@@ -67,11 +67,22 @@ class JobAggregator:
             "errors": []
         }
         
-        # Fetch from Adzuna (US Only)
-        if use_adzuna:
+        # Fetch from Scrapling (The Muse, FindWork, etc.)
+        try:
+            logger.info("Fetching jobs from Scrapling spiders...")
+            from scrapling_fetcher import run_spiders
+            scraped_jobs = await run_spiders()
+            all_jobs.extend(scraped_jobs)
+            stats["scrapling"] = len(scraped_jobs)
+            logger.info(f"Fetched {len(scraped_jobs)} jobs from Scrapling spiders")
+        except Exception as e:
+            logger.error(f"Error running Scrapling spiders: {e}")
+            stats["errors"].append(f"Scrapling: {str(e)}")
+            
+        # Fetch from Adzuna (US Only) - Now explicitly enabled as per request
+        if True: # Always attempt Adzuna now
             try:
                 logger.info("Fetching jobs from Adzuna (US)...")
-                # Increased pages to get more jobs as requested
                 adzuna_jobs = await self.adzuna.fetch_multiple_pages(country='us', max_pages=50) 
                 all_jobs.extend(adzuna_jobs)
                 stats["adzuna"] += len(adzuna_jobs)
@@ -234,42 +245,21 @@ class JobAggregator:
         stats["total_fetched"] = len(all_jobs)
         logger.info(f"Total jobs fetched from all sources: {len(all_jobs)}")
 
-        # --- USER REQUESTED FILTERING ---
-        # Exclude: Adzuna, ZipRecruiter, Monster, Dice, Indeed, "Easy Apply"
-        # Keep: Greenhouse, Lever, Ashby, Company Career Sites, LinkedIn (Non-Easy Apply)
+        # Exclude: "Easy Apply" logic (keep it simple)
         filtered_jobs = []
-        excluded_sources = {'adzuna', 'ziprecruiter', 'monster', 'dice', 'indeed'}
         
         for job in all_jobs:
             url = (job.get('url') or job.get('sourceUrl') or '').lower()
-            publisher = (job.get('publisher') or '').lower()
-            source = (job.get('source') or '').lower()
             title = (job.get('title') or '').lower()
             description = (job.get('description') or '').lower()
             
-            # 1. Block known excluded sources
-            is_excluded = False
-            for ex in excluded_sources:
-                if ex in publisher or ex in source or ex in url:
-                    is_excluded = True
-                    break
-            
-            if is_excluded:
-                continue
-            
-            # 2. LinkedIn Easy Apply Filter
-            # Heuristic: LinkedIn jobs that are ONLY on LinkedIn (no greenhouse/lever/direct links)
-            # are likely Easy Apply if we found them via a general search.
+            # LinkedIn Easy Apply Filter
             if 'linkedin.com' in url:
-                # If there's no indicator of a carrier site in the URL, it might be easy apply
                 career_indicators = ['greenhouse.io', 'lever.co', 'ashbyhq.com', 'apply.', 'careers.', 'jobs.', 'workdayjobs.com', 'breezy.hr']
                 has_career_site = any(ind in url for ind in career_indicators)
-                
-                # Check description for "easy apply" or similar keywords
                 is_easy_apply = "easy apply" in description or "easy apply" in title
                 
                 if is_easy_apply or (not has_career_site and 'linkedin.com/jobs/view' in url):
-                    logger.debug(f"Skipping likely LinkedIn Easy Apply: {job.get('title')} @ {job.get('company')}")
                     continue
 
             filtered_jobs.append(job)
@@ -393,9 +383,9 @@ class JobAggregator:
                 
                 # Check for existing job to perform smart update
                 job_id = job.get('job_id')
-                existing = SupabaseService.get_job_by_external_id(job_id) if job_id else None
+                existing = SupabaseService.get_job_by_any_id(job_id) if job_id else None
                 
-                if existing:
+                if existing and isinstance(existing, dict):
                     # SMART UPDATE LOGIC
                     old_desc = existing.get("description", "") or ""
                     new_desc = job.get("description", "") or ""

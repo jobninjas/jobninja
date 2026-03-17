@@ -165,7 +165,7 @@ class SupabaseService:
                 .order("created_at", desc=True)\
                 .range(offset, offset + limit - 1)\
                 .execute()
-            return response.data
+            return response.data if response and response.data is not None else []
         except Exception as e:
             logger.error(f"Error fetching jobs from Supabase: {e}")
             return []
@@ -235,7 +235,7 @@ class SupabaseService:
                 query = query.gte("created_at", cutoff)
 
             response = query.limit(0).execute()
-            return response.count if response.count is not None else 0
+            return response.count if response and response.count is not None else 0
         except Exception as e:
             logger.error(f"Error fetching jobs count from Supabase: {e}")
             return 0
@@ -267,6 +267,7 @@ class SupabaseService:
 
                 # Orion Boost: Detailed structured data
                 "target_role": user_dict.get("target_role") or user_dict.get("targetRole") or user_dict.get("preferences", {}).get("target_role"),
+                "target_roles": user_dict.get("target_roles"),
                 "phone": user_dict.get("phone") or person.get("phone"),
                 "location": user_dict.get("location") or person.get("location") or f"{address.get('city', '')}, {address.get('state', '')}".strip(", "),
                 "linkedin_url": user_dict.get("linkedin_url") or user_dict.get("linkedinUrl") or person.get("linkedinUrl"),
@@ -584,8 +585,12 @@ class SupabaseService:
                     app["matchScore"] = meta["matchScore"]
                 if "origin" in meta and "origin" not in app:
                     app["origin"] = meta["origin"]
-                if "jobUrl" in meta and not app.get("source_url"):
-                    app["source_url"] = meta["jobUrl"]
+                if "jobUrl" in meta and not app.get("job_url"):
+                    app["job_url"] = meta["jobUrl"]
+                if "source_url" in app and not app.get("job_url"):
+                    app["job_url"] = app["source_url"]
+                if "job_link" in app and not app.get("job_url"):
+                    app["job_url"] = app["job_link"]
                 if "resumeText" in meta and not app.get("resumeText"):
                     app["resumeText"] = meta["resumeText"]
                 if "jobTitle" in meta and not app.get("job_title"):
@@ -742,12 +747,12 @@ class SupabaseService:
             return None
 
     @staticmethod
-    def count_saved_resumes(user_id: str, start_date: str = None) -> int:
+    def count_saved_resumes(user_email: str, start_date: str = None) -> int:
         """Count resumes for a user, optionally since a specific date"""
         client = SupabaseService.get_client()
         if not client: return 0
         try:
-            query = client.table("saved_resumes").select("*", count="exact").eq("user_id", user_id)
+            query = client.table("saved_resumes").select("*", count="exact").eq("user_email", user_email)
             if start_date:
                 query = query.gte("created_at", start_date)
             

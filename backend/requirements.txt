@@ -79,3 +79,4 @@ openai>=1.12.0
 groq>=0.4.0
 supabase==2.11.0
 dodopayments==1.86.1
+posthog>=3.5.0

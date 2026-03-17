@@ -8,13 +8,13 @@ import {
     X,
     Send,
     Bot,
-    Sparkles,
     FileText,
     PenTool,
     Users,
     MessageSquare,
     Loader2
 } from 'lucide-react';
+import NinjaIcon from './NinjaIcon';
 import { API_URL } from '../config/api';
 
 const QuickActionChip = ({ icon: Icon, label, onClick }) => (
@@ -112,7 +112,7 @@ const NovaChatPanel = ({ isOpen, onClose, jobContext }) => {
                         <img src="/ninjasface.png" alt="Nova" className="w-8 h-8 object-contain" />
                     </div>
                     <div>
-                        <h3 className="font-bold text-white text-lg">Nova Copilot</h3>
+                        <h3 className="font-bold text-white text-lg">Ninja Copilot</h3>
                         <p className="text-xs text-emerald-50 opacity-90 font-medium">Your AI Job Assistant</p>
                     </div>
                 </div>
@@ -134,7 +134,7 @@ const NovaChatPanel = ({ isOpen, onClose, jobContext }) => {
             <div className="p-3 bg-gray-50 border-b border-gray-200 overflow-x-auto no-scrollbar">
                 <div className="flex flex-col gap-2">
                     <QuickActionChip
-                        icon={Sparkles}
+                        icon={NinjaIcon}
                         label="Tell me why this job is a good fit for me."
                         onClick={() => handleSendMessage("Tell me why this job is a good fit for me.")}
                     />
@@ -189,7 +189,7 @@ const NovaChatPanel = ({ isOpen, onClose, jobContext }) => {
                         </div>
                         <div className="bg-gray-100 p-3 rounded-2xl rounded-tl-none flex items-center gap-2">
                             <Loader2 className="w-4 h-4 animate-spin text-emerald-500" />
-                            <span className="text-sm text-gray-500">Nova is thinking...</span>
+                            <span className="text-sm text-gray-500">Ninja is thinking...</span>
                         </div>
                     </div>
                 )}

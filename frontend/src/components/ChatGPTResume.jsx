@@ -10,9 +10,9 @@ import {
     Send,
     RefreshCw,
     FileText,
-    Download,
-    Sparkles
+    Download
 } from 'lucide-react';
+import NinjaIcon from './NinjaIcon';
 import { API_URL } from '../config/api';
 import SideMenu from './SideMenu';
 import Header from './Header';
@@ -156,7 +156,7 @@ Otherwise, ask specific clarifying questions.`;
                                     <div key={index} className={`message ${message.role}`}>
                                         <div className="message-avatar">
                                             {message.role === 'assistant' ? (
-                                                <Sparkles className="w-5 h-5" />
+                                                <NinjaIcon className="w-5 h-5" />
                                             ) : (
                                                 <span>You</span>
                                             )}
@@ -169,7 +169,7 @@ Otherwise, ask specific clarifying questions.`;
                                 {isLoading && (
                                     <div className="message assistant">
                                         <div className="message-avatar">
-                                            <Sparkles className="w-5 h-5" />
+                                            <NinjaIcon className="w-5 h-5" />
                                         </div>
                                         <div className="message-content typing">
                                             <Loader2 className="w-4 h-4 animate-spin" />

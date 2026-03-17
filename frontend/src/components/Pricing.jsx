@@ -7,14 +7,11 @@ import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { BRAND, PRICING } from '../config/branding';
 import BookCallModal from './BookCallModal';
-import SideMenu from './SideMenu';
-import Header from './Header';
 import { TimelineContent } from "./ui/timeline-animation";
 import { VerticalCutReveal } from "./ui/vertical-cut-reveal";
 import NumberFlow from "@number-flow/react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
-import './SideMenu.css';
 import { API_URL, apiCall } from '../config/api';
 
 const PricingSwitch = ({
@@ -71,8 +68,8 @@ const Pricing = () => {
   const navigate = useNavigate();
   const { isAuthenticated, user, refreshUser } = useAuth();
   const [isBookCallModalOpen, setIsBookCallModalOpen] = useState(false);
-  const [sideMenuOpen, setSideMenuOpen] = useState(false);
   const [switchValue, setSwitchValue] = useState("0"); // "0" for ai, "1" for human
+
   const pricingRef = useRef(null);
 
   const planType = switchValue === "0" ? 'ai' : 'human';
@@ -98,31 +95,36 @@ const Pricing = () => {
   const isProPlusSubscriber = user?.subscription_plan === 'ai-pro-plus' && user?.subscription_status === 'active';
   const isProMaxSubscriber = user?.subscription_plan === 'ai-pro-max' && user?.subscription_status === 'active';
 
+  const hasUsedTrial = user?.has_used_free_trial;
+
   const aiNinjaPlans = [
     {
       ...PRICING.AI_YEARLY,
       popular: false,
       buttonVariant: 'outline',
-      description: PRICING.AI_YEARLY.description,
-      isSubscribed: isProSubscriber
+      description: !hasUsedTrial ? "7-Day Free Trial included. Then $49/year." : PRICING.AI_YEARLY.description,
+      isSubscribed: isProSubscriber,
+      showTrial: !hasUsedTrial
     },
     {
       ...PRICING.AI_PRO_PLUS,
       popular: true,
       buttonVariant: 'default',
-      description: PRICING.AI_PRO_PLUS.description,
+      description: !hasUsedTrial ? "7-Day Free Trial included. Then $69/year." : PRICING.AI_PRO_PLUS.description,
       // If user paid $49 (Pro), this becomes $20 (69-49=20)
       price: isProSubscriber ? 20 : PRICING.AI_PRO_PLUS.price,
-      isSubscribed: isProPlusSubscriber
+      isSubscribed: isProPlusSubscriber,
+      showTrial: !hasUsedTrial
     },
     {
       ...PRICING.AI_PRO_MAX,
       popular: false,
       buttonVariant: 'outline',
-      description: PRICING.AI_PRO_MAX.description,
+      description: !hasUsedTrial ? "7-Day Free Trial included. Then $89/year." : PRICING.AI_PRO_MAX.description,
       // If user paid $49 (Pro), this becomes $40 (89-49=40)
       price: isProSubscriber ? 40 : PRICING.AI_PRO_MAX.price,
-      isSubscribed: isProMaxSubscriber
+      isSubscribed: isProMaxSubscriber,
+      showTrial: !hasUsedTrial
     },
   ];
 
@@ -164,11 +166,8 @@ const Pricing = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white pricing-page">
-      <SideMenu isOpen={sideMenuOpen} onClose={() => setSideMenuOpen(false)} />
-      <Header onMenuClick={() => setSideMenuOpen(true)} />
-
-      <div className="px-4 pt-20 pb-32 max-w-7xl mx-auto relative" ref={pricingRef}>
+    <div className="pricing-page">
+      <div className="max-w-7xl mx-auto px-6 py-10 relative" ref={pricingRef}>
         <article className="text-left mb-6 space-y-4 max-w-2xl">
           <h2 className="md:text-6xl text-4xl capitalize font-medium text-gray-900 mb-4">
             <VerticalCutReveal
@@ -232,20 +231,20 @@ const Pricing = () => {
                     <h3 className="xl:text-3xl md:text-2xl text-2xl font-semibold text-gray-900 mb-2">
                       {plan.name}
                     </h3>
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-1.5 mt-1">
                       {plan.popular && (
-                        <span className="bg-blue-600 text-white px-3 py-1 rounded-full text-xs font-medium">
-                          Popular
+                        <span className="bg-blue-50 text-blue-600 border border-blue-200 px-2 py-0.5 rounded text-[11px] font-medium tracking-wide">
+                          popular
                         </span>
                       )}
                       {plan.discountPercent && (
-                        <span className="bg-green-600 text-white px-3 py-1 rounded-full text-xs font-medium">
-                          {plan.discountPercent}% OFF
+                        <span className="bg-green-50 text-green-700 border border-green-200 px-2 py-0.5 rounded text-[11px] font-medium">
+                          {plan.discountPercent}% off
                         </span>
                       )}
                       {plan.isBeta && (
-                        <span className="bg-amber-500 text-white px-3 py-1 rounded-full text-xs font-medium uppercase tracking-wider">
-                          Beta
+                        <span className="bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5 rounded text-[11px] font-medium">
+                          beta
                         </span>
                       )}
                     </div>
@@ -316,7 +315,9 @@ const Pricing = () => {
                     }}
                   >
                     {planType === 'ai'
-                      ? (plan.isSubscribed ? '✅ Subscribed' : 'Subscribe Now')
+                      ? (plan.isSubscribed
+                        ? '✅ Subscribed'
+                        : (plan.showTrial ? 'Start 7-Day Free Trial' : `Get ${plan.name.replace('AI Ninja ', '')}`))
                       : (plan.price === 0 ? 'Try Free' : (plan.id === 'human-enterprise' ? 'Contact Us' : 'Get Started'))}
                   </button>
 

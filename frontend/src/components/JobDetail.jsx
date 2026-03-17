@@ -17,13 +17,13 @@ import {
   Briefcase,
   ExternalLink,
   ArrowLeft,
-  Sparkles,
   FileText,
   MessageSquare,
   Clock,
   Menu,
   Loader2
 } from 'lucide-react';
+import NinjaIcon from './NinjaIcon';
 import { BRAND } from '../config/branding';
 import { API_URL } from '../config/api';
 
@@ -314,7 +314,7 @@ const JobDetail = () => {
             <div className="job-detail-sidebar">
               <Card className="apply-card">
                 <h3 className="apply-card-title">
-                  <Sparkles className="w-5 h-5" /> Apply with AI Ninja
+                  <NinjaIcon className="w-5 h-5" /> Apply with AI Ninja
                 </h3>
                 <div className="apply-features">
                   <div className="apply-feature">
@@ -326,7 +326,7 @@ const JobDetail = () => {
                     <span>Custom Cover Letter</span>
                   </div>
                   <div className="apply-feature">
-                    <Sparkles className="w-4 h-4" />
+                    <NinjaIcon className="w-4 h-4" />
                     <span>Suggested Q&A Answers</span>
                   </div>
                 </div>

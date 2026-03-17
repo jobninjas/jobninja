@@ -587,64 +587,7 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <VerificationBanner />
-      {location.state?.message && (
-        <div className="bg-primary/10 text-primary px-4 py-3 flex items-center justify-center gap-2 border-b border-primary/20 animate-in fade-in slide-in-from-top duration-500">
-          <AlertCircle className="w-5 h-5" />
-          <span className="font-medium">{location.state.message}</span>
-        </div>
-      )}
-      {/* Side Menu */}
-      <SideMenu isOpen={sideMenuOpen} onClose={() => setSideMenuOpen(false)} />
-
-      {/* Top Navigation */}
-      <nav className="bg-white border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center gap-8">
-              {/* Hamburger Menu */}
-              <button
-                onClick={() => setSideMenuOpen(true)}
-                className="p-2 rounded-lg border border-gray-200 hover:bg-gray-50"
-                aria-label="Open menu"
-              >
-                <Menu className="w-5 h-5 text-gray-600" />
-              </button>
-              <button onClick={() => { navigate('/'); window.scrollTo(0, 0); }} className="flex items-center gap-2">
-                <img src={BRAND.logoPath} alt={BRAND.logoAlt} className="h-8" />
-                <span className="text-xl font-bold text-primary">{BRAND.name}</span>
-              </button>
-              <div className="hidden md:flex items-center gap-4">
-                <button onClick={() => navigate('/ai-ninja')} className="text-sm text-gray-600 hover:text-primary flex items-center gap-1">
-                  <Bot className="w-4 h-4" /> AI Ninja
-                </button>
-                <button onClick={() => navigate('/human-ninja')} className="text-sm text-gray-600 hover:text-primary flex items-center gap-1">
-                  <UserCheck className="w-4 h-4" /> Human Ninja
-                </button>
-              </div>
-            </div>
-            <div className="flex items-center gap-4">
-              <span className="text-sm text-gray-600">Welcome, {user?.name}</span>
-              <Badge className={user?.plan?.toLowerCase() === 'pro' ? 'bg-blue-600 hover:bg-blue-700 text-white border-0 font-bold px-3 py-1' : ''}>
-                {user?.plan?.toLowerCase() || 'free'}
-              </Badge>
-              <Button variant="ghost" size="sm" onClick={() => setActiveTab('profile')}>
-                <User className="w-4 h-4" />
-              </Button>
-              <Button variant="ghost" size="sm" onClick={() => setActiveTab('settings')}>
-                <Settings className="w-4 h-4" />
-              </Button>
-              <Button variant="ghost" size="sm" onClick={handleLogout}>
-                <LogOut className="w-4 h-4" />
-                Logout
-              </Button>
-            </div>
-          </div>
-        </div>
-      </nav>
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto py-8">
         {/* KPI Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
           <Card>
@@ -698,81 +641,6 @@ const Dashboard = () => {
 
         {/* Main Content Area */}
         <div className="flex gap-6">
-          {/* Sidebar */}
-          <div className="w-64 flex-shrink-0">
-            <Card>
-              <CardContent className="p-4">
-                <nav className="space-y-1">
-                  <button
-                    onClick={() => setActiveTab('tracker')}
-                    style={activeTab === 'tracker' ? {
-                      backgroundColor: '#15803d',
-                      color: '#ffffff'
-                    } : {
-                      color: '#111827'
-                    }}
-                    className={`w-full text-left px-3 py-2 rounded-md text-sm font-medium flex items-center gap-2 ${activeTab === 'tracker' ? '' : 'hover:bg-gray-100'}`}
-                  >
-                    <ClipboardList className="w-4 h-4" />
-                    Application Tracker
-                  </button>
-                  <button
-                    onClick={() => setActiveTab('profile')}
-                    style={activeTab === 'profile' ? {
-                      backgroundColor: '#15803d',
-                      color: '#ffffff'
-                    } : {
-                      color: '#111827'
-                    }}
-                    className={`w-full text-left px-3 py-2 rounded-md text-sm font-medium flex items-center gap-2 ${activeTab === 'profile' ? '' : 'hover:bg-gray-100'}`}
-                  >
-                    <User className="w-4 h-4" />
-                    My Profile
-                  </button>
-                  <button
-                    onClick={() => setActiveTab('billing')}
-                    style={activeTab === 'billing' ? {
-                      backgroundColor: '#15803d',
-                      color: '#ffffff'
-                    } : {
-                      color: '#111827'
-                    }}
-                    className={`w-full text-left px-3 py-2 rounded-md text-sm font-medium flex items-center gap-2 ${activeTab === 'billing' ? '' : 'hover:bg-gray-100'}`}
-                  >
-                    <CreditCard className="w-4 h-4" />
-                    Billing
-                  </button>
-                  <button
-                    onClick={() => setActiveTab('referrals')}
-                    style={activeTab === 'referrals' ? {
-                      backgroundColor: '#15803d',
-                      color: '#ffffff'
-                    } : {
-                      color: '#111827'
-                    }}
-                    className={`w-full text-left px-3 py-2 rounded-md text-sm font-medium flex items-center gap-2 ${activeTab === 'referrals' ? '' : 'hover:bg-gray-100'}`}
-                  >
-                    <Gift className="w-4 h-4" />
-                    Invite & Earn
-                  </button>
-                  <button
-                    onClick={() => setActiveTab('settings')}
-                    style={activeTab === 'settings' ? {
-                      backgroundColor: '#15803d',
-                      color: '#ffffff'
-                    } : {
-                      color: '#111827'
-                    }}
-                    className={`w-full text-left px-3 py-2 rounded-md text-sm font-medium flex items-center gap-2 ${activeTab === 'settings' ? '' : 'hover:bg-gray-100'}`}
-                  >
-                    <Settings className="w-4 h-4" />
-                    Account Settings
-                  </button>
-                </nav>
-              </CardContent>
-            </Card>
-          </div>
-
           {/* Main Content */}
           <div className="flex-1">
             {/* Application Tracker Tab */}
@@ -2007,7 +1875,6 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
-    </div >
   );
 };
 

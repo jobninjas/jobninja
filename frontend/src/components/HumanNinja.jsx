@@ -7,7 +7,6 @@ import {
   UserCheck,
   ClipboardList,
   Search,
-  Sparkles,
   Send,
   Check,
   Clock,
@@ -24,17 +23,15 @@ import {
   Globe,
   Phone
 } from 'lucide-react';
+import NinjaIcon from './NinjaIcon';
 import { BRAND } from '../config/branding';
 import BookCallModal from './BookCallModal';
-import SideMenu from './SideMenu';
-import Header from './Header';
 import './SideMenu.css';
 
 const HumanNinja = () => {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
   const [isBookCallModalOpen, setIsBookCallModalOpen] = useState(false);
-  const [sideMenuOpen, setSideMenuOpen] = useState(false);
 
   const processSteps = [
     {
@@ -50,7 +47,7 @@ const HumanNinja = () => {
       color: "from-purple-500 to-pink-500"
     },
     {
-      icon: <Sparkles className="w-8 h-8" />,
+      icon: <NinjaIcon className="w-8 h-8" />,
       title: "AI + Human Tailoring",
       description: "We use AI to draft application materials quickly, then our human specialists review, edit, and perfect every detail. Quality over quantity, always.",
       color: "from-orange-500 to-red-500"
@@ -137,9 +134,6 @@ const HumanNinja = () => {
 
   return (
     <div className="human-ninja-page" style={{ fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
-      <SideMenu isOpen={sideMenuOpen} onClose={() => setSideMenuOpen(false)} />
-      <Header onMenuClick={() => setSideMenuOpen(true)} />
-
       {/* Hero Section */}
       <section style={{
         background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%)',

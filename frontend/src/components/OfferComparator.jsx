@@ -404,7 +404,7 @@ const OfferComparator = () => {
                 </div>
             </section>
 
-            <footer style={{ background: '#0f172a', padding: '2rem', color: '#94a3b8', textAlign: 'center' }}>
+            <footer style={{ background: 'transparent', padding: '2rem', color: '#64748b', textAlign: 'center' }}>
                 <p style={{ margin: 0, fontSize: '0.875rem' }}>{BRAND.copyright}</p>
             </footer>
         </div>

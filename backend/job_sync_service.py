@@ -266,6 +266,8 @@ class JobSyncService:
         }
         
         # Check for state names/abbreviations in location
+        if not location: # Added check for empty location string
+            return False
         location_parts = [part.strip().lower() for part in location.split(",")]
         for part in location_parts:
             if part in usa_states:

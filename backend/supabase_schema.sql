@@ -21,6 +21,7 @@ ALTER TABLE profiles ADD COLUMN IF NOT EXISTS latest_resume       TEXT;
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS summary             TEXT;
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS profile_picture     TEXT;
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS target_role         TEXT;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS target_roles        TEXT[] DEFAULT '{}';
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS phone               TEXT;
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS location            TEXT;
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS linkedin_url        TEXT;

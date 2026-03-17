@@ -347,3 +347,822 @@
 2026-03-03 16:07:20,055 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
 2026-03-03 23:38:55,376 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
 2026-03-03 23:38:55,780 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-11 07:59:11,630 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-11 07:59:14,067 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-11 07:59:15,774 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-11 07:59:28,159 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-11 07:59:32,023 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-11 08:28:52,641 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-11 08:28:54,146 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-11 08:29:06,626 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-11 08:29:09,743 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-11 08:41:46,076 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-11 08:41:47,813 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-11 08:42:16,524 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-11 08:42:20,044 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-11 08:54:47,154 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-11 08:54:48,814 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-11 08:55:00,547 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-11 08:55:03,920 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-11 09:03:50,352 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-11 09:03:52,289 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-11 09:04:30,606 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-11 09:04:33,482 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-11 09:09:50,994 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-11 09:09:52,999 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-11 09:10:06,685 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-11 09:10:09,724 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-11 09:22:45,136 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-11 09:22:47,164 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-11 09:23:01,055 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-11 09:23:04,188 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-11 10:49:54,099 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-11 10:49:55,885 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-11 10:50:09,542 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-11 10:50:13,149 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-11 11:03:23,963 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-11 11:03:26,311 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-11 11:03:50,937 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-11 11:03:54,296 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-11 11:27:10,858 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-11 11:27:13,100 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-11 11:27:26,679 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-11 11:27:31,676 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-11 11:50:28,544 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-11 11:50:31,426 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-11 11:50:45,462 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-11 11:50:48,763 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-11 11:57:34,667 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-11 11:57:38,738 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-11 11:57:54,737 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-11 11:57:58,396 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-11 11:58:03,319 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-11 11:58:06,075 - resume_analyzer - ERROR - Failed to extract resume data: Expecting ',' delimiter: line 88 column 10 (char 4363)
+2026-03-11 11:58:06,077 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-11 11:58:08,737 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-11 12:07:08,858 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-11 12:07:11,293 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-11 12:07:24,843 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-11 12:07:28,580 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-11 12:16:25,296 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-11 12:16:27,565 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-11 12:16:42,783 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-11 12:16:46,222 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-11 14:42:51,294 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-11 14:42:53,262 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-11 14:43:20,068 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-11 14:43:23,099 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-11 14:54:52,210 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-11 14:54:54,113 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-11 14:55:04,955 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-11 14:55:08,320 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-11 15:10:03,044 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-11 15:10:03,317 - resume_analyzer - WARNING - Groq rate limit (429), retrying in 2s (Attempt 1/3)...
+2026-03-11 15:10:05,410 - resume_analyzer - WARNING - Groq rate limit (429), retrying in 4s (Attempt 2/3)...
+2026-03-11 15:10:09,510 - resume_analyzer - WARNING - Groq rate limit (429), retrying in 8s (Attempt 3/3)...
+2026-03-11 15:10:17,534 - resume_analyzer - WARNING - Resume analysis failed (rate limit). Using basic fallback.
+2026-03-11 15:10:17,534 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-11 15:10:40,380 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-11 15:10:42,551 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-11 15:10:57,616 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-11 15:11:00,801 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-11 16:18:01,906 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-11 16:18:03,804 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-11 16:18:15,958 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-11 16:18:19,626 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-11 16:31:26,279 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-11 16:31:28,211 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-11 16:32:26,629 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-11 16:32:29,866 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-11 23:25:07,924 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-11 23:25:10,314 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-11 23:25:36,568 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-11 23:25:39,585 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-11 23:25:45,051 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-11 23:25:47,017 - resume_analyzer - ERROR - Failed to extract resume data: Expecting ',' delimiter: line 88 column 10 (char 4358)
+2026-03-11 23:25:47,017 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-11 23:25:49,406 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-11 23:32:37,638 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-11 23:32:39,383 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-11 23:32:50,994 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-11 23:32:54,062 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-11 23:32:59,134 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-11 23:33:00,873 - resume_analyzer - ERROR - Failed to extract resume data: Expecting ',' delimiter: line 88 column 6 (char 4322)
+2026-03-11 23:33:00,874 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-11 23:33:03,657 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-11 23:40:35,513 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-11 23:40:37,329 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-11 23:40:49,700 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-11 23:40:52,844 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-11 23:40:57,924 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-11 23:40:59,800 - resume_analyzer - ERROR - Failed to extract resume data: Expecting ',' delimiter: line 88 column 10 (char 4358)
+2026-03-11 23:40:59,801 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-11 23:41:02,283 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-11 23:43:51,885 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-11 23:43:53,677 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-11 23:44:06,534 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-11 23:44:09,525 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-11 23:44:14,490 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-11 23:44:16,556 - resume_analyzer - ERROR - Failed to extract resume data: Expecting ',' delimiter: line 88 column 10 (char 4332)
+2026-03-11 23:44:16,557 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-11 23:44:18,929 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-11 23:47:55,869 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-11 23:47:58,166 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-11 23:48:15,526 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-11 23:48:18,510 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-11 23:48:23,640 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-11 23:48:25,557 - resume_analyzer - ERROR - Failed to extract resume data: Expecting ',' delimiter: line 88 column 10 (char 4358)
+2026-03-11 23:48:25,558 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-11 23:48:27,921 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-11 23:59:26,901 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-11 23:59:28,963 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-11 23:59:42,337 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-11 23:59:45,824 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-11 23:59:53,621 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-11 23:59:55,629 - resume_analyzer - ERROR - Failed to extract resume data: Expecting ',' delimiter: line 88 column 10 (char 4358)
+2026-03-11 23:59:55,630 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-11 23:59:57,909 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-11 23:59:58,030 - resume_analyzer - WARNING - Groq rate limit (429), retrying in 2s (Attempt 1/3)...
+2026-03-12 00:00:00,114 - resume_analyzer - WARNING - Groq rate limit (429), retrying in 4s (Attempt 2/3)...
+2026-03-12 00:00:04,188 - resume_analyzer - WARNING - Groq rate limit (429), retrying in 8s (Attempt 3/3)...
+2026-03-12 00:05:49,508 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-12 00:05:51,517 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-12 00:06:03,560 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-12 00:06:03,700 - resume_analyzer - WARNING - Groq rate limit (429), retrying in 2s (Attempt 1/3)...
+2026-03-12 00:06:05,785 - resume_analyzer - WARNING - Groq rate limit (429), retrying in 4s (Attempt 2/3)...
+2026-03-12 00:06:09,878 - resume_analyzer - WARNING - Groq rate limit (429), retrying in 8s (Attempt 3/3)...
+2026-03-12 00:06:17,889 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-12 00:06:24,152 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-12 00:06:26,006 - resume_analyzer - ERROR - Failed to extract resume data: Expecting ',' delimiter: line 88 column 10 (char 4358)
+2026-03-12 00:06:26,007 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-12 00:06:26,152 - resume_analyzer - WARNING - Groq rate limit (429), retrying in 2s (Attempt 1/3)...
+2026-03-12 00:06:28,245 - resume_analyzer - WARNING - Groq rate limit (429), retrying in 4s (Attempt 2/3)...
+2026-03-12 00:06:32,326 - resume_analyzer - WARNING - Groq rate limit (429), retrying in 8s (Attempt 3/3)...
+2026-03-12 00:06:40,335 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-12 00:10:15,738 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-12 00:10:17,694 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-12 00:10:31,159 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-12 00:10:34,592 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-12 00:10:40,665 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-12 00:10:42,804 - resume_analyzer - ERROR - Failed to extract resume data: Expecting ',' delimiter: line 88 column 10 (char 4358)
+2026-03-12 00:10:42,805 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-12 00:10:45,512 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-12 00:17:54,549 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-12 00:17:56,353 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-12 00:18:07,386 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-12 00:18:11,026 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-12 00:18:11,186 - resume_analyzer - WARNING - Groq rate limit (429), retrying in 2s (Attempt 1/3)...
+2026-03-12 00:18:13,259 - resume_analyzer - WARNING - Groq rate limit (429), retrying in 4s (Attempt 2/3)...
+2026-03-12 00:18:17,342 - resume_analyzer - WARNING - Groq rate limit (429), retrying in 8s (Attempt 3/3)...
+2026-03-12 00:18:25,371 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-12 00:18:27,376 - resume_analyzer - ERROR - Failed to extract resume data: Expecting ',' delimiter: line 88 column 6 (char 4327)
+2026-03-12 00:18:27,376 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-12 00:18:29,639 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-12 00:24:44,582 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-12 00:24:46,361 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-12 00:25:10,549 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-12 00:25:10,686 - resume_analyzer - WARNING - Groq rate limit (429), retrying in 2s (Attempt 1/3)...
+2026-03-12 00:25:12,770 - resume_analyzer - WARNING - Groq rate limit (429), retrying in 4s (Attempt 2/3)...
+2026-03-12 00:25:16,859 - resume_analyzer - WARNING - Groq rate limit (429), retrying in 8s (Attempt 3/3)...
+2026-03-12 00:25:24,872 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-12 00:25:29,831 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-12 00:25:31,813 - resume_analyzer - ERROR - Failed to extract resume data: Expecting ',' delimiter: line 88 column 10 (char 4318)
+2026-03-12 00:25:31,814 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-12 00:25:31,928 - resume_analyzer - WARNING - Groq rate limit (429), retrying in 2s (Attempt 1/3)...
+2026-03-12 00:25:34,084 - resume_analyzer - WARNING - Groq rate limit (429), retrying in 4s (Attempt 2/3)...
+2026-03-12 00:25:38,174 - resume_analyzer - WARNING - Groq rate limit (429), retrying in 8s (Attempt 3/3)...
+2026-03-12 00:25:46,184 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-12 09:34:40,175 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-12 09:34:42,184 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-12 09:34:56,467 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-12 09:35:00,216 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-12 09:35:04,838 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-12 09:35:06,994 - resume_analyzer - ERROR - Failed to extract resume data: Expecting ',' delimiter: line 88 column 10 (char 4332)
+2026-03-12 09:35:06,995 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-12 09:35:09,695 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-12 09:50:26,873 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-12 09:50:28,991 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-12 09:50:45,008 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-12 09:50:48,439 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-12 09:50:54,647 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-12 09:50:56,673 - resume_analyzer - ERROR - Failed to extract resume data: Expecting ',' delimiter: line 88 column 10 (char 4358)
+2026-03-12 09:50:56,674 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-12 09:50:59,698 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-12 11:07:22,439 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-12 11:07:24,453 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-12 11:07:38,725 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-12 11:07:43,177 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-12 11:07:50,129 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-12 11:07:52,657 - resume_analyzer - ERROR - Failed to extract resume data: Expecting ',' delimiter: line 88 column 10 (char 4365)
+2026-03-12 11:07:52,660 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-12 11:07:55,154 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-12 14:20:54,838 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-12 14:20:56,936 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-12 14:21:11,397 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-12 14:21:14,959 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-12 14:21:20,519 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-12 14:21:22,401 - resume_analyzer - ERROR - Failed to extract resume data: Expecting ',' delimiter: line 88 column 6 (char 4320)
+2026-03-12 14:21:22,401 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-12 14:21:25,448 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-12 15:12:29,206 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-12 15:12:30,956 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-12 15:12:42,340 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-12 15:12:46,057 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-12 15:12:52,640 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-12 15:12:54,524 - resume_analyzer - ERROR - Failed to extract resume data: Expecting ',' delimiter: line 88 column 10 (char 4363)
+2026-03-12 15:12:54,525 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-12 15:12:57,191 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-12 15:24:14,373 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start='\nYou are an expert ATS (Applicant Tracking System) and resume analyst. Analyze t'
+2026-03-12 15:24:14,374 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-12 15:24:16,298 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start='\nYou are an Elite Resume Architect and ATS Optimization Expert. Your goal is to '
+2026-03-12 15:24:16,300 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-12 15:24:27,272 - document_generator - INFO - Stage 1: Deterministic resume parse
+2026-03-12 15:24:27,285 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.3-70b-versatile prompt_has_json=True prompt_start='\nSYSTEM:\nYou are a precision fact extractor. Output JSON ONLY. No prose.\n\nUSER:\n'
+2026-03-12 15:24:27,286 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-12 15:24:30,867 - document_generator - INFO - Stage 1 facts_json employers: ['Astra Corp | AI Engineer', 'Ai Talent Inc | AI Engineer', 'Precisesoft Inc | Data Analyst', 'Tech Mahindra | Associate Software Engineer']
+2026-03-12 15:24:30,871 - document_generator - INFO - Stage 1 facts_json projects: ['Enterprise Patent & Research Assistant', 'Text-to-SQL Analytics Copilot', 'AI Job Application Copilot (Agentic RAG Workflow)']
+2026-03-12 15:24:30,872 - document_generator - INFO - Stage 1 facts_json education: [{'degree': 'Master of Science', 'major': 'Management Information Systems', 'university': 'University of Illinois at Springfield', 'year': '2024'}, {'degree': 'Bachelor of Technology', 'major': 'Electronics & Communication Engineering', 'university': 'ACE Engineering College, Hyderabad', 'year': '2020'}]
+2026-03-12 15:24:30,873 - document_generator - INFO - Stage 1 facts_json certifications: ['Microsoft Azure AZ-900 – Microsoft Azure Fundamentals', 'Robotic Enterprise Framework Overview – UiPath', 'Orchestrator for RPA Developers – UiPath', 'ARIS Business Process Analysis Platform']
+2026-03-12 15:24:30,875 - document_generator - ERROR - RESUME_PROMPT_FIRST_500: CRITICAL INSTRUCTION: You are a JSON generation API. Your entire response must be a single valid JSON object. Do NOT write any introduction, explanation, analysis, advice, markdown, or prose. Do NOT say "Here's how to tailor" or "Step-by-step guide". Output ONLY the JSON object starting with { and ending with }. Any text outside the JSON will cause a system failure.
+
+<output_schema>
+{
+  "think_phase_summary": "string",
+  "jd_extraction": {},
+  "tailored_resume": {
+    "summary": ["string"],
+    
+2026-03-12 15:24:30,876 - document_generator - ERROR - RESUME_PROMPT_LAST_200: "self_check_passed": true
+}
+
+REMINDER: Output ONLY valid JSON. No explanation. No markdown. No prose. Start your response with { immediately.
+
+
+Respond with a valid JSON object only. Begin with { now:
+2026-03-12 15:24:30,878 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.3-70b-versatile prompt_has_json=True prompt_start='CRITICAL INSTRUCTION: You are a JSON generation API. Your entire response must b'
+2026-03-12 15:24:30,878 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-12 15:24:37,801 - document_generator - ERROR - STAGE2_RESPONSE_FIRST_300: {
+  "think_phase_summary": "The job description requires a Software Engineer III with experience in Java, Spring Boot, and AWS services, while the candidate's resume highlights expertise in AI, ML, and data engineering. To tailor the resume, we need to emphasize the candidate's relevant technical sk
+2026-03-12 15:24:37,828 - document_generator - ERROR - Stage 2 Expert failed: 'ExperienceNew' object has no attribute 'job_title'
+2026-03-12 15:24:37,839 - document_generator - INFO - Starting 3-stage tailoring pipeline for Company
+2026-03-12 15:24:37,841 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start='\nExtract structured data from this resume text for a professional profile. Retur'
+2026-03-12 15:24:37,841 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-12 15:24:39,878 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start='\nYou are a resume analyst. Output ONLY valid JSON. No explanation, no markdown, '
+2026-03-12 15:24:39,881 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-12 15:24:41,197 - document_generator - INFO - Stage 1 Analysis complete for Company
+2026-03-12 15:24:41,202 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start="\nYou are a professional resume writer. Rewrite ONE job role's bullets for a resu"
+2026-03-12 15:24:41,202 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-12 15:24:41,599 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start="\nYou are a professional resume writer. Rewrite ONE job role's bullets for a resu"
+2026-03-12 15:24:41,600 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-12 15:24:42,183 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start="\nYou are a professional resume writer. Rewrite ONE job role's bullets for a resu"
+2026-03-12 15:24:42,187 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-12 15:24:42,620 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start="\nYou are a professional resume writer. Rewrite ONE job role's bullets for a resu"
+2026-03-12 15:24:42,625 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-12 15:24:43,075 - document_generator - INFO - Stage 2 Rewriting complete for 4 roles
+2026-03-12 15:24:43,080 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.3-70b-versatile prompt_has_json=True prompt_start='\nYou are a professional resume writer. Respond ONLY with a JSON object. No prose'
+2026-03-12 15:24:43,081 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-12 15:24:45,278 - resume_analyzer - INFO - [GROQ CALL] json_mode=False model=default prompt_has_json=False prompt_start='\nWrite a professional, compelling cover letter for this job application.\n\nAPPLIC'
+2026-03-12 15:24:45,282 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-12 15:35:10,015 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start='\nYou are an expert ATS (Applicant Tracking System) and resume analyst. Analyze t'
+2026-03-12 15:35:10,017 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-12 15:35:11,816 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start='\nYou are an Elite Resume Architect and ATS Optimization Expert. Your goal is to '
+2026-03-12 15:35:11,818 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-12 15:35:22,462 - document_generator - INFO - Stage 1: Deterministic resume parse
+2026-03-12 15:35:22,475 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.3-70b-versatile prompt_has_json=True prompt_start='\nSYSTEM:\nYou are a precision fact extractor. Output JSON ONLY. No prose.\n\nUSER:\n'
+2026-03-12 15:35:22,477 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-12 15:35:26,148 - document_generator - INFO - Stage 1 facts_json employers: ['Astra Corp | AI Engineer', 'Ai Talent Inc | AI Engineer', 'Precisesoft Inc | Data Analyst', 'Tech Mahindra | Associate Software Engineer']
+2026-03-12 15:35:26,150 - document_generator - INFO - Stage 1 facts_json projects: ['Enterprise Patent & Research Assistant', 'Text-to-SQL Analytics Copilot', 'AI Job Application Copilot (Agentic RAG Workflow)']
+2026-03-12 15:35:26,152 - document_generator - INFO - Stage 1 facts_json education: [{'degree': 'Master of Science', 'major': 'Management Information Systems', 'university': 'University of Illinois at Springfield', 'year': '2024'}, {'degree': 'Bachelor of Technology', 'major': 'Electronics & Communication Engineering', 'university': 'ACE Engineering College, Hyderabad', 'year': '2020'}]
+2026-03-12 15:35:26,153 - document_generator - INFO - Stage 1 facts_json certifications: ['Microsoft Azure AZ-900 – Microsoft Azure Fundamentals', 'Robotic Enterprise Framework Overview – UiPath', 'Orchestrator for RPA Developers – UiPath', 'ARIS Business Process Analysis Platform']
+2026-03-12 15:37:04,582 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start='\nYou are an expert ATS (Applicant Tracking System) and resume analyst. Analyze t'
+2026-03-12 15:37:04,584 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-12 15:37:06,321 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start='\nYou are an Elite Resume Architect and ATS Optimization Expert. Your goal is to '
+2026-03-12 15:37:06,324 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-12 15:37:19,351 - document_generator - INFO - Stage 1: Deterministic resume parse
+2026-03-12 15:37:19,361 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.3-70b-versatile prompt_has_json=True prompt_start='\nSYSTEM:\nYou are a precision fact extractor. Output JSON ONLY. No prose.\n\nUSER:\n'
+2026-03-12 15:37:19,362 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-12 15:37:23,262 - document_generator - INFO - Stage 1 facts_json employers: ['Astra Corp | AI Engineer', 'Ai Talent Inc | AI Engineer', 'Precisesoft Inc | Data Analyst', 'Tech Mahindra | Associate Software Engineer']
+2026-03-12 15:37:23,267 - document_generator - INFO - Stage 1 facts_json projects: ['Enterprise Patent & Research Assistant', 'Text-to-SQL Analytics Copilot', 'AI Job Application Copilot (Agentic RAG Workflow)']
+2026-03-12 15:37:23,268 - document_generator - INFO - Stage 1 facts_json education: [{'degree': 'Master of Science', 'major': 'Management Information Systems', 'university': 'University of Illinois at Springfield', 'year': '2024'}, {'degree': 'Bachelor of Technology', 'major': 'Electronics & Communication Engineering', 'university': 'ACE Engineering College, Hyderabad', 'year': '2020'}]
+2026-03-12 15:37:23,268 - document_generator - INFO - Stage 1 facts_json certifications: ['Microsoft Azure AZ-900 – Microsoft Azure Fundamentals', 'Robotic Enterprise Framework Overview – UiPath', 'Orchestrator for RPA Developers – UiPath', 'ARIS Business Process Analysis Platform']
+2026-03-12 15:37:23,270 - document_generator - ERROR - RESUME_PROMPT_FIRST_500: You are a JSON API. Output only a JSON object. No prose. No advice. No markdown. Start with {
+
+TARGET JOB:
+Overview
+Please note that visa sponsorship is unavailable for this position
+Fanatics Betting & Gaming (FBG) is on a mission to create the best online sportsbook in the industry, and we’re looking for an experienced
+Software Engineer III, Back End (Java)
+to help us get there.
+
+As a Software Engineer III, you will play a key role in designing, developing, and optimizing the
+backend sys
+2026-03-12 15:37:23,271 - document_generator - ERROR - RESUME_PROMPT_LAST_200: ne. Specific to this JD and company.",
+  "changes": [],
+  "skills_added": ["Java", "Spring Boot", "Distributed caching"],
+  "self_check_passed": true
+}
+
+Respond with valid JSON only. Begin with { now:
+2026-03-12 15:37:23,273 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.3-70b-versatile prompt_has_json=True prompt_start='You are a JSON API. Output only a JSON object. No prose. No advice. No markdown.'
+2026-03-12 15:37:23,274 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-12 15:37:27,145 - document_generator - ERROR - STAGE2_RESPONSE_FIRST_300: {
+  "think_phase_summary": "With 2 years of experience in software development and expertise in Java and FastAPI, I am confident in my ability to contribute to the backend systems of Fanatics Betting and Gaming.",
+   "jd_extraction": {
+       "job_title": "Software Engineer III, Back End (Java)",
+  
+2026-03-12 15:37:27,159 - document_generator - ERROR - Stage 2 Expert failed: 'ExperienceNew' object has no attribute 'job_title'
+2026-03-12 15:37:27,169 - document_generator - INFO - Starting 3-stage tailoring pipeline for Company
+2026-03-12 15:37:27,170 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start='\nExtract structured data from this resume text for a professional profile. Retur'
+2026-03-12 15:37:27,171 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-12 15:37:29,528 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start='\nYou are a resume analyst. Output ONLY valid JSON. No explanation, no markdown, '
+2026-03-12 15:37:29,532 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-12 15:37:31,049 - document_generator - INFO - Stage 1 Analysis complete for Company
+2026-03-12 15:37:31,051 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start="\nYou are a professional resume writer. Rewrite ONE job role's bullets for a resu"
+2026-03-12 15:37:31,052 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-12 15:37:31,761 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start="\nYou are a professional resume writer. Rewrite ONE job role's bullets for a resu"
+2026-03-12 15:37:31,763 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-12 15:37:32,380 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start="\nYou are a professional resume writer. Rewrite ONE job role's bullets for a resu"
+2026-03-12 15:37:32,382 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-12 15:37:32,785 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start="\nYou are a professional resume writer. Rewrite ONE job role's bullets for a resu"
+2026-03-12 15:37:32,786 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-12 15:37:33,378 - document_generator - INFO - Stage 2 Rewriting complete for 4 roles
+2026-03-12 15:37:33,380 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.3-70b-versatile prompt_has_json=True prompt_start='\nYou are a professional resume writer. Respond ONLY with a JSON object. No prose'
+2026-03-12 15:37:33,381 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-12 15:37:35,504 - resume_analyzer - INFO - [GROQ CALL] json_mode=False model=default prompt_has_json=False prompt_start='\nWrite a professional, compelling cover letter for this job application.\n\nAPPLIC'
+2026-03-12 15:37:35,508 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-12 15:50:07,869 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start='\nYou are an expert ATS (Applicant Tracking System) and resume analyst. Analyze t'
+2026-03-12 15:50:07,870 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-12 15:50:09,968 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start='\nYou are an Elite Resume Architect and ATS Optimization Expert. Your goal is to '
+2026-03-12 15:50:09,969 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-12 15:51:17,301 - document_generator - INFO - Stage 1: Deterministic resume parse
+2026-03-12 15:51:17,307 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.3-70b-versatile prompt_has_json=True prompt_start='\nSYSTEM:\nYou are a precision fact extractor. Output JSON ONLY. No prose.\n\nUSER:\n'
+2026-03-12 15:51:17,307 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-12 15:51:21,190 - document_generator - INFO - Stage 1 facts_json employers: ['Astra Corp | AI Engineer', 'Ai Talent Inc | AI Engineer', 'Precisesoft Inc | Data Analyst', 'Tech Mahindra | Associate Software Engineer']
+2026-03-12 15:51:21,191 - document_generator - INFO - Stage 1 facts_json projects: ['Enterprise Patent & Research Assistant', 'Text-to-SQL Analytics Copilot', 'AI Job Application Copilot (Agentic RAG Workflow)']
+2026-03-12 15:51:21,191 - document_generator - INFO - Stage 1 facts_json education: [{'degree': 'Master of Science', 'major': 'Management Information Systems', 'university': 'University of Illinois at Springfield', 'year': '2024'}, {'degree': 'Bachelor of Technology', 'major': 'Electronics & Communication Engineering', 'university': 'ACE Engineering College, Hyderabad', 'year': '2020'}]
+2026-03-12 15:51:21,191 - document_generator - INFO - Stage 1 facts_json certifications: ['Microsoft Azure AZ-900 – Microsoft Azure Fundamentals', 'Robotic Enterprise Framework Overview – UiPath', 'Orchestrator for RPA Developers – UiPath', 'ARIS Business Process Analysis Platform']
+2026-03-12 15:51:21,193 - document_generator - ERROR - RESUME_PROMPT_FIRST_500: You are a JSON API. Output only a JSON object. No prose. No advice. No markdown. Start with {
+
+TARGET JOB:
+Overview
+Please note that visa sponsorship is unavailable for this position
+Fanatics Betting & Gaming (FBG) is on a mission to create the best online sportsbook in the industry, and we’re looking for an experienced
+Software Engineer III, Back End (Java)
+to help us get there.
+
+As a Software Engineer III, you will play a key role in designing, developing, and optimizing the
+backend sys
+2026-03-12 15:51:21,194 - document_generator - ERROR - RESUME_PROMPT_LAST_200: 
+  "changes": [],
+  "skills_added": ["Message-oriented middleware", "Spring Boot", "Java", "JPA", "Distributed caching"],
+  "self_check_passed": true
+}
+
+Respond with valid JSON only. Begin with { now:
+2026-03-12 15:51:21,194 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.3-70b-versatile prompt_has_json=True prompt_start='You are a JSON API. Output only a JSON object. No prose. No advice. No markdown.'
+2026-03-12 15:51:21,194 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-12 15:51:25,247 - document_generator - ERROR - STAGE2_RESPONSE_FIRST_300: {
+  "think_phase_summary": "With 6 years of experience in software development, I possess skills in Java and FastAPI, which are relevant to the Software Engineer III, Back End (Java) role.",
+   "jd_extraction": {
+       "job_title": "Software Engineer III, Back End (Java)",
+       "top_5_keywords": 
+2026-03-12 15:51:25,261 - document_generator - ERROR - Stage 2 Expert failed: 'ExperienceNew' object has no attribute 'job_title'
+2026-03-12 15:51:25,272 - document_generator - INFO - Starting 3-stage tailoring pipeline for Company
+2026-03-12 15:51:25,273 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start='\nExtract structured data from this resume text for a professional profile. Retur'
+2026-03-12 15:51:25,273 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-12 15:51:27,311 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start='\nYou are a resume analyst. Output ONLY valid JSON. No explanation, no markdown, '
+2026-03-12 15:51:27,311 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-12 15:51:28,641 - document_generator - INFO - Stage 1 Analysis complete for Company
+2026-03-12 15:51:28,643 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start="\nYou are a professional resume writer. Rewrite ONE job role's bullets for a resu"
+2026-03-12 15:51:28,644 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-12 15:51:29,299 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start="\nYou are a professional resume writer. Rewrite ONE job role's bullets for a resu"
+2026-03-12 15:51:29,300 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-12 15:51:29,684 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start="\nYou are a professional resume writer. Rewrite ONE job role's bullets for a resu"
+2026-03-12 15:51:29,685 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-12 15:51:30,099 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start="\nYou are a professional resume writer. Rewrite ONE job role's bullets for a resu"
+2026-03-12 15:51:30,100 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-12 15:51:30,554 - document_generator - INFO - Stage 2 Rewriting complete for 4 roles
+2026-03-12 15:51:30,554 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.3-70b-versatile prompt_has_json=True prompt_start='\nYou are a professional resume writer. Respond ONLY with a JSON object. No prose'
+2026-03-12 15:51:30,556 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-12 15:51:32,720 - resume_analyzer - INFO - [GROQ CALL] json_mode=False model=default prompt_has_json=False prompt_start='\nWrite a professional, compelling cover letter for this job application.\n\nAPPLIC'
+2026-03-12 15:51:32,720 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-12 16:21:00,945 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start='\nYou are an expert ATS (Applicant Tracking System) and resume analyst. Analyze t'
+2026-03-12 16:21:00,946 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-12 16:21:02,935 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start='\nYou are an Elite Resume Architect and ATS Optimization Expert. Your goal is to '
+2026-03-12 16:21:02,936 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-12 16:21:15,811 - document_generator - INFO - Stage 1: Deterministic resume parse
+2026-03-12 16:21:15,820 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.3-70b-versatile prompt_has_json=True prompt_start='\nSYSTEM:\nYou are a precision fact extractor. Output JSON ONLY. No prose.\n\nUSER:\n'
+2026-03-12 16:21:15,822 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-12 16:21:19,294 - document_generator - INFO - Stage 1 facts_json employers: ['Astra Corp | AI Engineer', 'Ai Talent Inc | AI Engineer', 'Precisesoft Inc | Data Analyst', 'Tech Mahindra | Associate Software Engineer']
+2026-03-12 16:21:19,295 - document_generator - INFO - Stage 1 facts_json projects: ['Enterprise Patent & Research Assistant', 'Text-to-SQL Analytics Copilot', 'AI Job Application Copilot (Agentic RAG Workflow)']
+2026-03-12 16:21:19,295 - document_generator - INFO - Stage 1 facts_json education: [{'degree': 'Master of Science', 'major': 'Management Information Systems', 'university': 'University of Illinois at Springfield', 'year': '2024'}, {'degree': 'Bachelor of Technology', 'major': 'Electronics & Communication Engineering', 'university': 'ACE Engineering College, Hyderabad', 'year': '2020'}]
+2026-03-12 16:21:19,296 - document_generator - INFO - Stage 1 facts_json certifications: ['Microsoft Azure AZ-900 – Microsoft Azure Fundamentals', 'Robotic Enterprise Framework Overview – UiPath', 'Orchestrator for RPA Developers – UiPath', 'ARIS Business Process Analysis Platform']
+2026-03-13 07:15:21,887 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start='\nYou are an expert ATS (Applicant Tracking System) and resume analyst. Analyze t'
+2026-03-13 07:15:21,889 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-13 07:15:23,668 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start='\nYou are an Elite Resume Architect and ATS Optimization Expert. Your goal is to '
+2026-03-13 07:15:23,669 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-13 07:15:38,270 - document_generator - INFO - Stage 1: Deterministic resume parse
+2026-03-13 07:15:38,284 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.3-70b-versatile prompt_has_json=True prompt_start='\nSYSTEM:\nYou are a precision fact extractor. Output JSON ONLY. No prose.\n\nUSER:\n'
+2026-03-13 07:15:38,285 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-13 07:15:42,211 - document_generator - INFO - Stage 1 facts_json employers: ['Astra Corp | AI Engineer', 'Ai Talent Inc | AI Engineer', 'Precisesoft Inc | Data Analyst', 'Tech Mahindra | Associate Software Engineer']
+2026-03-13 07:15:42,213 - document_generator - INFO - Stage 1 facts_json projects: ['Enterprise Patent & Research Assistant', 'Text-to-SQL Analytics Copilot', 'AI Job Application Copilot (Agentic RAG Workflow)']
+2026-03-13 07:15:42,213 - document_generator - INFO - Stage 1 facts_json education: [{'degree': 'Master of Science', 'major': 'Management Information Systems', 'university': 'University of Illinois at Springfield', 'year': '2024'}, {'degree': 'Bachelor of Technology', 'major': 'Electronics & Communication Engineering', 'university': 'ACE Engineering College, Hyderabad', 'year': '2020'}]
+2026-03-13 07:15:42,213 - document_generator - INFO - Stage 1 facts_json certifications: ['Microsoft Azure AZ-900 – Microsoft Azure Fundamentals', 'Robotic Enterprise Framework Overview – UiPath', 'Orchestrator for RPA Developers – UiPath', 'ARIS Business Process Analysis Platform']
+2026-03-13 07:15:42,226 - document_generator - ERROR - RESUME_PROMPT_FIRST_500: You are a JSON API. Output only a JSON object. No prose. No advice. No markdown. Start with {
+
+TARGET JOB:
+Overview
+Please note that visa sponsorship is unavailable for this position
+Fanatics Betting & Gaming (FBG) is on a mission to create the best online sportsbook in the industry, and we’re looking for an experienced
+Software Engineer III, Back End (Java)
+to help us get there.
+
+As a Software Engineer III, you will play a key role in designing, developing, and optimizing the
+backend sys
+2026-03-13 07:15:42,227 - document_generator - ERROR - RESUME_PROMPT_LAST_200: essional paragraphs for this specific role.",
+  "changes": [],
+  "skills_added": ["Java", "Spring Boot", "AWS services"],
+  "self_check_passed": true
+}
+
+Respond with valid JSON only. Begin with { now:
+2026-03-13 07:15:42,229 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.3-70b-versatile prompt_has_json=True prompt_start='You are a JSON API. Output only a JSON object. No prose. No advice. No markdown.'
+2026-03-13 07:15:42,229 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-13 07:15:46,085 - document_generator - ERROR - STAGE2_RESPONSE_FIRST_300: {
+  "think_phase_summary": "With 2 years of experience in the tech domain and skills in LangChain, LlamaIndex, and FastAPI, I am a strong fit for the Software Engineer III role at Fanatics, where I can leverage my expertise in Java, Spring Boot, and AWS services to drive innovation.",
+   "jd_extract
+2026-03-13 07:24:58,201 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start='\nYou are an expert ATS (Applicant Tracking System) and resume analyst. Analyze t'
+2026-03-13 07:24:58,213 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-13 07:25:00,032 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start='\nYou are an Elite Resume Architect and ATS Optimization Expert. Your goal is to '
+2026-03-13 07:25:00,034 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-13 07:25:18,739 - document_generator - INFO - Stage 1: Deterministic resume parse
+2026-03-13 07:25:18,751 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.3-70b-versatile prompt_has_json=True prompt_start='\nSYSTEM:\nYou are a precision fact extractor. Output JSON ONLY. No prose.\n\nUSER:\n'
+2026-03-13 07:25:18,752 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-13 07:25:22,231 - document_generator - INFO - Stage 1 facts_json employers: ['Astra Corp | AI Engineer', 'Ai Talent Inc | AI Engineer', 'Precisesoft Inc | Data Analyst', 'Tech Mahindra | Associate Software Engineer']
+2026-03-13 07:25:22,231 - document_generator - INFO - Stage 1 facts_json projects: ['Enterprise Patent & Research Assistant', 'Text-to-SQL Analytics Copilot', 'AI Job Application Copilot (Agentic RAG Workflow)']
+2026-03-13 07:25:22,232 - document_generator - INFO - Stage 1 facts_json education: [{'degree': 'Master of Science', 'major': 'Management Information Systems', 'university': 'University of Illinois at Springfield', 'year': '2024'}, {'degree': 'Bachelor of Technology', 'major': 'Electronics & Communication Engineering', 'university': 'ACE Engineering College, Hyderabad', 'year': '2020'}]
+2026-03-13 07:25:22,233 - document_generator - INFO - Stage 1 facts_json certifications: ['Microsoft Azure AZ-900 – Microsoft Azure Fundamentals', 'Robotic Enterprise Framework Overview – UiPath', 'Orchestrator for RPA Developers – UiPath', 'ARIS Business Process Analysis Platform']
+2026-03-13 07:25:22,233 - document_generator - ERROR - RESUME_PROMPT_FIRST_500: You are a JSON API. Output only a JSON object. No prose. No advice. No markdown. Start with {
+
+TARGET JOB:
+Overview
+Please note that visa sponsorship is unavailable for this position
+Fanatics Betting & Gaming (FBG) is on a mission to create the best online sportsbook in the industry, and we’re looking for an experienced
+Software Engineer III, Back End (Java)
+to help us get there.
+
+As a Software Engineer III, you will play a key role in designing, developing, and optimizing the
+backend sys
+2026-03-13 07:25:22,234 - document_generator - ERROR - RESUME_PROMPT_LAST_200: 4 professional paragraphs for this specific role.",
+  "changes": [],
+  "skills_added": ["Java", "Spring Boot", "Docker"],
+  "self_check_passed": true
+}
+
+Respond with valid JSON only. Begin with { now:
+2026-03-13 07:25:22,235 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.3-70b-versatile prompt_has_json=True prompt_start='You are a JSON API. Output only a JSON object. No prose. No advice. No markdown.'
+2026-03-13 07:25:22,236 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-13 07:25:25,318 - document_generator - ERROR - STAGE2_RESPONSE_FIRST_300: {
+  "think_phase_summary": "With approximately 6 years of experience in AI and software development, SAIRAM VEEREDDY brings expertise in Java, Python, and cloud platforms, making him a strong fit for the Software Engineer III role at Fanatics.",
+   "jd_extraction": {
+       "job_title": "Software En
+2026-03-13 07:37:08,925 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start='\nYou are an expert ATS (Applicant Tracking System) and resume analyst. Analyze t'
+2026-03-13 07:37:08,926 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-13 07:37:10,994 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start='\nYou are an Elite Resume Architect and ATS Optimization Expert. Your goal is to '
+2026-03-13 07:37:10,995 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-13 07:37:23,791 - document_generator - INFO - Stage 1: Deterministic resume parse
+2026-03-13 07:37:23,798 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.3-70b-versatile prompt_has_json=True prompt_start='\nSYSTEM:\nYou are a precision fact extractor. Output JSON ONLY. No prose.\n\nUSER:\n'
+2026-03-13 07:37:23,798 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-13 07:37:27,687 - document_generator - INFO - Stage 1 facts_json employers: ['Astra Corp | AI Engineer', 'Ai Talent Inc | AI Engineer', 'Precisesoft Inc | Data Analyst', 'Tech Mahindra | Associate Software Engineer']
+2026-03-13 07:37:27,687 - document_generator - INFO - Stage 1 facts_json projects: ['Enterprise Patent & Research Assistant', 'Text-to-SQL Analytics Copilot', 'AI Job Application Copilot (Agentic RAG Workflow)']
+2026-03-13 07:37:27,687 - document_generator - INFO - Stage 1 facts_json education: [{'degree': 'Master of Science', 'major': 'Management Information Systems', 'university': 'University of Illinois at Springfield', 'year': '2024'}, {'degree': 'Bachelor of Technology', 'major': 'Electronics & Communication Engineering', 'university': 'ACE Engineering College, Hyderabad', 'year': '2020'}]
+2026-03-13 07:37:27,688 - document_generator - INFO - Stage 1 facts_json certifications: ['Microsoft Azure AZ-900 – Microsoft Azure Fundamentals', 'Robotic Enterprise Framework Overview – UiPath', 'Orchestrator for RPA Developers – UiPath', 'ARIS Business Process Analysis Platform']
+2026-03-13 07:37:27,688 - document_generator - ERROR - RESUME_PROMPT_FIRST_500: You are a JSON API. Output only a JSON object. No prose. No advice. No markdown. Start with {
+
+TARGET JOB:
+Overview
+Please note that visa sponsorship is unavailable for this position
+Fanatics Betting & Gaming (FBG) is on a mission to create the best online sportsbook in the industry, and we’re looking for an experienced
+Software Engineer III, Back End (Java)
+to help us get there.
+
+As a Software Engineer III, you will play a key role in designing, developing, and optimizing the
+backend sys
+2026-03-13 07:37:27,690 - document_generator - ERROR - RESUME_PROMPT_LAST_200: "3-4 professional paragraphs for this specific role.",
+  "changes": [],
+  "skills_added": ["Java", "Spring Boot", "JPA"],
+  "self_check_passed": true
+}
+
+Respond with valid JSON only. Begin with { now:
+2026-03-13 07:37:27,690 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.3-70b-versatile prompt_has_json=True prompt_start='You are a JSON API. Output only a JSON object. No prose. No advice. No markdown.'
+2026-03-13 07:37:27,691 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-13 07:37:31,332 - document_generator - ERROR - STAGE2_RESPONSE_FIRST_300: {
+  "think_phase_summary": "Highly skilled AI Engineer with 6+ years of experience in designing and delivering intelligent data and AI solutions, seeking a Software Engineer III role at Fanatics",
+   "jd_extraction": {
+       "job_title": "Software Engineer III, Back End (Java)",
+       "top_5_keywo
+2026-03-13 10:36:26,772 - resume_analyzer - INFO - [GROQ CALL] json_mode=False model=llama-3.1-8b-instant prompt_has_json=True prompt_start='Extract job details from the following raw text scraped from https://www.linkedi'
+2026-03-13 10:36:26,786 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-13 12:34:55,109 - resume_analyzer - INFO - [GROQ CALL] json_mode=False model=llama-3.1-8b-instant prompt_has_json=True prompt_start='Extract job details from the following raw text scraped from https://www.linkedi'
+2026-03-13 12:34:55,112 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-13 12:40:07,480 - resume_analyzer - INFO - [GROQ CALL] json_mode=False model=llama-3.1-8b-instant prompt_has_json=True prompt_start='Extract job details from the following raw text scraped from https://www.linkedi'
+2026-03-13 12:40:07,481 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-13 13:59:31,113 - resume_analyzer - INFO - [GROQ CALL] json_mode=False model=llama-3.1-8b-instant prompt_has_json=True prompt_start='Extract job details from the following raw text scraped from https://www.linkedi'
+2026-03-13 13:59:31,121 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-13 14:27:00,786 - resume_analyzer - INFO - [GROQ CALL] json_mode=False model=llama-3.1-8b-instant prompt_has_json=True prompt_start='Extract job details from the following raw text scraped from https://www.linkedi'
+2026-03-13 14:27:00,787 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-13 16:06:02,165 - resume_analyzer - INFO - [GROQ CALL] json_mode=False model=llama-3.1-8b-instant prompt_has_json=True prompt_start='Extract job details from the following raw text scraped from https://www.linkedi'
+2026-03-13 16:06:02,165 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-13 16:10:46,130 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start='\nExtract structured data from this resume text for a professional profile. Retur'
+2026-03-13 16:10:46,130 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-13 16:10:47,119 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.3-70b-versatile prompt_has_json=True prompt_start='\nPRE_PROCESSING_RULE:\nBEFORE tailoring, strip all formatting markers from the ra'
+2026-03-13 16:10:47,119 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-13 16:13:54,249 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start='\nExtract structured data from this resume text for a professional profile. Retur'
+2026-03-13 16:13:54,249 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-13 16:13:55,131 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.3-70b-versatile prompt_has_json=True prompt_start='\nPRE_PROCESSING_RULE:\nBEFORE tailoring, strip all formatting markers from the ra'
+2026-03-13 16:13:55,132 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-13 16:17:33,133 - resume_analyzer - INFO - [GROQ CALL] json_mode=False model=llama-3.1-8b-instant prompt_has_json=True prompt_start='Extract job details from the following raw text scraped from https://www.linkedi'
+2026-03-13 16:17:33,136 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-13 23:49:42,442 - resume_analyzer - INFO - [GROQ CALL] json_mode=False model=llama-3.1-8b-instant prompt_has_json=True prompt_start='Extract job details from the following raw text scraped from https://www.linkedi'
+2026-03-13 23:49:42,444 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-13 23:56:36,151 - resume_analyzer - INFO - [GROQ CALL] json_mode=False model=llama-3.1-8b-instant prompt_has_json=True prompt_start='Extract job details from the following raw text scraped from https://www.linkedi'
+2026-03-13 23:56:36,152 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-13 23:56:38,597 - document_generator - INFO - Starting Expert AI Tailoring Pipeline...
+2026-03-13 23:56:38,606 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start='\nExtract structured data from this resume text for a professional profile. Retur'
+2026-03-13 23:56:38,608 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-13 23:56:40,709 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.3-70b-versatile prompt_has_json=True prompt_start='\nPRE_PROCESSING_RULE:\nBEFORE tailoring, strip all formatting markers from the ra'
+2026-03-13 23:56:40,710 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-13 23:56:43,832 - document_generator - INFO - Expert AI Tailoring complete.
+2026-03-13 23:56:43,833 - document_generator - ERROR - Failed to generate expert documents: 'str' object has no attribute 'get'
+2026-03-14 00:09:37,276 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start='\nExtract structured data from this resume text for a professional profile. Retur'
+2026-03-14 00:09:37,291 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-14 00:09:38,042 - document_generator - INFO - Starting Expert AI Tailoring Pipeline...
+2026-03-14 00:09:38,042 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start='\nExtract structured data from this resume text for a professional profile. Retur'
+2026-03-14 00:09:38,042 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-14 00:09:38,574 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.3-70b-versatile prompt_has_json=True prompt_start='\nPRE_PROCESSING_RULE:\nBEFORE tailoring, strip all formatting markers from the ra'
+2026-03-14 00:09:38,574 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-14 00:09:39,953 - document_generator - INFO - Expert AI Tailoring complete.
+2026-03-14 09:23:08,591 - resume_analyzer - INFO - [GROQ CALL] json_mode=False model=llama-3.1-8b-instant prompt_has_json=True prompt_start='Extract job details from the following raw text scraped from https://www.linkedi'
+2026-03-14 09:23:08,596 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-14 09:23:14,305 - document_generator - INFO - Starting Expert AI Tailoring Pipeline...
+2026-03-14 09:23:14,308 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start='\nExtract structured data from this resume text for a professional profile. Retur'
+2026-03-14 09:23:14,310 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-14 09:23:16,449 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.3-70b-versatile prompt_has_json=True prompt_start='\nPRE_PROCESSING_RULE:\nBEFORE tailoring, strip all formatting markers from the ra'
+2026-03-14 09:23:16,451 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-14 09:23:19,073 - document_generator - INFO - Expert AI Tailoring complete.
+2026-03-14 09:23:19,076 - document_generator - ERROR - Failed to generate expert documents: 'str' object has no attribute 'get'
+2026-03-14 09:28:45,267 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start='\nExtract structured data from this resume text for a professional profile. Retur'
+2026-03-14 09:28:45,267 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-14 09:28:46,017 - document_generator - INFO - Starting Expert AI Tailoring Pipeline...
+2026-03-14 09:28:46,018 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start='\nExtract structured data from this resume text for a professional profile. Retur'
+2026-03-14 09:28:46,019 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-14 09:28:46,480 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.3-70b-versatile prompt_has_json=True prompt_start='\nPRE_PROCESSING_RULE:\nBEFORE tailoring, strip all formatting markers from the ra'
+2026-03-14 09:28:46,481 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-14 09:28:47,879 - document_generator - INFO - Expert AI Tailoring complete.
+2026-03-14 09:42:49,946 - document_generator - INFO - Starting Expert AI Tailoring Pipeline...
+2026-03-14 09:42:49,948 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start='\nExtract structured data from this resume text for a professional profile. Retur'
+2026-03-14 09:42:49,949 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-14 09:42:51,913 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.3-70b-versatile prompt_has_json=True prompt_start='\nPRE_PROCESSING_RULE:\nBEFORE tailoring, strip all formatting markers from the ra'
+2026-03-14 09:42:51,914 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-14 09:42:54,720 - document_generator - INFO - Expert AI Tailoring complete.
+2026-03-14 09:42:54,721 - document_generator - ERROR - Failed to generate expert documents: 'str' object has no attribute 'get'
+2026-03-14 09:47:26,247 - resume_analyzer - INFO - [GROQ CALL] json_mode=False model=llama-3.1-8b-instant prompt_has_json=True prompt_start='Extract job details from the following raw text scraped from https://www.linkedi'
+2026-03-14 09:47:26,248 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-14 09:47:44,089 - document_generator - INFO - Starting Expert AI Tailoring Pipeline...
+2026-03-14 09:47:44,091 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start='\nExtract structured data from this resume text for a professional profile. Retur'
+2026-03-14 09:47:44,091 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-14 09:47:46,272 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.3-70b-versatile prompt_has_json=True prompt_start='\nPRE_PROCESSING_RULE:\nBEFORE tailoring, strip all formatting markers from the ra'
+2026-03-14 09:47:46,276 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-14 09:47:48,897 - document_generator - INFO - Expert AI Tailoring complete.
+2026-03-14 09:47:48,898 - document_generator - ERROR - Failed to generate expert documents: 'str' object has no attribute 'get'
+2026-03-14 16:44:11,868 - resume_analyzer - INFO - [GROQ CALL] json_mode=False model=llama-3.1-8b-instant prompt_has_json=True prompt_start='Extract job details from the following raw text scraped from https://www.linkedi'
+2026-03-14 16:44:11,880 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-14 16:44:15,991 - document_generator - INFO - Starting Expert AI Tailoring Pipeline...
+2026-03-14 16:44:15,999 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start='\nExtract structured data from this resume text for a professional profile. Retur'
+2026-03-14 16:44:16,002 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-14 16:44:18,001 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.3-70b-versatile prompt_has_json=True prompt_start='\nPRE_PROCESSING_RULE:\nBEFORE tailoring, strip all formatting markers from the ra'
+2026-03-14 16:44:18,003 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-14 16:44:20,729 - document_generator - INFO - Expert AI Tailoring complete.
+2026-03-14 16:44:20,729 - document_generator - ERROR - Failed to generate expert documents: 'str' object has no attribute 'get'
+2026-03-14 16:44:20,760 - document_generator - ERROR - Traceback (most recent call last):
+  File "C:\Users\vsair\Downloads\novasquar-main\novasquad-main\nova-ninjas\backend\document_generator.py", line 1299, in generate_expert_documents
+    rendered_text = render_preview_text_from_json(expert_data)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\vsair\Downloads\novasquar-main\novasquad-main\nova-ninjas\backend\document_generator.py", line 672, in render_preview_text_from_json
+    edu_line = f"{edu.get('degree', '')}, {edu.get('school', '') or edu.get('university', '')} | {edu.get('date', '') or edu.get('year', '')}"
+                  ^^^^^^^
+AttributeError: 'str' object has no attribute 'get'
+
+2026-03-14 16:44:20,766 - document_generator - INFO - Expert generation failed. Falling back to simple tailoring for Agentic Developer (LLM Native / Enterprise) at Delta System & Software, Inc....
+2026-03-14 16:44:20,772 - document_generator - INFO - Starting 3-stage tailoring pipeline for Delta System & Software, Inc.
+2026-03-14 16:44:20,774 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start='\nExtract structured data from this resume text for a professional profile. Retur'
+2026-03-14 16:44:20,775 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-14 16:44:22,784 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start='\nYou are a resume analyst. Output ONLY valid JSON. No explanation, no markdown, '
+2026-03-14 16:44:22,785 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-14 16:44:23,457 - document_generator - INFO - Stage 1 Analysis complete for Delta System & Software, Inc.
+2026-03-14 16:44:23,458 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start="\nYou are a professional resume writer. Rewrite ONE job role's bullets for a resu"
+2026-03-14 16:44:23,458 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-14 16:44:23,933 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start="\nYou are a professional resume writer. Rewrite ONE job role's bullets for a resu"
+2026-03-14 16:44:23,935 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-14 16:44:24,341 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start="\nYou are a professional resume writer. Rewrite ONE job role's bullets for a resu"
+2026-03-14 16:44:24,341 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-14 16:44:24,840 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start="\nYou are a professional resume writer. Rewrite ONE job role's bullets for a resu"
+2026-03-14 16:44:24,841 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-14 16:44:25,304 - document_generator - INFO - Stage 2 Rewriting complete for 4 roles
+2026-03-14 16:44:25,305 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.3-70b-versatile prompt_has_json=True prompt_start='\nYou are a professional resume writer. Respond ONLY with a JSON object. No prose'
+2026-03-14 16:44:25,306 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-14 16:44:27,570 - resume_analyzer - INFO - [GROQ CALL] json_mode=False model=default prompt_has_json=False prompt_start='\nWrite a professional, compelling cover letter for this job application.\n\nAPPLIC'
+2026-03-14 16:44:27,571 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-14 17:00:55,223 - resume_analyzer - INFO - [GROQ CALL] json_mode=False model=llama-3.1-8b-instant prompt_has_json=True prompt_start='Extract job details from the following raw text scraped from https://www.linkedi'
+2026-03-14 17:00:55,225 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-14 17:00:59,344 - document_generator - INFO - Starting Expert AI Tailoring Pipeline...
+2026-03-14 17:00:59,346 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start='\nExtract structured data from this resume text for a professional profile. Retur'
+2026-03-14 17:00:59,348 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-14 17:01:00,642 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.3-70b-versatile prompt_has_json=True prompt_start='\nPRE_PROCESSING_RULE:\nBEFORE tailoring, strip all formatting markers from the ra'
+2026-03-14 17:01:00,642 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-14 17:01:02,979 - document_generator - INFO - Expert AI Tailoring complete.
+2026-03-14 17:01:13,739 - document_generator - INFO - Starting Expert AI Tailoring Pipeline...
+2026-03-14 17:01:13,739 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start='\nExtract structured data from this resume text for a professional profile. Retur'
+2026-03-14 17:01:13,740 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-14 17:01:15,713 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.3-70b-versatile prompt_has_json=True prompt_start='\nPRE_PROCESSING_RULE:\nBEFORE tailoring, strip all formatting markers from the ra'
+2026-03-14 17:01:15,713 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-14 17:01:18,511 - document_generator - INFO - Expert AI Tailoring complete.
+2026-03-14 17:01:18,512 - document_generator - ERROR - Failed to generate expert documents: 'str' object has no attribute 'get'
+2026-03-14 17:01:18,529 - document_generator - ERROR - Traceback (most recent call last):
+  File "C:\Users\vsair\Downloads\novasquar-main\novasquad-main\nova-ninjas\backend\document_generator.py", line 1299, in generate_expert_documents
+    "skills": {{"technical":[], "soft":[]}},
+                          ^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\vsair\Downloads\novasquar-main\novasquad-main\nova-ninjas\backend\document_generator.py", line 672, in render_preview_text_from_json
+    return str(source) if source else ""
+                      ^^^^^^^
+AttributeError: 'str' object has no attribute 'get'
+
+2026-03-14 17:01:18,530 - document_generator - INFO - Expert generation failed. Falling back to simple tailoring for Agentic Developer (LLM Native / Enterprise) at Delta System & Software, Inc....
+2026-03-14 17:01:18,530 - document_generator - INFO - Starting 3-stage tailoring pipeline for Delta System & Software, Inc.
+2026-03-14 17:01:18,534 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start='\nExtract structured data from this resume text for a professional profile. Retur'
+2026-03-14 17:01:18,536 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-14 17:01:20,642 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start='\nYou are a resume analyst. Output ONLY valid JSON. No explanation, no markdown, '
+2026-03-14 17:01:20,642 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-14 17:01:21,500 - document_generator - INFO - Stage 1 Analysis complete for Delta System & Software, Inc.
+2026-03-14 17:01:21,501 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start="\nYou are a professional resume writer. Rewrite ONE job role's bullets for a resu"
+2026-03-14 17:01:21,503 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-14 17:01:22,026 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start="\nYou are a professional resume writer. Rewrite ONE job role's bullets for a resu"
+2026-03-14 17:01:22,027 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-14 17:01:22,601 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start="\nYou are a professional resume writer. Rewrite ONE job role's bullets for a resu"
+2026-03-14 17:01:22,601 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-14 17:01:23,061 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start="\nYou are a professional resume writer. Rewrite ONE job role's bullets for a resu"
+2026-03-14 17:01:23,061 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-14 17:01:23,540 - document_generator - INFO - Stage 2 Rewriting complete for 4 roles
+2026-03-14 17:01:23,540 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.3-70b-versatile prompt_has_json=True prompt_start='\nYou are a professional resume writer. Respond ONLY with a JSON object. No prose'
+2026-03-14 17:01:23,541 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-14 17:01:25,930 - resume_analyzer - INFO - [GROQ CALL] json_mode=False model=default prompt_has_json=False prompt_start='\nWrite a professional, compelling cover letter for this job application.\n\nAPPLIC'
+2026-03-14 17:01:25,931 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-14 17:33:19,615 - resume_analyzer - INFO - [GROQ CALL] json_mode=False model=llama-3.1-8b-instant prompt_has_json=True prompt_start='Extract job details from the following raw text scraped from https://www.linkedi'
+2026-03-14 17:33:19,616 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-14 17:33:22,991 - document_generator - INFO - Starting Expert AI Tailoring Pipeline...
+2026-03-14 17:33:22,992 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start='\nExtract structured data from this resume text for a professional profile. Retur'
+2026-03-14 17:33:22,992 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-14 17:33:25,021 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-14 17:33:29,943 - document_generator - INFO - Expert AI Tailoring complete.
+2026-03-14 19:44:51,816 - resume_analyzer - INFO - [GROQ CALL] json_mode=False model=llama-3.1-8b-instant prompt_has_json=True prompt_start='Extract job details from the following raw text scraped from https://www.linkedi'
+2026-03-14 19:44:51,822 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-14 19:44:57,098 - document_generator - INFO - Starting Expert AI Tailoring Pipeline...
+2026-03-14 19:44:57,101 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start='\nExtract structured data from this resume text for a professional profile. Retur'
+2026-03-14 19:44:57,101 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-14 19:44:59,324 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-14 19:45:06,932 - document_generator - INFO - Expert AI Tailoring complete.
+2026-03-14 19:45:55,930 - document_generator - INFO - Starting Expert AI Tailoring Pipeline...
+2026-03-14 19:45:55,931 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start='\nExtract structured data from this resume text for a professional profile. Retur'
+2026-03-14 19:45:55,933 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-14 19:45:57,876 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-14 19:46:05,916 - document_generator - INFO - Expert AI Tailoring complete.
+2026-03-14 20:06:54,594 - document_generator - INFO - Starting Expert AI Tailoring Pipeline...
+2026-03-14 20:06:54,596 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start='\nExtract structured data from this resume text for a professional profile. Retur'
+2026-03-14 20:06:54,599 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-14 20:06:56,483 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-14 20:07:01,868 - document_generator - INFO - Expert AI Tailoring complete.
+2026-03-14 21:16:53,476 - resume_analyzer - INFO - [GROQ CALL] json_mode=False model=llama-3.1-8b-instant prompt_has_json=True prompt_start='Extract job details from the following raw text scraped from https://www.linkedi'
+2026-03-14 21:16:53,483 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-14 21:17:21,835 - document_generator - INFO - Starting Expert AI Tailoring Pipeline...
+2026-03-14 21:17:21,839 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start='\nExtract structured data from this resume text for a professional profile. Retur'
+2026-03-14 21:17:21,842 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-14 21:17:23,886 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-14 21:17:31,055 - document_generator - INFO - Expert AI Tailoring complete.
+2026-03-14 21:17:35,801 - resume_analyzer - INFO - [GROQ CALL] json_mode=False model=default prompt_has_json=False prompt_start='You are a Job Search Expert. Generate a high-impact cold outreach message.\n\nTARG'
+2026-03-14 21:17:35,802 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-14 21:36:08,430 - resume_analyzer - INFO - [GROQ CALL] json_mode=False model=llama-3.1-8b-instant prompt_has_json=True prompt_start='Extract job details from the following raw text scraped from https://www.linkedi'
+2026-03-14 21:36:08,434 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-14 21:36:19,038 - document_generator - INFO - Starting Expert AI Tailoring Pipeline...
+2026-03-14 21:36:19,043 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start='\nExtract structured data from this resume text for a professional profile. Retur'
+2026-03-14 21:36:19,044 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-14 21:36:20,535 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-14 21:36:23,797 - document_generator - INFO - Expert AI Tailoring complete.
+2026-03-14 21:36:40,062 - document_generator - INFO - Starting Expert AI Tailoring Pipeline...
+2026-03-14 21:36:40,065 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start='\nExtract structured data from this resume text for a professional profile. Retur'
+2026-03-14 21:36:40,067 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-14 21:36:42,262 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-14 21:36:52,221 - document_generator - INFO - Expert AI Tailoring complete.
+2026-03-14 21:37:29,024 - document_generator - INFO - Starting Expert AI Tailoring Pipeline...
+2026-03-14 21:37:29,024 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start='\nExtract structured data from this resume text for a professional profile. Retur'
+2026-03-14 21:37:29,028 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-14 21:37:30,780 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-14 21:37:41,478 - document_generator - INFO - Expert AI Tailoring complete.
+2026-03-14 21:37:46,436 - resume_analyzer - INFO - [GROQ CALL] json_mode=False model=default prompt_has_json=False prompt_start='You are a Job Search Expert. Generate a high-impact cold outreach message.\n\nTARG'
+2026-03-14 21:37:46,438 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-14 22:05:30,848 - resume_analyzer - INFO - [GROQ CALL] json_mode=False model=llama-3.1-8b-instant prompt_has_json=True prompt_start='Extract job details from the following raw text scraped from https://www.linkedi'
+2026-03-14 22:05:30,848 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-14 22:05:36,343 - document_generator - INFO - Starting Expert AI Tailoring Pipeline...
+2026-03-14 22:05:36,345 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start='\nExtract structured data from this resume text for a professional profile. Retur'
+2026-03-14 22:05:36,346 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-14 22:05:38,478 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-14 22:05:44,066 - document_generator - INFO - Expert AI Tailoring complete.
+2026-03-14 22:16:14,509 - document_generator - INFO - Starting Expert AI Tailoring Pipeline...
+2026-03-14 22:16:14,514 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start='\nExtract structured data from this resume text for a professional profile. Retur'
+2026-03-14 22:16:14,516 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-14 22:16:16,897 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-14 22:16:22,510 - document_generator - INFO - Expert AI Tailoring complete.
+2026-03-14 22:16:51,296 - resume_analyzer - INFO - [GROQ CALL] json_mode=False model=llama-3.1-8b-instant prompt_has_json=True prompt_start='Extract job details from the following raw text scraped from https://www.linkedi'
+2026-03-14 22:16:51,297 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-14 22:16:54,527 - document_generator - INFO - Starting Expert AI Tailoring Pipeline...
+2026-03-14 22:16:54,528 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start='\nExtract structured data from this resume text for a professional profile. Retur'
+2026-03-14 22:16:54,529 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-14 22:16:56,729 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-14 22:17:03,450 - document_generator - INFO - Expert AI Tailoring complete.
+2026-03-14 23:11:42,988 - resume_analyzer - INFO - [GROQ CALL] json_mode=False model=llama-3.1-8b-instant prompt_has_json=True prompt_start='Extract job details from the following raw text scraped from https://www.linkedi'
+2026-03-14 23:11:42,995 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-14 23:12:04,779 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start='\nExtract structured data from this resume text for a professional profile. Retur'
+2026-03-14 23:12:04,786 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-14 23:12:07,314 - document_generator - INFO - Starting Expert AI Tailoring Pipeline...
+2026-03-14 23:12:07,319 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start='\nExtract structured data from this resume text for a professional profile. Retur'
+2026-03-14 23:12:07,320 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-14 23:12:09,834 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-14 23:12:18,557 - document_generator - INFO - Expert AI Tailoring complete.
+2026-03-14 23:12:18,590 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-15 14:40:42,513 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start='\nYou are an expert ATS (Applicant Tracking System) and resume analyst. Analyze t'
+2026-03-15 14:40:42,533 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-15 14:40:44,304 - document_generator - INFO - Starting Expert AI Tailoring Pipeline...
+2026-03-15 14:40:44,308 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start='\nExtract structured data from this resume text for a professional profile. Retur'
+2026-03-15 14:40:44,308 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-15 14:40:47,136 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-15 14:40:59,063 - document_generator - INFO - Expert AI Tailoring complete.
+2026-03-16 08:24:41,415 - resume_analyzer - INFO - [GROQ CALL] json_mode=False model=llama-3.1-8b-instant prompt_has_json=True prompt_start='Extract job details from the following raw text scraped from https://www.dice.co'
+2026-03-16 08:24:41,424 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-16 08:24:44,357 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start='\nExtract structured data from this resume text for a professional profile. Retur'
+2026-03-16 08:24:44,358 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-16 08:24:46,600 - document_generator - INFO - Starting Expert AI Tailoring Pipeline...
+2026-03-16 08:24:46,605 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start='\nExtract structured data from this resume text for a professional profile. Retur'
+2026-03-16 08:24:46,606 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-16 08:24:48,918 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-16 08:24:59,610 - document_generator - INFO - Expert AI Tailoring complete.
+2026-03-16 08:24:59,632 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-16 10:35:00,188 - resume_analyzer - INFO - [GROQ CALL] json_mode=False model=llama-3.1-8b-instant prompt_has_json=True prompt_start='Extract job details from the following raw text scraped from https://www.linkedi'
+2026-03-16 10:35:00,192 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-16 10:35:09,989 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start='\nExtract structured data from this resume text for a professional profile. Retur'
+2026-03-16 10:35:09,990 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-16 10:35:12,312 - document_generator - INFO - Starting Expert AI Tailoring Pipeline...
+2026-03-16 10:35:12,327 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start='\nExtract structured data from this resume text for a professional profile. Retur'
+2026-03-16 10:35:12,328 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-16 10:35:14,800 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-16 10:35:22,970 - document_generator - INFO - Expert AI Tailoring complete.
+2026-03-16 10:35:22,993 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-16 14:00:12,350 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start='\nExtract structured data from this resume text for a professional profile. Retur'
+2026-03-16 14:00:12,371 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-16 14:00:14,617 - document_generator - INFO - Starting Expert AI Tailoring Pipeline...
+2026-03-16 14:00:14,628 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start='\nExtract structured data from this resume text for a professional profile. Retur'
+2026-03-16 14:00:14,631 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-16 14:00:17,003 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-16 14:00:25,689 - document_generator - INFO - Expert AI Tailoring complete.
+2026-03-16 14:00:25,707 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-16 14:23:54,023 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start='\nExtract structured data from this resume text for a professional profile. Retur'
+2026-03-16 14:23:54,025 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-16 14:23:56,905 - document_generator - INFO - Starting Expert AI Tailoring Pipeline...
+2026-03-16 14:23:56,908 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start='\nExtract structured data from this resume text for a professional profile. Retur'
+2026-03-16 14:23:56,909 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-16 14:23:59,056 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-16 14:24:07,512 - document_generator - INFO - Expert AI Tailoring complete.
+2026-03-16 14:24:07,527 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-16 14:24:38,835 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start='\nExtract structured data from this resume text for a professional profile. Retur'
+2026-03-16 14:24:38,835 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-16 14:24:41,633 - document_generator - INFO - Starting Expert AI Tailoring Pipeline...
+2026-03-16 14:24:41,633 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start='\nExtract structured data from this resume text for a professional profile. Retur'
+2026-03-16 14:24:41,634 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-16 14:24:44,049 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-16 14:24:52,938 - document_generator - INFO - Expert AI Tailoring complete.
+2026-03-16 14:24:52,954 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-16 14:30:33,832 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start='\nExtract structured data from this resume text for a professional profile. Retur'
+2026-03-16 14:30:33,836 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-16 14:30:35,903 - document_generator - INFO - Starting Expert AI Tailoring Pipeline...
+2026-03-16 14:30:35,905 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start='\nExtract structured data from this resume text for a professional profile. Retur'
+2026-03-16 14:30:35,906 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-16 14:30:37,937 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-16 14:30:47,021 - document_generator - INFO - Expert AI Tailoring complete.
+2026-03-16 14:30:47,039 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-16 14:35:09,255 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start='\nExtract structured data from this resume text for a professional profile. Retur'
+2026-03-16 14:35:09,256 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-16 14:35:11,338 - document_generator - INFO - Starting Expert AI Tailoring Pipeline...
+2026-03-16 14:35:11,339 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start='\nExtract structured data from this resume text for a professional profile. Retur'
+2026-03-16 14:35:11,340 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-16 14:35:13,932 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-16 14:35:22,193 - document_generator - INFO - Expert AI Tailoring complete.
+2026-03-16 14:35:22,208 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)

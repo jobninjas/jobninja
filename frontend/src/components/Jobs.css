@@ -117,10 +117,30 @@
   }
 }
 
-/* Job List Section */
+/* Job Grid Section */
 .job-list-section {
   padding: 0;
   width: 100%;
+}
+
+.job-grid-layout {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.25rem;
+  width: 100%;
+}
+
+@media (max-width: 1200px) {
+  .job-grid-layout {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .job-grid-layout {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
 }
 
 /* Loading State */

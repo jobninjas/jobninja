@@ -8,10 +8,10 @@ import {
     Loader2,
     Copy,
     Check,
-    Sparkles,
     ArrowRight,
     RefreshCw
 } from 'lucide-react';
+import NinjaIcon from './NinjaIcon';
 import { BRAND } from '../config/branding';
 import { API_URL } from '../config/api';
 import SideMenu from './SideMenu';
@@ -142,7 +142,7 @@ Return ONLY a JSON array of strings like: ["bullet 1", "bullet 2", ...]`;
 
                     <div className="bullets-grid">
                         <Card className="input-card">
-                            <h2><Sparkles className="w-5 h-5" /> Generate Bullet Points</h2>
+                            <h2><NinjaIcon className="w-5 h-5" /> Generate Bullet Points</h2>
 
                             <div className="form-group">
                                 <label>Job Title *</label>
@@ -187,8 +187,8 @@ Return ONLY a JSON array of strings like: ["bullet 1", "bullet 2", ...]`;
                                         Generating...
                                     </>
                                 ) : (
-                                    <>
-                                        <Sparkles className="w-5 h-5" />
+                                     <>
+                                        <NinjaIcon className="w-5 h-5" />
                                         Generate Bullets
                                     </>
                                 )}

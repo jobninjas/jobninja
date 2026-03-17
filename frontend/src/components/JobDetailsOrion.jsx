@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { useAINinja } from '../contexts/AINinjaContext';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
 import { Badge } from './ui/badge';
@@ -9,7 +8,7 @@ import DashboardLayout from './DashboardLayout';
 import {
     Loader2, MapPin, Globe, Users, Linkedin, Star,
     Newspaper, Check, Briefcase, Building2, Calendar,
-    ArrowLeft, Sparkles, MessageSquare, ExternalLink,
+    ArrowLeft, MessageSquare, ExternalLink,
     CheckCircle2, X, Heart, Clock, Share2, Flag,
     FileText, ChevronRight, Search, GraduationCap,
     Target, Award, TrendingUp, Zap, Shield, Mail
@@ -59,7 +58,6 @@ const JobDetailsOrion = () => {
     const navigate = useNavigate();
     const { id } = useParams();
     const { isAuthenticated } = useAuth();
-    const { openChatWithJob } = useAINinja();
     const [job, setJob] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -181,6 +179,24 @@ const JobDetailsOrion = () => {
         } finally {
             setIsEnriching(false);
         }
+    };
+
+    const handleTailorResume = () => {
+        let jd = job.fullDescription || job.description || '';
+        
+        // If it's HTML, try to get text content or at least clean up common tags
+        if (typeof jd === 'string' && jd.includes('<')) {
+            const doc = new DOMParser().parseFromString(jd, 'text/html');
+            jd = doc.body.textContent || doc.body.innerText || jd;
+        }
+
+        navigate('/scanner', { 
+            state: { 
+                jobDescription: jd,
+                companyName: job.company,
+                jobTitle: job.title
+            } 
+        });
     };
 
     /* ── Helpers ────────────────────────────────── */
@@ -367,8 +383,8 @@ const JobDetailsOrion = () => {
        RENDER
        ═══════════════════════════════════════════ */
     return (
-        <DashboardLayout activePage="jobs">
-            <div className="bg-white min-h-screen font-sans">
+        <>
+        <div className="bg-white min-h-screen font-sans">
 
                 {/* ─── TOP BAR ─────────────────────────────── */}
                 <div className="sticky top-0 z-30 bg-white border-b border-gray-200 px-4 py-3">
@@ -387,6 +403,12 @@ const JobDetailsOrion = () => {
                             <button className="p-2 hover:bg-gray-100 rounded-lg" title="Save">
                                 <Heart className="w-5 h-5 text-gray-400" />
                             </button>
+                            <Button 
+                                variant="outline"
+                                className="border-emerald-500 text-emerald-600 hover:bg-emerald-50 font-bold px-5 rounded-lg flex"
+                                onClick={handleTailorResume}>
+                                <Zap className="w-4 h-4 mr-2" /> TAILOR RESUME
+                            </Button>
                             <Button className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-5 rounded-lg"
                                 onClick={() => job.sourceUrl ? window.open(job.sourceUrl, '_blank') : alert("Source URL not available for this job.")}>
                                 APPLY NOW <ExternalLink className="w-4 h-4 ml-1" />
@@ -477,7 +499,7 @@ const JobDetailsOrion = () => {
                                         </div>
                                     </div>
 
-                                    {/* Right: Match Score */}
+                                    {/* Right: Match Score - Minimal */}
                                     <div className="flex flex-col items-center justify-center lg:min-w-[200px]">
                                         <div className="relative w-24 h-24 mb-2">
                                             <svg className="-rotate-90 w-24 h-24" viewBox="0 0 96 96">
@@ -491,25 +513,8 @@ const JobDetailsOrion = () => {
                                             </div>
                                         </div>
                                         <div className="text-sm font-bold uppercase tracking-wide" style={{ color: matchColor }}>{matchLabel}</div>
-                                        <div className="flex gap-4 mt-4">
-                                            <MatchRing percentage={job.matchBreakdown?.exp || 75} label="Exp. Level" color="#10b981" size={52} />
-                                            <MatchRing percentage={job.matchBreakdown?.skill || 80} label="Skill" color="#10b981" size={52} />
-                                            <MatchRing percentage={job.matchBreakdown?.industry || 60} label="Industry Exp." color="#10b981" size={52} />
-                                        </div>
                                     </div>
                                 </div>
-                            </div>
-
-                            {/* ─── MAXIMIZE INTERVIEW CHANCES BANNER ── */}
-                            <div className="bg-gradient-to-r from-emerald-400 to-teal-500 rounded-xl p-5 flex items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                    <div className="text-3xl">💬</div>
-                                    <span className="text-white font-bold text-lg">Maximize your interview chances</span>
-                                </div>
-                                <Button className="bg-white text-gray-900 font-bold px-5 hover:bg-gray-100 rounded-lg shadow-sm"
-                                    onClick={() => navigate('/ai-apply', { state: { jobId: job.id, jobTitle: job.title, company: job.company, jobDescription: job.fullDescription || job.description, sourceUrl: job.sourceUrl } })}>
-                                    <Sparkles className="w-4 h-4 mr-2" /> Generate Custom Resume
-                                </Button>
                             </div>
 
                             {/* ─── COMPANY SUMMARY + TAGS ───────── */}
@@ -569,10 +574,6 @@ const JobDetailsOrion = () => {
                                                         // toast.success("Email copied!");
                                                     }}>
                                                     <Mail className="w-3.5 h-3.5" /> Copy Email
-                                                </Button>
-                                                <Button size="sm" className="h-8 px-3 text-xs bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1.5"
-                                                    onClick={() => navigate('/ai-apply', { state: { jobId: job.id, jobTitle: job.title, company: job.company, contactName: hr.name, mode: 'cold-email' } })}>
-                                                    <Sparkles className="w-3.5 h-3.5" /> Cold Email
                                                 </Button>
                                             </div>
                                         </div>
@@ -988,7 +989,7 @@ const JobDetailsOrion = () => {
                     )}
                 </div>
             </div>
-        </DashboardLayout >
+        </>
     );
 };
 

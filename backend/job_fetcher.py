@@ -609,12 +609,65 @@ async def fetch_jobs_from_remotive(category: str = None, limit: int = 500) -> Li
 # API 4: Arbeitnow (FREE - No API Key!)
 # =============================================================================
 
-async def fetch_jobs_from_arbeitnow(page: int = 1) -> List[Dict[str, Any]]:
     """
     Fetch jobs from Arbeitnow API (EU + Remote jobs)
-    DISABLED: User requested US-only jobs.
     """
-    return [] # Disabled to ensure no EU jobs
+    try:
+        url = f"{ARBEITNOW_API_URL}?page={page}"
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url, timeout=30) as response:
+                if response.status != 200:
+                    logger.error(f"Arbeitnow API error: {response.status}")
+                    return []
+                
+                data = await response.json()
+                jobs = []
+                
+                for job in data.get("data", []):
+                    title = job.get("title", "")
+                    company = job.get("company_name", "Unknown Company")
+                    description = job.get("description", "")
+                    
+                    is_visa_friendly = detect_visa_sponsorship(description)
+                    is_startup = detect_startup(description, company)
+                    
+                    tags = ["remote"] if job.get("remote") else []
+                    if is_visa_friendly:
+                        tags.append("visa-sponsoring")
+                    if is_startup:
+                        tags.append("startup")
+                    
+                    job_data = {
+                        "externalId": f"arbeitnow-{job.get('slug', generate_job_id('arbeitnow', title, company))}",
+                        "title": title,
+                        "company": company,
+                        "location": job.get("location", "Remote"),
+                        "description": sanitize_description(description),
+                        "fullDescription": sanitize_description(description),
+                        "salaryRange": "Competitive",
+                        "salaryMin": 0,
+                        "salaryMax": 0,
+                        "sourceUrl": job.get("url", ""),
+                        "source": "arbeitnow",
+                        "type": "remote" if job.get("remote") else "onsite",
+                        "visaTags": ["visa-sponsoring"] if is_visa_friendly else [],
+                        "categoryTags": tags,
+                        "highPay": False,
+                        "isStartup": is_startup,
+                        "companyLogo": job.get("company_logo", ""),
+                        "createdAt": datetime.now(timezone.utc),
+                        "updatedAt": datetime.now(timezone.utc),
+                        "expiresAt": None,
+                        "isActive": True,
+                        "country": "eu" # Primarily EU
+                    }
+                    jobs.append(job_data)
+                
+                logger.info(f"✅ Arbeitnow: Fetched {len(jobs)} jobs")
+                return jobs
+    except Exception as e:
+        logger.error(f"Error fetching jobs from Arbeitnow: {e}")
+        return []
 
 
 # =============================================================================

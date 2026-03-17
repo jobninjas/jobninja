@@ -48,6 +48,7 @@ import SideMenu from './SideMenu';
 import Header from './Header';
 import UpgradeModal from './UpgradeModal';
 import ResumePaper from './ResumePaper';
+import ConfirmDeleteModal from './ConfirmDeleteModal';
 import './AIApplyFlow.css';
 
 // Helper function to get color based on score
@@ -134,6 +135,11 @@ const AIApplyFlow = ({ isScanner = false }) => {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [showReplaceModal, setShowReplaceModal] = useState(false);
   const [isReplacing, setIsReplacing] = useState(false);
+
+  // Custom Delete Modal State
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [resumeToDelete, setResumeToDelete] = useState(null);
+  const [isDeletingResume, setIsDeletingResume] = useState(false);
 
   // New Jobright Flow state
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -226,12 +232,36 @@ const AIApplyFlow = ({ isScanner = false }) => {
 
       if (response.ok) {
         const data = await response.json();
-        setResumeText(data.text || data.resumeText || '');
-        console.log('Resume parsed successfully, text length:', (data.text || data.resumeText || '').length);
+        const extractedText = data.text || data.resumeText || '';
+        setResumeText(extractedText);
+        console.log('Resume parsed successfully, text length:', extractedText.length);
 
         // Auto-set resume name to original file name (without extension)
         const nameWithoutExt = file.name.replace(/\.[^/.]+$/, '');
         setResumeName(nameWithoutExt);
+
+        // --- NEW: Persist to backend so it immediately shows up in "Your Resumes" list ---
+        if (user?.email && extractedText) {
+          try {
+            const saveResponse = await apiCall('/api/resumes/save', {
+              method: 'POST',
+              body: JSON.stringify({
+                user_email: user.email,
+                resume_name: nameWithoutExt,
+                resume_text: extractedText,
+                file_name: file.name
+              })
+            });
+
+            if (saveResponse?.success) {
+              // Refresh the list immediately so the user sees the new base resume
+              fetchSavedResumes();
+            }
+          } catch (saveErr) {
+            console.error("Failed to persist parsed resume to database:", saveErr);
+          }
+        }
+
       } else {
         console.error('Failed to parse resume:', response.status);
         // Fallback: use a placeholder so button is enabled
@@ -255,23 +285,32 @@ const AIApplyFlow = ({ isScanner = false }) => {
     setResumeName(resume.resumeName || resume.fileName || 'Resume');
   };
 
-  const handleDeleteResume = async (resumeId, e) => {
+  const handleDeleteResume = (resumeId, e) => {
     e.stopPropagation();
-    if (!window.confirm('Are you sure you want to delete this resume?')) return;
+    setResumeToDelete(resumeId);
+    setDeleteModalOpen(true);
+  };
 
+  const executeDeleteResume = async () => {
+    if (!resumeToDelete) return;
+    setIsDeletingResume(true);
     try {
-      const response = await apiCall(`/api/resumes/${resumeId}`, {
+      const response = await apiCall(`/api/resumes/${resumeToDelete}`, {
         method: 'DELETE'
       });
 
-      setSavedResumes(prev => prev.filter(r => r.id !== resumeId));
-      if (selectedResume?.id === resumeId) {
+      setSavedResumes(prev => prev.filter(r => r.id !== resumeToDelete));
+      if (selectedResume?.id === resumeToDelete) {
         setSelectedResume(null);
         setResumeText('');
       }
+      setDeleteModalOpen(false);
+      setResumeToDelete(null);
     } catch (error) {
       console.error('Error deleting resume:', error);
       alert('Error deleting resume');
+    } finally {
+      setIsDeletingResume(false);
     }
   };
 
@@ -558,7 +597,14 @@ const AIApplyFlow = ({ isScanner = false }) => {
       let payload = {};
       let fileName = '';
 
-      if (type === 'resume') {
+      if (type === 'resume' || type === 'resume-pdf') {
+        if (type === 'resume-pdf') {
+          // PDF specialized handling: open print dialog
+          window.print();
+          setIsDownloading(null);
+          return;
+        }
+
         endpoint = `${API_URL}/api/generate/resume`;
         payload = {
           userId: user.id,
@@ -568,7 +614,10 @@ const AIApplyFlow = ({ isScanner = false }) => {
           analysis: {},
           is_already_tailored: true,
           fontFamily: selectedFont,
-          template: selectedTemplate
+          template: selectedTemplate,
+          job_url: jobData?.url || jobData?.sourceUrl || '',
+          jobId: jobData?.id || jobData?._id || '',
+          job_title: customJobTitle || jobData?.title || 'Position'
         };
         fileName = sanitizeFileName('Optimized_Resume', companyName, 'docx');
       } else if (type === 'cv') {
@@ -584,7 +633,13 @@ const AIApplyFlow = ({ isScanner = false }) => {
           template: selectedTemplate
         };
         fileName = sanitizeFileName('Detailed_CV', companyName, 'docx');
-      } else if (type === 'cover') {
+      } else if (type === 'cover' || type === 'cover-pdf') {
+        if (type === 'cover-pdf') {
+          window.print();
+          setIsDownloading(null);
+          return;
+        }
+
         endpoint = `${API_URL}/api/generate/cover-letter`;
         payload = {
           userId: user.id,
@@ -718,9 +773,9 @@ const AIApplyFlow = ({ isScanner = false }) => {
                       <Loader2 className="w-6 h-6 animate-spin text-indigo-500 mr-2" />
                       <span className="text-slate-400 font-medium">Loading your resumes...</span>
                     </div>
-                  ) : savedResumes.length > 0 ? (
+                  ) : savedResumes.filter(r => !r.isSystemGenerated && !(r.resumeName?.startsWith('AI Tailored:')) && !(r.resume_name?.startsWith('AI Tailored:'))).length > 0 ? (
                     <div className="saved-resumes-grid">
-                      {savedResumes.map(resume => (
+                      {savedResumes.filter(r => !r.isSystemGenerated && !(r.resumeName?.startsWith('AI Tailored:')) && !(r.resume_name?.startsWith('AI Tailored:'))).map(resume => (
                         <div
                           key={resume.id}
                           className={`saved-resume-item ${selectedResume?.id === resume.id ? 'selected' : ''}`}
@@ -757,7 +812,7 @@ const AIApplyFlow = ({ isScanner = false }) => {
                     </div>
                   )}
 
-                  {savedResumes.length > 0 && !isLoadingResumes && (
+                  {savedResumes.filter(r => !r.isSystemGenerated && !(r.resumeName?.startsWith('AI Tailored:')) && !(r.resume_name?.startsWith('AI Tailored:'))).length > 0 && !isLoadingResumes && (
                     <div className="divider-or">
                       <span>or upload a new resume</span>
                     </div>
@@ -1269,18 +1324,29 @@ const AIApplyFlow = ({ isScanner = false }) => {
               </div>
 
               <div className="p-4 border-t border-slate-100 bg-white space-y-3">
-                <Button
-                  className="w-full h-14 rounded-2xl font-black text-lg bg-slate-900 hover:bg-black shadow-xl transition-all transform hover:-translate-y-1"
-                  onClick={() => handleDownload(activeTab === 'letter' ? 'cover' : 'resume')}
-                  disabled={activeTab === 'letter' ? !tailoredCoverLetter : (!tailoredResume && !detailedCv)}
-                >
-                  {isDownloading === (activeTab === 'letter' ? 'cover' : 'resume') ? (
-                    <Loader2 className="w-5 h-5 mr-3 animate-spin" />
-                  ) : (
-                    <Download className="w-5 h-5 mr-3" />
-                  )}
-                  {activeTab === 'letter' ? 'Download Cover Letter' : 'Download Tailored Resume'}
-                </Button>
+                <div className="grid grid-cols-2 gap-3">
+                  <Button
+                    variant="outline"
+                    className="h-14 rounded-2xl font-bold text-slate-700 border-2 border-slate-200 hover:bg-slate-50 transition-all"
+                    onClick={() => handleDownload(activeTab === 'letter' ? 'cover-pdf' : 'resume-pdf')}
+                    disabled={activeTab === 'letter' ? !tailoredCoverLetter : (!tailoredResume && !detailedCv)}
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    Download PDF
+                  </Button>
+                  <Button
+                    className="h-14 rounded-2xl font-black bg-slate-900 hover:bg-black shadow-lg transition-all transform hover:-translate-y-1"
+                    onClick={() => handleDownload(activeTab === 'letter' ? 'cover' : 'resume')}
+                    disabled={activeTab === 'letter' ? !tailoredCoverLetter : (!tailoredResume && !detailedCv)}
+                  >
+                    {isDownloading === (activeTab === 'letter' ? 'cover' : 'resume') ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <Download className="w-4 h-4 mr-2" />
+                    )}
+                    Download DOCX
+                  </Button>
+                </div>
 
                 <div className="flex items-center justify-center gap-2 py-2 px-4 bg-green-50 rounded-xl border border-green-100">
                   <CheckCircle className="w-4 h-4 text-green-600" />
@@ -1380,6 +1446,16 @@ const AIApplyFlow = ({ isScanner = false }) => {
           <UpgradeModal tier={usageLimits.tier} limit={usageLimits.limit} resetDate={usageLimits.resetDate} onClose={() => setShowUpgradeModal(false)} />
         )
       }
+
+      <ConfirmDeleteModal
+        isOpen={deleteModalOpen}
+        onClose={() => {
+          setDeleteModalOpen(false);
+          setResumeToDelete(null);
+        }}
+        onConfirm={executeDeleteResume}
+        isDeleting={isDeletingResume}
+      />
     </div >
   );
 };

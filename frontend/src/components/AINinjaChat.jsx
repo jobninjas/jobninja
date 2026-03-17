@@ -4,8 +4,9 @@ import { Card, CardHeader, CardContent, CardTitle, CardFooter } from './ui/card'
 import { Input } from './ui/input';
 import { ScrollArea } from './ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
-import { Bot, Send, User, Sparkles, X, ArrowRight, ChevronRight } from 'lucide-react';
+import { Bot, Send, User, X, ArrowRight, ChevronRight } from 'lucide-react';
 import { useAINinja } from '../contexts/AINinjaContext';
+import NinjaIcon from './NinjaIcon';
 import './AINinjaChat.css';
 
 const AINinjaChat = ({ isOpen: propIsOpen, onClose }) => {

@@ -7,13 +7,13 @@ import {
     FileText,
     Loader2,
     ArrowRight,
-    Sparkles,
     Target,
     TrendingUp,
     Briefcase,
     X,
     CheckCircle
 } from 'lucide-react';
+import NinjaIcon from './NinjaIcon';
 import { API_URL } from '../config/api';
 import SideMenu from './SideMenu';
 import Header from './Header';
@@ -196,7 +196,7 @@ const CareerChangeTool = () => {
                                     </>
                                 ) : (
                                     <>
-                                        <Sparkles className="w-5 h-5" />
+                                        <NinjaIcon className="w-5 h-5" />
                                         Discover My Next Step
                                     </>
                                 )}

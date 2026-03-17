@@ -204,6 +204,18 @@
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
 }
 
+.sg-footer {
+    padding: 3rem 0 2rem;
+    background: transparent;
+    color: #64748b;
+    text-align: center;
+}
+
+.sg-footer p {
+    margin: 0;
+    font-size: 0.875rem;
+}
+
 .example-role {
     display: inline-block;
     background: #fef3c7;

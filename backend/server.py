@@ -2,6 +2,16 @@ print("DEBUG: Starting server.py execution...")
 import sys
 print(f"DEBUG: Python version: {sys.version}")
 
+# DEBUG SCRIPT TO FIND HIDDEN IMPORTS
+try:
+    with open(__file__, 'r', encoding='utf-8') as f:
+        for i, line in enumerate(f, 1):
+            if 'document_generator' in line:
+                print(f"DEBUG: Found 'document_generator' at line {i}: {line.strip()}")
+except Exception as e:
+    print(f"DEBUG: Search script failed: {e}")
+
+
 from fastapi import (
     FastAPI, # Force Rebuild
     APIRouter,
@@ -15,7 +25,7 @@ from fastapi import (
     Depends,
     BackgroundTasks,
 )
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 import json
 import jwt
 import bcrypt
@@ -30,12 +40,21 @@ from dotenv import load_dotenv
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / ".env")
 
-from starlette.middleware.cors import CORSMiddleware
-# MongoDB decommissioned
+# PostHog Initialization
+import posthog
+posthog.project_api_key = os.environ.get("POSTHOG_API_KEY")
+posthog.host = os.environ.get("POSTHOG_HOST", "https://us.i.posthog.com")
+
 import logging
 # Setup logging early to avoid NameErrors in defensive imports
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
+
+if not posthog.project_api_key:
+    logger.warning("POSTHOG_API_KEY not set. PostHog features will be disabled.")
+
+from starlette.middleware.cors import CORSMiddleware
+# MongoDB decommissioned
 
 import asyncio
 from pydantic import BaseModel, Field, ConfigDict
@@ -132,12 +151,12 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 @app.get("/")
 async def root():
-    return {"status": "ok", "message": "Backend version v1.0.13-tailoring-fix"}
+    return {"status": "ok", "message": "Backend version v1.0.15-hybrid-precision"}
 
 @app.get("/health")
 async def health_check():
     logger.info("Health check hit: /health")
-    return {"status": "ok", "version": "v1.0.13-tailoring-fix", "env": os.environ.get("ENVIRONMENT", "unknown")}
+    return {"status": "ok", "version": "v1.0.15-hybrid-precision", "env": os.environ.get("ENVIRONMENT", "unknown")}
 
 # Security Middleware
 @app.middleware("http")
@@ -675,7 +694,8 @@ async def get_subscription_status(user: dict = Depends(get_current_user)):
             "trial_expires_at": trial_expires_at,
             "subscription_expires_at": subscription_expires_at,
             "days_remaining": days_remaining,
-            "plan": user.get("plan", "free")
+            "plan": user.get("plan", "free"),
+            "has_used_free_trial": user.get("has_used_free_trial", False)
         }
         
     except Exception as e:
@@ -1390,6 +1410,13 @@ async def login(request: Request, credentials: UserLogin):
         # Generate secure JWT access token
         user_id = user.get("id") or str(uuid.uuid4())
         access_token = create_access_token(data={"sub": user["email"], "id": user_id})
+    
+        # Track login in PostHog
+        if posthog.project_api_key:
+            posthog.capture(user["email"], "user_login", {
+                "method": "email",
+                "role": user.get("role")
+            })
 
         return {
             "success": True,
@@ -1589,6 +1616,11 @@ async def save_user_profile(request: Request, user: dict = Depends(get_current_u
 
         # Update user profile in Supabase
         # First sync to ensure flat columns are updated
+        # Ensure target_roles is handled if present
+        if "target_roles" in profile_update and isinstance(profile_update["target_roles"], list):
+            # Clean roles
+            profile_update["target_roles"] = [r.strip() for r in profile_update["target_roles"] if r.strip()]
+
         SupabaseService.sync_user_profile(profile_update)
         
         ok = SupabaseService.update_user_by_email(email, profile_update)
@@ -1596,7 +1628,7 @@ async def save_user_profile(request: Request, user: dict = Depends(get_current_u
              # Fallback to create if not exists
              SupabaseService.sign_up_user(profile_update)
 
-        logger.info(f"Full Universal Profile updated and synced for {email}")
+        logger.info(f"Full Universal Profile updated and synced for {email} (Target Roles: {profile_update.get('target_roles')})")
         return {"success": True, "message": "Profile updated successfully"}
     except Exception as e:
         logger.error(f"Error saving user profile: {str(e)}")
@@ -2469,7 +2501,7 @@ async def get_unified_applications(user_id_or_email: str):
                 "company": app.get("company") or app.get("platform") or meta.get("company") or "Unknown",
                 "job_title": app.get("job_title") or app.get("role") or meta.get("jobTitle") or "Unknown",
                 "status": app.get("status") or "applied",
-                "application_link": app.get("job_link") or meta.get("jobUrl") or "",
+                "application_link": app.get("job_url") or app.get("job_link") or app.get("source_url") or meta.get("jobUrl") or "",
                 "applied_at": app.get("applied_at") or app.get("created_at"),
                 "notes": app.get("notes") or "",
                 "resumeId": app.get("resume_id") or meta.get("resumeId"),
@@ -2549,6 +2581,10 @@ async def create_checkout(request: CheckoutRequest):
     """
     try:
         frontend_url = os.environ.get("FRONTEND_URL", "http://localhost:3000")
+        
+        # Check trial status by fetching the user from DB
+        user = SupabaseService.get_user_by_email(request.user_email)
+        has_used_trial = user.get("has_used_free_trial", False) if user else False
 
         session_data = create_checkout_session(
             plan_id=request.plan_id,
@@ -2556,6 +2592,7 @@ async def create_checkout(request: CheckoutRequest):
             user_id=request.user_id,
             success_url=f"{frontend_url}/payment/success?session_id={{CHECKOUT_SESSION_ID}}",
             cancel_url=f"{frontend_url}/payment/canceled",
+            has_used_free_trial=has_used_trial,
         )
 
         return session_data
@@ -2582,7 +2619,22 @@ async def create_dodo_checkout(request: Request, user: dict = Depends(get_curren
             'ai-pro-max': 'pdt_0NZmnBjvZfdf7wlo16mpF'
         }
         
-        if plan_id not in DODO_PRICING:
+        DODO_TRIAL_PRICING = {
+            'ai-yearly': 'pdt_0NaG1OIVNjuPfdPE4AsWy',
+            'ai-pro-plus': 'pdt_0NaG1OMdSrfDvOLbR51vm',
+            'ai-pro-max': 'pdt_0NaG1ORHJV9nyf6wvhrXb'
+        }
+        
+        has_used_free_trial = user.get("has_used_free_trial", False)
+        
+        # Select product based on trial usage
+        product_id = None
+        if not has_used_free_trial and plan_id in DODO_TRIAL_PRICING:
+            product_id = DODO_TRIAL_PRICING[plan_id]
+        elif plan_id in DODO_PRICING:
+            product_id = DODO_PRICING[plan_id]
+            
+        if not product_id:
             raise HTTPException(status_code=400, detail="Invalid Dodo plan ID")
 
         dodo_client = AsyncDodoPayments(bearer_token="VlSrQp7v8yEwy3UB.Lzvf3GZC-wqETu11N-S8paVhoWjfyJfUHmPVDi-6g8HrvTaC")
@@ -2590,7 +2642,8 @@ async def create_dodo_checkout(request: Request, user: dict = Depends(get_curren
         
         # 1. Register/Retrieve Customer
         try:
-            fallback_name = user.get("name") or user.get("full_name") or user.get("email", "").split("@")[0] or "JobNinjas User"
+            email_val = user.get("email") or ""
+            fallback_name = user.get("name") or user.get("full_name") or (email_val.split("@")[0] if email_val else "User") or "JobNinjas User"
             cust = await dodo_client.customers.create(email=user.get("email"), name=fallback_name)
             customer_id = cust.customer_id
         except Exception as e:
@@ -2604,7 +2657,7 @@ async def create_dodo_checkout(request: Request, user: dict = Depends(get_curren
         
         # 2. Unified Checkout Session Creation
         checkout_payload = {
-            "product_cart": [{"product_id": DODO_PRICING[plan_id], "quantity": 1}],
+            "product_cart": [{"product_id": product_id, "quantity": 1}],
             "customer": {"customer_id": customer_id} if customer_id else {"email": user.get("email"), "name": user.get("name", "User")},
             "return_url": f"{frontend_url}/dashboard?dodo_success=true"
         }
@@ -2688,29 +2741,50 @@ async def dodo_webhook(request: Request):
             product_cart = event_data.get("product_cart", [])
             product_id = product_cart[0].get("product_id") if isinstance(product_cart, list) and len(product_cart) > 0 else None
             
+            trial_ids = [
+                'pdt_0NaG1OIVNjuPfdPE4AsWy', # Pro
+                'pdt_0NaG1OMdSrfDvOLbR51vm', # Pro Plus
+                'pdt_0NaG1ORHJV9nyf6wvhrXb', # Pro Max
+                'pdt_0NaG1H4VjKUIDR0pMHQ8b', # Pro (alt)
+                'pdt_0NaG1HBoEZCLDxUrPMDOs', # Pro Plus (alt)
+                'pdt_0NaG1HG0sdOkxASs9W5eY'  # Pro Max (alt)
+            ]
+            is_trial = product_id in trial_ids
+
             plan_id = "ai-yearly"  # Default
-            if product_id in ['pdt_0NZmnBgVJUd3o8Aw9rLCS', 'pdt_0NZdskeTK6brGEax0h2cX']:
+            if product_id in ['pdt_0NZmnBgVJUd3o8Aw9rLCS', 'pdt_0NZdskeTK6brGEax0h2cX', 'pdt_0NaG1OMdSrfDvOLbR51vm', 'pdt_0NaG1HBoEZCLDxUrPMDOs']:
                 plan_id = "ai-pro-plus"
-            elif product_id in ['pdt_0NZmnBjvZfdf7wlo16mpF', 'pdt_0NZdskimkgkJlRKi7MK0g']:
+            elif product_id in ['pdt_0NZmnBjvZfdf7wlo16mpF', 'pdt_0NZdskimkgkJlRKi7MK0g', 'pdt_0NaG1ORHJV9nyf6wvhrXb', 'pdt_0NaG1HG0sdOkxASs9W5eY']:
                 plan_id = "ai-pro-max"
             elif product_id in ['pdt_0NZmnBVVr47PQFhQrHsxN', 'pdt_0NZUIq5YeOwMHJLTzi24o']:
                 plan_id = "ai-monthly"
+            elif product_id in ['pdt_0NaG1OIVNjuPfdPE4AsWy', 'pdt_0NaG1H4VjKUIDR0pMHQ8b', 'pdt_0NZmnBd3UIZjSKOmo85RK']:
+                plan_id = "ai-yearly"
                 
             if customer_email:
                 from datetime import datetime, timezone
                 from dateutil.relativedelta import relativedelta
                 
                 # Calculate expiration based on plan
-                if "monthly" in plan_id:
-                    delta = relativedelta(months=1)
+                if is_trial:
+                    status = "trial"
+                    expires_at = (datetime.now(timezone.utc) + relativedelta(days=7)).isoformat()
+                elif "monthly" in plan_id:
+                    status = "active"
+                    expires_at = (datetime.now(timezone.utc) + relativedelta(months=1)).isoformat()
                 else:
-                    delta = relativedelta(years=1)
+                    status = "active"
+                    expires_at = (datetime.now(timezone.utc) + relativedelta(years=1)).isoformat()
 
                 update_payload = {
-                    "subscription_status": "active",
+                    "subscription_status": status,
                     "plan": plan_id,
-                    "plan_expires_at": (datetime.now(timezone.utc) + delta).isoformat()
+                    "has_used_free_trial": True, # User has now used their free trial choice
+                    "plan_expires_at": expires_at
                 }
+                
+                if is_trial:
+                    update_payload["trial_expires_at"] = expires_at
 
                 SupabaseService.update_user_by_email(customer_email, update_payload)
                 
@@ -2719,11 +2793,11 @@ async def dodo_webhook(request: Request):
                     {
                         "user_email": customer_email,
                         "plan": plan_id,
-                        "status": "active",
+                        "status": status,
                         "provider": "dodo",
                         "provider_id": event_data.get("subscription_id") or event_data.get("id"),
                         "activated_at": datetime.now(timezone.utc).isoformat(),
-                        "expires_at": (datetime.now(timezone.utc) + delta).isoformat()
+                        "expires_at": expires_at
                     }
                 )
                 logger.info(f"Dodo ACTIVE: Updated user {customer_email} to plan {plan_id}")
@@ -2792,53 +2866,93 @@ async def stripe_webhook(
         # Handle different event types
         if event["type"] == "checkout.session.completed":
             session = event["data"]["object"]
+            user_email = session.get("customer_email")
+            subscription_id = session.get("subscription")
+            plan_id = session["metadata"].get("plan_id")
 
-            # Extract subscription data
-            subscription_data = SubscriptionData(
-                user_id=session.get("client_reference_id"),
-                user_email=session.get("customer_email"),
-                plan_id=session["metadata"].get("plan_id"),
-                stripe_customer_id=session.get("customer"),
-                stripe_subscription_id=session.get("subscription"),
-                stripe_price_id=(
-                    session["line_items"]["data"][0]["price"]["id"]
-                    if "line_items" in session
-                    else ""
-                ),
-                status="active",
-                current_period_end=datetime.fromtimestamp(session.get("expires_at", 0)),
-            )
+            # Extract trial status if possible
+            # We might need to fetch the subscription from Stripe to be sure about status/dates
+            import stripe
+            try:
+                sub_obj = stripe.Subscription.retrieve(subscription_id)
+                status = sub_obj.status
+                expires_at = datetime.fromtimestamp(sub_obj.current_period_end, tz=timezone.utc).isoformat()
+            except:
+                status = "active"
+                expires_at = (datetime.now(timezone.utc) + relativedelta(years=1)).isoformat()
 
             # Save to Supabase
             sub_payload = {
-                "user_email": session.get("customer_email"),
-                "plan": session["metadata"].get("plan_id"),
-                "status": "active",
+                "user_email": user_email,
+                "plan": plan_id,
+                "status": status,
                 "provider": "stripe",
-                "provider_id": session.get("subscription"),
-                "metadata": session.get("metadata")
+                "provider_id": subscription_id,
+                "metadata": session.get("metadata"),
+                "expires_at": expires_at,
+                "activated_at": datetime.now(timezone.utc).isoformat()
             }
             SupabaseService.upsert_subscription(sub_payload)
-            logger.info(f"Subscription created for user {subscription_data.user_id}")
+            
+            # Update User Profile
+            update_payload = {
+                "subscription_status": status,
+                "plan": plan_id,
+                "has_used_free_trial": True,
+                "plan_expires_at": expires_at
+            }
+            if status == "trial":
+                update_payload["trial_expires_at"] = expires_at
+            
+            SupabaseService.update_user_by_email(user_email, update_payload)
+            
+            logger.info(f"Stripe Checkout Completed: Updated user {user_email} to {status} ({plan_id})")
 
             # Grant referral bonus if applicable
-            await grant_referral_bonus(subscription_data.user_id)
+            user_id = session.get("client_reference_id")
+            if user_id:
+                await grant_referral_bonus(user_id)
 
         elif event["type"] == "customer.subscription.updated":
             subscription = event["data"]["object"]
+            subscription_id = subscription["id"]
+            status = subscription["status"]
+            customer_id = subscription["customer"]
+            
+            # Fetch customer to get email if needed
+            import stripe
+            try:
+                customer = stripe.Customer.retrieve(customer_id)
+                user_email = customer.email
+            except:
+                user_email = None
 
-            # Update subscription status in Supabase
-            # Note: provider_id is the stripe_subscription_id
-            sub_update = {
-                "user_email": subscription.get("customer_email"), # Stripe event might not have it in this nested object
-                "status": subscription["status"],
-                "provider": "stripe",
-                "provider_id": subscription["id"]
-            }
-            SupabaseService.upsert_subscription(sub_update)
-            logger.info(
-                f"Subscription {subscription['id']} updated to {subscription['status']}"
-            )
+            if user_email:
+                expires_at = datetime.fromtimestamp(subscription.get("current_period_end", 0), tz=timezone.utc).isoformat()
+                
+                # Update subscription status in Supabase
+                sub_update = {
+                    "user_email": user_email,
+                    "status": status,
+                    "provider": "stripe",
+                    "provider_id": subscription_id,
+                    "expires_at": expires_at
+                }
+                SupabaseService.upsert_subscription(sub_update)
+                
+                # Update User Profile
+                update_payload = {
+                    "subscription_status": status,
+                    "plan_expires_at": expires_at
+                }
+                if status == "trial":
+                    update_payload["trial_expires_at"] = expires_at
+                
+                SupabaseService.update_user_by_email(user_email, update_payload)
+                
+                logger.info(f"Stripe Subscription {subscription_id} updated to {status} for {user_email}")
+            else:
+                logger.warning(f"Stripe Subscription {subscription_id} updated to {status} but no email found")
 
         elif event["type"] == "customer.subscription.deleted":
             subscription = event["data"]["object"]
@@ -3454,8 +3568,8 @@ async def get_user_usage_limits(identifier: str) -> dict:
         else:
             can_generate = current_daily_apps < 10 # Fallback
     else:  # free, expired, or ai-free
-        # Free tier limits (5 resumes, 5 autofills)
-        limit = 5
+        # Free tier limits (1 resume, 5 autofills)
+        limit = 1
         autofills_limit = 5
         current_count = current_daily_apps
         can_generate = current_count < limit
@@ -3580,10 +3694,14 @@ async def ai_ninja_apply(request: Request, user: dict = Depends(get_current_user
         await check_and_increment_daily_usage(user["email"], "apps", usage["limit"])
 
         jobId = form.get("jobId", "")
-        jobTitle = form.get("jobTitle", "")
-        company = form.get("company", "")
-        if not company:
-            raise HTTPException(status_code=400, detail="Company name is required")
+        jobTitle = form.get("jobTitle", "Target Role")
+        company = form.get("company", "Target Company")
+        
+        # Robustness: extraction fallback or default
+        if not company or company == "undefined":
+            company = "Target Company"
+        if not jobTitle or jobTitle == "undefined":
+            jobTitle = "Target Role"
 
         jobDescription = form.get("jobDescription", "")
         jobUrl = form.get("jobUrl", "")
@@ -3644,13 +3762,28 @@ async def ai_ninja_apply(request: Request, user: dict = Depends(get_current_user
         except Exception as e:
             logger.error(f"Failed to parse tailoring params: {e}")
 
+        # New tailoring parameters from JobRight.ai redesign
+        intensity = form.get("intensity", "default").lower()
+        # Support both lengthTarget (scanner) and length_target (legacy/editor)
+        length_target = form.get("lengthTarget") or form.get("length_target") or "standard"
+        force_metrics = form.get("forceMetrics", "false").lower() == "true"
+
         # Tailoring logic
         expert_docs = await generate_expert_documents(
             resumeText, jobDescription, user_info=user,
             selected_sections=selected_sections,
-            selected_keywords=selected_keywords
+            selected_keywords=selected_keywords,
+            job_title=jobTitle,
+            company=company,
+            intensity=intensity,
+            length_target=length_target,
+            force_metrics=force_metrics
         )
         
+        if not expert_docs:
+            logger.error(f"expert_docs generation returned None for {user.get('email')}")
+            raise HTTPException(status_code=500, detail="Failed to generate tailored documents. Please try again.")
+
         tailoredResume = expert_docs.get("ats_resume", "")
         detailedCv = expert_docs.get("detailed_cv", "")
         tailoredCoverLetter = expert_docs.get("cover_letter", "")
@@ -3659,33 +3792,36 @@ async def ai_ninja_apply(request: Request, user: dict = Depends(get_current_user
         resume_id = str(uuid.uuid4())
         resume_doc = {
             "id": resume_id,
-            "user_id": userId,
-            "user_email": user.get("email"),  # Ensure email is included for retrieval
-            "resume_name": f"AI Tailored: {company}",
-            "job_title": jobTitle,
-            "company_name": company,
-            "resume_text": tailoredResume,
-            "is_system_generated": True,
-            "origin": "ai-ninja",
-            "applied_at": datetime.now(timezone.utc).isoformat(),
+            "user_email": user.get("email"),
+            "name": f"AI Tailored: {company}",
+            "content": tailoredResume,
+            "metadata": {
+                "job_title": jobTitle,
+                "company_name": company,
+                "is_system_generated": True,
+                "origin": "ai-ninja",
+                "applied_at": datetime.now(timezone.utc).isoformat(),
+                "intensity": intensity,
+                "ats_score": (expert_docs.get("ats_analysis") or {}).get("score", 0)
+            },
             "created_at": datetime.now(timezone.utc).isoformat(),
+            "updated_at": datetime.now(timezone.utc).isoformat(),
         }
 
         SupabaseService.create_saved_resume(resume_doc)
 
         # Save application to Supabase
         app_doc = {
-            "user_id": userId,
             "user_email": user.get("email"),
-            "job_id": jobId if jobId and len(jobId) > 30 else None,
             "job_title": jobTitle,
             "company": company,
             "status": "applied",
             "resume_id": resume_id,
             "platform": company, # Legacy fallback
-            "source_url": jobUrl,
+            "job_url": jobUrl,
             "applied_at": datetime.now(timezone.utc).isoformat(),
             "created_at": datetime.now(timezone.utc).isoformat(),
+            "updated_at": datetime.now(timezone.utc).isoformat(),
             "metadata": {
                 "origin": "ai-ninja",
                 "resumeId": resume_id,
@@ -3711,6 +3847,10 @@ async def ai_ninja_apply(request: Request, user: dict = Depends(get_current_user
             "tailoredResume": tailoredResume,
             "detailedCv": detailedCv,
             "tailoredCoverLetter": tailoredCoverLetter,
+            "coverLetterA": expert_docs.get("cover_letter_A", ""),
+            "coverLetterB": expert_docs.get("cover_letter_B", ""),
+            "coldEmailA": expert_docs.get("cold_email_A", ""),
+            "coldEmailB": expert_docs.get("cold_email_B", ""),
             "changes": expert_docs.get("changes", []),
             "skillsAdded": expert_docs.get("skills_added", []),
             "skillsSkipped": expert_docs.get("skills_skipped", []),
@@ -3724,7 +3864,63 @@ async def ai_ninja_apply(request: Request, user: dict = Depends(get_current_user
 
 
 
-@api_router.patch("/applications/{application_id}/status")
+
+@api_router.post("/ai/refine-section")
+async def ai_refine_section(request: Request, user: dict = Depends(get_current_user)):
+    """
+    Refines a specific section of the resume.
+    """
+    try:
+        data = await request.json()
+        section_name = data.get("section_name")
+        section_content = data.get("section_content")
+        job_description = data.get("job_description")
+        resume_context = data.get("resume_context", "")
+
+        if not all([section_name, section_content, job_description]):
+            raise HTTPException(status_code=400, detail="Missing required fields")
+
+        result = await refine_resume_section(
+            section_name, 
+            section_content, 
+            job_description,
+            resume_context
+        )
+        
+        return result
+    except Exception as e:
+        logger.error(f"Error in ai_refine_section: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.post("/ai-ninja/cold-mail")
+async def ai_ninja_cold_mail(request: Request, user: dict = Depends(get_current_user)):
+    """
+    Generate cold outreach emails/LinkedIn messages based on resume and JD.
+    """
+    try:
+        form = await request.form()
+        jobDescription = form.get("jobDescription", "")
+        resume_text = form.get("resume_text", "")
+        
+        # Use the same logic as apply for consistency
+        expert_docs = await generate_expert_documents(
+            resume_text, jobDescription, user_info=user,
+            job_title="Target Role",
+            company="Target Company"
+        )
+        
+        if not expert_docs:
+            raise HTTPException(status_code=500, detail="Failed to generate cold email")
+            
+        return {
+            "coldMail": expert_docs.get("cold_email_A", ""),
+            "coldEmailA": expert_docs.get("cold_email_A", ""),
+            "coldEmailB": expert_docs.get("cold_email_B", "")
+        }
+    except Exception as e:
+        logger.error(f"Cold mail generation failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 async def update_application_status(application_id: str, status: str):
     """
     Update application status in Supabase.
@@ -3806,7 +4002,8 @@ async def _get_enriched_user_context(user: dict, db=None) -> dict:
     
     # 5. Final mapping
     if target_role:
-        if "preferences" not in user: user["preferences"] = {}
+        if user.get("preferences") is None:
+            user["preferences"] = {}
         user["preferences"]["target_role"] = target_role
     
     if resume_text:
@@ -3876,18 +4073,24 @@ def _format_supabase_job(job: Dict[str, Any]) -> Dict[str, Any]:
                 ashby_id = "-".join(parts[2:])
                 source_url = f"https://jobs.ashbyhq.com/{company_slug}/{ashby_id}"
 
+    job_id = str(job.get("id") or job.get("job_id") or "")
+    
+    # Ensure all expected fields exist to prevent NoneType errors in formatting
+    salary = job.get("salary_range") or job.get("salary") or "Competitive"
+    j_type = job.get("job_type") or job.get("type") or "Full-time"
+    
     formatted = {
         **job,
-        "_id": str(job.get("id")),
-        "id": str(job.get("id")),
+        "_id": job_id,
+        "id": job_id,
         "sourceUrl": source_url,
         "url": source_url,
-        "salaryRange": job.get("salary_range") or job.get("salary") or "Competitive",
-        "jobType": job.get("job_type") or job.get("type") or "Full-time",
-        "type": job.get("job_type") or job.get("type") or "onsite",
+        "salaryRange": salary,
+        "jobType": j_type,
+        "type": job.get("type") or j_type,
         "createdAt": job.get("posted_at") or job.get("created_at"),
-        "externalId": job.get("job_id"),
-        "job_id": job.get("job_id")  # Keep for backward compatibility
+        "externalId": job.get("job_id") or job_id,
+        "job_id": job.get("job_id") or job_id
     }
 
     # Handle Categories to Tags mapping
@@ -3901,8 +4104,61 @@ def _format_supabase_job(job: Dict[str, Any]) -> Dict[str, Any]:
             formatted["visaTags"] = []
 
     return formatted
+def _get_match_context(user: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Pre-calculate user tokens and target roles to avoid redundant work in matching loops.
+    """
+    try:
+        user_text = ""
+        user_title = ""
+        
+        # 1. Extract Title
+        user_prefs = user.get("preferences") or {}
+        if user_prefs.get("target_role"):
+            user_title = user_prefs["target_role"].lower()
+        elif user.get("target_role"):
+            user_title = user.get("target_role").lower()
+            
+        # 2. Extract Full Text
+        if user.get("latest_resume") and user["latest_resume"].get("text_content"):
+             user_text = user["latest_resume"]["text_content"]
+        elif user.get("resume_text"):
+             user_text = user["resume_text"]
+        
+        # Supplement Skills/Experience
+        skills = user.get("skills", {})
+        if isinstance(skills, dict):
+             user_text += " " + " ".join(skills.get("technical", [])) + " " + " ".join(skills.get("soft", []))
+        elif isinstance(skills, list):
+             user_text += " " + " ".join(skills)
 
-def _calculate_match_score(job: Dict[str, Any], user: Optional[Dict[str, Any]]) -> int:
+        experience = user.get("experience") or user.get("employment_history")
+        if isinstance(experience, list):
+            for exp in experience:
+                if isinstance(exp, dict):
+                    user_text += f" {exp.get('title', '')} {exp.get('description', '')}"
+        
+        user_text = user_text.lower()
+        
+        # 3. Tokenize
+        import re
+        user_tokens = set(re.findall(r'\b\w{2,}\b', user_text))
+        
+        user_words = set(re.findall(r'\b\w{2,}\b', user_title)) if user_title else set()
+        if not user_words and user_text:
+            extracted_title = _extract_target_role(user_text).lower()
+            user_words = set(re.findall(r'\b\w{2,}\b', extracted_title))
+
+        return {
+            "user_tokens": user_tokens,
+            "user_words": user_words,
+            "user_text": user_text # for tech job check
+        }
+    except Exception as e:
+        logger.error(f"Match context generation error: {e}")
+        return {"user_tokens": set(), "user_words": set(), "user_text": ""}
+
+def _calculate_match_score(job: Dict[str, Any], user: Optional[Dict[str, Any]], match_context: Optional[Dict[str, Any]] = None) -> int:
     """
     Calculate a realistic match score (0-99) based on user profile/resume and job description.
     Stricter logic to prevent high scores for irrelevant roles (e.g., Dentist vs AI Engineer).
@@ -3917,47 +4173,57 @@ def _calculate_match_score(job: Dict[str, Any], user: Optional[Dict[str, Any]]) 
         job_desc = (job.get("description") or "").lower()
         job_text = f"{job_title} {job_desc}"
         
-        user_text = ""
-        user_title = ""
-        
-        # Extract from profile precisely if available
-        if user.get("preferences") and user["preferences"].get("target_role"):
-            user_title = user["preferences"]["target_role"].lower()
-        elif user.get("target_role"):
-            user_title = user.get("target_role").lower()
+        # 2. & 3. Contextual Match
+        if match_context:
+            user_words = match_context.get("user_words", set())
+            user_tokens = match_context.get("user_tokens", set())
+        else:
+            # Legacy/Single-call path
+            user_text = ""
+            user_title = ""
             
-        # Priority: Resume Text > Skills > Summary
-        if user.get("latest_resume") and user["latest_resume"].get("text_content"):
-             user_text = user["latest_resume"]["text_content"]
-        elif user.get("resume_text"):
-             user_text = user["resume_text"]
-        
-        # Supplement with structured skills
-        skills = user.get("skills", {})
-        if isinstance(skills, dict):
-             user_text += " " + " ".join(skills.get("technical", []))
-             user_text += " " + " ".join(skills.get("soft", []))
-        elif isinstance(skills, list):
-             user_text += " " + " ".join(skills)
+            # Extract from profile precisely if available
+            user_prefs = (user.get("preferences") or {}) if user else {}
+            if user_prefs.get("target_role"):
+                user_title = user_prefs["target_role"].lower()
+            elif user.get("target_role"):
+                user_title = user.get("target_role").lower()
+                
+            # Priority: Resume Text > Skills > Summary
+            if user.get("latest_resume") and user["latest_resume"].get("text_content"):
+                 user_text = user["latest_resume"]["text_content"]
+            elif user.get("resume_text"):
+                 user_text = user["resume_text"]
+            
+            # Supplement with structured skills
+            skills = user.get("skills", {})
+            if isinstance(skills, dict):
+                 user_text += " " + " ".join(skills.get("technical", []))
+                 user_text += " " + " ".join(skills.get("soft", []))
+            elif isinstance(skills, list):
+                 user_text += " " + " ".join(skills)
 
-        # Supplement with structured experience
-        experience = user.get("experience") or user.get("employment_history")
-        if isinstance(experience, list):
-            for exp in experience:
-                if isinstance(exp, dict):
-                    user_text += f" {exp.get('title', '')} {exp.get('company', '')} {exp.get('description', '')}"
-        
-        user_text = user_text.lower()
-        
+            # Supplement with structured experience
+            experience = user.get("experience") or user.get("employment_history")
+            if isinstance(experience, list):
+                for exp in experience:
+                    if isinstance(exp, dict):
+                        user_text += f" {exp.get('title', '')} {exp.get('company', '')} {exp.get('description', '')}"
+            
+            user_text = user_text.lower()
+            
+            # Tokenize locally
+            import re
+            user_words = set(re.findall(r'\b\w{2,}\b', user_title)) if user_title else set()
+            if not user_words and user_text:
+                extracted_title = _extract_target_role(user_text)
+                user_words = set(re.findall(r'\b\w{2,}\b', extracted_title.lower()))
+            user_tokens = set(re.findall(r'\b\w{2,}\b', user_text))
+
         # 2. Strict Role Match Check
         import re
         job_words = set(re.findall(r'\b\w{2,}\b', job_title))
-        user_words = set(re.findall(r'\b\w{2,}\b', user_title)) if user_title else set()
         
-        if not user_words and user_text:
-            extracted_title = _extract_target_role(user_text).lower()
-            user_words = set(re.findall(r'\b\w{2,}\b', extracted_title))
-
         title_match = False
         if user_words and job_words:
             overlap = job_words.intersection(user_words)
@@ -3966,16 +4232,14 @@ def _calculate_match_score(job: Dict[str, Any], user: Optional[Dict[str, Any]]) 
         
         # 3. Keyword Matching Score
         keyword_score = 0
-        if user_text:
-            job_tokens = set(re.findall(r'\b\w{2,}\b', job_text))
-            user_tokens = set(re.findall(r'\b\w{2,}\b', user_text))
-            
-            if job_tokens:
-                common = job_tokens.intersection(user_tokens)
-                # Denom scaling: don't let short descriptions artificially boost scores
-                denom = max(20, min(len(job_tokens), 60)) 
-                overlap_ratio = len(common) / denom
-                keyword_score = int(overlap_ratio * 100)
+        job_tokens = set(re.findall(r'\b\w{2,}\b', job_text))
+        
+        if job_tokens and user_tokens:
+            common = job_tokens.intersection(user_tokens)
+            # Denom scaling: don't let short descriptions artificially boost scores
+            denom = max(20, min(len(job_tokens), 60)) 
+            overlap_ratio = len(common) / denom
+            keyword_score = int(overlap_ratio * 100)
         
         # ---------------------------------------------------------
         # 4. Final Aggregation (Project Orion V3.1 - Dynamic)
@@ -4600,11 +4864,13 @@ from resume_parser import parse_resume, validate_resume_file
 from resume_analyzer import analyze_resume, extract_resume_data
 from document_generator import (
     generate_optimized_resume_content,
-    generate_cover_letter_content,
     generate_expert_documents,
     create_resume_docx,
-    create_cover_letter_docx,
     create_text_docx,
+    create_cover_letter_docx,
+    render_preview_text_from_json,
+    generate_expert_tailored_content,
+    unified_api_call
 )
 from fastapi.responses import StreamingResponse
 
@@ -4630,15 +4896,8 @@ async def generate_ai_content(
         # Enforce email verification
         ensure_verified(user)
 
-        # from resume_analyzer import unified_api_call # Removed duplicate import
-
-        # Check for BYOK
-        # BYOK RESTRICTION: No longer using BYOK for general tools
-        # byok_config = await get_decrypted_byok_key(user.get("email"))
-
         response = await unified_api_call(
             request.prompt,
-            # byok_config=byok_config, # Forces system keys
             max_tokens=request.max_tokens,
             model="llama-3.1-8b-instant",
         )
@@ -4655,6 +4914,167 @@ async def generate_ai_content(
         return {"success": True, "response": response}
     except Exception as e:
         logger.error(f"AI generation error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/ai-ninja/apply")
+async def ai_ninja_apply(
+    email: str = Form(...),
+    jobDescription: str = Form(...),
+    jobTitle: str = Form(""),
+    company: str = Form(""),
+    intensity: str = Form("default"),
+    lengthTarget: str = Form("standard"),
+    resume: UploadFile = File(None),
+    user: dict = Depends(get_current_user)
+):
+    """
+    Expert AI Ninja Tailoring Endpoint (Full Document Generation)
+    """
+    try:
+        resume_text = ""
+        if resume:
+            file_content = await resume.read()
+            resume_text = await parse_resume(file_content, resume.filename)
+        else:
+            # Fallback to user's saved resume text
+            resume_text = user.get("resume_text", "")
+
+        if not resume_text:
+            raise HTTPException(status_code=400, detail="No resume content provided or found for user.")
+
+        result = await generate_expert_documents(
+            resume_text=resume_text,
+            job_description=jobDescription,
+            job_title=jobTitle,
+            company=company,
+            intensity=intensity,
+            length_target=lengthTarget
+        )
+
+        if not result:
+            raise HTTPException(status_code=500, detail="AI Tailoring failed to produce results.")
+
+        # --- PERSISTENCE & TRACKING ---
+        ats_resume_text = result.get("ats_resume", "")
+        
+        # 1. Save Tailored Resume Content
+        try:
+            tailored_data = {
+                "user_id": str(user.get("id")),
+                "job_id": str(jobId) if 'jobId' in locals() else None, # Might be passed in Form
+                "resume_text": ats_resume_text,
+                "created_at": datetime.now(timezone.utc).isoformat()
+            }
+            SupabaseService.save_tailored_resume(tailored_data)
+        except Exception as e:
+            logger.warning(f"Failed to save tailored resume record: {e}")
+
+        # 2. Create Application Tracker Record
+        try:
+            app_record = {
+                "user_id": str(user.get("id")),
+                "user_email": user.get("email"),
+                "job_title": jobTitle or "Tailored Role",
+                "company": company or "Target Company",
+                "status": "applied",
+                "notes": "Generated via AI Ninja Tailoring",
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "metadata": {
+                    "resumeText": ats_resume_text,
+                    "jobDescription": jobDescription,
+                    "intensity": intensity,
+                    "origin": "ai-ninja"
+                }
+            }
+            SupabaseService.create_application(app_record)
+            logger.info(f"✅ Application tracked for {user.get('email')} - {jobTitle}")
+        except Exception as e:
+            logger.error(f"Failed to create application tracker record: {e}")
+
+        return {
+            "success": True,
+            "ats_resume": ats_resume_text,
+            "tailoredResume": ats_resume_text, # UI alias
+            "cover_letter": result.get("cover_letter"),
+            "tailoredCoverLetter": result.get("cover_letter"), # UI alias
+            "analysis": result.get("alignment_highlights")
+        }
+    except Exception as e:
+        logger.error(f"AI Ninja Apply error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.post("/ai/refine-section")
+async def refine_section_endpoint(
+    request: Request,
+    user: dict = Depends(get_current_user)
+):
+    """
+    Refine a specific resume section based on JD and specific instructions.
+    """
+    try:
+        data = await request.json()
+        section_name = data.get("section_name", "")
+        section_content = data.get("section_content", "")
+        job_description = data.get("job_description", "")
+        resume_context = data.get("resume_context", "")
+        action = data.get("action", "refine") # New: support specific actions
+
+        if not section_name or not section_content or not job_description:
+            raise HTTPException(status_code=400, detail="Missing required refinement data")
+
+        # Dynamic instruction based on action
+        action_prompts = {
+            "refine": "Refine the content to be more professional and clear.",
+            "improve_writing": "Rewrite the content to improve clarity, flow, and professional tone.",
+            "add_metrics": "QUANTIFY IMPACT: Add specific metrics, percentages, or dollar amounts to the bullet points where they might logically fit based on the context. If you must invent realistic placeholder numbers like 'X%' or '$Y', do so professionally.",
+            "align_jd": "ALIGN WITH JD: Reorder and rephrase elements to explicitly match the requirements and keywords mentioned in the job description.",
+            "make_impactful": "MAKE IMPACTFUL: Use strong action verbs and highlight achievements rather than just responsibilities.",
+            "shorten": "SHORTEN: Condense the content to be more concise while retaining the core value and impact.",
+            "expand": "EXPAND: Add more detail and context to the existing points to make them feel more substantial.",
+            "bullets_from_jd": "ADD BULLETS FROM JD: Add 2-3 new bullet points that are highly relevant to the JD but consistent with the existing experience described.",
+            "rewrite_from_jd": "REWRITE FROM JD: Completely rewrite this section using the JD's language and requirements as the primary guide.",
+            "change_tone": "CHANGE TONE: Adjust the tone to be more charismatic and confident.",
+            "custom": data.get("custom_instruction", "Refine this section.")
+        }
+
+        instruction = action_prompts.get(action, action_prompts["refine"])
+
+        prompt = f"""
+        TASK: {instruction} for the resume section ({section_name}).
+        
+        GOAL: Make the content more relevant to the Job Description while maintaining professional integrity.
+        
+        JOB DESCRIPTION:
+        {job_description}
+        
+        RESUME CONTEXT (FOR TONE/STYLE):
+        {resume_context}
+        
+        CURRENT SECTION CONTENT:
+        {section_content}
+        
+        INSTRUCTIONS:
+        1. Keep the output as RAW TEXT ONLY.
+        2. Do not add labels like "Refined Section:" or "Here is the result".
+        3. Maintain the original structure (e.g., if it's bullet points, return bullet points).
+        4. Focus ONLY on the content provided for the section.
+        """
+        
+        refined_content = await unified_api_call(
+            prompt,
+            model="llama-3.1-8b-instant",
+            max_tokens=1500
+        )
+
+        return {
+            "success": True,
+            "refined_content": refined_content.strip() if refined_content else section_content,
+            "action": action
+        }
+    except Exception as e:
+        logger.error(f"Refine section error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -4692,8 +5112,8 @@ async def scan_resume(
         byok_config = None
 
         # Analyze with Gemini / BYOK
-        # from resume_analyzer import analyze_resume # Removed duplicate import
-        # from document_generator import generate_optimized_resume_content # Removed duplicate import
+        # from resume_analyzer import analyze_resume 
+
 
         analysis = await analyze_resume(
             resume_text, job_description, target_score=target_score
@@ -4702,16 +5122,20 @@ async def scan_resume(
         if "error" in analysis:
             raise HTTPException(status_code=500, detail=analysis["error"])
 
-        # Generate optimized text for preview
-        optimized_data = await generate_optimized_resume_content(
+        # Phase 21: Generate Expert Tailored Content (Resume + Cover Letter)
+        optimized_data = await generate_expert_tailored_content(
             resume_text, 
-            job_description, 
-            analysis,
-            target_score=target_score
+            job_description
         )
         
+        if "error" in optimized_data:
+             logger.warning(f"Expert tailoring failed, falling back to basic optimization: {optimized_data['error']}")
+
+             optimized_data = await generate_optimized_resume_content(
+                resume_text, job_description, analysis, target_score=target_score
+             )
+
         # Convert structured data back to text for ResumePaper
-        from document_generator import render_preview_text_from_json
         optimized_text = render_preview_text_from_json(optimized_data)
         
         return {
@@ -4720,6 +5144,7 @@ async def scan_resume(
             "resumeText": resume_text,
             "optimizedText": optimized_text,
             "optimizedData": optimized_data,
+            "coverLetter": optimized_data.get("cover_letter", ""),
             "resumeTextLength": len(resume_text),
         }
 
@@ -4879,6 +5304,8 @@ class GenerateResumeRequest(BaseModel):
     is_already_tailored: bool = False
     fontFamily: Optional[str] = "Times New Roman"
     template: Optional[str] = "standard"
+    job_url: Optional[str] = None
+    jobId: Optional[str] = None
     targetScore: Optional[int] = 85
 
 
@@ -4918,15 +5345,14 @@ async def generate_resume_docx(request: GenerateResumeRequest):
             user_email = user.get("email", "") if user else ""
             # byok_config = await get_decrypted_byok_key(user_email)
 
-            from document_generator import (
-                generate_expert_documents,
-                generate_optimized_resume_content,
-            )
+
 
             expert_docs = await generate_expert_documents(
                 request.resume_text,
                 request.job_description,
                 user_info=user,
+                job_title=request.job_title,
+                company=request.company
             )
 
             if expert_docs and expert_docs.get("ats_resume"):
@@ -4964,23 +5390,50 @@ async def generate_resume_docx(request: GenerateResumeRequest):
                 saved_text = ""
                 if 'expert_docs' in locals() and expert_docs and expert_docs.get("ats_resume"):
                     saved_text = expert_docs["ats_resume"]
+                elif "resume_text" in locals() and resume_text:
+                    saved_text = resume_text
                 elif "resume_data" in locals() and resume_data:
                     saved_text = str(resume_data)  # Simplification
 
+                resume_id = str(uuid.uuid4())
                 if saved_text:
                     SupabaseService.create_saved_resume({
-                        "userEmail": user_email,
-                        "userId": request.userId,
-                        "resumeName": f"Generated: {request.company}",
-                        "resumeText": saved_text,
-                        "fileName": f"Optimized_Resume_{safe_company}.docx",
-                        "createdAt": datetime.now(timezone.utc).isoformat(),
-                        "updatedAt": datetime.now(timezone.utc).isoformat(),
-                        "isSystemGenerated": True,
-                        "origin": "ai_generation"
+                        "id": resume_id,
+                        "user_email": user_email,
+                        "user_id": request.userId,
+                        "resume_name": f"Generated: {request.company}",
+                        "resume_text": saved_text,
+                        "is_system_generated": True,
+                        "origin": "ai_generation",
+                        "created_at": datetime.now(timezone.utc).isoformat(),
+                        "updated_at": datetime.now(timezone.utc).isoformat(),
                     })
+                    
+                    # NEW: Also create an application entry in the tracker
+                    app_doc = {
+                        "user_id": request.userId,
+                        "user_email": user_email,
+                        "job_id": request.jobId if request.jobId and len(request.jobId) > 30 else None,
+                        "job_title": request.job_title,
+                        "company": request.company,
+                        "status": "applied",
+                        "resume_id": resume_id,
+                        "job_url": request.job_url,
+                        "applied_at": datetime.now(timezone.utc).isoformat(),
+                        "created_at": datetime.now(timezone.utc).isoformat(),
+                        "metadata": {
+                            "origin": "ai_generation",
+                            "resumeId": resume_id,
+                            "jobUrl": request.job_url,
+                            "resumeText": saved_text,
+                            "jobDescription": request.job_description
+                        }
+                    }
+                    SupabaseService.create_application(app_doc)
+                    logger.info(f"Auto-created application for {user_email} via resume generation")
+
             except Exception as e:
-                logger.error(f"Failed to auto-save generated resume to library: {e}")
+                logger.error(f"Failed to auto-save generated resume or application: {e}")
 
         # Return as downloadable file
         return StreamingResponse(
@@ -5124,6 +5577,7 @@ class SaveResumeRequest(BaseModel):
     resume_text: str
     file_name: str = ""
     replace_id: Optional[str] = None
+    id: Optional[str] = None # Support 'id' field from frontend
 
 
 @app.get("/api/resumes/{email}")
@@ -5143,7 +5597,9 @@ async def get_unified_resumes(email: str):
             r["createdAt"] = r.get("created_at") or r.get("createdAt")
             r["updatedAt"] = r.get("updated_at") or r.get("updatedAt") or r["createdAt"]
             r["textPreview"] = r["resumeText"][:200] + "..." if r["resumeText"] else ""
+            r["isSystemGenerated"] = r.get("is_system_generated", False) or r.get("isSystemGenerated", False)
             merged.append(r)
+
 
         merged.sort(key=lambda x: str(x.get("updatedAt", "")), reverse=True)
         return {"success": True, "resumes": merged[:5]} # Increased limit to 5
@@ -5160,10 +5616,12 @@ async def save_user_resume(request: SaveResumeRequest):
     """
     try:
         # If replace_id is provided, delete that resume first
-        if request.replace_id:
+        # If id is provided but not replace_id, use id
+        rid = request.replace_id or request.id
+        if rid:
             try:
                 client = SupabaseService.get_client()
-                client.table("saved_resumes").delete().eq("id", request.replace_id).execute()
+                client.table("saved_resumes").delete().eq("id", rid).execute()
             except Exception as e:
                 logger.warning(f"Failed to delete resume for replacement in Supabase: {e}")
 
@@ -5255,12 +5713,24 @@ async def delete_saved_resume(resume_id: str):
     Delete a saved resume
     """
     try:
+        # Check if it's a MongoDB ObjectId (24 hex characters)
+        is_mongo_id = len(resume_id) == 24 and all(c in "0123456789abcdefABCDEF" for c in resume_id)
+        
+        if is_mongo_id:
+            from bson.objectid import ObjectId
+            import config
+            result = config.db.saved_resumes.delete_one({"_id": ObjectId(resume_id)})
+            if result.deleted_count == 0:
+                raise HTTPException(status_code=404, detail="Legacy resume not found")
+            return {"success": True, "message": "Legacy resume deleted"}
+            
+        # Otherwise, it's a Supabase UUID
         client = SupabaseService.get_client()
         response = client.table("saved_resumes").delete().eq("id", resume_id).execute()
 
-        if not response.data:
-            raise HTTPException(status_code=404, detail="Resume not found")
-
+        # Delete endpoints should be idempotent. 
+        # We assume success if no exceptions are thrown by execute().
+        
         return {"success": True, "message": "Resume deleted"}
 
 
@@ -5268,6 +5738,40 @@ async def delete_saved_resume(resume_id: str):
         raise
     except Exception as e:
         logger.error(f"Delete resume error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/resumes/export")
+async def export_resume_docx(request: dict):
+    """
+    Export a resume as a DOCX file.
+    """
+    try:
+
+        
+        text = request.get("text", "")
+        title = request.get("title", "Resume")
+        template = request.get("template", "standard")
+        font_family = request.get("font_family", "Times New Roman")
+        
+        # Ensure we don't have None
+        text = text or ""
+        
+        file_stream = create_text_docx(text, title=title, font_family=font_family, template=template)
+        
+        safe_title = "".join([c if c.isalnum() else "_" for c in title])
+        filename = f"{safe_title}.docx"
+        
+        return StreamingResponse(
+            file_stream,
+            media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            headers={
+                "Content-Disposition": f'attachment; filename="{filename}"',
+                "Access-Control-Expose-Headers": "Content-Disposition"
+            }
+        )
+    except Exception as e:
+        logger.error(f"Export error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -5338,19 +5842,6 @@ async def google_login(request: Request, login_data: GoogleLoginRequest, backgro
 
             user_id = existing_user.get("id")
             token = create_access_token(data={"sub": email, "id": user_id})
-
-            # Send welcome email only if they weren't already verified and this is their first Google login
-            if existing_user.get("auth_method") != "google" and not existing_user.get("is_verified"):
-                try:
-                    background_tasks.add_task(
-                        send_welcome_email,
-                        existing_user.get("name", name),
-                        email,
-                        None,
-                        existing_user.get("referral_code"),
-                    )
-                except Exception as email_error:
-                    logger.error(f"Error sending welcome email to existing Google user: {email_error}")
 
             return {
                 "success": True,
@@ -5549,8 +6040,9 @@ async def save_application(application: ApplicationData):
         if not job_id or len(job_id) < 30:
             client = SupabaseService.get_client()
             import datetime
+            from document_generator import sanitize_job_title
             job_data = {
-                "title": application.jobTitle or "Unknown Role",
+                "title": sanitize_job_title(application.jobTitle) or "Unknown Role",
                 "company": application.company or "Unknown Company",
                 "job_id": f"external-{int(datetime.datetime.utcnow().timestamp())}",
                 "description": application.jobDescription or "",
@@ -5947,6 +6439,24 @@ async def upload_resume_endpoint(
         
         SupabaseService.update_user_by_email(user["email"], update_payload)
         
+        # ALSO save as a distinct Base Resume in the `saved_resumes` table
+        try:
+            resume_id = str(uuid.uuid4())
+            new_resume = {
+                "id": resume_id,
+                "user_email": user["email"],
+                "resume_name": file.filename,
+                "resume_text": text_content,
+                "file_name": file.filename,
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "updated_at": datetime.now(timezone.utc).isoformat(),
+                "is_system_generated": False
+            }
+            client = SupabaseService.get_client()
+            client.table("saved_resumes").insert(new_resume).execute()
+        except Exception as insert_err:
+            logger.error(f"Failed to persist uploaded resume to saved_resumes table: {insert_err}")
+        
         # Return updated user
         updated_user = SupabaseService.get_user_by_email(user["email"])
         
@@ -6004,8 +6514,8 @@ async def nova_chat_endpoint(
     # 4. Construct Messages
     messages = [
         {"role": "system", "content": system_prompt},
-        {"role": "system", "content": f"USER RESUME:\\n{resume_text}"},
-        {"role": "system", "content": f"TARGET JOB:\\n{job_text}"}
+        {"role": "system", "content": f"USER RESUME:\n{resume_text}"},
+        {"role": "system", "content": f"TARGET JOB:\n{job_text}"}
     ]
     
     # Add history (limit to last 6 messages to save context window)
@@ -6087,8 +6597,47 @@ async def generate_smart_answer_endpoint(
 
 
 
-# Redundant mock helper functions removed
+WAVE_SIZE = 20  # Number of distinct companies shown per wave
 
+def _interleave_jobs_by_company(jobs, max_contiguous=1):
+    """
+    Wave-based interleaving:
+      Wave 1 – pick the 1st job from each of the first WAVE_SIZE companies.
+      Wave 2 – pick the 2nd job from those same WAVE_SIZE companies (if available).
+      … repeat until all jobs are consumed.
+
+    This produces the pattern:
+      [co1_job1, co2_job1, … co20_job1,  co1_job2, co2_job2, … co20_job2, …]
+    """
+    if not jobs:
+        return []
+
+    # Group jobs by company, preserving the order companies first appear
+    buckets: dict = {}
+    companies_in_order: list = []
+    for job in jobs:
+        company = (job.get("company") or "Unknown").strip()
+        if company not in buckets:
+            buckets[company] = []
+            companies_in_order.append(company)
+        buckets[company].append(job)
+
+    # Build fixed-size waves of WAVE_SIZE companies
+    # If there are fewer than WAVE_SIZE companies just use them all.
+    wave_companies = companies_in_order[:WAVE_SIZE]
+
+    result = []
+    # Keep cycling through wave_companies until every bucket in the wave is empty
+    while any(buckets[c] for c in wave_companies):
+        for company in wave_companies:
+            if buckets[company]:
+                result.append(buckets[company].pop(0))
+
+    # Append any jobs from companies outside the first WAVE_SIZE (keeps them at the end)
+    for company in companies_in_order[WAVE_SIZE:]:
+        result.extend(buckets[company])
+
+    return result
 
 # Jobs API Endpoints
 @app.get("/api/jobs")
@@ -6128,27 +6677,42 @@ async def get_jobs(
                  logger.error(f"Project Orion Auth Error (get_jobs): {str(e)}")
                  pass
 
+        # 1.1 Generate Match Context for performance
+        match_context = _get_match_context(user) if user else None
+
         # 2. JOB FETCHING (SUPABASE)
         offset = (page - 1) * limit
         
-        # Determine if we should perform a boosted search (if user has a target role)
-        target_role = (user.get("preferences") or {}).get("target_role") if user else None
+        # Determine if we should perform a boosted search
+        # 1. NEW: Check for persistent target_roles array (Project Orion)
+        # 2. Legacy: Check for single target_role in preferences
+        user_prefs = (user.get("preferences") or {}) if user else {}
+        target_roles = (user.get("target_roles") or []) if user else []
+        target_role = (user_prefs.get("target_role") or user.get("target_role") or "") if user else ""
         
-        # Use target_role as search ONLY if no explicit keyword search AND no explicit job_functions
+        # Merge roles for recommendation set
+        recommendation_roles = list(set([r for r in target_roles if r] + ([target_role] if target_role else [])))
+        
+        # Use roles as search ONLY if no explicit keyword search AND no explicit job_functions
         active_search = search
-        if not search and not job_functions:
-            active_search = target_role
+        active_job_functions = job_functions
+        
+        if not search and not job_functions and recommendation_roles:
+            # If we have multiple roles and no search, we use them as job_functions to trigger OR filtering in Supabase
+            active_job_functions = ",".join(recommendation_roles)
             
-        # Primary fetch (Fresh jobs)
+        # Primary fetch – always pull a large pool so company-wave interleaving
+        # has enough diversity (we paginate AFTER interleaving below).
+        FETCH_POOL = 200
         supabase_jobs = SupabaseService.get_jobs(
-            limit=limit if not target_role else 100, # Fetch more if we need to filter/score
-            offset=offset if not target_role else 0, # Manual pagination if boosted
+            limit=FETCH_POOL,
+            offset=0,
             search=active_search,
             job_type=type,
             location=country,
             visa=visa,
             fresh_only=True,
-            job_functions=job_functions,
+            job_functions=active_job_functions,
             experience=experience,
             cities=cities,
             date_posted=date_posted,
@@ -6159,8 +6723,8 @@ async def get_jobs(
         if not supabase_jobs:
             logger.info("No fresh jobs found in last 72h. Falling back to older jobs...")
             supabase_jobs = SupabaseService.get_jobs(
-                limit=limit if not target_role else 100,
-                offset=offset if not target_role else 0,
+                limit=FETCH_POOL,
+                offset=0,
                 search=active_search,
                 job_type=type,
                 location=country,
@@ -6192,26 +6756,31 @@ async def get_jobs(
             if job_key in seen_jobs: continue
             seen_jobs.add(job_key)
             
+            # Ensure we map job_id to id for the frontend (which expects UUID or stable ID)
+            # and job_id to externalId for legacy compatibility.
+            job["id"] = job.get("id") or job.get("job_id")
+            job["externalId"] = job.get("job_id") or job.get("id")
+            job["job_id"] = job.get("job_id") or job.get("id")
+            
             # Apply Match Score
-            job["matchScore"] = _calculate_match_score(job, user)
-            job["match_score"] = job["matchScore"]
+            match_val = _calculate_match_score(job, user, match_context) if user else 0
+            job["matchScore"] = match_val
+            job["match_score"] = match_val
             
             # Enrich
             job["companyData"] = _get_mock_company_data(job.get("company", "Unknown"))
             job["insiderConnections"] = _get_mock_insider_connections()
             formatted_results.append(job)
 
-        # Apply Sort
-        if sort == 'newest':
-            formatted_results.sort(key=lambda x: x.get("created_at") or "", reverse=True)
-        elif user and sort == 'recommended' and formatted_results:
+        if sort == 'recommended' and user and formatted_results:
             formatted_results.sort(key=lambda x: x.get("matchScore", 0), reverse=True)
 
-        # Manual Pagination if we fetched a larger pool
-        if target_role:
-            results = formatted_results[offset:offset + limit]
-        else:
-            results = formatted_results
+        # Wave-interleave: 20 companies × N rounds
+        if formatted_results:
+            formatted_results = _interleave_jobs_by_company(formatted_results)
+
+        # Paginate AFTER interleaving so page boundaries respect the wave order
+        results = formatted_results[offset:offset + limit]
 
         # 4. RECOMMENDED FILTERS (PROJECT ORION)
         recommended_filters = []
@@ -6274,9 +6843,15 @@ async def get_jobs(
             }
         }
     except Exception as e:
-        logger.error(f"Project Orion Job Fetch Error: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Job fetch failed: {str(e)}")
-        # Raise here to avoid falling through to MongoDB logic
+        import traceback
+        full_trace = traceback.format_exc()
+        err_msg = f"Job fetch failed: {str(e)}\n{full_trace}"
+        logger.error(err_msg)
+        # In development, return the full trace to the frontend/browser for debugging
+        return JSONResponse(
+            status_code=500,
+            content={"detail": err_msg, "traceback": full_trace}
+        )
 
 # Job Sync Endpoints
 @app.get("/api/jobs/sync-status")

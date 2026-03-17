@@ -28,6 +28,7 @@ import { BRAND } from '../config/branding';
 import { API_URL } from '../config/api';
 import SideMenu from './SideMenu';
 import Header from './Header';
+import ConfirmDeleteModal from './ConfirmDeleteModal';
 import './SideMenu.css';
 
 const MyResumes = () => {
@@ -41,6 +42,11 @@ const MyResumes = () => {
   const [newResumeFile, setNewResumeFile] = useState(null);
   const [newResumeLabel, setNewResumeLabel] = useState('');
   const [usageLimits, setUsageLimits] = useState(null);
+
+  // Custom Delete Modal State
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [resumeToDelete, setResumeToDelete] = useState(null);
+  const [isDeletingResume, setIsDeletingResume] = useState(false);
 
   const fetchResumes = async () => {
     setIsLoading(true);
@@ -88,43 +94,66 @@ const MyResumes = () => {
 
     setUploading(true);
     try {
-      // TODO: Implement actual upload
       const formData = new FormData();
       formData.append('resume', newResumeFile);
-      formData.append('label', newResumeLabel || 'Base Resume');
-      formData.append('email', user?.email);
+      if (newResumeLabel) formData.append('label', newResumeLabel);
+      if (user?.email) formData.append('email', user.email);
 
-      // Mock success
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      const token = localStorage.getItem('auth_token');
+      const response = await fetch(`${API_URL}/api/scan/parse`, {
+        method: 'POST',
+        headers: {
+          ...(token ? { 'token': token } : {})
+        },
+        body: formData
+      });
 
-      const newResume = {
-        id: Date.now().toString(),
-        label: newResumeLabel || 'Base Resume',
-        fileName: newResumeFile.name,
-        origin: 'upload',
-        createdAt: new Date().toISOString(),
-        isBase: resumes.length === 0
-      };
-
-      setResumes(prev => [newResume, ...prev]);
-      setUploadModalOpen(false);
-      setNewResumeFile(null);
-      setNewResumeLabel('');
+      if (response.ok) {
+        await fetchResumes(); // Refresh the list from the server
+        setUploadModalOpen(false);
+        setNewResumeFile(null);
+        setNewResumeLabel('');
+      } else {
+        console.error("Upload failed", response.status);
+        alert("Failed to upload resume.");
+      }
     } catch (error) {
       console.error('Error uploading resume:', error);
+      alert("Error uploading resume.");
     } finally {
       setUploading(false);
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this resume?')) return;
+  const handleDelete = (id) => {
+    setResumeToDelete(id);
+    setDeleteModalOpen(true);
+  };
 
+  const executeDeleteResume = async () => {
+    if (!resumeToDelete) return;
+    setIsDeletingResume(true);
     try {
-      // TODO: Implement actual delete
-      setResumes(prev => prev.filter(r => r.id !== id));
+      const token = localStorage.getItem('auth_token');
+      const response = await fetch(`${API_URL}/api/resumes/${resumeToDelete}`, {
+        method: 'DELETE',
+        headers: {
+          ...(token ? { 'token': token } : {})
+        }
+      });
+      if (response.ok) {
+        setResumes(prev => prev.filter(r => r.id !== resumeToDelete && r._id !== resumeToDelete));
+      } else {
+        console.error('Failed to delete resume from server');
+        alert("Failed to delete resume.");
+      }
+      setDeleteModalOpen(false);
+      setResumeToDelete(null);
     } catch (error) {
       console.error('Error deleting resume:', error);
+      alert("Error deleting resume.");
+    } finally {
+      setIsDeletingResume(false);
     }
   };
 
@@ -367,6 +396,16 @@ const MyResumes = () => {
           </Card>
         </div>
       )}
+
+      <ConfirmDeleteModal
+        isOpen={deleteModalOpen}
+        onClose={() => {
+          setDeleteModalOpen(false);
+          setResumeToDelete(null);
+        }}
+        onConfirm={executeDeleteResume}
+        isDeleting={isDeletingResume}
+      />
     </div>
   );
 };

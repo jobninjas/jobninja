@@ -35,6 +35,8 @@ import './SideMenu.css';
 import '../LandingPage.css';
 import { SocialTooltip } from './ui/SocialTooltip';
 
+import posthog from 'posthog-js';
+
 const LandingPage = () => {
   const navigate = useNavigate();
   const { isAuthenticated, loading } = useAuth();
@@ -42,6 +44,9 @@ const LandingPage = () => {
   const [sideMenuOpen, setSideMenuOpen] = useState(false);
   const [activeWord, setActiveWord] = useState(0);
   const rotatingWords = ['faster', 'smarter', 'easier', 'better'];
+  
+  // PostHog experiment state
+  const [heroVariant, setHeroVariant] = useState('control');
 
   // Redirect to dashboard if logged in
   useEffect(() => {
@@ -49,6 +54,25 @@ const LandingPage = () => {
       navigate('/jobs');
     }
   }, [isAuthenticated, loading, navigate]);
+
+  useEffect(() => {
+    // Check for PostHog experiment variant
+    posthog.onFeatureFlags(() => {
+      const variant = posthog.getFeatureFlag('hero-experiment');
+      if (variant) {
+        setHeroVariant(variant);
+      }
+    });
+  }, []);
+
+  const handleCTAClick = () => {
+    // Track conversion for the experiment
+    posthog.capture('hero_cta_clicked', {
+      variant: heroVariant,
+      destination: '/signup'
+    });
+    navigate('/signup');
+  };
 
   // Social Media Links
   const socialLinks = [

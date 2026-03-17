@@ -3,11 +3,12 @@ Document Generator - Creates optimized resumes and cover letters
 """
 
 import os
+import re
 import io
 import logging
 from typing import Dict, Any, Optional
 from docx import Document
-from docx.shared import Inches, Pt
+from docx.shared import Inches, Pt, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.enum.style import WD_STYLE_TYPE
 from docx.oxml.ns import qn
@@ -17,14 +18,348 @@ import asyncio
 import json
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any, Union
-from resume_analyzer import call_groq_api, unified_api_call, clean_json_response
+
+from resume_parser_deterministic import (
+    parse_resume_deterministic,
+    merge_with_ai_facts,
+    validate_parse,
+)
+
+from resume_analyzer import call_groq_api, unified_api_call, clean_json_response, extract_resume_data
 
 logger = logging.getLogger(__name__)
+
+# Add file handler for persistent AI debug logs
+try:
+    log_path = os.path.join(os.path.dirname(__file__), "ai_debug.log")
+    fh = logging.FileHandler(log_path)
+    fh.setLevel(logging.INFO)
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    fh.setFormatter(formatter)
+    logger.addHandler(fh)
+except Exception as e:
+    print(f"Failed to set up file logging in document_generator: {e}")
 
 # These are now imported from resume_analyzer.py
 # GROQ_API_KEY = os.environ.get('GROQ_API_KEY')
 # GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
 # GROQ_MODEL = "llama-3.3-70b-versatile"
+
+COVER_LETTER_AND_COLD_EMAIL_PROMPT = """
+You are a JSON API. Output only a valid JSON object. No prose. Start with {{
+
+╔══════════════════════════════════════════════════════════════╗
+║  CRITICAL ROLE CLARIFICATION — READ BEFORE ANYTHING ELSE   ║
+╠══════════════════════════════════════════════════════════════╣
+║  SENDER:   {name} — the JOB SEEKER writing these messages  ║
+║  RECEIVER: The hiring manager / recruiter at {target_company} ║
+║                                                              ║
+║  {name} IS WRITING TO APPLY FOR A JOB.                     ║
+║  DO NOT write as if a recruiter is contacting {name}.       ║
+║  DO NOT address {name} in the message.                      ║
+║  DO NOT say "Hi {name}" or "Dear {name}".                   ║
+║  The message is FROM {name}, TO the hiring team.            ║
+╚══════════════════════════════════════════════════════════════╝
+
+SENDER (writing these messages):
+  Name:     {name}
+  Email:    {email}
+  Phone:    {phone}
+  Role:     {current_title}
+
+RECIPIENT (receiving these messages):
+  Company:  {target_company}
+  Role applying for: {target_role}
+  Hiring Manager: {hiring_manager} (use "Hiring Team" if unknown)
+
+════════════════════════════════════════════
+CANDIDATE FACTS (LOCKED — never invent or change):
+════════════════════════════════════════════
+Name: {name}
+Email: {email}
+Phone: {phone}
+Location: {location}
+Current Title: {current_title}
+Years of Experience: {years_exp}
+
+Top 3 technical achievements from resume (use these as evidence):
+{achievement_1}
+{achievement_2}
+{achievement_3}
+
+Projects (real names only):
+{project_list}
+
+════════════════════════════════════════════
+TARGET JOB:
+═════════════════════════════
+Role: {target_role}
+Company: {target_company}
+Location: {target_location}
+Mission: {target_mission} (What they do)
+Keywords: {target_keywords}
+Pain Points: {target_pain_points} (e.g., scaling, user retention, data quality)
+
+════════════════════════════════════════════
+VARIATIONS STRATEGY:
+════════════════════════════════════════════
+Variation A: HIGH ALIGNMENT (The "I am the solution" approach)
+Focus: Mapping the top 3 achievements directly to the target role's pain points.
+Tone: Confident, expert, solution-oriented.
+
+Variation B: COMPANY VISION (The "I am a believer" approach)
+Focus: Connecting the candidate’s project history to the company’s specific mission and long-term goals.
+Tone: Enthusiastic, visionary, culture-fit.
+
+════════════════════════════════════════════
+RULES FOR COVER LETTER:
+════════════════════════════════════════════
+1. Professional, high-standard headers.
+2. 3-4 dense, high-signal paragraphs.
+3. NO brackets. NO [Your Name]. NO [Company Name]. Use the target values provided.
+4. Format: Plain text, professional line breaks.
+
+════════════════════════════════════════════
+RULES FOR COLD EMAIL:
+════════════════════════════════════════════
+1. Subject line included.
+2. Max 100 words.
+3. Hook-Benefit-Ask structure.
+4. NO brackets.
+
+════════════════════════════════════════════
+OUTPUT JSON SCHEMA:
+════════════════════════════════════════════
+{{
+  "cover_letter_A": "full text...",
+  "cover_letter_B": "full text...",
+  "cold_email_A": "full text...",
+  "cold_email_B": "full text..."
+}}
+"""
+
+EXPERT_TAILORING_PROMPT = """
+╔══════════════════════════════════════════════════════════════╗
+║  YOU ARE A JSON API. OUTPUT ONLY A JSON OBJECT.             ║
+║  NO PROSE. NO ADVICE. NO MARKDOWN. START WITH {{            ║
+║  BANNED: "PRD", "Job Title — ", "Here is your resume", etc. ║
+╚══════════════════════════════════════════════════════════════╝
+
+════════════════════════════════════════════
+STEP 0 — STRIP INPUT FORMATTING (do this first, silently)
+════════════════════════════════════════════
+The raw resume text contains markdown artifacts from DOCX extraction.
+Before doing anything else, strip ALL of these from every string you output:
+  ** bold markers **   → remove asterisks
+  * italic *           → remove asterisks  
+  # headings           → remove hash
+  \| pipe escapes      → replace with |
+  --- horizontal rules → ignore
+  - list prefixes      → ignore (bullets handled by JSON structure)
+Output ONLY clean plain text strings. Zero markdown in any JSON value.
+
+════════════════════════════════════════════
+STEP 1 — READ AND LOCK CANDIDATE FACTS
+════════════════════════════════════════════
+Extract from the raw resume below. These facts are LOCKED — you cannot
+change, invent, or omit any of them.
+
+RAW RESUME:
+{raw_resume_text}
+
+LOCKED FACTS YOU MUST EXTRACT:
+  name:         (exact, NO markdown, NO job titles, HUMAN NAME ONLY)
+  email:        (exact)
+  phone:        (exact)
+  location:     (exact)
+  
+  employers:    EXACTLY the employers in the resume — no more, no fewer.
+                Each entry MUST have:
+                  company:   exact name
+                  title:     exact title
+                  location:  exact location
+                  start:     format "Mon YYYY" (e.g. "Feb 2026") — NEVER ISO
+                  end:       format "Mon YYYY" or "Present" — NEVER ISO
+                  bullets:   ALL original bullets verbatim (you will reframe later)
+                  
+  projects:     ONLY the projects that exist in the raw resume.
+                NEVER invent project names. NEVER use generic names like
+                "Project 1", "Intelligent Talent Discovery", "Batch ETL Pipelines".
+                
+  certifications: exact list from resume
+  education:    exact degrees, universities, years — degree field ONCE, not doubled
+
+════════════════════════════════════════════
+STEP 2 — ANALYZE THE JOB DESCRIPTION
+════════════════════════════════════════════
+TARGET JOB DESCRIPTION:
+{job_description}
+
+Extract:
+  jd_title:         exact job title from JD
+  must_have:        top 5 required skills/experiences from JD
+  nice_to_have:     bonus skills from JD
+  mission:          what does this team/product actually build? (1 sentence)
+  experience_gap:   if JD asks for more years than candidate has, note it here
+                    — do NOT lie about years. Bridge with scope/impact instead.
+
+════════════════════════════════════════════
+STEP 3 — SKILLS TIMELINE LAW (CRITICAL)
+════════════════════════════════════════════
+Only assign a technology to a role if it was in mainstream production use
+BEFORE OR DURING that role's date range. This is non-negotiable.
+
+TIMELINE REFERENCE GUIDE:
+- 2024+: LangGraph, LlamaIndex (v0.10+), GPT-4o, Claude 3.5
+- 2023+: QLoRA, DPO, Llama 2, GPT-4, Mistral, Vector DBs (mainstream)
+- 2022+: LangChain, ChatGPT, LoRA, Stable Diffusion, Whisper
+- 2021+: Vertex AI, Copilot, Vision Transformers
+- 2019-2020: FastAPI, Transformers (Hugging Face), PyTorch (mainstream), BERT
+
+════════════════════════════════════════════
+STEP 4 — EXPERIENCE GAP STRATEGY
+════════════════════════════════════════════
+If JD asks for more experience than candidate has, NEVER:
+  ✗ Inflate years ("10+ years" when candidate has 5)
+  ✗ Invent roles or dates
+  ✗ Add fake projects
+  ✗ Copy JD phrases verbatim as if candidate said them (e.g. "vibe coding")
+  ✗ Use any term, phrase, or buzzword not found in the original resume
+    UNLESS it accurately describes work the candidate actually did
+
+INSTEAD, bridge the gap by:
+  ✓ Surfacing depth: reframe existing bullets to show senior-level judgment
+    (system design, failure modes, architectural decisions)
+  ✓ Stacking scope: show cross-functional impact, production scale, SLA ownership
+  ✓ Matching mission: tie candidate's AI/ML pipeline work to the JD's
+    "production-grade software", "agentic workflows", "regulated domains" framing
+  ✓ Summary strategy: lead with technical depth and production scope, 
+    NOT years of experience if there's a gap
+
+════════════════════════════════════════════
+STEP 5 — WRITE THE TAILORED RESUME
+════════════════════════════════════════════
+
+SUMMARY (3 sentences, no candidate name, no "I"):
+  S1: Strongest technical depth sentence — map candidate's actual skills to JD's
+      top must_have. State scope/scale. Do NOT state years if gap exists.
+  S2: Production + system reasoning evidence — pick the most impressive
+      technical fact from original resume and reframe toward JD mission.
+  S3: Collaboration + delivery + tie to this specific company's domain.
+  BANNED WORDS: "passionate", "motivated", "excited", "leverage", "synergy",
+                "vibe coding", "PRD", "[Company]", "[Job Title]"
+  CRITICAL: DO NOT include any metacommentary or "advice" in the summary or bullets.
+            DO NOT start with "Sure, here is your tailored resume".
+
+SKILLS (exactly 4 categories):
+  Label each category to match JD clusters.
+  Apply TIMELINE LAW — only include tools valid for candidate's career span.
+  For each tool: only add if candidate plausibly used it given role dates.
+
+EXPERIENCE BULLET COUNT LAW (NON-NEGOTIABLE):
+  — TAILORING DEPTH LAW: ONLY tailor 2-3 high-impact bullets per role. Keep the rest of the original content EXACTLY as it was.
+  — NO SHRINKAGE LAW: DO NOT scale the resume down to one page. Maintain the original length and detail. Output ALL original bullets.
+  — Output EVERY bullet from the original resume per role. NEVEr truncate.
+  — Each bullet minimum 20 words.
+  — Format: [Strong verb] + [what was built] + [specific tool] + [outcome/scale]
+  — Reframe original content toward JD keywords — do NOT rewrite the meaning
+  — NEVER copy JD phrases verbatim into bullets as if candidate said them
+  — NEVER add tools that violate the TIMELINE LAW for that role's dates
+  — Most recent role: present tense verbs
+  — All other roles: past tense verbs
+  — For roles that need "senior framing": add judgment language —
+    "designed for failure tolerance", "reasoned about edge cases",
+    "defined acceptance criteria", "governed data quality standards"
+
+PROJECT BULLET RULES:
+  — Use ONLY bullet content that exists in the original resume.
+  — If a project has 2 original bullets, output exactly 2 — do NOT pad to 3.
+  — NEVER invent: "Developed a user interface", "Developed a conversational interface", "Developed a system for users to interact", or any generic UI/UX sentence.
+  — If you cannot find a real third bullet from the original, use the second bullet reframed from a different technical angle — do NOT fabricate new functionality.
+  — Original project bullets are your only source of truth.
+
+CERTIFICATIONS: copy verbatim from locked facts
+EDUCATION: Degree and Major on one line. University and Year on the next line. No duplication of major.
+
+════════════════════════════════════════════
+REQUIRED OUTPUT JSON STRUCTURE:
+════════════════════════════════════════════
+{{
+  "step1_locked_facts": {{
+    "employer_count": 0,
+    "project_names": [],
+    "experience_gap_detected": true,
+    "gap_strategy": "one sentence: how you are bridging without lying"
+  }},
+  "step2_jd_analysis": {{
+    "jd_title": "exact title",
+    "must_have": ["skill1","skill2","skill3","skill4","skill5"],
+    "mission": "what the team builds in one sentence",
+    "experience_gap": "JD asks X years, candidate has Y — bridging via Z"
+  }},
+  "tailored_resume": {{
+    "name": "Full Name",
+    "title": "job title from JD",
+    "contact": {{
+      "email": "email@example.com",
+      "phone": "phone",
+      "location": "location"
+    }},
+    "summary": [
+      "sentence 1",
+      "sentence 2",
+      "sentence 3"
+    ],
+    "skills": {{
+      "Category 1": ["skill","skill"],
+      "Category 2": ["skill","skill"],
+      "Category 3": ["skill","skill"],
+      "Category 4": ["skill","skill"]
+    }},
+    "experience": [
+      {{
+        "company": "Company",
+        "title": "Title",
+        "location": "Location",
+        "start": "Mon YYYY",
+        "end": "Mon YYYY or Present",
+        "bullets": [
+          "bullet 1",
+          "bullet 2"
+        ]
+      }}
+    ],
+    "projects": [
+      {{
+        "name": "Project Name",
+        "tech": "Stack",
+        "bullets": [
+          "bullet 1",
+          "bullet 2",
+          "bullet 3"
+        ]
+      }}
+    ],
+    "certifications": [],
+    "education": [
+      {{
+        "degree": "Degree",
+        "major": "Major",
+        "university": "University",
+        "year": "Year"
+      }}
+    ]
+  }},
+  "cover_letter": "3 paragraphs.",
+  "self_check": {{
+    "zero_markdown_in_output": true,
+    "all_employers_present": true,
+    "timeline_law_respected": true,
+    "experience_gap_bridged_not_lied_about": true
+  }}
+}}
+
+Respond with valid JSON only. Begin with {{ now:"""
 
 # ============================================
 # STRUCTURED RESUME SCHEMA (Step 3 & 4)
@@ -92,61 +427,706 @@ def cleanup_bullet(s: str) -> str:
     return cleaned
 
 
+def extract_json_from_response(text: str) -> dict:
+    """
+    Robustly extract JSON from AI response that may contain surrounding text.
+    Tries multiple strategies in order.
+    """
+    if not text or not isinstance(text, str):
+        return {}
+    
+    import json
+    import re
+    text = text.strip()
+    
+    # Strategy 1: Response IS pure JSON
+    if text.startswith('{'):
+        try:
+            return json.loads(text)
+        except json.JSONDecodeError:
+            # Try to find where the valid JSON ends
+            pass
+    
+    # Strategy 2: JSON inside ```json ... ``` code block
+    code_block = re.search(r'```(?:json)?\s*(\{[\s\S]*?\})\s*```', text)
+    if code_block:
+        try:
+            return json.loads(code_block.group(1))
+        except:
+            pass
+    
+    # Strategy 3: Find the largest {...} block in the response
+    # Walk from first { to find matching }
+    start = text.find('{')
+    if start != -1:
+        depth = 0
+        for i, ch in enumerate(text[start:], start):
+            if ch == '{':
+                depth += 1
+            elif ch == '}':
+                depth -= 1
+                if depth == 0:
+                    candidate = text[start:i+1]
+                    try:
+                        return json.loads(candidate)
+                    except:
+                        break
+    
+    # Strategy 4: Response is free text — return empty dict to trigger fallback
+    logger.error(f"Could not extract JSON from response. First 300 chars: {text[:300]}")
+    return {}
+
+
+def strip_appended_skill_suffixes(text: str) -> str:
+    """
+    Programmatically remove the suffix-appending bug pattern.
+    Catches all variants the AI produces regardless of prompt instructions.
+    """
+    # Patterns: bullet ends with ", utilizing/leveraging/applying X."
+    suffix_patterns = [
+        r',\s*utilizing\s+[A-Za-z0-9\s,/\-\.]+(?:for [^.]+)?\.',
+        r',\s*leveraging\s+[A-Za-z0-9\s,/\-\.]+(?:for [^.]+)?\.',
+        r',\s*applying\s+principles\s+of\s+[^.]+\.',
+        r',\s*ensuring\s+seamless\s+integration\s+with\s+[^.]+\.',
+        r',\s*with\s+a\s+focus\s+on\s+building\s+highly\s+scalable[^.]*\.',
+        r',\s*with\s+expertise\s+in\s+[^.]+\.',
+        r',\s*with\s+a\s+strong\s+[^.]+\.',
+    ]
+
+    if not text or not isinstance(text, str):
+        return text or ""
+
+    lines = text.split('\n')
+    cleaned_lines = []
+    for line in lines:
+        if not line:
+            cleaned_lines.append("")
+            continue
+        original = line
+        for pattern in suffix_patterns:
+            # Only match at end of line (after real content)
+            match = re.search(pattern + r'\s*$', line, re.IGNORECASE)
+            if match and match.start() > 20:  # guard: don't truncate very short lines
+                line = line[:match.start()].rstrip().rstrip(',') + '.'
+        cleaned_lines.append(line)
+    return '\n'.join(cleaned_lines)
+
+
+def strip_summary_prefix(text: str) -> str:
+    """
+    Remove the 'Job Title — ' prefix from summary and fix literal \n characters.
+    """
+    if not text or not isinstance(text, str):
+        return text or ""
+        
+    # Remove "AI Engineer — " or similar from summary start
+    text = re.sub(r'^[^\n\u2014]+[\u2014]\s*', '', text)
+    # Fix literal \n or \\n from AI
+    return text.replace('\\n', '\n').replace('\\\\n', '\n').strip()
+    
+
+
+def extract_company_from_title(title: str) -> tuple:
+    """
+    Parses "AI Engineer at Astra Corp" → ("AI Engineer", "Astra Corp")
+    or "AI Engineer | Astra Corp" → ("AI Engineer", "Astra Corp")
+    Returns (clean_title, company) — company is '' if not parseable.
+    """
+    if not title:
+        return ("", "")
+    
+    for separator in [" at ", " @ ", " | ", " - "]:
+        if separator in title:
+            parts = title.split(separator, 1)
+            return (parts[0].strip(), parts[1].strip())
+    return (title.strip(), "")
+
+
+def prepare_tailoring_facts(resume_json: dict) -> dict:
+    """
+    Extracts and formats facts from resume_json for the expert tailoring prompt.
+    Includes original highlights/bullets to enable reframing.
+    """
+    person = resume_json.get("person", {})
+    name = person.get("fullName") or f"{person.get('firstName', '')} {person.get('lastName', '')}".strip() or "Candidate"
+    
+    facts = {
+        "name": name,
+        "email": person.get("email", "N/A"),
+        "phone": person.get("phone", "N/A"),
+        "location": person.get("location", "N/A"),
+        "employer_count": len(resume_json.get("employment_history", [])),
+        "employer_list": "",
+        "project_list": "",
+        "cert_list": "",
+        "edu_list": ""
+    }
+    
+    # Format Employer List (with raw bullets for AI reframing)
+    employers = []
+    for emp in resume_json.get("employment_history", []):
+        if not isinstance(emp, dict): continue
+        comp = emp.get("company", "Unknown")
+        title = emp.get("title", "Unknown")
+        loc = emp.get("location", "N/A")
+        start = emp.get("startDate", "")
+        end = emp.get("endDate", "Present")
+        highlights = emp.get("highlights") or emp.get("description", [])
+        if isinstance(highlights, str):
+            highlights = [highlights]
+        
+        bullet_text = "\n".join([f"  * {h}" for h in highlights if h and isinstance(h, str)])
+        employers.append(f"- {comp} | {title} | {loc} ({start} to {end})\n  ORIGINAL HIGHLIGHTS:\n{bullet_text}")
+    facts["employer_list"] = "\n".join(employers)
+    
+    # Format Project List
+    projects = []
+    raw_projects = resume_json.get("projects", [])
+    if not isinstance(raw_projects, list): raw_projects = []
+    if not raw_projects and isinstance(resume_json.get("skills"), dict):
+        raw_projects = resume_json.get("skills", {}).get("projects", [])
+        if not isinstance(raw_projects, list): raw_projects = []
+        
+    for proj in raw_projects:
+        if not isinstance(proj, dict): continue
+        p_name = proj.get("name") or "Unnamed Project"
+        tech = proj.get("tech_stack", [])
+        tech_str = ", ".join(tech) if isinstance(tech, list) else str(tech)
+        p_bullets = proj.get("highlights") or proj.get("bullets", [])
+        if isinstance(p_bullets, str):
+            p_bullets = [p_bullets]
+        p_bullet_text = "\n".join([f"  * {b}" for b in p_bullets if b and isinstance(b, str)])
+        projects.append(f"- {p_name} (Tech: {tech_str})\n  ORIGINAL HIGHLIGHTS:\n{p_bullet_text}")
+    facts["project_list"] = "\n".join(projects)
+    
+    # Format Certifications
+    certs = []
+    skills = resume_json.get("skills", {})
+    raw_certs = skills.get("certifications", []) if isinstance(skills, dict) else []
+    if not isinstance(raw_certs, list): raw_certs = []
+    if not raw_certs:
+        raw_certs = resume_json.get("certifications", [])
+    if isinstance(raw_certs, list):
+        for cert in raw_certs:
+            if cert: certs.append(f"- {cert}")
+    facts["cert_list"] = "\n".join(certs)
+    
+    # Format Education
+    edus = []
+    for edu in resume_json.get("education", []):
+        if not isinstance(edu, dict): continue
+        degree = str(edu.get("degree", "")).strip()
+        major = str(edu.get("major", "")).strip()
+        school = str(edu.get("school", "") or edu.get("university", "")).strip()
+        year = str(edu.get("graduationDate") or edu.get("year", "")).strip()
+        
+        # Clean "undefined" leaks in education
+        fields = [degree, major, school, year]
+        clean_fields = [f if str(f).lower() not in ["undefined", "null", "none"] else "" for f in fields]
+        degree, major, school, year = clean_fields
+        
+        if degree or major or school:
+            edus.append(f"- {degree}, {major} from {school} ({year})")
+    facts["edu_list"] = "\n".join(edus)
+    
+    # Final name cleanup in facts
+    facts["name"] = re.sub(r'(?i)undefined|null|none', '', str(facts.get("name", ""))).strip()
+    if not facts["name"]:
+        facts["name"] = "Candidate"
+        
+    return facts
+
+
+def prepare_cover_letter_cold_email_facts(resume_json: dict, job_description: str, job_title: str, company: str) -> dict:
+    """
+    Extracts and formats facts for the COVER_LETTER_AND_COLD_EMAIL_PROMPT.
+    """
+    person = resume_json.get("person", {})
+    name = person.get("fullName") or f"{person.get('firstName', '')} {person.get('lastName', '')}".strip() or "Candidate"
+    
+    # Calculate years of experience
+    total_years = 0
+    for emp in resume_json.get("employment_history", []):
+        try:
+            start = emp.get("startDate")
+            end = emp.get("endDate") or "2026-03" # Current date approx
+            if start and end:
+                s_y = int(start.split('-')[0])
+                e_y = int(end.split('-')[0])
+                total_years += (e_y - s_y)
+        except: pass
+    
+    # Extract top achievement
+    achievements = []
+    for emp in resume_json.get("employment_history", []):
+        highlights = emp.get("highlights") or []
+        if isinstance(highlights, list):
+            achievements.extend([h for h in highlights if h])
+    
+    # Simple selection of top 3 achievements
+    achievement_vals = achievements[:3]
+    while len(achievement_vals) < 3:
+        achievement_vals.append("N/A")
+    
+    # Project list
+    projects = []
+    for proj in resume_json.get("projects", []):
+        p_name = proj.get("name")
+        if p_name: projects.append(p_name)
+    
+    # Mocking/Extracting JD facts (In real app, this should come from a structured JD analysis)
+    # For now, we'll use defaults or simple extraction
+    facts = {
+        "name": name,
+        "email": person.get("email", "N/A"),
+        "phone": person.get("phone", "N/A"),
+        "location": person.get("location", "N/A"),
+        "current_title": resume_json.get("employment_history", [{}])[0].get("title", "Professional"),
+        "years_exp": f"{total_years}+",
+        "achievement_1": achievement_vals[0],
+        "achievement_2": achievement_vals[1],
+        "achievement_3": achievement_vals[2],
+        "project_list": ", ".join(projects) if projects else "N/A",
+        "target_role": job_title or "Target Role",
+        "target_company": company or "Target Company",
+        "company_name": company or "Target Company", # Alias for user prompt
+        "hiring_manager": "Hiring Team", # Default for now
+        "target_location": "Remote / On-site", # Default
+        "target_mission": "Building innovative solutions", # Default
+        "target_keywords": "efficiency, scale, innovation", # Default
+        "target_pain_points": "manual processes, scalability bottlenecks" # Default
+    }
+    
+    return facts
+
+
+def sanitize_job_title(title: str) -> str:
+    """
+    Remove annotations like (PROOF OF CONCEPT), (CONTRACT), (REMOTE) etc.
+    and clean up whitespace.
+    """
+    if not title:
+        return ""
+    # Remove annotations in parentheses
+    title = re.sub(r'\([^)]*\)', '', title)
+    # Remove extra whitespace
+    title = re.sub(r'\s+', ' ', title).strip()
+    # Title Case for consistency if needed, though original casing is often preferred
+    return title
+
+def strip_prose_advice(text: str) -> str:
+    """
+    Remove common AI metacommentary and advice phrases.
+    """
+    if not text or not isinstance(text, str):
+        return text or ""
+        
+    advice_patterns = [
+        r"(?i)^Sure,?\s+here('s| is)\s+the\s+tailored\s+resume.*?\n",
+        r"(?i)^Here\s+is\s+the\s+tailored\s+resume.*?\n",
+        r"(?i)^I've\s+tailored\s+the\s+resume.*?\n",
+        r"(?i)Hope\s+this\s+helps.*?\Z",
+        r"(?i)Let\s+me\s+know\s+if\s+you\s+need\s+anything\s+else.*?\Z",
+        r"(?i)PRD", # Strict removal of PRD text
+    ]
+    
+    for pattern in advice_patterns:
+        text = re.sub(pattern, "", text).strip()
+    return text
+
+async def generate_expert_tailored_content(resume_text: str, job_description: str, intensity_instruction: str = "") -> dict:
+    """
+    Expert Tailoring Pipeline (Phase 21):
+    One-shot, high-fidelity generation of tailored resume data + cover letter.
+    """
+    try:
+        logger.info("Starting Expert AI Tailoring Pipeline...")
+        
+        # 1. Extract structured facts from original resume
+        resume_json = await extract_resume_data(resume_text)
+        if not resume_json or "error" in resume_json:
+            raise Exception(f"Failed to extract structured data: {resume_json.get('error', 'Unknown')}")
+            
+        # 2. Prepare facts for prompt
+        facts = prepare_tailoring_facts(resume_json)
+        
+        # 3. Fill the prompt
+        prompt = EXPERT_TAILORING_PROMPT.format(
+            raw_resume_text=resume_text,
+            job_description=job_description
+        )
+        
+        # 4. Call LLM (High-speed model for extraction, heavy model for tailoring)
+        # Using llama-3.3-70b-versatile as requested/indicated in prompt for max quality
+        response_raw = await unified_api_call(
+            prompt, 
+            max_tokens=12000, 
+            model="llama-3.3-70b-versatile", 
+            json_mode=True
+        ) or ""
+        
+        # 5. Extract and parse JSON
+        result = extract_json_from_response(response_raw)
+        
+        if not result or "tailored_resume" not in result:
+            logger.error(f"Expert tailoring failed to return valid JSON. Raw: {response_raw[:500]}")
+            return {"error": "Expert tailoring failed to generate valid content"}
+            
+        # Recursive cleanup of any leaked advice or placeholders
+        result["tailored_resume"] = recursive_cleanup(result["tailored_resume"])
+        if "cover_letter" in result:
+            result["cover_letter"] = strip_prose_advice(result["cover_letter"])
+            
+        logger.info("Expert AI Tailoring complete.")
+        return result
+        
+    except Exception as e:
+        logger.error(f"Expert tailoring error: {e}")
+        return {"error": str(e)}
+
+
+def strip_summary_garbage(text: str) -> str:
+    """
+    Remove known garbage fragments the AI copies from weak original summaries.
+    Also strips generic filler openers that recruiters ignore.
+    """
+    if not text or not isinstance(text, str):
+        return text or ""
+        
+    garbage_fragments = [
+        r'\.\s*quality solutions\.?',
+        r'\.\s*driven automation[,.]?',
+        r',\s*quality solutions\.?',
+        r'\.\s*governed,\s*documented data products\.?',
+        r',\s*governed,\s*documented data products\.?',
+        r'and drive business outcomes\.?',
+        r'\s*I am excited (about the opportunity )?to apply my skills[^.]*\.',
+        r'\s*particularly in a company like[^.]*\.',
+        r'\s*that values innovation and excellence\.?',
+        r'to the table[,.]?',
+        r'Highly motivated\s+',
+        r'looking to leverage my skills in a new domain[,.]?\s*',
+        r'passionate about[^.]*\.',
+        r'results-driven professional\s+',
+        r'dynamic professional\s+',
+        r'[\.\,]\s*oriented middleware[^.]*\.',     # "message-oriented middleware" fragment
+        r'^[Oo]riented middleware[^.]*\.\s*',        # orphaned sentence start
+        r'[\.\,]\s*functional teams to drive[^.]*\.',
+        r'^[Ff]unctional teams to drive[^.]*\.\s*',
+        r'\s*I am excited[^.]*\.',
+        r'\s*particularly in a company like[^.]*\.',
+        r'\s*that values innovation and excellence\.?',
+        r'and drive business outcomes\.?',
+        r'oriented middleware[,.]',
+        r'\s*quality solutions that meet business outcomes\.?',
+        r'\s*Excited to apply my skills[^.]*\.',
+        r'\s*and contribute to the development of[^.]*\.',
+        r"\s*Fanatics Betting\s*[&&]\s*Gaming[^.]*\.",
+        r'\s*digital sports platform\.?',
+        r'quality solutions[,.]?',
+    ]
+    for pattern in garbage_fragments:
+        text = re.sub(pattern, '', text, flags=re.IGNORECASE)
+    
+    # Clean up double spaces or double periods left behind
+    text = re.sub(r'  +', ' ', text)
+    text = re.sub(r'\.\s*\.', '.', text)
+    return text.strip()
+
+
+
+
+
+def format_resume_date(date_str: str) -> str:
+    """Convert ISO date (2026-02) to Month Year (Feb 2026) for professional rendering."""
+    if not date_str or str(date_str).lower() == "present":
+        return "Present"
+    import re
+    # Handle ISO YYYY-MM
+    m = re.match(r'^(\d{4})-(\d{2})$', str(date_str).strip())
+    if m:
+        year, month = m.groups()
+        months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+        try:
+            idx = int(month) - 1
+            if 0 <= idx < 12:
+                return f"{months[idx]} {year}"
+        except: pass
+    # Handle YYYY-MM-DD
+    m2 = re.match(r'^(\d{4})-(\d{2})-\d{2}$', str(date_str).strip())
+    if m2:
+        year, month = m2.groups()
+        months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+        try:
+            idx = int(month) - 1
+            if 0 <= idx < 12:
+                return f"{months[idx]} {year}"
+        except:
+            pass
+    return str(date_str)
+
+def recursive_cleanup(data: Any) -> Any:
+    """Recursively apply strip_prose_advice to all strings in a nested structure."""
+    if isinstance(data, str):
+        return strip_prose_advice(data)
+    elif isinstance(data, list):
+        return [recursive_cleanup(item) for item in data]
+    elif isinstance(data, dict):
+        return {k: recursive_cleanup(v) for k, v in data.items()}
+    return data
+
+
 def render_preview_text_from_json(data: Dict) -> str:
     """
     Converts the structured JSON from generate_optimized_resume_content 
-    into a plain text format that ResumePaper can parse.
+    OR generate_expert_tailored_content into a plain text format that ResumePaper can parse.
     """
     if not data:
         return ""
         
+    # Support for Phase 21 Expert Tailoring structure
+    is_expert = isinstance(data, dict) and "tailored_resume" in data
+    source = data.get("tailored_resume") if is_expert and isinstance(data, dict) else data
+    
+    if not isinstance(source, dict):
+        # Fallback for when AI returns a string instead of JSON
+        return str(source) if source else ""
+
     out = []
     
     # Header
-    contact = data.get("contactInfo", {})
-    out.append(f"NAME\n{contact.get('name', 'Your Name')}")
+    if is_expert:
+        contact = source.get("contact", {}) if isinstance(source.get("contact"), dict) else {}
+        fullName = str(source.get('name', 'Your Name')).strip()
+        fullName = re.sub(r'(?i)^undefined\s*', '', fullName).strip()
+        
+        target_role = source.get("title") or ""
+        if str(target_role).lower() in ["undefined", "none", "null"]:
+            target_role = ""
+            
+        target_role = sanitize_job_title(target_role)
+        
+        # Final safety cleanup for fullName - aggressive to catch "UNDEFINEDSAIRAM"
+        fullName = re.sub(r'(?i)undefined|none|null', '', fullName).strip()
+        
+        # Remove target_role from fullName if it's naming twice
+        if target_role and fullName:
+            # Strip target_role aggressively using partial matches
+            # Split by - or | to get the base role
+            role_base = re.split(r'[-|]', str(target_role))[0].strip()
+            if len(role_base) > 3:
+                pattern = re.escape(role_base)
+                fullName = re.sub(f'(?i){pattern}', '', fullName).strip()
+            
+            # Also try the full target_role just in case
+            full_pattern = re.escape(str(target_role))
+            fullName = re.sub(f'(?i){full_pattern}', '', fullName).strip()
+            
+            # Final cleanup of any trailing separators usually accidentally left by AI
+            fullName = re.sub(r'^[-\|\s]+|[-\|\s]+$', '', fullName).strip()
+        
+        if not fullName: fullName = "Your Name"
+        
+        out.append(f"NAME\n{fullName.upper()}")
+        if target_role:
+            out.append(target_role.upper())
+    else:
+        contact = source.get("contactInfo", {}) if isinstance(source.get("contactInfo"), dict) else {}
+        fullName = str(contact.get('name', 'Your Name')).strip()
+        fullName = re.sub(r'(?i)^undefined\s*', '', fullName).strip()
+        out.append(f"NAME\n{fullName.upper()}")
     
-    contacts = [
-        contact.get("email"),
-        contact.get("phone"),
-        contact.get("location"),
-        contact.get("linkedin"),
-        contact.get("website")
-    ]
+    contacts = []
+    if isinstance(contact, dict):
+        contacts = [
+            contact.get("email"),
+            contact.get("phone"),
+            contact.get("location"),
+            contact.get("linkedin") if not is_expert else None, 
+            contact.get("website") if not is_expert else None
+        ]
     contact_line = " | ".join([c for c in contacts if c])
     out.append(f"CONTACT\n{contact_line}")
     
     # Summary
-    out.append(f"SUMMARY\n{data.get('summary', '')}")
+    summary = source.get('summary', '')
+    if isinstance(summary, list):
+        summary = " ".join(summary)
+    summary = strip_prose_advice(summary)
+    summary = strip_summary_garbage(summary)
+    out.append(f"SUMMARY\n{summary}")
     
     # Skills
-    skills = data.get("skills", [])
-    out.append(f"SKILLS\n" + "\n".join([f"• {s}" for s in skills]))
+    skills = source.get("skills", [])
+    if isinstance(skills, dict):
+        skills_lines = []
+        for cat, list_s in skills.items():
+            skills_lines.append(f"• {cat}: {', '.join(list_s)}")
+        out.append(f"SKILLS\n" + "\n".join(skills_lines))
+    else:
+        out.append(f"SKILLS\n" + "\n".join([f"• {s}" for s in skills]))
     
     # Experience
     out.append("EXPERIENCE")
-    for job in data.get("experience", []):
-        out.append(f"{job.get('company', '')} — {job.get('title', '')} | {job.get('location', '')}")
-        out.append(f"{job.get('dates', '')}")
-        for b in job.get("bullets", []):
-            out.append(f"- {b}")
+    exp_entries = []
+    for job in source.get("experience", []):
+        company = job.get('company', '')
+        title = job.get('title', '')
+        location = job.get('location', '')
+        dates = job.get('dates') or f"{job.get('start', '')} - {job.get('end', '')}".strip(" -")
+        
+        job_header = f"{company} — {title} | {location}\n{dates}"
+        bullets = "\n".join([f"- {b}" for b in job.get("bullets", [])])
+        exp_entries.append(f"{job_header}\n{bullets}")
+    out.append("\n".join(exp_entries))
             
     # Projects
-    if data.get("projects"):
+    if source.get("projects"):
         out.append("PROJECTS")
-        for proj in data.get("projects", []):
-            out.append(f"{proj.get('name', '')} — {proj.get('subtitle', '')}")
-            for b in proj.get("bullets", []):
-                out.append(f"- {b}")
+        proj_entries = []
+        for proj in source.get("projects", []):
+            name = proj.get('name', '')
+            subtitle = proj.get('subtitle', '') or proj.get('tech', '')
+            proj_header = f"{name} — {subtitle}"
+            bullets = "\n".join([f"- {b}" for b in proj.get("bullets", [])])
+            proj_entries.append(f"{proj_header}\n{bullets}")
+        out.append("\n".join(proj_entries))
+                
+    # Certifications
+    if source.get("certifications"):
+        out.append("CERTIFICATIONS")
+        cert_lines = []
+        for cert in source.get("certifications", []):
+            if isinstance(cert, str):
+                cert_lines.append(f"• {cert}")
+            elif isinstance(cert, dict):
+                cert_lines.append(f"• {cert.get('name', '')}")
+        out.append("\n".join(cert_lines))
                 
     # Education
-    if data.get("education"):
+    if source.get("education"):
         out.append("EDUCATION")
-        for edu in data.get("education", []):
-            edu_line = f"{edu.get('degree', '')}, {edu.get('school', '')} | {edu.get('date', '')}"
-            out.append(edu_line)
+        edu_lines = []
+        for edu in source.get("education", []):
+            edu_line = f"{edu.get('degree', '')}, {edu.get('school', '') or edu.get('university', '')} | {edu.get('date', '') or edu.get('year', '')}"
+            edu_lines.append(edu_line)
+        out.append("\n".join(edu_lines))
             
     return "\n\n".join(out)
+
+
+def _render_ats_with_dynamic_skills(r: 'ResumeDataSchema', skill_labels: List[str]) -> str:
+    """
+    Renders the ATS resume using the AI-returned skill category labels
+    instead of the hardcoded CoreSkills field names.
+    """
+    import re
+    header_parts = [
+        r.header.city_state,
+        r.header.phone,
+        r.header.email,
+        r.header.linkedin,
+        r.header.portfolio
+    ]
+    header_line = " | ".join([p for p in header_parts if p and str(p).strip() and str(p).lower() != "undefined"])
+    header_line = re.sub(r'(?i)undefined', '', header_line)
+
+    out = []
+    # Bug 1 Fix: Preventive name/role building
+    name = (r.header.full_name or "").strip()
+    target_role = (r.header.target_role or "").strip()
+    
+    # Clean undefined leaks
+    name = re.sub(r'(?i)undefined|none|null', '', name).strip()
+    target_role = re.sub(r'(?i)undefined|none|null', '', target_role).strip()
+    
+    target_role = sanitize_job_title(target_role)
+    
+    if not name:
+        name = "Your Name"
+        
+    out.append(name.upper())
+    if target_role:
+        out.append(target_role.upper())
+    out.append(header_line)
+    out.append("")
+
+    out.append("PROFESSIONAL SUMMARY")
+    summary_text = r.positioning_statement
+    summary_text = summary_text.replace('\\n', '\n').replace('\\\\n', '\n')
+    out.append(summary_text)
+    out.append("")
+
+    out.append("SKILLS")
+    # Use the AI-returned category labels (matched by index to CoreSkills fields)
+    skill_fields = [
+        r.core_skills.languages,
+        r.core_skills.data_etl,
+        r.core_skills.cloud,
+        r.core_skills.databases,
+        r.core_skills.devops_tools,
+        r.core_skills.other,
+    ]
+    for i, label in enumerate(skill_labels):
+        if i < len(skill_fields) and skill_fields[i]:
+            out.append(f"{label}: {', '.join(skill_fields[i])}")
+    out.append("")
+
+    if r.experience:
+        out.append("EXPERIENCE")
+        for role in r.experience:
+            company = (role.company or "").strip()
+            title = (role.job_title or "").strip()
+            location = (role.city_state_or_remote or "").strip()
+            
+            # Professional Header: COMPANY | TITLE | DATE
+            start_f = format_resume_date(role.start)
+            end_f = format_resume_date(role.end)
+            dates_str = f"{start_f} – {end_f}"
+            
+            header_parts = [company, title, dates_str]
+            out.append(" | ".join([p for p in header_parts if p]))
+            if location:
+                out.append(location)
+                
+            for b in role.bullets:
+                out.append(f"• {cleanup_bullet(b)}")
+            out.append("")
+
+    if r.projects:
+        out.append("PROJECTS")
+        for p in r.projects:
+            name = (p.name or "").strip()
+            tech = ", ".join(p.tech_stack) if p.tech_stack else ""
+            link = f" ({p.link})" if p.link else ""
+            if name and tech:
+                out.append(f"{name} — {tech}{link}")
+            elif name:
+                out.append(f"{name}{link}")
+            elif tech:
+                out.append(tech)
+            for b in p.bullets:
+                out.append(f"• {cleanup_bullet(b)}")
+    if hasattr(r, 'certifications') and r.certifications:
+        out.append("CERTIFICATIONS")
+        for c in r.certifications:
+            out.append(f"• {c}")
+        out.append("")
+
+    if r.education:
+        out.append("EDUCATION")
+        for e in r.education:
+            # Bug 4 Fix: Degree in Major | University | Year
+            degree_part = f"{e.degree} in {e.major}" if e.degree and e.major else (e.degree or e.major)
+            if degree_part:
+                out.append(degree_part)
+            
+            uni_year = " | ".join(filter(None, [e.university, e.year]))
+            if uni_year:
+                out.append(uni_year)
+            out.append("")
+
+    return "\n".join(out).strip()
 
 
 def render_ats_resume_from_json(r: ResumeDataSchema) -> str:
@@ -166,142 +1146,251 @@ def render_ats_resume_from_json(r: ResumeDataSchema) -> str:
     header_line = re.sub(r'(?i)undefined', '', header_line)
 
     out = []
-    # Force string and handle potential "undefined" or "None" leftovers
-    fullName = str(r.header.full_name or "").strip()
-    fullName = re.sub(r'(?i)^undefined\s*', '', fullName).strip()
-    if not fullName or fullName.lower() in ["undefined", "none", "null"]:
-        fullName = "Your Name"
-    out.append(fullName)
+    # Bug 1 Fix: Preventive name/role building
+    name = (r.header.full_name or "").strip()
+    target_role = (r.target_title or "").strip()
+    
+    # Clean undefined leaks
+    name = re.sub(r'(?i)undefined|none|null', '', name).strip()
+    target_role = re.sub(r'(?i)undefined|none|null', '', target_role).strip()
+    
+    if not name:
+        name = "Your Name"
+
+    header_block = f"{name.upper()}\n{target_role.upper()}" if target_role else name.upper()
+    out.append(header_block)
     out.append(header_line)
+    out.append("")
 
     out.append("PROFESSIONAL SUMMARY")
-    out.append(f"{r.target_title} — {r.positioning_statement}")
+    summary_text = r.positioning_statement
+    summary_text = summary_text.replace('\\n', '\n').replace('\\\\n', '\n')
+    out.append(summary_text)
+    out.append("")
 
     out.append("SKILLS")
     if r.core_skills:
-        if r.core_skills.languages: out.append(f"Languages: {', '.join(r.core_skills.languages)}")
-        if r.core_skills.data_etl: out.append(f"Data/ETL: {', '.join(r.core_skills.data_etl)}")
-        if r.core_skills.cloud: out.append(f"Cloud: {', '.join(r.core_skills.cloud)}")
-        if r.core_skills.databases: out.append(f"Databases: {', '.join(r.core_skills.databases)}")
-        if r.core_skills.devops_tools: out.append(f"DevOps/Tools: {', '.join(r.core_skills.devops_tools)}")
-        if r.core_skills.other: out.append(f"Other: {', '.join(r.core_skills.other)}")
+        skill_categories = [
+            ("Languages", r.core_skills.languages),
+            ("Data/ETL", r.core_skills.data_etl),
+            ("Cloud", r.core_skills.cloud),
+            ("Databases", r.core_skills.databases),
+            ("DevOps/Tools", r.core_skills.devops_tools),
+            ("Other", r.core_skills.other),
+        ]
+        count = 0
+        for cat_name, cat_list in skill_categories:
+            if cat_list:
+                out.append(f"{cat_name}: {', '.join(cat_list)}")
+                count += 1
+    out.append("")
 
     if r.experience:
         out.append("EXPERIENCE")
         for role in r.experience:
-            role_header = f"{role.company} — {role.job_title} | {role.city_state_or_remote}"
-            out.append(role_header)
-            out.append(f"{role.start} – {role.end}")
+            company = (role.company or "").strip()
+            title = (role.job_title or "").strip()
+            location = (role.city_state_or_remote or "").strip()
+            
+            # Header: COMPANY | TITLE | DATE
+            start_f = format_resume_date(role.start)
+            end_f = format_resume_date(role.end)
+            dates_str = f"{start_f} – {end_f}"
+            
+            header_parts = [company, title, dates_str]
+            out.append(" | ".join([p for p in header_parts if p]))
+            if location:
+                out.append(location)
+                
             for b in role.bullets:
-                out.append(f"- {cleanup_bullet(b)}")
+                out.append(f"• {cleanup_bullet(b)}")
+            out.append("")
 
     if r.projects:
         out.append("PROJECTS")
         for p in r.projects:
-            tech = ", ".join(p.tech_stack)
+            name = (p.name or "").strip()
+            tech = ", ".join(p.tech_stack) if p.tech_stack else ""
             link = f" ({p.link})" if p.link else ""
-            out.append(f"{p.name} — {tech}{link}")
+            if name and tech:
+                out.append(f"{name} — {tech}{link}")
+            elif name:
+                out.append(f"{name}{link}")
+            elif tech:
+                out.append(tech)
             for b in p.bullets:
-                out.append(f"- {cleanup_bullet(b)}")
-
-    if r.education:
-        out.append("EDUCATION")
-        for e in r.education:
-            left_parts = [e.degree, e.major]
-            left = ", ".join([p for p in left_parts if p and p.strip()])
-            right_parts = [e.university, e.year]
-            right = " | ".join([p for p in right_parts if p and p.strip()])
-            out.append(f"{left} — {right}")
+                out.append(f"• {cleanup_bullet(b)}")
+            out.append("")
 
     if r.certifications:
         out.append("CERTIFICATIONS")
         for c in r.certifications:
-            out.append(f"- {c}")
+            out.append(f"• {c}")
+        out.append("")
 
-    # Final cleanup to ensure NO extra gaps
-    return "\n".join([line for line in out if line.strip()]).strip()
+    if r.education:
+        out.append("EDUCATION")
+        for e in r.education:
+            degree_part = " ".join(filter(None, [e.degree, e.major]))
+            if degree_part:
+                out.append(degree_part)
+            
+            uni_year = " | ".join(filter(None, [e.university, e.year]))
+            if uni_year:
+                out.append(uni_year)
+            out.append("")
+
+    return "\n".join(out).strip()
 
 
-async def generate_simple_tailored_resume(resume_text: str, job_description: str, job_title: str, company: str) -> str:
-    """Integrated the user's Expert Resume Writer prompt for high-quality, compact output"""
-    
-    prompt = f"""
-You are an expert resume writer and ATS optimization specialist.
+async def generate_simple_tailored_resume(resume_text: str, job_description: str, job_title: str, company: str, missing_skills_list: list = None) -> str:
+    """Modular 3-Stage Resume Transformation: Analysis -> Granular Rewriting -> Assembly"""
+    try:
+        logger.info(f"Starting 3-stage tailoring pipeline for {company}")
+        missing_skills = json.dumps(missing_skills_list or [])
+        
+        # 0. Extract Structured Data
+        resume_json = await extract_resume_data(resume_text)
+        if not resume_json or "error" in resume_json:
+            logger.warning("Failed to extract structured resume data. Falling back to single-shot.")
+            return await _generate_single_shot_fallback(resume_text, job_description, job_title, company)
 
-TASK:
-Convert the provided RAW_INPUT into a complete, ATS-friendly, recruiter-ready resume tailored for the JOB_DETAILS.
-You must:
-1) Extract and normalize all data (names, titles, dates, locations, bullets, skills, projects, education).
-2) Fix formatting issues, duplicate sections, missing headers, inconsistent capitalization, and spacing.
-3) Rewrite bullets to be strong, specific, and impact-focused. DO NOT invent facts or tools not present in the original for that time period.
-4) Keep all original meaning. If a metric is unclear, keep it but don’t exaggerate.
-5) Output in the requested RESUME_STYLE: ATS_ONE_PAGE_COMPACT (Ensure it is very dense and professional).
+        # STAGE 1: ANALYSIS
+        analysis_prompt = f"""
+You are a resume analyst. Output ONLY valid JSON. No explanation, no markdown, no backticks.
 
-JOB_DETAILS:
-Company: {company}
-Title: {job_title}
-Job Description: {job_description}
+Given the resume and job description, return this exact JSON structure:
 
-IMPORTANT RULES (non-negotiable):
-- DO NOT add fake companies, degrees, awards, or certifications.
-- DO NOT claim tools/tech that aren’t in the RAW_INPUT.
-- DO NOT change job titles or dates unless clearly mis-ordered; if uncertain, keep as-is.
-- DO NOT include “References available upon request.”
-- Keep it ATS clean: no tables, no columns, no icons, no graphs, no fancy symbols.
-- Use simple ASCII bullets like "-" only.
-- Keep lines under ~110 characters where possible.
-- If any section is missing a detail (ex: LinkedIn URL), keep the label but omit the value.
+{{
+  "jd_title": "exact job title from JD",
+  "jd_company": "company name",
+  "jd_domain": "one sentence describing company mission",
+  "jd_seniority": "Mid / Senior / etc",
+  "jd_required_skills": ["skill1", "skill2", "skill3", "skill4", "skill5", "skill6", "skill7", "skill8"],
+  "candidate_has": ["skills from JD that exist in candidate resume"],
+  "candidate_lacks": ["skills from JD absent from candidate resume"],
+  "missing_skills_routing": {{
+    "SkillName": "skills_section_only"
+  }},
+  "title_reframes": {{
+    "Employer Name 1": "reframed title toward JD",
+    "Employer Name 2": "reframed title toward JD"
+  }},
+  "summary_keywords": ["5 JD keywords candidate actually has to use in summary"],
+  "top_2_projects": ["most JD-relevant project name 1", "most JD-relevant project name 2"]
+}}
 
-RESUME_STYLE: ATS_ONE_PAGE_COMPACT
+RESUME:
+{json.dumps(resume_json, indent=2)}
 
-OUTPUT FORMAT:
-Return ONLY the resume text, nothing else.
-Use exactly these section headers (omit any that truly have no content):
-NAME
-CONTACT
-SUMMARY
-SKILLS (Must be preserved and enhanced, never removed)
-EXPERIENCE
-PROJECTS
-EDUCATION
+JOB DESCRIPTION:
+{job_description}
 
-- [STRICT HISTORICAL ACCURACY & ZERO HALLUCINATION] (MANDATORY):
-    1. EXPERIENCE & PROJECTS: You MUST NOT add any technical skills, frameworks, tools, or software that are not explicitly mentioned in the [RAW_INPUT] for that specific role or project. 
-    2. TIMELINE: Do not inject modern tech (like LLMs, Generative AI, RAG, Llama-3, etc.) into roles ending before 2022 unless they are explicitly in the source text.
-    3. DATA INTEGRITY: Do not invent metrics or outcomes. If a JD requires a skill not in the resume, DO NOT fabricate it. Highlight a transferable existing skill instead.
-- SUMMARY: 3–4 lines max, include your core stack + value.
-- SKILLS: Grouped categories. Only include skills the candidate actually has in [RAW_INPUT].
-- EXPERIENCE: For each role, 4–6 bullets max. Start each bullet with a strong verb. Use the EXACT dates provided.
-- PROJECTS: 3 projects max. Preserve the exact tech stack mentioned in [RAW_INPUT].
-- EDUCATION: Degree, school, location (if available), graduation year if present.
+MISSING SKILLS SELECTED BY USER:
+{missing_skills}
+"""
+        analysis_resp = await unified_api_call(analysis_prompt, max_tokens=1000, model="llama-3.1-8b-instant", json_mode=True)
+        analysis_data = json.loads(clean_json_response(analysis_resp))
+        logger.info(f"Stage 1 Analysis complete for {company}")
 
-QUALITY BAR:
-Your job is to make this resume look like a real senior engineer wrote it.
-Make it tight, readable, and high-signal. Remove filler.
+        # STAGE 2: ROLE REWRITING (Granular)
+        rewritten_roles = []
+        for role in resume_json.get("employment_history", []):
+            role_company = role.get("company", "Unknown")
+            original_title = role.get("title", "Unknown")
+            # Handle plural title_reframes
+            new_title = analysis_data.get("title_reframes", {}).get(role_company, original_title)
+            
+            rewrite_prompt = f"""
+You are a professional resume writer. Rewrite ONE job role's bullets for a resume.
+Respond with ONLY a JSON object. No prose.
 
-RAW_INPUT:
-<<<
-{resume_text}
->>>
+CONTEXT:
+- Company: {role_company}
+- Original title: {original_title}  
+- Reframed title: {new_title}
+- Original bullets: {json.dumps(role.get('highlights', role.get('description', [])), indent=2)}
+- Skills candidate ACTUALLY HAS: {json.dumps(analysis_data.get('candidate_has', []), indent=2)}
 
-Now generate the resume from RAW_INPUT:
+OUTPUT SCHEMA:
+{{ "bullets": ["bullet 1", "bullet 2", "bullet 3", "bullet 4", "bullet 5"] }}
+"""
+            rewrite_resp_raw = await unified_api_call(rewrite_prompt, max_tokens=12000, model="llama-3.1-8b-instant", json_mode=True) or ""
+            rewrite_data = extract_json_from_response(rewrite_resp_raw)
+            bullets = rewrite_data.get("bullets", [])
+            bullets_text = "\n".join([f"• {b}" for b in bullets if b])
+            
+            rewritten_roles.append(f"{role_company} | {role.get('startDate')} - {role.get('endDate')}\n{new_title} | {role.get('location')}\n{bullets_text.strip()}")
+
+        logger.info(f"Stage 2 Rewriting complete for {len(rewritten_roles)} roles")
+
+        assembly_prompt = f"""
+You are a professional resume writer. Respond ONLY with a JSON object. No prose.
+
+{json.dumps({
+    "analysis": analysis_data,
+    "rewritten_roles": rewritten_roles,
+    "missing_skills": missing_skills,
+    "original_resume": resume_json
+})}
+
+---
+WRITE EACH SECTION IN THE 'resume_text' FIELD AS FOLLOWS:
+
+1. PROFESSIONAL SUMMARY: 3-4 sentences of natural flowing prose. Start with "[X]+ years of experience".
+2. SKILLS: 4 labeled categories.
+3. EXPERIENCE: Use the REWRITTEN ROLES provided in the input object.
+4. PROJECTS: Write all projects with tech stack and 3 bullets each.
+5. CERTIFICATIONS & EDUCATION: Keep from original.
+
+OUTPUT SCHEMA:
+{{ "resume_text": "FULL TAILORED RESUME TEXT HERE" }}
+"""
+
+        final_resp = await unified_api_call(
+            assembly_prompt, max_tokens=4000, 
+            model="llama-3.3-70b-versatile", json_mode=True
+        )
+        final_data = extract_json_from_response(final_resp)
+        final_assembly = final_data.get("resume_text", "")
+        
+        # STAGE 4: Remove entirely — it causes advice-text output for mismatched roles
+        # The assembly output is already clean enough
+        final_resume = final_assembly
+
+        # Final Cleanup
+        final_resume = re.sub(r'\n{3,}', '\n\n', final_resume.strip())
+        return final_resume
+
+    except Exception as e:
+        logger.error(f"Modular tailoring failed: {e}")
+        return await _generate_single_shot_fallback(resume_text, job_description, job_title, company)
+
+async def _generate_single_shot_fallback(resume_text: str, job_description: str, job_title: str, company: str) -> str:
+    """Single-shot fallback logic if modular pipeline fails"""
+    prompt = f"""CRITICAL: You are an automated resume tailoring engine. 
+Output ONLY a JSON object. No prose. No markdown.
+
+Tailor this resume for {job_title} at {company}:
+
+RESUME: {resume_text}
+JD: {job_description}
+
+---
+WRITE THE TAILORED RESUME IN THE 'resume_text' FIELD AS FOLLOWS:
+1. SUMMARY: 3-4 sentences targeting the JD.
+2. SKILLS: Optimized for ATS matching.
+3. EXPERIENCE: Quantify impact and use JD keywords.
+4. PROJECTS: Include all projects with tech stack.
+
+OUTPUT SCHEMA:
+{{ "resume_text": "FULL TAILORED RESUME TEXT HERE" }}
 """
     try:
-        logger.info(f"Running user-requested 'Expert' prompt tailoring for {company}")
-        response = await unified_api_call(prompt, max_tokens=6000, model="llama-3.3-70b-versatile")
-        
-        if response and len(response.strip()) > 500:
-            # Flatten to remove ALL excessive newlines
-            import re
-            content = response.strip()
-            # Replace 3 or more newlines with 2
-            content = re.sub(r'\n{3,}', '\n\n', content)
-            return content
-        
-        # Immediate fallback to base resume if AI returns junk or empty
-        return f"TAILORED RESUME: {job_title} at {company}\n\n" + resume_text
-    except Exception as e:
-        logger.error(f"Simple tailoring failed: {e}")
+        resp = await unified_api_call(prompt, max_tokens=3000, json_mode=True)
+        data = extract_json_from_response(resp)
+        return data.get("resume_text") or resume_text
+    except:
         return resume_text
 
 
@@ -331,13 +1420,11 @@ You are an Elite Resume Architect and ATS Optimization Expert. Your goal is to r
 6. Keep the original professional summary structure but enhance it with keywords
 
 === YOUR TASK ===
-Take each bullet point and ENHANCE it by:
-- Naturally weaving in target keywords: {', '.join(missing_skills[:15] + keywords[:10])} ONLY IF RELEVANT to that specific role/time period.
-- Adding market-standard industry keywords that recruiters and ATS systems look for.
-- Adding specific metrics/numbers where logical (e.g., "improved efficiency by 20%").
-- Using powerful action verbs (e.g., "orchestrated", "pioneered").
-- WARNING: DO NOT add tools/technologies to a job if they were not released or not used in that era. DO NOT Hallucinate.
-- Ensure the resulting content is dense with keywords relevant to: {job_description[:500]}
+1. Optimize every bullet point for Impact and Results.
+2. Use powerful action verbs (e.g., "orchestrated", "pioneered").
+3. Add specific metrics/numbers where logical.
+4. DO NOT append skill suffixes to bullets. Skills should be grouped in the Skills section ONLY.
+5. Ensure content is industry-standard for: {job_description[:500]}
 
 === ORIGINAL RESUME (COPY ALL CONTENT - DO NOT SKIP ANY SECTION) ===
 {resume_text}
@@ -396,16 +1483,16 @@ Return ONLY valid JSON, no markdown:
 === VERIFICATION CHECKLIST ===
 - All positions included
 - All bullets enhanced and preserved
-- {target_score}% ATS optimization target met via keyword density
-- Industry-standard terminology used throughout
+- {target_score}% ATS optimization target met
+- Skills are categorized and routed to the SKILLS section only
 - Metrics added to at least 50% of bullets
 
 GENERATE THE {target_score}% OPTIMIZED RESUME JSON NOW:
 """
 
     try:
-        # Use unified call
-        response = await unified_api_call(prompt, max_tokens=8000, model="llama-3.1-8b-instant")
+        # Use unified call with JSON Mode enabled
+        response = await unified_api_call(prompt, max_tokens=8000, model="llama-3.1-8b-instant", json_mode=True)
         if not response:
             return None
         
@@ -440,7 +1527,8 @@ Write a 3-4 paragraph cover letter that:
 4. Closes with a strong call to action
 
 Use a professional but personable tone. Do NOT use brackets or placeholders.
-Return ONLY the cover letter text, no JSON or markdown.
+Return ONLY the cover letter text. Do NOT include any introductory or concluding advice, guides, or "Here is your cover letter". 
+Start with the date or "Dear [Hiring Manager]," immediately.
 """
 
     try:
@@ -485,517 +1573,148 @@ Return JSON with this exact schema:
   "employers": [{{"company":"","title":"","location":"","start":"","end":"","bullets":[] }}],
   "projects": [{{"name":"","bullets":[],"tools":[],"metrics":[] }}],
   "education": [{{"degree":"","major":"","university":"","year":""}}],
-  "skills": {{"technical":[], "soft":[], "certifications":[]}},
+  "certifications": [],
+  "skills": {{"technical":[], "soft":[]}},
   "metrics_explicit": []
 }}
+
+Respond with a valid JSON object only. Begin with {{ now:
 """
     try:
-        # Use 70B for extraction to ensure NO content loss (Step 1 Optimization Reverted for Stability)
-        response_text = await unified_api_call(prompt, max_tokens=3500, model="llama-3.3-70b-versatile")
+        # Use 70B for extraction to ensure NO content loss (Stage 1 High-Capacity Mode)
+        response_text = await unified_api_call(prompt, max_tokens=5000, model="llama-3.3-70b-versatile", json_mode=True)
         if not response_text:
             return {}
         
         json_text = clean_json_response(response_text)
-        return json.loads(json_text)
+        result = json.loads(json_text)
+        
+        # DEBUG — remove after confirming output
+        logger.info(f"Stage 1 facts_json employers: {[e.get('company','') + ' | ' + e.get('title','') for e in result.get('employers', [])]}")
+        logger.info(f"Stage 1 facts_json projects: {[p.get('name','') for p in result.get('projects', [])]}")
+        logger.info(f"Stage 1 facts_json education: {result.get('education', [])}")
+        logger.info(f"Stage 1 facts_json certifications: {result.get('certifications', result.get('skills', {}).get('certifications', []))}")
+        
+        return result
     except Exception as e:
         logger.error(f"Fact extraction failed: {e}")
         return {}
-
 
 async def generate_expert_documents(
     resume_text: str, 
     job_description: str, 
     user_info: Optional[Dict] = None, 
     selected_sections: Optional[List[str]] = None,
-    selected_keywords: Optional[List[str]] = None
+    selected_keywords: Optional[List[str]] = None,
+    job_title: str = "",
+    company: str = "",
+    intensity: str = "default",  # low, default, high
+    length_target: str = "standard", # standard, compact
+    force_metrics: bool = False
 ) -> Optional[Dict[str, Any]]:
-    """Generate ATS Resume and Detailed CV using the compliance-grade two-stage pipeline"""
+    """Generate ATS Resume and Detailed CV using the Expert AI Ninja Engine (Phase 21)"""
     
-    # Resolving model selection (Optimization)
-    extraction_model = "llama-3.1-8b-instant"
-    drafting_model = "llama-3.3-70b-versatile"
-    
-    # Stage 1: Verbatim Fact Extraction
-    logger.info("Stage 1: Extracting verbatim facts")
-    facts_json = await extract_compliance_facts(resume_text)
-    
-    if not facts_json or not facts_json.get("employers"):
-        logger.warning("Fact extraction flaked - rescuing with simple tailoring")
-        simple_text = await generate_simple_tailored_resume(resume_text, job_description, "Target Role", "Target Company")
-        cl_text = await generate_cover_letter_content(resume_text, job_description, "Target Role", "Target Company")
-        return {
-            "alignment_highlights": "- Full resume generated via rescue mode",
-            "ats_resume": simple_text, "detailed_cv": simple_text,
-            "cover_letter": cl_text, "resume_json": {}
-        }
-
-    # Resolve Header - Robust handling for "undefined" or "None" strings
-    u = user_info or {}
-    f = facts_json
-    
-    def get_clean_val(val, default):
-        import re
-        v = str(val or "").strip()
-        v = re.sub(r'(?i)^undefined\s*', '', v).strip()
-        if not v or v.lower() in ["undefined", "none", "null"]:
-            return default
-        return v
-
-    header_info = {
-        "full_name": get_clean_val(u.get("name") or f.get("name"), "Your Name"),
-        "city_state": get_clean_val(u.get("location") or f.get("location"), "Location"),
-        "phone": get_clean_val(u.get("phone") or f.get("phone"), "Phone Number"),
-        "email": get_clean_val(u.get("email") or f.get("email"), "Email Address"),
-        "linkedin": f.get("links", {}).get("linkedin", ""),
-        "portfolio": f.get("links", {}).get("portfolio", "")
-    }
-
-    missing_skills_str = json.dumps(selected_keywords or [])
-    selected_sections_str = json.dumps(selected_sections or [])
-
-    resume_prompt = f"""
-SYSTEM:
-You are a resume tailoring engine. You will be given a resume and a job description.
-Your ONLY goal is to make this resume competitive for THIS specific job.
-
-═══════════════════════════════════════════
-⚠️ GROUNDING CONSTRAINT — READ THIS FIRST
-THIS IS THE MOST IMPORTANT INSTRUCTION
-═══════════════════════════════════════════
-
-You are an EDITOR, not a writer. You are NOT creating a resume. 
-You are EDITING an existing resume that already exists below.
-
-THE FOLLOWING ARE LOCKED AND CANNOT CHANGE UNDER ANY CIRCUMSTANCES:
-- Candidate full name: must be copied EXACTLY from [RESUME_JSON]
-- Email and phone: must be copied EXACTLY from [RESUME_JSON]  
-- Every company name: must be copied EXACTLY from [RESUME_JSON]
-- Every job title: must be copied EXACTLY from [RESUME_JSON]
-- Every date range: must be copied EXACTLY from [RESUME_JSON]
-- Every location: must be copied EXACTLY from [RESUME_JSON]
-- Number of jobs: you CANNOT add or remove any job
-- Number of projects: you CANNOT add or remove any project
-- All metrics/numbers: must be copied EXACTLY from [RESUME_JSON]
-- Education entries: must be copied EXACTLY from [RESUME_JSON]
-
-IF A COMPANY, TITLE, OR NAME DOES NOT EXIST IN [RESUME_JSON], 
-YOU ARE FORBIDDEN FROM USING IT. NO EXCEPTIONS.
-
-BEFORE YOU WRITE A SINGLE WORD, verify:
-- What is the candidate's real name in [RESUME_JSON]? → Use only that
-- How many jobs are in [RESUME_JSON]? → Output must have exactly that many
-- What are the exact company names? → Copy them character by character
-
-VIOLATION TEST: After generating output, check every company name, 
-every job title, and the candidate name against [RESUME_JSON]. 
-If ANY of them don't match exactly, you have failed. Start over.
-
-CRITICAL: Read the job description COMPLETELY before touching a single word of the resume.
-CRITICAL: Every single change must be traceable to a specific requirement in the job description.
-CRITICAL: Do NOT just reformat or relabel. Actually rewrite content to mirror JD language.
-
-═══════════════════════════════════════════
-YOUR INPUTS
-═══════════════════════════════════════════
-
-- [RESUME_JSON]: The candidate's full resume content
-{json.dumps(facts_json, indent=2)}
-
-- [JD_TEXT]: The job description
-{job_description}
-
-- [MISSING_SKILLS]: Array of skills the user selected to inject
-{missing_skills_str}
-
-- [SELECTED_SECTIONS]: Array of sections the user chose to enhance (if empty, assume ALL sections)
-{selected_sections_str if selected_sections_str and selected_sections_str != "[]" else '["summary", "skills", "work_experience", "projects"]'}
-
-═══════════════════════════════════════════
-STEP 0 — READ AND EXTRACT FROM JD FIRST
-═══════════════════════════════════════════
-
-Before writing anything, extract and internally note:
-
-A) JOB_TITLE: What is the exact role title?
-B) TOP_5_KEYWORDS: What are the 5 most repeated or emphasized technical terms in the JD?
-C) CORE_MISSION: What is the #1 problem this company is trying to solve with this hire?
-D) REQUIRED_SKILLS: List every technical skill, framework, or methodology mentioned
-E) PERSONA: What kind of engineer are they describing? (researcher? builder? both?)
-F) MISSING_SKILLS_TO_ADD: {missing_skills_str}
-G) SELECTED_SECTIONS: {selected_sections_str}
-
-You must complete this extraction before proceeding to any section.
-
-═══════════════════════════════════════════
-STEP 1 — REWRITE SUMMARY
-(only if "summary" is in SELECTED_SECTIONS)
-═══════════════════════════════════════════
-
-Rewrite the summary following this exact structure:
-
-LINE 1 — Identity statement using JOB_TITLE language from the JD + candidate's years of experience
-LINE 2 — Most relevant technical strength mapped to JD's CORE_MISSION  
-LINE 3 — Second strongest alignment point with specific tools/methods from the JD
-LINE 4 — (optional) Differentiator or scope statement
-
-RULES:
-✅ Use the exact terminology from the JD, not generic AI buzzwords
-✅ If JD says "multi-agent systems" use "multi-agent systems" not "agentic workflows"
-✅ If JD says "evaluation pipelines and guardrails" use that exact phrase
-✅ Reference MISSING_SKILLS_TO_ADD naturally if candidate has adjacent experience
-❌ Do NOT use phrases like "Proven track record" or "Delivering scalable solutions"
-❌ Do NOT make the summary longer than 4 lines
-❌ Do NOT invent experience that doesn't exist in the resume body
-
-═══════════════════════════════════════════
-STEP 2 — REBUILD SKILLS SECTION
-(only if "skills" is in SELECTED_SECTIONS)
-═══════════════════════════════════════════
-
-Reorganize skills so the most JD-relevant categories appear FIRST.
-Add ALL items from MISSING_SKILLS_TO_ADD to the appropriate category.
-If a skill from the JD tech stack appears in MISSING_SKILLS_TO_ADD, it goes in skills.
-
-Category order (most to least JD-relevant):
-1. Agentic & Multi-Agent Systems (most JD-relevant category — list first)
-2. LLM & GenAI
-3. ML & Deep Learning  
-4. Cloud & Infrastructure
-5. Languages & APIs
-
-RULES:
-✅ Add every item from MISSING_SKILLS_TO_ADD
-✅ Keep all existing skills — do not remove anything
-✅ Group logically — don't dump everything in "Other"
-❌ Do NOT create a category called "Other" — find the right home for every skill
-
-═══════════════════════════════════════════
-STEP 3 — TAILOR EXPERIENCE BULLETS
-(only if "work_experience" is in SELECTED_SECTIONS)
-═══════════════════════════════════════════
-
-For EACH role, apply these 4 operations IN ORDER:
-
-OPERATION A — REORDER
-Move bullets that use JD keywords to the top.
-Most JD-relevant bullet = position 1.
-
-OPERATION B — SURFACE HIDDEN KEYWORDS
-Look for bullets that describe JD concepts but use different words.
-Update ONLY the terminology — keep the action and outcome identical.
-
-Mandatory surfacing for this JD:
-- Any bullet about "LangGraph/LangChain/CrewAI multi-step" 
-  → add "multi-agent systems orchestration" to that bullet
-- Any bullet about "citation verification" or "evidence gating" 
-  → reframe as "guardrails for auditable, deterministic execution"  
-- Any bullet about "evaluation harness" or "quality checks"
-  → use "evaluation pipelines" (exact JD language)
-- Any bullet about "RAG + retrieval"
-  → connect to "reasoning and memory systems" (JD language)
-
-OPERATION C — ADD IMPACT FRAMING
-If a bullet has no business outcome, add one using the JD's domain.
-
-OPERATION D — UPGRADE VERBS
-Replace weak verbs with research-engineer level verbs matching JD persona:
-"Collaborated on" → "Partnered to architect"
-"Utilized" → "Engineered"  
-"Developed" → "Designed and implemented"
-"Enhanced" → "Optimized"
-
-IF "work_experience" is NOT in SELECTED_SECTIONS:
-- Only perform OPERATION A (reorder) — do not change any text
-
-═══════════════════════════════════════════
-STEP 4 — TAILOR PROJECTS
-═══════════════════════════════════════════
-
-ALWAYS tailor projects regardless of section selection.
-
-Reorder projects so most JD-relevant appears first.
-For this JD, correct order is:
-1. JobNinjas AI Copilot (most relevant — agentic workflow, end-to-end builder)
-2. Enterprise Patent Assistant (RAG + evaluation)
-3. Text-to-SQL Copilot (guardrails + evaluation)
-
-For each project bullet:
-✅ Surface multi-agent / agentic language where it genuinely exists
-✅ Keep ALL metrics exactly as written — never change numbers
-✅ Connect project outcomes to JD pain points where honest
-
-═══════════════════════════════════════════
-ABSOLUTE RULES — NEVER VIOLATE THESE
-═══════════════════════════════════════════
-
-❌ NEVER leave summary blank or with a dash
-❌ NEVER fabricate tools, companies, dates, or metrics
-❌ NEVER add new bullet points — only edit and reorder existing ones  
-❌ NEVER change company names, job titles, locations, or dates
-❌ NEVER change any metric numbers
-❌ NEVER add skills to experience bullets that have zero supporting evidence
-❌ NEVER use filler phrases: "proven track record", "results-driven", "passionate about"
-✅ ALWAYS return a complete resume — no section left empty or with placeholder
-✅ ALWAYS use the JD's exact terminology when the candidate's experience supports it
-✅ ALWAYS add every item from MISSING_SKILLS_TO_ADD to the skills section
-
-═══════════════════════════════════════════
-SELF-CHECK BEFORE RETURNING OUTPUT
-═══════════════════════════════════════════
-
-Before returning, verify:
-[ ] Summary mentions the JD role title or close equivalent
-[ ] Summary contains at least 2 phrases from the JD (not from the original resume)
-[ ] Every item in MISSING_SKILLS_TO_ADD appears in the skills section
-[ ] At least 3 experience bullets have been updated with JD terminology
-[ ] No section is blank or contains only a dash
-[ ] No metrics were changed
-[ ] No new bullet points were added
-[ ] Projects are reordered with most JD-relevant first
-
-If ANY of these checks fail, fix before returning.
-
-═══════════════════════════════════════════
-OUTPUT FORMAT — STRICT JSON
-═══════════════════════════════════════════
-
-{{
-  "jd_extraction": {{
-    "job_title": "...",
-    "top_5_keywords": ["...", "...", "...", "...", "..."],
-    "core_mission": "...",
-    "persona": "..."
-  }},
-  "tailored_resume": {{
-    "name": "SAIRAM KUMAR",
-    "contact": "...",
-    "summary": ["line 1", "line 2", "line 3"],
-    "skills": {{
-      "Agentic & Multi-Agent Systems": ["..."],
-      "LLM & GenAI": ["..."],
-      "ML & Deep Learning": ["..."],
-      "Cloud & Infrastructure": ["..."],
-      "Languages & APIs": ["..."]
-    }},
-    "experience": [
-      {{
-        "company": "exact name",
-        "title": "exact title",
-        "location": "exact location",
-        "dates": "exact dates",
-        "bullets": ["bullet 1", "bullet 2", "..."]
-      }}
-    ],
-    "projects": [
-      {{
-        "name": "exact name",
-        "tech": "tech stack",
-        "bullets": ["bullet 1", "bullet 2", "bullet 3"]
-      }}
-    ],
-    "education": [
-      {{"degree": "...", "school": "..."}}
-    ]
-  }},
-  "cover_letter": "A brief, highly compelling 3-paragraph cover letter tailored to the job description and the candidate's core strengths.",
-  "changes": [
-    {{
-      "section": "summary|skills|experience|projects",
-      "company_or_project": "which role/project this applies to",
-      "type": "rewritten|keyword_surfaced|reordered|verb_upgraded|skill_added|impact_added",
-      "original": "exact original text",
-      "updated": "exact new text",
-      "jd_reason": "specific JD phrase or requirement this serves"
-    }}
-  ],
-  "skills_added": ["list of MISSING_SKILLS successfully injected"],
-  "self_check_passed": true
-  "skills_added": ["list of MISSING_SKILLS successfully injected"],
-  "self_check_passed": true
-}}
-
-OUTPUT ONLY VALID JSON. NO PREAMBLE. NO CHAT. NO CONVERSATIONAL TEXT.
-"""
-
     try:
-        response_text = await unified_api_call(resume_prompt, max_tokens=6000, model=drafting_model)
-        if not response_text:
-            raise ValueError("Drafting failed")
-            
-        json_text = clean_json_response(response_text)
-        raw_output = json.loads(json_text)
-        
-        # Merge cover letter back into output for compatibility if model outputted top-level
-        cl_text = raw_output.get('cover_letter', "")
-        
-        # Validate and Render
-        class JDExtraction(BaseModel):
-            job_title: Optional[str] = ""
-            top_5_keywords: Optional[List[str]] = []
-            core_mission: Optional[str] = ""
-            persona: Optional[str] = ""
-            
-        class ResumeChangeItem(BaseModel):
-            section: str
-            company_or_project: Optional[str] = None
-            type: Optional[str] = ""
-            original: Optional[str] = None
-            updated: str
-            jd_reason: Optional[str] = ""
-
-        class ExperienceNew(BaseModel):
-            company: Optional[str] = ""
-            title: Optional[str] = ""
-            location: Optional[str] = ""
-            dates: Optional[str] = ""
-            start: Optional[str] = ""
-            end: Optional[str] = ""
-            bullets: List[str] = []
-
-        class ProjectNew(BaseModel):
-            name: Optional[str] = ""
-            tech: Optional[str] = ""
-            bullets: List[str] = []
-
-        class EducationNew(BaseModel):
-            degree: Optional[str] = ""
-            school: Optional[str] = ""
-            university: Optional[str] = ""
-            major: Optional[str] = ""
-            year: Optional[str] = ""
-
-        class TailoredResume(BaseModel):
-            name: Optional[str] = ""
-            contact: Optional[Any] = ""
-            location: Optional[str] = ""
-            email: Optional[str] = ""
-            phone: Optional[str] = ""
-            links: Optional[Dict[str, str]] = {}
-            summary: List[str] = []
-            skills: Dict[str, List[str]] = {}
-            experience: List[ExperienceNew] = []
-            projects: List[ProjectNew] = []
-            education: List[EducationNew] = []
-
-        class ExpertResumeOutput(BaseModel):
-            jd_extraction: Optional[JDExtraction] = None
-            tailored_resume: TailoredResume
-            cover_letter: Optional[str] = ""
-            changes: List[ResumeChangeItem] = []
-            skills_added: List[str] = []
-            self_check_passed: Optional[bool] = True
-
-        validated = ExpertResumeOutput(**raw_output)
-        t_resume = validated.tailored_resume
-
-        # Build backward-compatible ResumeDataSchema
-        def safe_clean(val):
-            if not val: return ""
-            import re
-            return re.sub(r'(?i)^undefined\s*', '', str(val)).strip()
-
-        rd_header = {
-            "full_name": safe_clean(t_resume.name) or get_clean_val(header_info.get("full_name"), "Your Name"),
-            "city_state": safe_clean(t_resume.location) or get_clean_val(header_info.get("city_state"), ""),
-            "phone": safe_clean(t_resume.phone) or get_clean_val(header_info.get("phone"), ""),
-            "email": safe_clean(t_resume.email) or get_clean_val(header_info.get("email"), ""),
-            "linkedin": get_clean_val(header_info.get("linkedin"), ""),
-            "portfolio": get_clean_val(header_info.get("portfolio"), "")
-        }
-
-        if t_resume.links:
-            rd_header["linkedin"] = safe_clean(t_resume.links.get("linkedin")) or rd_header["linkedin"]
-            rd_header["portfolio"] = safe_clean(t_resume.links.get("github")) or safe_clean(t_resume.links.get("portfolio")) or rd_header["portfolio"]
-
-        if isinstance(t_resume.contact, dict):
-            rd_header["city_state"] = safe_clean(t_resume.contact.get("location")) or rd_header["city_state"]
-            rd_header["email"] = safe_clean(t_resume.contact.get("email")) or rd_header["email"]
-            rd_header["phone"] = safe_clean(t_resume.contact.get("phone")) or rd_header["phone"]
-            if "links" in t_resume.contact:
-                links = t_resume.contact["links"]
-                rd_header["linkedin"] = safe_clean(links.get("linkedin")) or rd_header["linkedin"]
-                rd_header["portfolio"] = safe_clean(links.get("github")) or safe_clean(links.get("portfolio")) or rd_header["portfolio"]
-
-        derived_title = "Professional"
-        if validated.jd_extraction and validated.jd_extraction.job_title:
-            derived_title = validated.jd_extraction.job_title[:50]
+        # Intensity mapping
+        if intensity == "aggressive":
+            intensity_instruction = "RADICAL TAILORING: Rewrite bullets to use as many JD keywords as possible while maintaining factual truth. Prioritize impact and matching."
+        elif intensity == "minimal":
+            intensity_instruction = "MINIMAL TAILORING: Keep original bullets mostly intact, only adding 1-2 keywords where they naturally fit."
         else:
-            derived_title = u.get("target_role", "Professional")
+            intensity_instruction = "BALANCED TAILORING: Professional reframing that aligns candidate strengths with JD requirements."
 
-        rd = ResumeDataSchema(
-            header=rd_header,
-            target_title=derived_title,
-            positioning_statement="\\n".join(t_resume.summary),
-            core_skills=CoreSkills(
-                languages=t_resume.skills.get("Languages & APIs", []),
-                data_etl=[],
-                cloud=t_resume.skills.get("Cloud & Infrastructure", []),
-                databases=[],
-                devops_tools=t_resume.skills.get("Agentic & Multi-Agent Systems", []) + t_resume.skills.get("Agentic Frameworks", []),
-                other=t_resume.skills.get("AI & LLM", []) + t_resume.skills.get("ML & Deep Learning", [])
-            ),
-            experience=[
-                ExperienceRole(
-                    company=e.company or "",
-                    job_title=e.title or "",
-                    city_state_or_remote=e.location or "",
-                    start=e.start if e.start else (e.dates.split(" - ")[0] if e.dates and " - " in e.dates else e.dates),
-                    end=e.end if e.end else (e.dates.split(" - ")[1] if e.dates and " - " in e.dates else "Present"),
-                    bullets=e.bullets
-                ) for e in t_resume.experience
-            ],
-            projects=[
-                ProjectItem(
-                    name=p.name or "",
-                    tech_stack=p.tech.split(", ") if isinstance(p.tech, str) and p.tech else [],
-                    link="",
-                    bullets=p.bullets
-                ) for p in t_resume.projects
-            ],
-            education=[
-                EducationItem(
-                    degree=ed.degree or "",
-                    university=ed.university or ed.school or "",
-                    major=ed.major or "",
-                    year=ed.year or ""
-                ) for ed in t_resume.education
-            ],
-            certifications=[]
-        )
-
-        ats_resume_text = render_ats_resume_from_json(rd)
+        # 1. Extract structured facts for documents
+        resume_json = await extract_resume_data(resume_text)
         
+        # 2. Generate Expert Tailored content (Resume)
+        expert_data = await generate_expert_tailored_content(
+            resume_text, job_description, intensity_instruction=intensity_instruction
+        )
+        
+        # 3. Generate Cover Letters and Cold Emails using the new prompt
+        cl_ce_facts = prepare_cover_letter_cold_email_facts(resume_json, job_description, job_title, company)
+        cl_ce_prompt = COVER_LETTER_AND_COLD_EMAIL_PROMPT.format(**cl_ce_facts)
+        
+        cl_ce_resp = await unified_api_call(
+            cl_ce_prompt,
+            max_tokens=4000,
+            model="llama-3.3-70b-versatile",
+            json_mode=True
+        )
+        cl_ce_data = extract_json_from_response(cl_ce_resp)
+        if not isinstance(cl_ce_data, dict): cl_ce_data = {}
+        
+        if not expert_data or not isinstance(expert_data, dict) or "error" in expert_data:
+            err_msg = expert_data.get("error") if isinstance(expert_data, dict) else "Unknown error"
+            logger.error(f"Expert generation failed: {err_msg}")
+            # Fallback to simple tailoring if expert fails
+            simple_resume = await generate_simple_tailored_resume(resume_text, job_description, job_title, company)
+            cover_letter = await generate_cover_letter_content(resume_text, job_description, job_title, company)
+            return {
+                "alignment_highlights": [],
+                "ats_resume": simple_resume,
+                "detailed_cv": simple_resume,
+                "cover_letter": cover_letter,
+                "resume_json": {},
+                "changes": [],
+                "skills_added": [],
+                "skills_skipped": []
+            }
+
+        # Format successfully
+        tailored_res = expert_data.get("tailored_resume", {})
+        rendered_text = render_preview_text_from_json(expert_data)
+        
+        jd_analysis = expert_data.get("step2_jd_analysis", {})
+        if not isinstance(jd_analysis, dict): jd_analysis = {}
+
         return {
-            "alignment_highlights": "",
-            "ats_resume": ats_resume_text, "detailed_cv": ats_resume_text,
-            "cover_letter": cl_text, "resume_json": rd.model_dump(),
-            "changes": [
-                {
-                    "section": c.section,
-                    "type": c.type,
-                    "original": c.original,
-                    "updated": c.updated,
-                    "reason": c.jd_reason
-                } for c in validated.changes
-            ],
-            "skills_added": validated.skills_added,
+            "alignment_highlights": jd_analysis.get("must_have", []),
+            "ats_resume": rendered_text,
+            "detailed_cv": rendered_text,
+            "cover_letter": cl_ce_data.get("cover_letter_A", expert_data.get("cover_letter", "")),
+            "cover_letter_A": cl_ce_data.get("cover_letter_A", ""),
+            "cover_letter_B": cl_ce_data.get("cover_letter_B", ""),
+            "cold_email_A": cl_ce_data.get("cold_email_A", ""),
+            "cold_email_B": cl_ce_data.get("cold_email_B", ""),
+            "resume_json": tailored_res,
+            "changes": [],
+            "skills_added": [], # Timeline law is internal to prompt now
             "skills_skipped": []
         }
     except Exception as e:
-        logger.error(f"Stage 2 Expert failed: {e}")
+        logger.error(f"Failed to generate expert documents: {str(e)}")
         import traceback
-        with open("debug_expert_error.txt", "w", encoding="utf-8") as tf:
-            tf.write("ERROR:\\n" + traceback.format_exc() + "\\n\\n")
-            tf.write("RAW JSON:\\n" + str(locals().get('json_text', 'No json_text')))
-            
-        simple_text = await generate_simple_tailored_resume(resume_text, job_description, "Position", "Company")
-        cl_text = await generate_cover_letter_content(resume_text, job_description, "Position", "Company")
-        return {
-            "alignment_highlights": "- Tailored analysis complete",
-            "ats_resume": simple_text, "detailed_cv": simple_text,
-            "cover_letter": cl_text, "resume_json": {},
-            "changes": [], "skills_added": [], "skills_skipped": []
-        }
+        logger.error(traceback.format_exc())
+        
+        # Comprehensive fallback
+        try:
+            logger.info(f"Expert generation failed. Falling back to simple tailoring for {job_title} at {company}...")
+            simple_text = await generate_simple_tailored_resume(
+                resume_text, job_description, job_title or "Position", company or "Company",
+                missing_skills_list=selected_keywords
+            )
+            cl_text = await generate_cover_letter_content(resume_text, job_description, job_title or "Position", company or "Company")
+            simple_text = strip_appended_skill_suffixes(simple_text)
+            simple_text = strip_summary_prefix(simple_text)
+            simple_text = strip_summary_garbage(simple_text)
+            return {
+                "alignment_highlights": ["- Tailored analysis complete (fallback mode)"],
+                "ats_resume": simple_text, 
+                "detailed_cv": simple_text,
+                "cover_letter": cl_text, 
+                "cover_letter_A": cl_text,
+                "cover_letter_B": "",
+                "cold_email_A": "",
+                "cold_email_B": "",
+                "resume_json": {},
+                "changes": [], 
+                "skills_added": [], 
+                "skills_skipped": []
+            }
+        except Exception as fallback_err:
+            logger.error(f"Critical Tailoring Failure (Primary AND Fallback failed): {fallback_err}")
+            return None
 
     return None
 
@@ -1023,11 +1742,24 @@ def create_resume_docx(resume_data: Dict, font_family: str = "Times New Roman") 
     
     # Name - Large and Bold
     name_para = doc.add_paragraph()
-    name_run = name_para.add_run(name)
+    name_run = name_para.add_run(name.upper()) # Force upper as requested
     name_run.bold = True
-    name_run.font.size = Pt(18)
+    name_run.font.size = Pt(14) # Pt(14) corresponds to user's "size=28" in some contexts, but library uses Pt
+    name_run.font.name = "Arial"
     name_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    name_para.paragraph_format.space_after = Pt(0)
+    name_para.paragraph_format.space_after = Pt(2)
+    
+    # Target Role - Smaller, Centered, Not Bold
+    target_role = sanitize_job_title(contact.get("target_role") or contact.get("title") or "")
+    if target_role:
+        title_para = doc.add_paragraph()
+        title_run = title_para.add_run(target_role.upper())
+        title_run.bold = False
+        title_run.font.size = Pt(11)
+        title_run.font.name = "Arial"
+        title_run.font.color.rgb = RGBColor(0x44, 0x44, 0x44)
+        title_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        title_para.paragraph_format.space_after = Pt(12)
     
     # Contact details - First line (email, phone, location)
     contact_line1 = []
@@ -1211,7 +1943,6 @@ def create_resume_docx(resume_data: Dict, font_family: str = "Times New Roman") 
             if section.get("title") and section.get("items"):
                 heading = doc.add_heading(section["title"].upper(), level=1)
                 heading.runs[0].font.size = Pt(12)
-                
                 for item in section["items"]:
                     if item and item.strip():
                         doc.add_paragraph(f"• {item}")
@@ -1255,7 +1986,9 @@ def create_cover_letter_docx(cover_letter_text: str, job_title: str, company: st
     doc.add_paragraph()
     
     # Body - split into paragraphs
-    paragraphs = cover_letter_text.strip().split('\n\n')
+    # Process text
+    text = (cover_letter_text or "").replace('\\n', '\n').replace('\\\\n', '\n')
+    paragraphs = text.strip().split('\n\n')
     for para in paragraphs:
         if para.strip():
             p = doc.add_paragraph(para.strip())
@@ -1307,24 +2040,40 @@ def create_text_docx(text: str, title: str = "Document", font_family: str = "Tim
     
     # Split text into lines and add to document
     # PRE-PROCESS: Replace literal \n or \\n strings from LLM with real newlines
-    text = text.replace('\\n', '\n').replace('\\\\n', '\n')
+    text = (text or "").replace('\\n', '\n').replace('\\\\n', '\n')
     lines = text.strip().split('\n')
     
-    # First line is usually the name
+    # First line is usually the name, second might be the title
     if lines:
-        name_para = doc.add_paragraph()
-        # Strip literal "NAME:" prefix if AI included it 
         name_text = lines[0].strip()
         if name_text.upper().startswith("NAME:"):
             name_text = name_text[5:].strip()
             
+        name_para = doc.add_paragraph()
         name_run = name_para.add_run(name_text.upper())
         name_run.bold = True
-        name_run.font.size = Pt(18)  # Reduced from 24pt for better appearance
+        name_run.font.size = Pt(14)
+        name_run.font.name = "Arial"
         if not is_modern:
             name_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
         name_para.paragraph_format.space_after = Pt(2)
+        
         lines = lines[1:]
+        
+        # Check if second line is a job title (not a section header or bullet)
+        if lines and lines[0].strip() and not lines[0].strip().startswith('=') and not lines[0].strip().startswith('•'):
+            title_text = sanitize_job_title(lines[0].strip())
+            if title_text:
+                title_para = doc.add_paragraph()
+                title_run = title_para.add_run(title_text.upper())
+                title_run.bold = False
+                title_run.font.size = Pt(11)
+                title_run.font.name = "Arial"
+                title_run.font.color.rgb = RGBColor(0x44, 0x44, 0x44)
+                if not is_modern:
+                    title_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                title_para.paragraph_format.space_after = Pt(12)
+                lines = lines[1:]
 
     for i, line in enumerate(lines):
         line_stripped = line.strip()
@@ -1371,12 +2120,19 @@ def create_text_docx(text: str, title: str = "Document", font_family: str = "Tim
             p = doc.add_paragraph(line_stripped[2:], style='List Bullet')
             p.paragraph_format.space_after = Pt(0)
         else:
-            # Check if this is a job header (contains separators like " — " or " | ")
-            # Added length check to avoid bolding long paragraphs that happen to have separators
-            is_job_header = (" — " in line_stripped or " | " in line_stripped or " – " in line_stripped) and len(line_stripped) < 150
+            # Smarter header detection logic (Sync with Frontend ResumePaper.jsx)
+            has_separator = (" — " in line_stripped or " | " in line_stripped or " – " in line_stripped)
+            # Date detection: matches years like 2024 or months like Jan/February
+            import re
+            has_date = bool(re.search(r'\d{4}', line_stripped)) or bool(re.search(r'(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)', line_stripped, re.I))
+            
+            # Line is a header if it's potentially an entry start (prev line empty), 
+            # or if it has info like job title/company/dates
+            # We also ensure it doesn't end with a period (unlikely for a header)
+            is_header = (has_separator and len(line_stripped) < 150) or (has_date and len(line_stripped) < 100)
             
             p = doc.add_paragraph()
-            if is_job_header:
+            if is_header and not line_stripped.endswith('.'):
                 run = p.add_run(line)
                 run.bold = True
             else:
@@ -1398,3 +2154,51 @@ def create_text_docx(text: str, title: str = "Document", font_family: str = "Tim
     doc.save(file_stream)
     file_stream.seek(0)
     return file_stream
+
+async def refine_resume_section(section_name: str, section_content: str, job_description: str, resume_context: str = "") -> dict:
+    """
+    Selectively improves a specific section of the resume using AI.
+    """
+    logger.info(f"Refining section: {section_name}")
+    
+    prompt = f"""You are an Expert Resume Writer. Optimize the following resume section specifically for the target job description.
+
+TARGET JOB DESCRIPTION:
+{job_description[:2000]}
+
+SECTION TO REFINE: {section_name.upper()}
+CURRENT CONTENT:
+{section_content}
+
+FULL RESUME CONTEXT (for consistency):
+{resume_context[:2000]}
+
+MARS TAILORING RULES:
+1. STRIP MARKDOWN: Output only clean plain text. Zero markdown (**bold**, *italics*, etc).
+2. TIMELINE LAW: Only assign technology/tools that were in mainstream use DURING the dates for this content.
+3. BANNED WORDS: Do NOT use "passionate", "motivated", "excited", "leverage", "synergy", "vibe coding".
+4. SENIOR FRAMING: For experience/projects, use judgment language ("designed for failure tolerance", "reasoned about edge cases").
+5. PRESERVE FACTS: Do not invent metrics, roles, or degrees.
+6. FORMAT: Respond with the refined text ONLY. No prose. No markdown markers.
+
+REFINED {section_name.upper()} CONTENT:"""
+
+    try:
+        refined_text = await unified_api_call(
+            prompt,
+            max_tokens=1000,
+            model="llama-3.3-70b-versatile"
+        )
+        
+        if not refined_text:
+            return {"error": "AI failed to generate refined content"}
+
+        # Cleanup
+        refined_text = refined_text.strip()
+        # Remove markdown markers that might have leaked
+        refined_text = re.sub(r'[*_#>]', '', refined_text)
+        
+        return {"refined_content": refined_text}
+    except Exception as e:
+        logger.error(f"Error in refine_resume_section: {e}")
+        return {"error": str(e)}

@@ -54,8 +54,17 @@ GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
 GROQ_MODEL = "llama-3.3-70b-versatile"  # Latest and most powerful
 
 
-async def call_groq_api(prompt: str, max_tokens: int = 4000, model: str = None, max_retries: int = None, api_key: str = None) -> Optional[str]:
+async def call_groq_api(prompt: str, max_tokens: int = 4000, model: str = None, 
+                         max_retries: int = None, api_key: str = None, 
+                         json_mode: bool = False) -> Optional[str]:
     """Call Groq API for text generation with exponential backoff"""
+    # ADD THIS — log every call so you can see if json_mode is reaching here
+    import logging
+    logger = logging.getLogger(__name__)
+    safe_prompt = prompt or ""
+    logger.info(f"[GROQ CALL] json_mode={json_mode} model={model or 'default'} "
+                f"prompt_has_json={'json' in safe_prompt.lower()} "
+                f"prompt_start={safe_prompt[:80]!r}")
     target_model = model or GROQ_MODEL
     
     # Use provided key or fall back to key pooling
@@ -78,15 +87,38 @@ async def call_groq_api(prompt: str, max_tokens: int = 4000, model: str = None, 
         "Content-Type": "application/json"
     }
     
+    # System message depends on whether JSON output is required
+    if json_mode:
+        system_content = (
+            "You are a JSON API generating job application messages. Output only valid JSON. "
+            "The SENDER is the job seeker. The RECIPIENT is the hiring company. "
+            "NEVER write messages addressed TO the candidate. "
+            "NEVER write as if a recruiter is reaching out to the candidate. "
+            "All messages are written FROM the candidate TO the employer. "
+            "Salutation examples: 'Dear Hiring Team,' / 'Hi [Manager Name],' "
+            "NEVER: 'Hi Sairam,' / 'Dear Sairam,' / 'I came across your profile'. "
+            "ALL string values must be plain text with zero markdown formatting. "
+            "Never use **, *, #, or bullet characters inside JSON string values."
+        )
+    else:
+        system_content = (
+            "CRITICAL: You are a professional resume writer. Output ONLY the resume text. "
+            "Do NOT provide tips, suggests, advice, or introductions. "
+            "Do NOT say 'Here is the tailored resume'. Go straight to the first line of the document."
+        )
+
     payload = {
         "model": target_model,
         "messages": [
-            {"role": "system", "content": "You are an expert ATS resume analyzer and optimization specialist. Always respond with valid JSON only when requested, otherwise respond with clear, expert text."},
+            {"role": "system", "content": system_content},
             {"role": "user", "content": prompt}
         ],
         "max_tokens": max_tokens,
         "temperature": 0.1
     }
+    
+    if json_mode:
+        payload["response_format"] = {"type": "json_object"}
     
     # Use global default if not specifically overridden
     # NOTE: keeping retries LOW to avoid blocking the async event loop
@@ -208,12 +240,16 @@ async def call_google_api(prompt: str, api_key: str, max_tokens: int = 4000) -> 
         logger.error(f"Error calling Google Gemini API: {e}")
         return None
 
-async def unified_api_call(prompt: str, max_tokens: int = 4000, model: str = None) -> Optional[str]:
+async def unified_api_call(prompt: str, max_tokens: int = 4000, model: str = None, json_mode: bool = False) -> Optional[str]:
     """
     Unified AI call point. Falls back to internal Groq pooling.
     """
+    processed_prompt = prompt
+    if json_mode and "json" not in (prompt or "").lower():
+        processed_prompt = f"{prompt}\n\nRespond with a valid JSON object ONLY."
+        
     # Fallback to internal Groq key pooling
-    return await call_groq_api(prompt, max_tokens=max_tokens, model=model)
+    return await call_groq_api(processed_prompt, max_tokens=max_tokens, model=model, json_mode=json_mode)
 
 
 def clean_json_response(text: str) -> str:
@@ -263,7 +299,7 @@ async def analyze_resume(resume_text: str, job_description: str, target_score: i
             "matchScore": 0
         }
     
-    prompt = f"""
+    resume_prompt = f"""
 You are an expert ATS (Applicant Tracking System) and resume analyst. Analyze this resume against the job description and provide a detailed assessment.
 
 TARGET ATS SCORE: {target_score}%
@@ -360,10 +396,12 @@ Important:
 - Select "market-standard" high-impact keywords that will actually flip ATS scoring switches
 - Return ONLY the JSON, no other text
 """
+    # Guarantee the word "json" appears for Groq's json_object mode requirement
+    resume_prompt += "\n\nRespond with a valid JSON object only. Begin with { now:"
 
     try:
-        # Use unified call with fallback support
-        response_text = await unified_api_call(prompt, model="llama-3.1-8b-instant")
+        # Use unified call with fallback support (Hardened for JSON)
+        response_text = await unified_api_call(resume_prompt, model="llama-3.1-8b-instant", json_mode=True)
         
         if not response_text:
             logger.warning("Resume analysis failed (rate limit). Using basic fallback.")
@@ -481,8 +519,8 @@ Return ONLY the JSON, no other text.
 """
 
     try:
-        # Use high-speed model for extraction
-        response_text = await unified_api_call(prompt, max_tokens=1000, model="llama-3.1-8b-instant")
+        # Use high-speed model for extraction (Hardened for JSON)
+        response_text = await unified_api_call(prompt, max_tokens=1000, model="llama-3.1-8b-instant", json_mode=True)
         if not response_text:
             return {"error": "Failed to get response from AI"}
         json_text = clean_json_response(response_text)
@@ -534,7 +572,7 @@ Return ONLY the JSON, no other text.
 """
 
     try:
-        response_text = await unified_api_call(prompt)
+        response_text = await unified_api_call(prompt, json_mode=True)
         if not response_text:
             return {"error": "Failed to get response from AI"}
         json_text = clean_json_response(response_text)

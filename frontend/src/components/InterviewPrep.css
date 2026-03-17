@@ -1,143 +1,192 @@
-/* Interview Prep Page */
+/* ─── Interview Prep Page ─────────────────────────────────── */
 .interview-prep-page {
-  background: #0f172a;
   min-height: 100vh;
-  padding-top: 5rem;
-  color: #f1f5f9;
+  background: #f8fafc;
 }
 
-/* Navigation Header Updates for Interview Prep */
-.interview-prep-page .nav-header {
-  background: rgba(15, 23, 42, 0.8);
-  backdrop-filter: blur(12px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+.interview-prep-content {
+  padding: 2.5rem 1.5rem 4rem;
 }
 
-.interview-prep-page .logo-text {
-  color: #fff;
+.interview-prep-content .container {
+  max-width: 760px;
+  margin: 0 auto;
 }
 
-/* Setup Container */
-.interview-setup-container {
-  max-width: 800px;
-  margin: 4rem auto;
-  padding: 0 1.5rem;
+/* ─── Page header ─────────────────────────────────────────── */
+.interview-prep-header {
+  margin-bottom: 2rem;
 }
 
-.setup-card {
-  background: #1e293b;
-  border-radius: 24px;
-  padding: 3rem;
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-}
-
-.setup-header {
-  text-align: center;
-  margin-bottom: 3rem;
-}
-
-.setup-header h1 {
-  background: linear-gradient(135deg, #fff 0%, #94a3b8 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-.setup-section {
+.interview-prep-title-row {
   display: flex;
-  flex-direction: column;
+  align-items: flex-start;
   gap: 1rem;
 }
 
-.section-title {
+.interview-icon-badge {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: #94a3b8;
-}
-
-.setup-input {
-  background: #0f172a !important;
-  border: 1px solid #334155 !important;
-  color: #fff !important;
-  height: 3.5rem !important;
-  border-radius: 0.75rem !important;
-}
-
-.setup-textarea {
-  background: #0f172a;
-  border: 1px solid #334155;
+  justify-content: center;
   color: #fff;
-  border-radius: 0.75rem;
-  padding: 1rem;
-  min-height: 150px;
-  width: 100%;
-  resize: none;
-  font-family: inherit;
-  font-size: 1rem;
-  outline: none;
-  transition: border-color 0.2s;
+  flex-shrink: 0;
 }
 
-.setup-textarea:focus {
-  border-color: #3b82f6;
+.interview-prep-header h1 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 0.25rem;
 }
 
-.file-upload-zone {
-  border: 2px dashed #334155;
-  border-radius: 1rem;
-  padding: 2.5rem;
+.interview-prep-header p {
+  color: #64748b;
+  font-size: 0.95rem;
+  margin: 0;
+}
+
+/* ─── Setup card ──────────────────────────────────────────── */
+.interview-setup-card {
+  background: #ffffff;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  padding: 2rem 2.5rem;
+}
+
+.setup-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+}
+
+/* ─── Each section ────────────────────────────────────────── */
+.ip-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.ip-section-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.925rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.ip-optional-badge {
+  margin-left: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #94a3b8;
+  background: #f1f5f9;
+  padding: 0.15rem 0.5rem;
+  border-radius: 99px;
+}
+
+/* ─── Input ───────────────────────────────────────────────── */
+.ip-input {
+  height: 2.75rem !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 10px !important;
+  background: #f8fafc !important;
+  color: #0f172a !important;
+  font-size: 0.95rem !important;
+  transition: border-color 0.15s !important;
+}
+
+.ip-input:focus {
+  border-color: #3b82f6 !important;
+  background: #fff !important;
+  box-shadow: 0 0 0 3px rgba(59,130,246,0.1) !important;
+}
+
+/* ─── Upload zone ─────────────────────────────────────────── */
+.ip-upload-zone {
+  border: 2px dashed #cbd5e1;
+  border-radius: 12px;
+  padding: 2.25rem 1rem;
   text-align: center;
   cursor: pointer;
   transition: all 0.2s;
   display: flex;
   flex-direction: column;
   align-items: center;
-  background: rgba(15, 23, 42, 0.5);
+  background: #f8fafc;
 }
 
-.file-upload-zone:hover {
-  background: rgba(59, 130, 246, 0.05);
+.ip-upload-zone:hover {
   border-color: #3b82f6;
+  background: #eff6ff;
 }
 
-.file-upload-zone.has-file {
+.ip-upload-zone.has-file {
   border-color: #10b981;
-  background: rgba(16, 185, 129, 0.05);
+  background: #f0fdf4;
 }
 
-.btn-primary {
-  background: #3b82f6 !important;
-  color: #fff !important;
-  border: none !important;
-  transition: all 0.2s !important;
+.ip-upload-text {
+  font-size: 0.9rem;
+  color: #64748b;
 }
 
-.btn-primary:hover:not(:disabled) {
-  background: #2563eb !important;
-  transform: translateY(-2px);
-  box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.4);
+.ip-upload-text span {
+  font-weight: 600;
+  color: #3b82f6;
 }
 
-.btn-primary:active:not(:disabled) {
-  transform: translateY(0);
+.ip-upload-filename {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #0f172a;
+  margin-bottom: 0.25rem;
 }
 
-/* Footer Simple */
-.footer-simple {
-  margin-top: 4rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
-  padding: 3rem 0;
+.ip-upload-hint {
+  font-size: 0.8rem;
+  color: #94a3b8;
 }
 
+/* ─── Textarea ────────────────────────────────────────────── */
+.ip-textarea {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 0.875rem 1rem;
+  min-height: 140px;
+  width: 100%;
+  resize: vertical;
+  font-family: inherit;
+  font-size: 0.95rem;
+  color: #0f172a;
+  background: #f8fafc;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  box-sizing: border-box;
+}
+
+.ip-textarea:focus {
+  border-color: #3b82f6;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
+}
+
+.ip-textarea::placeholder {
+  color: #94a3b8;
+}
+
+/* ─── Responsive ──────────────────────────────────────────── */
 @media (max-width: 640px) {
-  .setup-card {
-    padding: 1.5rem;
+  .interview-setup-card {
+    padding: 1.25rem;
   }
 
-  .interview-setup-container {
-    margin: 2rem auto;
+  .interview-prep-content {
+    padding: 1.5rem 1rem 3rem;
   }
 }

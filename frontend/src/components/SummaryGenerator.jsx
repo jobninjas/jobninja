@@ -8,10 +8,10 @@ import {
     Loader2,
     Copy,
     Check,
-    Sparkles,
     RefreshCw,
     Target
 } from 'lucide-react';
+import NinjaIcon from './NinjaIcon';
 import { API_URL } from '../config/api';
 import SideMenu from './SideMenu';
 import Header from './Header';
@@ -108,7 +108,7 @@ Return ONLY the summary text, no explanations.`;
 
                     <div className="summary-grid">
                         <Card className="input-card">
-                            <h2><Sparkles className="w-5 h-5" /> Your Details</h2>
+                            <h2><NinjaIcon className="w-5 h-5" /> Your Details</h2>
 
                             <div className="form-group">
                                 <label>Target Job Title *</label>
@@ -164,7 +164,7 @@ Return ONLY the summary text, no explanations.`;
                                     </>
                                 ) : (
                                     <>
-                                        <Sparkles className="w-5 h-5" />
+                                        <NinjaIcon className="w-5 h-5" />
                                         Generate Summary
                                     </>
                                 )}

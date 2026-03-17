@@ -11,11 +11,11 @@ import {
     Download,
     CheckCircle,
     ArrowRight,
-    Sparkles,
     X,
     Type,
     Palette
 } from 'lucide-react';
+import NinjaIcon from './NinjaIcon';
 import { BRAND } from '../config/branding';
 import { API_URL } from '../config/api';
 import SideMenu from './SideMenu';
@@ -33,6 +33,9 @@ const OneClickOptimize = () => {
     const [jobDescription, setJobDescription] = useState('');
     const [isOptimizing, setIsOptimizing] = useState(false);
     const [optimizedResume, setOptimizedResume] = useState(null);
+    const [jobUrl, setJobUrl] = useState('');
+    const [companyName, setCompanyName] = useState('');
+    const [jobTitle, setJobTitle] = useState('');
     const [selectedFont, setSelectedFont] = useState('Times New Roman');
     const [selectedTemplate, setSelectedTemplate] = useState('standard');
     const [targetScore, setTargetScore] = useState(95);
@@ -90,6 +93,9 @@ const OneClickOptimize = () => {
                     resume_text: optimizedResume?.optimizedText || optimizedResume?.resumeText || '',
                     is_already_tailored: !!optimizedResume?.optimizedText,
                     job_description: jobDescription,
+                    job_url: jobUrl,
+                    company: companyName || 'Company',
+                    job_title: jobTitle || 'Position',
                     analysis: optimizedResume?.analysis,
                     fontFamily: selectedFont,
                     template: selectedTemplate,
@@ -174,14 +180,49 @@ const OneClickOptimize = () => {
                             </div>
 
                             <div className="job-section">
-                                <h3><Sparkles className="w-5 h-5" /> Add Job Description (Optional)</h3>
-                                <p>For better optimization, paste the job description you're targeting</p>
-                                <textarea
-                                    placeholder="Paste job description here for targeted optimization..."
-                                    value={jobDescription}
-                                    onChange={(e) => setJobDescription(e.target.value)}
-                                    rows={6}
-                                />
+                                <h3><NinjaIcon className="w-5 h-5" /> Add Job Details (Optional)</h3>
+                                <p>Help us track your application and optimize for this specific role</p>
+
+                                <div className="job-inputs-grid">
+                                    <div className="input-group">
+                                        <label>Job Title</label>
+                                        <input
+                                            type="text"
+                                            placeholder="e.g. Senior Software Engineer"
+                                            value={jobTitle}
+                                            onChange={(e) => setJobTitle(e.target.value)}
+                                        />
+                                    </div>
+                                    <div className="input-group">
+                                        <label>Company</label>
+                                        <input
+                                            type="text"
+                                            placeholder="e.g. Google"
+                                            value={companyName}
+                                            onChange={(e) => setCompanyName(e.target.value)}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="input-group mt-3">
+                                    <label>Job URL (for tracking)</label>
+                                    <input
+                                        type="url"
+                                        placeholder="https://linkedin.com/jobs/..."
+                                        value={jobUrl}
+                                        onChange={(e) => setJobUrl(e.target.value)}
+                                    />
+                                </div>
+
+                                <div className="input-group mt-3">
+                                    <label>Job Description</label>
+                                    <textarea
+                                        placeholder="Paste job description here for targeted optimization..."
+                                        value={jobDescription}
+                                        onChange={(e) => setJobDescription(e.target.value)}
+                                        rows={6}
+                                    />
+                                </div>
                             </div>
 
                             <div className="score-selector-section">
@@ -316,7 +357,7 @@ const OneClickOptimize = () => {
                                 <p>Pass through Applicant Tracking Systems with ease</p>
                             </div>
                             <div className="feature-card">
-                                <Sparkles className="w-8 h-8 text-purple-500" />
+                                <NinjaIcon className="w-8 h-8 text-purple-500" />
                                 <h3>AI-Powered</h3>
                                 <p>Advanced AI understands what recruiters want</p>
                             </div>
