@@ -5606,13 +5606,14 @@ async def get_unified_resumes(email: str):
             r["updatedAt"] = r.get("updated_at") or r.get("updatedAt") or r["createdAt"]
             r["textPreview"] = r["resumeText"][:200] + "..." if r["resumeText"] else ""
             r["isSystemGenerated"] = r.get("is_system_generated", False) or r.get("isSystemGenerated", False)
+            r["isBase"] = r.get("is_base", False) or r.get("isBase", False)
             r["fontFamily"] = r.get("font_family") or r.get("fontFamily")
             r["fontSize"] = r.get("font_size") or r.get("fontSize")
             merged.append(r)
 
 
         merged.sort(key=lambda x: str(x.get("updatedAt", "")), reverse=True)
-        return {"success": True, "resumes": merged[:5]} # Increased limit to 5
+        return {"success": True, "resumes": merged[:50]} # Increased limit to 50
 
     except Exception as e:
         logger.error(f"Unified resume fetch error: {e}")

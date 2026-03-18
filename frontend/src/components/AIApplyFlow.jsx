@@ -773,9 +773,9 @@ const AIApplyFlow = ({ isScanner = false }) => {
                       <Loader2 className="w-6 h-6 animate-spin text-indigo-500 mr-2" />
                       <span className="text-slate-400 font-medium">Loading your resumes...</span>
                     </div>
-                  ) : savedResumes.filter(r => !r.isSystemGenerated && !(r.resumeName?.startsWith('AI Tailored:')) && !(r.resume_name?.startsWith('AI Tailored:'))).length > 0 ? (
+                  ) : savedResumes.filter(r => r.isBase).length > 0 ? (
                     <div className="saved-resumes-grid">
-                      {savedResumes.filter(r => !r.isSystemGenerated && !(r.resumeName?.startsWith('AI Tailored:')) && !(r.resume_name?.startsWith('AI Tailored:'))).map(resume => (
+                      {savedResumes.filter(r => r.isBase).map(resume => (
                         <div
                           key={resume.id}
                           className={`saved-resume-item ${selectedResume?.id === resume.id ? 'selected' : ''}`}
@@ -812,7 +812,7 @@ const AIApplyFlow = ({ isScanner = false }) => {
                     </div>
                   )}
 
-                  {savedResumes.filter(r => !r.isSystemGenerated && !(r.resumeName?.startsWith('AI Tailored:')) && !(r.resume_name?.startsWith('AI Tailored:'))).length > 0 && !isLoadingResumes && (
+                  {savedResumes.filter(r => r.isBase).length > 0 && !isLoadingResumes && (
                     <div className="divider-or">
                       <span>or upload a new resume</span>
                     </div>

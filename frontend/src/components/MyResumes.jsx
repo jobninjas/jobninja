@@ -152,7 +152,7 @@ const MyResumes = () => {
           <div className="resumes-header">
             <div>
               <h1>My Resumes</h1>
-              <p>View and manage your AI-generated tailored resumes</p>
+              <p>View and manage all your saved and tailored resumes</p>
             </div>
           </div>
 
@@ -200,7 +200,7 @@ const MyResumes = () => {
               <Loader2 className="w-8 h-8 animate-spin text-primary" />
               <p>Loading your resumes...</p>
             </div>
-          ) : resumes.filter(r => r.isSystemGenerated || r.resumeName?.startsWith('AI Tailored:') || r.resume_name?.startsWith('AI Tailored:')).length === 0 ? (
+          ) : resumes.length === 0 ? (
             <Card className="empty-state">
               <CardContent className="pt-6 text-center">
                 <Bot className="w-16 h-16 mx-auto text-gray-300 mb-4" />
@@ -213,7 +213,7 @@ const MyResumes = () => {
             </Card>
           ) : (
             <div className="resumes-grid">
-              {resumes.filter(r => r.isSystemGenerated || r.resumeName?.startsWith('AI Tailored:') || r.resume_name?.startsWith('AI Tailored:')).map(resume => (
+              {resumes.map(resume => (
                 <Card key={resume.id} className={`resume-card ${resume.isBase ? 'base-resume' : ''}`}>
                   <CardContent className="pt-6">
                     <div className="resume-header">

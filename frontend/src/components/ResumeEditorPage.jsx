@@ -122,11 +122,7 @@ const ResumeEditorPage = () => {
             let resumes = data?.resumes || [];
 
             // Filter out system generated or tailored for the "Base Resume" selection
-            const baseResumes = resumes.filter(r =>
-                !r.isSystemGenerated &&
-                !(r.resumeName?.startsWith('AI Tailored:')) &&
-                !(r.resume_name?.startsWith('AI Tailored:'))
-            );
+            const baseResumes = resumes.filter(r => r.isBase);
 
             setSavedResumes(resumes);
 
@@ -766,7 +762,7 @@ const ResumeEditorPage = () => {
                                     <div className="resumes-selection-list">
                                         <h4 className="list-title-premium">Your Resumes</h4>
                                         <div className="list-grid-premium">
-                                            {savedResumes.filter(r => !r.isSystemGenerated && !(r.resumeName?.startsWith('AI Tailored:')) && !(r.resume_name?.startsWith('AI Tailored:'))).map(res => (
+                                            {savedResumes.filter(r => r.isBase).map(res => (
                                                 <div
                                                     key={res.id || res._id}
                                                     className={`resume-selection-item ${selectedResumeId === (res.id || res._id) ? 'active' : ''}`}
@@ -1139,8 +1135,8 @@ const ResumeEditorPage = () => {
                                         <div className="saved-resumes-mini-list custom-scrollbar">
                                             {isLoadingSaved ? (
                                                 <div className="loading-spinner-mini"><Loader2 className="w-5 h-5 animate-spin" /></div>
-                                            ) : savedResumes.filter(r => !r.isSystemGenerated && !(r.resumeName?.startsWith('AI Tailored:')) && !(r.resume_name?.startsWith('AI Tailored:'))).length > 0 ? (
-                                                savedResumes.filter(r => !r.isSystemGenerated && !(r.resumeName?.startsWith('AI Tailored:')) && !(r.resume_name?.startsWith('AI Tailored:'))).map(res => (
+                                            ) : savedResumes.filter(r => r.isBase).length > 0 ? (
+                                                savedResumes.filter(r => r.isBase).map(res => (
                                                     <div
                                                         key={res.id || res._id}
                                                         className="saved-resume-item-mini"
