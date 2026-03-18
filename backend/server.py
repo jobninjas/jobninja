@@ -1718,7 +1718,8 @@ async def save_profile(request: Request, user: dict = Depends(get_current_user))
                 raise HTTPException(status_code=400, detail=validation_error)
 
             from resume_parser import parse_resume
-            resume_text = await parse_resume(content, filename)
+            resume_data = await parse_resume(content, filename)
+            resume_text = resume_data.get("text", "") if isinstance(resume_data, dict) else resume_data
             
             if resume_text:
                 profile_data["resumeText"] = resume_text
@@ -3711,7 +3712,8 @@ async def ai_ninja_apply(request: Request, user: dict = Depends(get_current_user
         resumeFile = form.get("resume")
         if resumeFile and not isinstance(resumeFile, str):
             file_content = await resumeFile.read()
-            resumeText = await parse_resume(file_content, resumeFile.filename)
+            resume_data = await parse_resume(file_content, resumeFile.filename)
+            resumeText = resume_data.get("text", "") if isinstance(resume_data, dict) else resume_data
             
         # PROACTIVE PROFILE SYNC -> Now using Supabase (Project Orion Boost)
         try:
@@ -4935,7 +4937,8 @@ async def ai_ninja_apply(
         resume_text = ""
         if resume:
             file_content = await resume.read()
-            resume_text = await parse_resume(file_content, resume.filename)
+            resume_data = await parse_resume(file_content, resume.filename)
+            resume_text = resume_data.get("text", "") if isinstance(resume_data, dict) else resume_data
         else:
             # Fallback to user's saved resume text
             resume_text = user.get("resume_text", "")
@@ -5101,8 +5104,10 @@ async def scan_resume(
             raise HTTPException(status_code=400, detail=validation_error)
 
         # Parse resume
-        resume_text = await parse_resume(file_content, resume.filename)
-        if not resume_text.strip():
+        resume_data = await parse_resume(file_content, resume.filename)
+        resume_text = resume_data.get("text", "") if isinstance(resume_data, dict) else resume_data
+        
+        if not resume_text or not resume_text.strip():
             raise HTTPException(
                 status_code=400,
                 detail="Could not extract text from resume. Please ensure it's not an image-based PDF.",
@@ -5182,13 +5187,14 @@ async def parse_resume_endpoint(
             raise HTTPException(status_code=400, detail=validation_error)
 
         # Parse resume text
-        resume_text = await parse_resume(file_content, resume.filename)
+        resume_data = await parse_resume(file_content, resume.filename)
+        resume_text = resume_data.get("text", "") if isinstance(resume_data, dict) else resume_data
         
         with open("debug_log.txt", "a") as f:
             f.write(f"Parsed Text Length: {len(resume_text)}\n")
             f.write(f"Parsed Text Preview: {resume_text[:100]}\n")
         
-        if not resume_text.strip():
+        if not resume_text or not resume_text.strip():
             with open("debug_log.txt", "a") as f:
                 f.write("Error: Empty resume text\n")
             raise HTTPException(
@@ -5578,6 +5584,8 @@ class SaveResumeRequest(BaseModel):
     file_name: str = ""
     replace_id: Optional[str] = None
     id: Optional[str] = None # Support 'id' field from frontend
+    font_family: Optional[str] = None
+    font_size: Optional[int] = None
 
 
 @app.get("/api/resumes/{email}")
@@ -5598,6 +5606,8 @@ async def get_unified_resumes(email: str):
             r["updatedAt"] = r.get("updated_at") or r.get("updatedAt") or r["createdAt"]
             r["textPreview"] = r["resumeText"][:200] + "..." if r["resumeText"] else ""
             r["isSystemGenerated"] = r.get("is_system_generated", False) or r.get("isSystemGenerated", False)
+            r["fontFamily"] = r.get("font_family") or r.get("fontFamily")
+            r["fontSize"] = r.get("font_size") or r.get("fontSize")
             merged.append(r)
 
 
@@ -5636,8 +5646,22 @@ async def save_user_resume(request: SaveResumeRequest):
             client.table("saved_resumes").update({
                 "resume_text": request.resume_text,
                 "file_name": request.file_name,
+                "font_family": request.font_family,
+                "font_size": request.font_size,
                 "updated_at": datetime.now(timezone.utc).isoformat(),
             }).eq("id", existing["id"]).execute()
+            
+            # Sync to profile for latest resume
+            try:
+                SupabaseService.update_user_profile(request.user_email, {
+                    "resume_text": request.resume_text,
+                    "latest_resume": existing["id"],
+                    "resume_metadata": {
+                        "font_family": request.font_family,
+                        "font_size": request.font_size
+                    }
+                })
+            except: pass
             
             return {
                 "success": True,
@@ -5662,10 +5686,23 @@ async def save_user_resume(request: SaveResumeRequest):
             "resume_name": request.resume_name,
             "resume_text": request.resume_text,
             "file_name": request.file_name,
+            "font_family": request.font_family,
+            "font_size": request.font_size,
             "created_at": datetime.now(timezone.utc).isoformat(),
             "updated_at": datetime.now(timezone.utc).isoformat(),
             "is_system_generated": False,
         }
+        
+        # Sync to profile for latest resume
+        try:
+            SupabaseService.update_user_profile(request.user_email, {
+                "resume_text": request.resume_text,
+                "resume_metadata": {
+                    "font_family": request.font_family,
+                    "font_size": request.font_size
+                }
+            })
+        except: pass
         
         res = client.table("saved_resumes").insert(new_resume).execute()
         new_id = res.data[0]["id"] if res.data else None
@@ -5753,11 +5790,12 @@ async def export_resume_docx(request: dict):
         title = request.get("title", "Resume")
         template = request.get("template", "standard")
         font_family = request.get("font_family", "Times New Roman")
+        font_size = request.get("font_size", 11)
         
         # Ensure we don't have None
         text = text or ""
         
-        file_stream = create_text_docx(text, title=title, font_family=font_family, template=template)
+        file_stream = create_text_docx(text, title=title, font_family=font_family, font_size=font_size, template=template)
         
         safe_title = "".join([c if c.isalnum() else "_" for c in title])
         filename = f"{safe_title}.docx"
@@ -6413,11 +6451,14 @@ async def upload_resume_endpoint(
         # Validate
         try:
              from resume_parser import parse_resume, validate_resume_file
-             error = validate_resume_file(file.filename, content)
-             if error:
-                 raise HTTPException(status_code=400, detail=error)
-             # Parse Text
-             text_content = await parse_resume(content, file.filename)
+             # Parse Text & Metadata
+             resume_data = await parse_resume(content, file.filename)
+             if isinstance(resume_data, dict):
+                 text_content = resume_data.get("text", "")
+                 resume_metadata = resume_data.get("metadata", {})
+             else:
+                 text_content = resume_data
+                 resume_metadata = {}
         except ImportError:
              text_content = ""
              logger.warning("Resume parser not available")
@@ -6441,19 +6482,31 @@ async def upload_resume_endpoint(
         
         # ALSO save as a distinct Base Resume in the `saved_resumes` table
         try:
-            resume_id = str(uuid.uuid4())
-            new_resume = {
-                "id": resume_id,
+            # Save to saved_resumes table
+            resume_item = {
                 "user_email": user["email"],
                 "resume_name": file.filename,
                 "resume_text": text_content,
                 "file_name": file.filename,
+                "font_family": resume_metadata.get("font_family"),
+                "font_size": resume_metadata.get("font_size"),
                 "created_at": datetime.now(timezone.utc).isoformat(),
-                "updated_at": datetime.now(timezone.utc).isoformat(),
                 "is_system_generated": False
             }
+            
             client = SupabaseService.get_client()
-            client.table("saved_resumes").insert(new_resume).execute()
+            res = client.table("saved_resumes").insert(resume_item).execute()
+            resume_id = res.data[0]["id"] if res.data else None
+
+            # PROACTIVE PROFILE SYNC -> Now using Supabase (Project Orion Boost)
+            try:
+                SupabaseService.update_user_profile(user["email"], {
+                    "latest_resume": resume_id,
+                    "resume_text": text_content,
+                    "resume_metadata": resume_metadata
+                })
+            except Exception as e:
+                logger.warning(f"Failed to sync profile after resume upload: {e}")
         except Exception as insert_err:
             logger.error(f"Failed to persist uploaded resume to saved_resumes table: {insert_err}")
         

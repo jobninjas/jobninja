@@ -263,6 +263,7 @@ class SupabaseService:
                 "summary": user_dict.get("summary") or user_dict.get("resume_summary"),
                 "resume_text": user_dict.get("resume_text") or user_dict.get("resumeText"),
                 "latest_resume": user_dict.get("latest_resume"),
+                "resume_metadata": user_dict.get("resume_metadata") or user_dict.get("resumeMetadata"),
                 "profile_picture": user_dict.get("profile_picture") or user_dict.get("picture"),
 
                 # Orion Boost: Detailed structured data
@@ -1170,7 +1171,8 @@ class SupabaseService:
         client = SupabaseService.get_client()
         if not client: return False
         try:
-            client.table("profiles").update(update_data).eq("id", user_id).execute()
+            column = "email" if "@" in user_id else "id"
+            client.table("profiles").update(update_data).eq(column, user_id).execute()
             return True
         except Exception as e:
             logger.error(f"Error updating user profile: {e}")

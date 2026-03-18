@@ -144,6 +144,21 @@ class AIService:
         except Exception as e:
             logger.error(f"Groq chat failed: {e}")
             raise
+
+    @staticmethod
+    def clean_json_response(text: str) -> str:
+        """Clean up AI response to extract valid JSON"""
+        if not text: return ""
+        import re
+        # Remove markdown code blocks
+        text = re.sub(r'```json\s*', '', text)
+        text = re.sub(r'```\s*', '', text)
+        # Find first { and last }
+        start = text.find('{')
+        end = text.rfind('}')
+        if start != -1 and end != -1:
+            text = text[start:end+1]
+        return text.strip()
     
     @staticmethod
     def transcribe_audio(audio_file) -> str:
@@ -324,7 +339,22 @@ class InterviewOrchestrator:
             .replace('{{transcript}}', transcript)
         
         response = AIService.chat(prompt, json_mode=True)
-        result = json.loads(response)
+        try:
+            json_text = AIService.clean_json_response(response)
+            result = json.loads(json_text)
+        except Exception as e:
+            logger.error(f"Failed to parse report JSON: {e}")
+            logger.error(f"Raw response: {response}")
+            # Fallback minimal result
+            result = {
+                "summary": "Evaluation completed, but detailed parsing failed.",
+                "strengths": [],
+                "gaps": [],
+                "repetition": "N/A",
+                "scores": {},
+                "rewrittenAnswers": [],
+                "roleFitScore": 0
+            }
         
         # Save report and mark session completed in Supabase
         report_id = str(__import__('uuid').uuid4())

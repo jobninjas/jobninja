@@ -4,7 +4,7 @@ Resume Parser - Extracts text from PDF and DOCX files
 
 import io
 import logging
-from typing import Optional
+from typing import Optional, Union, Dict, Any
 
 logger = logging.getLogger(__name__)
 
@@ -44,15 +44,12 @@ async def extract_text_from_pdf(file_content: bytes) -> str:
         raise ValueError(f"Failed to parse PDF: {str(e)}")
 
 
-async def extract_text_from_docx(file_content: bytes) -> str:
+async def extract_text_from_docx(file_content: bytes) -> dict:
     """
-    Extract text from DOCX file content
+    Extract text and metadata from DOCX file content
     
-    Args:
-        file_content: Raw bytes of the DOCX file
-        
     Returns:
-        Extracted text from the DOCX
+        Dictionary with 'text' and 'metadata' (font_family, etc.)
     """
     try:
         from docx import Document
@@ -61,10 +58,36 @@ async def extract_text_from_docx(file_content: bytes) -> str:
         doc = Document(docx_file)
         
         text_parts = []
+        detected_font = None
+        
         for paragraph in doc.paragraphs:
             if paragraph.text.strip():
                 text_parts.append(paragraph.text)
+                
+                # Try to detect font from the first few meaningful paragraphs
+                if not detected_font:
+                    # Check runs
+                    for run in paragraph.runs:
+                        if run.font.name:
+                            detected_font = run.font.name
+                            break
+                    # Check style if runs didn't have it
+                    if not detected_font and paragraph.style and paragraph.style.font and paragraph.style.font.name:
+                        detected_font = paragraph.style.font.name
+
+        # Final fallback - check document defaults if still not found
+        if not detected_font:
+            try:
+                # Check Normal style font
+                if 'Normal' in doc.styles and doc.styles['Normal'].font.name:
+                    detected_font = doc.styles['Normal'].font.name
+            except Exception:
+                pass
         
+        # If still nothing, default to Arial (more standard than Times New Roman for tech resumes)
+        if not detected_font:
+            detected_font = "Arial"
+
         # Also extract from tables
         for table in doc.tables:
             for row in table.rows:
@@ -75,34 +98,43 @@ async def extract_text_from_docx(file_content: bytes) -> str:
                 if row_text:
                     text_parts.append(" | ".join(row_text))
         
-        return "\n".join(text_parts)
+        return {
+            "text": "\n".join(text_parts),
+            "metadata": {
+                "font_family": detected_font
+            }
+        }
         
     except Exception as e:
         logger.error(f"Error extracting text from DOCX: {e}")
         raise ValueError(f"Failed to parse DOCX: {str(e)}")
 
 
-async def parse_resume(file_content: bytes, filename: str) -> str:
+async def parse_resume(file_content: bytes, filename: str) -> Union[str, dict]:
     """
-    Parse resume file and extract text based on file type
+    Parse resume file and extract text and metadata based on file type
     
     Args:
         file_content: Raw bytes of the file
         filename: Original filename to determine type
         
     Returns:
-        Extracted text from the resume
+        Either the extracted text (str) or a dict with 'text' and 'metadata'
     """
+    from typing import Union
     filename_lower = filename.lower()
     
     if filename_lower.endswith('.pdf'):
-        return await extract_text_from_pdf(file_content)
+        # PDF currently only returns text
+        text = await extract_text_from_pdf(file_content)
+        return {"text": text, "metadata": {}}
     elif filename_lower.endswith('.docx'):
         return await extract_text_from_docx(file_content)
     elif filename_lower.endswith('.doc'):
         raise ValueError("Old .doc format not supported. Please convert to .docx or .pdf")
     elif filename_lower.endswith('.txt'):
-        return file_content.decode('utf-8', errors='ignore')
+        text = file_content.decode('utf-8', errors='ignore')
+        return {"text": text, "metadata": {}}
     else:
         raise ValueError(f"Unsupported file type. Please upload PDF, DOCX, or TXT file")
 

@@ -91,10 +91,10 @@ const AIEditorPopover = ({ sectionKey, title, content, x, y, onClose, onRegenera
     );
 };
 
-const SectionHeader = ({ title, sectionKey, isModern, editable, onEditSection, onRegenerateSection, sectionContent, setShowAIEditor, showAIEditor, containerRef }) => (
+const SectionHeader = ({ title, sectionKey, isModern, editable, onEditSection, onRegenerateSection, sectionContent, setShowAIEditor, showAIEditor, containerRef, baseFontSize = 11 }) => (
     <div className="section-header-container group relative" style={{ margin: '8px 0 0 0' }}>
         <h2 style={{
-            fontSize: '11pt',
+            fontSize: `${baseFontSize}pt`,
             fontWeight: 700,
             textTransform: 'uppercase',
             borderBottom: isModern ? 'none' : '1px solid black',
@@ -158,6 +158,7 @@ const ResumePaper = ({
     scale = 1,
     onContentChange,
     fontFamily = '"Times New Roman", Times, serif',
+    fontSize = 11,
     template = 'standard',
     editable = true,
     onEditSection,
@@ -286,6 +287,7 @@ const ResumePaper = ({
                 transform: `scale(${scale})`,
                 padding: '48px',
                 fontFamily: actualFont,
+                fontSize: `${fontSize}pt`,
                 color: '#000'
             }}
         >
@@ -317,7 +319,7 @@ const ResumePaper = ({
                 ) : (
                     <>
                         <div style={{ textAlign: isModern ? 'left' : 'center', marginBottom: '8px' }}>
-                            <h1 style={{ fontSize: '24pt', fontWeight: 700, textTransform: 'uppercase', margin: 0, padding: 0, color: isModern ? '#1e293b' : '#000' }}>
+                            <h1 style={{ fontSize: `${fontSize * 2.2}pt`, fontWeight: 700, textTransform: 'uppercase', margin: 0, padding: 0, color: isModern ? '#1e293b' : '#000' }}>
                                 {(() => {
                                     let n = String(parsed.name || '').replace(/[*_]/g, '').replace(/undefined|none|null/gi, '').trim();
                                     if (jobTitle && n.length > 3) {
@@ -338,7 +340,7 @@ const ResumePaper = ({
                                 })()}
                             </h1>
                             {jobTitle && String(jobTitle).toLowerCase() !== 'undefined' && (
-                                <p style={{ fontSize: '13pt', fontWeight: 600, margin: '2px 0 0 0', color: isModern ? '#3b82f6' : '#444', textTransform: 'uppercase' }}>
+                                <p style={{ fontSize: `${fontSize * 1.2}pt`, fontWeight: 600, margin: '2px 0 0 0', color: isModern ? '#3b82f6' : '#444', textTransform: 'uppercase' }}>
                                     {String(jobTitle).replace(/[*_]/g, '').trim()}
                                 </p>
                             )}
@@ -347,7 +349,7 @@ const ResumePaper = ({
                                 justifyContent: isModern ? 'flex-start' : 'center',
                                 alignItems: 'center',
                                 gap: '12px',
-                                fontSize: '9pt',
+                                fontSize: `${fontSize * 0.85}pt`,
                                 margin: '4px 0 0 0',
                                 padding: 0,
                                 color: isModern ? '#64748b' : '#000',
@@ -403,8 +405,9 @@ const ResumePaper = ({
                                     setShowAIEditor={setShowAIEditor}
                                     showAIEditor={showAIEditor}
                                     containerRef={containerRef}
+                                    baseFontSize={fontSize}
                                 />
-                                <p style={{ fontSize: '10pt', lineHeight: '1.2', textAlign: 'justify', margin: '2px 0 0 0', padding: 0 }}>
+                                <p style={{ fontSize: `${fontSize * 0.9}pt`, lineHeight: '1.2', textAlign: 'justify', margin: '2px 0 0 0', padding: 0 }}>
                                     <HighlightChange changes={resumeChanges} text={String(parsed.summary || '').replace(/[*_]/g, '').trim()} />
                                 </p>
                             </div>
@@ -423,8 +426,9 @@ const ResumePaper = ({
                                     setShowAIEditor={setShowAIEditor}
                                     showAIEditor={showAIEditor}
                                     containerRef={containerRef}
+                                    baseFontSize={fontSize}
                                 />
-                                <div style={{ fontSize: '10pt', lineHeight: '1.2', margin: '2px 0 0 0', padding: 0 }}>
+                                <div style={{ fontSize: `${fontSize * 0.9}pt`, lineHeight: '1.2', margin: '2px 0 0 0', padding: 0 }}>
                                     {String(parsed.skills || '').split('\n').filter(l => l.trim()).map((skillLine, i) => (
                                         <div key={i} style={{ margin: 0, padding: 0 }}>• <HighlightChange changes={resumeChanges} text={String(skillLine || '').replace(/^([•\-\*]|#+)\s*/, '').replace(/[*_]/g, '')} /></div>
                                     ))}
@@ -445,8 +449,9 @@ const ResumePaper = ({
                                     setShowAIEditor={setShowAIEditor}
                                     showAIEditor={showAIEditor}
                                     containerRef={containerRef}
+                                    baseFontSize={fontSize}
                                 />
-                                <div style={{ fontSize: '10pt', lineHeight: '1.2', margin: '2px 0 0 0', padding: 0 }}>
+                                <div style={{ fontSize: `${fontSize * 0.9}pt`, lineHeight: '1.2', margin: '2px 0 0 0', padding: 0 }}>
                                     {String(parsed.experience || '').split('\n').map((line, i, arr) => {
                                         const trimmed = String(line || '').trim();
                                         if (!trimmed) return null;
@@ -480,8 +485,9 @@ const ResumePaper = ({
                                     setShowAIEditor={setShowAIEditor}
                                     showAIEditor={showAIEditor}
                                     containerRef={containerRef}
+                                    baseFontSize={fontSize}
                                 />
-                                <div style={{ fontSize: '10pt', lineHeight: '1.2', margin: '2px 0 0 0', padding: 0 }}>
+                                <div style={{ fontSize: `${fontSize * 0.9}pt`, lineHeight: '1.2', margin: '2px 0 0 0', padding: 0 }}>
                                     {parsed.projects.split('\n').map((line, i, arr) => {
                                         const trimmed = line.trim();
                                         if (!trimmed) return null;
@@ -514,8 +520,9 @@ const ResumePaper = ({
                                     setShowAIEditor={setShowAIEditor}
                                     showAIEditor={showAIEditor}
                                     containerRef={containerRef}
+                                    baseFontSize={fontSize}
                                 />
-                                <div style={{ fontSize: '10pt', lineHeight: '1.2', whiteSpace: 'pre-wrap', margin: '2px 0 0 0', padding: 0 }}>
+                                <div style={{ fontSize: `${fontSize * 0.9}pt`, lineHeight: '1.2', whiteSpace: 'pre-wrap', margin: '2px 0 0 0', padding: 0 }}>
                                     <HighlightChange changes={resumeChanges} text={parsed.education.replace(/[*_]/g, '').trim()} />
                                 </div>
                             </div>

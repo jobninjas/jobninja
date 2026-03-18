@@ -120,14 +120,14 @@ const ResumeEditorPage = () => {
         try {
             const data = await apiCall(`/api/resumes/${user.email}`);
             let resumes = data?.resumes || [];
-            
+
             // Filter out system generated or tailored for the "Base Resume" selection
-            const baseResumes = resumes.filter(r => 
-                !r.isSystemGenerated && 
-                !(r.resumeName?.startsWith('AI Tailored:')) && 
+            const baseResumes = resumes.filter(r =>
+                !r.isSystemGenerated &&
+                !(r.resumeName?.startsWith('AI Tailored:')) &&
                 !(r.resume_name?.startsWith('AI Tailored:'))
             );
-            
+
             setSavedResumes(resumes);
 
             // Auto-load latest BASE resume if nothing selected and not provided in location state
@@ -136,6 +136,8 @@ const ResumeEditorPage = () => {
                 setResumeData(latest);
                 setResumeName(latest.resumeName || latest.resume_name || latest.file_name || 'My_Resume.docx');
                 setTailoredResume(latest.resumeText || latest.resume_text || '');
+                if (latest.fontFamily || latest.font_family) setFontFamily(latest.fontFamily || latest.font_family);
+                if (latest.fontSize || latest.font_size) setFontSize(latest.fontSize || latest.font_size);
                 setHistory({ past: [], future: [] });
             }
         } catch (error) {
@@ -177,6 +179,16 @@ const ResumeEditorPage = () => {
 
                     setResumeName(latestMeta.name || 'Uploaded_Resume.docx');
                     setTailoredResume(profile.resume_text || '');
+
+                    // Apply detected styling if available
+                    if (data.metadata?.font_family) {
+                        setFontFamily(data.metadata.font_family);
+                    } else if (profile.resume_metadata?.font_family) {
+                        setFontFamily(profile.resume_metadata.font_family);
+                    }
+                    if (profile.resume_metadata?.font_size) {
+                        setFontSize(profile.resume_metadata.font_size);
+                    }
                 }
             }
         } catch (error) {
@@ -226,7 +238,7 @@ const ResumeEditorPage = () => {
             if (contactLine) {
                 const emailMatch = contactLine.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
                 const phoneMatch = contactLine.match(/(\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/);
-                
+
                 if (emailMatch && !contactEmail) setContactEmail(emailMatch[0]);
                 if (phoneMatch && !contactPhone) setContactPhone(phoneMatch[0]);
             }
@@ -235,7 +247,7 @@ const ResumeEditorPage = () => {
             const githubMatch = tailoredResume.match(/github\.com\/[a-zA-Z0-9_-]+/i);
             const linkedinMatch = tailoredResume.match(/linkedin\.com\/in\/[a-zA-Z0-9_-]+/i);
             const websiteMatch = tailoredResume.match(/(?:https?:\/\/)?(?:www\.)?([a-zA-Z0-9.-]+\.[a-z]{2,})(?:\/|$)/i);
-            
+
             if (githubMatch && !contactGitHub) setContactGitHub(githubMatch[0]);
             if (linkedinMatch && !contactLinkedIn) setContactLinkedIn(linkedinMatch[0]);
             // Simple heuristic to avoid matching email as website if websiteMatch matches too broadly
@@ -248,11 +260,11 @@ const ResumeEditorPage = () => {
     // Auto-save logic
     useEffect(() => {
         if (!tailoredResume || !user || isTailored) return;
-        
+
         const timer = setTimeout(() => {
             handleSave();
         }, 3000); // 3 second debounce for auto-save
-        
+
         return () => clearTimeout(timer);
     }, [tailoredResume, resumeName, template, fontFamily, fontSize, contactEmail, contactPhone, contactLocation, contactWebsite, contactGitHub, contactLinkedIn, showContactIcons, isTailored]);
 
@@ -362,6 +374,8 @@ const ResumeEditorPage = () => {
         setResumeData(selected);
         setResumeName(selected.resumeName || selected.resume_name || 'Selected_Resume.docx');
         setTailoredResume(selected.resumeText || selected.resume_text || '');
+        if (selected.fontFamily || selected.font_family) setFontFamily(selected.fontFamily || selected.font_family);
+        if (selected.fontSize || selected.font_size) setFontSize(selected.fontSize || selected.font_size);
         setHistory({ past: [], future: [] });
         setShowSelector(false);
     };
@@ -414,7 +428,8 @@ const ResumeEditorPage = () => {
                     text: currentContent,
                     title: activeTab === 'resume' ? resumeName : `${activeTab.replace('_', ' ').toUpperCase()} - ${resumeName}`,
                     template: template,
-                    font_family: fontFamily
+                    font_family: fontFamily,
+                    font_size: fontSize
                 })
             });
 
@@ -439,8 +454,8 @@ const ResumeEditorPage = () => {
             // If it's tailored and we're not forcing a specific save, 
             // the first save should create a new document
             const shouldCreativeNew = forceNew || isTailored;
-            const finalName = shouldCreativeNew && !resumeName.includes('AI Tailored') 
-                ? `AI Tailored: ${companyName || 'Target Company'}` 
+            const finalName = shouldCreativeNew && !resumeName.includes('AI Tailored')
+                ? `AI Tailored: ${companyName || 'Target Company'}`
                 : resumeName;
 
             const response = await apiCall('/api/resumes/save', {
@@ -449,6 +464,8 @@ const ResumeEditorPage = () => {
                     user_email: user?.email,
                     resume_name: finalName,
                     resume_text: tailoredResume,
+                    font_family: fontFamily,
+                    font_size: fontSize,
                     // Only send ID if we want to overwrite/update the current document
                     id: shouldCreativeNew ? undefined : resumeData?.id
                 })
@@ -457,18 +474,18 @@ const ResumeEditorPage = () => {
             if (response && response.success) {
                 setLastSaved('Just now');
                 setUnsavedChanges(0);
-                
+
                 if (shouldCreativeNew || finalName !== resumeName) {
                     setResumeName(finalName);
                     setIsEditingName(false);
                     setEditableName(finalName);
-                    
+
                     // If we created a new one, we should now be "editing" that new one
                     if (response.id) {
                         setResumeData(prev => ({ ...prev, id: response.id, resume_name: finalName }));
                         setIsTailored(false); // No longer "unsaved tailored" state
                     }
-                    
+
                     await fetchSavedResumes();
                 }
             }
@@ -489,7 +506,7 @@ const ResumeEditorPage = () => {
             formData.append('jobTitle', jobTitle || 'Target Role');
             formData.append('company', companyName || 'Target Company');
             formData.append('intensity', aiConfig.intensity);
-            formData.append('lengthTarget', aiConfig.length); 
+            formData.append('lengthTarget', aiConfig.length);
 
             const blob = new Blob([tailoredResume || resumeData?.resume_text || ''], { type: 'text/plain' });
             formData.append('resume', blob, 'resume.txt');
@@ -508,19 +525,19 @@ const ResumeEditorPage = () => {
                     setIsTailored(true); // Mark as tailored to prevent auto-save overwrite
                     addToHistory(newText);
                     setUnsavedChanges(prev => prev + 1);
-                    
+
                     if (data.coverLetterA) setCoverLetterA(data.coverLetterA);
                     if (data.coverLetterB) setCoverLetterB(data.coverLetterB);
                     if (data.coldEmailA) setColdMailA(data.coldEmailA);
                     if (data.coldEmailB) setColdMailB(data.coldEmailB);
-                    
+
                     setCoverLetter(data.coverLetterA || data.tailoredCoverLetter || '');
                     setColdMail(data.coldEmailA || '');
-                    
+
                     // Show tracking success notification
                     setShowTrackerNotify(true);
                     setTimeout(() => setShowTrackerNotify(false), 5000);
-                    
+
                     // await fetchSavedResumes(); // Don't refresh yet, wait for manual save
                 }
             }
@@ -541,11 +558,11 @@ const ResumeEditorPage = () => {
             const formData = new FormData();
             formData.append('email', user.email);
             formData.append('jobDescription', jobDescription);
-            
+
             // Send as file like handleGenerate does
             const blob = new Blob([tailoredResume || resumeData?.resume_text || ''], { type: 'text/plain' });
             formData.append('resume', blob, 'resume.txt');
-            
+
             formData.append('jobTitle', jobTitle || 'Target Role');
             formData.append('company', companyName || 'Target Company');
 
@@ -622,7 +639,7 @@ const ResumeEditorPage = () => {
 
     return (
         <>
-        <div className="resume-editor-container-inner">
+            <div className="resume-editor-container-inner">
 
                 {/* Top Navigation / Toolbar - Matching Image 3 exactly */}
                 <header className="editor-nav-high-fidelity">
@@ -702,14 +719,14 @@ const ResumeEditorPage = () => {
                                 <Download className="w-4 h-4" />
                                 <span>Download</span>
                             </button>
-                            
+
                             {isTailored && (
                                 <button className="btn-primary-editor-emerald" onClick={() => handleSave(true)}>
                                     <Save className="w-4 h-4" />
                                     <span>Save as New</span>
                                 </button>
                             )}
-                            
+
                             <button className={`btn-primary-editor-blue ${isTailored ? 'secondary-save' : ''}`} onClick={() => handleSave(false)}>
                                 <Save className="w-4 h-4" />
                                 <span>{isSaving ? 'Saving...' : isTailored ? 'Update Existing' : 'Save'}</span>
@@ -868,7 +885,7 @@ const ResumeEditorPage = () => {
                                             <label className="content-field-label">Quick Contact Edit</label>
                                             <div className="flex items-center gap-2">
                                                 <span className="text-[10px] text-slate-500 font-bold uppercase">Show Icons</span>
-                                                <button 
+                                                <button
                                                     onClick={() => setShowContactIcons(!showContactIcons)}
                                                     className={`w-8 h-4 rounded-full transition-colors relative ${showContactIcons ? 'bg-emerald-500' : 'bg-slate-300'}`}
                                                 >
@@ -880,9 +897,9 @@ const ResumeEditorPage = () => {
                                         <div className="space-y-3">
                                             <div className="content-input-wrapper with-icon">
                                                 <Mail className="w-3.5 h-3.5 text-slate-400" />
-                                                <input 
-                                                    type="email" 
-                                                    value={contactEmail} 
+                                                <input
+                                                    type="email"
+                                                    value={contactEmail}
                                                     onChange={(e) => setContactEmail(e.target.value)}
                                                     className="content-field-input"
                                                     placeholder="Email Address"
@@ -890,9 +907,9 @@ const ResumeEditorPage = () => {
                                             </div>
                                             <div className="content-input-wrapper with-icon">
                                                 <Phone className="w-3.5 h-3.5 text-slate-400" />
-                                                <input 
-                                                    type="tel" 
-                                                    value={contactPhone} 
+                                                <input
+                                                    type="tel"
+                                                    value={contactPhone}
                                                     onChange={(e) => setContactPhone(e.target.value)}
                                                     className="content-field-input"
                                                     placeholder="Phone Number"
@@ -900,9 +917,9 @@ const ResumeEditorPage = () => {
                                             </div>
                                             <div className="content-input-wrapper with-icon">
                                                 <MapPin className="w-3.5 h-3.5 text-slate-400" />
-                                                <input 
-                                                    type="text" 
-                                                    value={contactLocation} 
+                                                <input
+                                                    type="text"
+                                                    value={contactLocation}
                                                     onChange={(e) => setContactLocation(e.target.value)}
                                                     className="content-field-input"
                                                     placeholder="Location"
@@ -910,9 +927,9 @@ const ResumeEditorPage = () => {
                                             </div>
                                             <div className="content-input-wrapper with-icon">
                                                 <Globe className="w-3.5 h-3.5 text-slate-400" />
-                                                <input 
-                                                    type="text" 
-                                                    value={contactWebsite} 
+                                                <input
+                                                    type="text"
+                                                    value={contactWebsite}
                                                     onChange={(e) => setContactWebsite(e.target.value)}
                                                     className="content-field-input"
                                                     placeholder="Website URL"
@@ -920,9 +937,9 @@ const ResumeEditorPage = () => {
                                             </div>
                                             <div className="content-input-wrapper with-icon">
                                                 <Github className="w-3.5 h-3.5 text-slate-400" />
-                                                <input 
-                                                    type="text" 
-                                                    value={contactGitHub} 
+                                                <input
+                                                    type="text"
+                                                    value={contactGitHub}
                                                     onChange={(e) => setContactGitHub(e.target.value)}
                                                     className="content-field-input"
                                                     placeholder="GitHub URL"
@@ -930,9 +947,9 @@ const ResumeEditorPage = () => {
                                             </div>
                                             <div className="content-input-wrapper with-icon">
                                                 <Linkedin className="w-3.5 h-3.5 text-slate-400" />
-                                                <input 
-                                                    type="text" 
-                                                    value={contactLinkedIn} 
+                                                <input
+                                                    type="text"
+                                                    value={contactLinkedIn}
                                                     onChange={(e) => setContactLinkedIn(e.target.value)}
                                                     className="content-field-input"
                                                     placeholder="LinkedIn URL"
@@ -970,7 +987,7 @@ const ResumeEditorPage = () => {
                                     <h3 className="design-section-title mt-6">Typography</h3>
                                     <div className="font-selection-list">
                                         {['Times New Roman', 'Arial', 'Georgia', 'Inter', 'Roboto', 'Outfit'].map(font => (
-                                            <button 
+                                            <button
                                                 key={font}
                                                 className={`font-choice-btn ${fontFamily === font ? 'active' : ''}`}
                                                 onClick={() => setFontFamily(font)}
@@ -1014,7 +1031,7 @@ const ResumeEditorPage = () => {
                                     {coverLetter && (
                                         <div className="active-feature-controls">
                                             <div className="variant-toggle-group mb-4">
-                                                <button 
+                                                <button
                                                     className={`variant-toggle-btn ${activeVariant === 'A' ? 'active' : ''}`}
                                                     onClick={() => {
                                                         setActiveVariant('A');
@@ -1023,7 +1040,7 @@ const ResumeEditorPage = () => {
                                                 >
                                                     Variation A: High Alignment
                                                 </button>
-                                                <button 
+                                                <button
                                                     className={`variant-toggle-btn ${activeVariant === 'B' ? 'active' : ''}`}
                                                     onClick={() => {
                                                         setActiveVariant('B');
@@ -1060,7 +1077,7 @@ const ResumeEditorPage = () => {
                                     {coldMail && (
                                         <div className="active-feature-controls">
                                             <div className="variant-toggle-group mb-4">
-                                                <button 
+                                                <button
                                                     className={`variant-toggle-btn ${activeVariant === 'A' ? 'active' : ''}`}
                                                     onClick={() => {
                                                         setActiveVariant('A');
@@ -1069,7 +1086,7 @@ const ResumeEditorPage = () => {
                                                 >
                                                     Variant A: Solution
                                                 </button>
-                                                <button 
+                                                <button
                                                     className={`variant-toggle-btn ${activeVariant === 'B' ? 'active' : ''}`}
                                                     onClick={() => {
                                                         setActiveVariant('B');
@@ -1145,7 +1162,11 @@ const ResumeEditorPage = () => {
                                                     </div>
                                                 ))
                                             ) : (
-                                                <div className="no-resumes-prompt">
+                                                <div
+                                                    className="no-resumes-prompt cursor-pointer hover:bg-slate-50 transition-colors"
+                                                    onClick={() => fileInputRef.current?.click()}
+                                                    style={{ cursor: 'pointer' }}
+                                                >
                                                     <Upload className="w-8 h-8 text-emerald-500/50 mb-2 mx-auto" />
                                                     <p className="font-semibold text-slate-300">Welcome to AI Ninja!</p>
                                                     <p className="text-xs text-slate-500">Upload your first resume to start tailoring.</p>
@@ -1166,6 +1187,7 @@ const ResumeEditorPage = () => {
                                     }
                                     template={template}
                                     fontFamily={fontFamily}
+                                    fontSize={fontSize}
                                     onContentChange={(newText) => {
                                         if (activeTab === 'resume') {
                                             setTailoredResume(newText);
@@ -1280,7 +1302,7 @@ const ResumeEditorPage = () => {
                         <p className="font-bold text-sm text-white">Resumed Tailored & Tracked!</p>
                         <p className="text-xs text-slate-400">This application is now visible in your Application Tracker.</p>
                     </div>
-                    <button 
+                    <button
                         onClick={() => navigate('/dashboard?tab=tracker')}
                         className="bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] font-bold px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap"
                     >

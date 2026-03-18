@@ -1718,7 +1718,7 @@ async def generate_expert_documents(
 
     return None
 
-def create_resume_docx(resume_data: Dict, font_family: str = "Times New Roman") -> io.BytesIO:
+def create_resume_docx(resume_data: Dict, font_family: str = "Times New Roman", font_size: int = 11) -> io.BytesIO:
     """Create a comprehensive Word document from resume data"""
     doc = Document()
     
@@ -1726,7 +1726,7 @@ def create_resume_docx(resume_data: Dict, font_family: str = "Times New Roman") 
     style = doc.styles['Normal']
     font = style.font
     font.name = font_family
-    font.size = Pt(10)
+    font.size = Pt(font_size)
     
     # Set margins
     sections = doc.sections
@@ -2018,7 +2018,7 @@ def add_bottom_border(paragraph):
     pBdr.append(bottom)
     pPr.append(pBdr)
 
-def create_text_docx(text: str, title: str = "Document", font_family: str = "Times New Roman", template: str = "standard") -> io.BytesIO:
+def create_text_docx(text: str, title: str = "Document", font_family: str = "Times New Roman", font_size: int = 11, template: str = "standard") -> io.BytesIO:
     """Create a Word document from raw text, preserving basic formatting and styling"""
     doc = Document()
     
@@ -2026,7 +2026,7 @@ def create_text_docx(text: str, title: str = "Document", font_family: str = "Tim
     style = doc.styles['Normal']
     font = style.font
     font.name = font_family
-    font.size = Pt(10)
+    font.size = Pt(font_size)
 
     is_modern = template == 'modern'
     
