@@ -40,21 +40,12 @@ from dotenv import load_dotenv
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / ".env")
 
-# PostHog Initialization
-import posthog
-posthog.project_api_key = os.environ.get("POSTHOG_API_KEY")
-posthog.host = os.environ.get("POSTHOG_HOST", "https://us.i.posthog.com")
-
+from starlette.middleware.cors import CORSMiddleware
+# MongoDB decommissioned
 import logging
 # Setup logging early to avoid NameErrors in defensive imports
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
-
-if not posthog.project_api_key:
-    logger.warning("POSTHOG_API_KEY not set. PostHog features will be disabled.")
-
-from starlette.middleware.cors import CORSMiddleware
-# MongoDB decommissioned
 
 import asyncio
 from pydantic import BaseModel, Field, ConfigDict
@@ -1410,13 +1401,6 @@ async def login(request: Request, credentials: UserLogin):
         # Generate secure JWT access token
         user_id = user.get("id") or str(uuid.uuid4())
         access_token = create_access_token(data={"sub": user["email"], "id": user_id})
-    
-        # Track login in PostHog
-        if posthog.project_api_key:
-            posthog.capture(user["email"], "user_login", {
-                "method": "email",
-                "role": user.get("role")
-            })
 
         return {
             "success": True,
@@ -1718,8 +1702,7 @@ async def save_profile(request: Request, user: dict = Depends(get_current_user))
                 raise HTTPException(status_code=400, detail=validation_error)
 
             from resume_parser import parse_resume
-            resume_data = await parse_resume(content, filename)
-            resume_text = resume_data.get("text", "") if isinstance(resume_data, dict) else resume_data
+            resume_text = await parse_resume(content, filename)
             
             if resume_text:
                 profile_data["resumeText"] = resume_text
@@ -3712,8 +3695,7 @@ async def ai_ninja_apply(request: Request, user: dict = Depends(get_current_user
         resumeFile = form.get("resume")
         if resumeFile and not isinstance(resumeFile, str):
             file_content = await resumeFile.read()
-            resume_data = await parse_resume(file_content, resumeFile.filename)
-            resumeText = resume_data.get("text", "") if isinstance(resume_data, dict) else resume_data
+            resumeText = await parse_resume(file_content, resumeFile.filename)
             
         # PROACTIVE PROFILE SYNC -> Now using Supabase (Project Orion Boost)
         try:
@@ -4106,61 +4088,8 @@ def _format_supabase_job(job: Dict[str, Any]) -> Dict[str, Any]:
             formatted["visaTags"] = []
 
     return formatted
-def _get_match_context(user: Dict[str, Any]) -> Dict[str, Any]:
-    """
-    Pre-calculate user tokens and target roles to avoid redundant work in matching loops.
-    """
-    try:
-        user_text = ""
-        user_title = ""
-        
-        # 1. Extract Title
-        user_prefs = user.get("preferences") or {}
-        if user_prefs.get("target_role"):
-            user_title = user_prefs["target_role"].lower()
-        elif user.get("target_role"):
-            user_title = user.get("target_role").lower()
-            
-        # 2. Extract Full Text
-        if user.get("latest_resume") and user["latest_resume"].get("text_content"):
-             user_text = user["latest_resume"]["text_content"]
-        elif user.get("resume_text"):
-             user_text = user["resume_text"]
-        
-        # Supplement Skills/Experience
-        skills = user.get("skills", {})
-        if isinstance(skills, dict):
-             user_text += " " + " ".join(skills.get("technical", [])) + " " + " ".join(skills.get("soft", []))
-        elif isinstance(skills, list):
-             user_text += " " + " ".join(skills)
 
-        experience = user.get("experience") or user.get("employment_history")
-        if isinstance(experience, list):
-            for exp in experience:
-                if isinstance(exp, dict):
-                    user_text += f" {exp.get('title', '')} {exp.get('description', '')}"
-        
-        user_text = user_text.lower()
-        
-        # 3. Tokenize
-        import re
-        user_tokens = set(re.findall(r'\b\w{2,}\b', user_text))
-        
-        user_words = set(re.findall(r'\b\w{2,}\b', user_title)) if user_title else set()
-        if not user_words and user_text:
-            extracted_title = _extract_target_role(user_text).lower()
-            user_words = set(re.findall(r'\b\w{2,}\b', extracted_title))
-
-        return {
-            "user_tokens": user_tokens,
-            "user_words": user_words,
-            "user_text": user_text # for tech job check
-        }
-    except Exception as e:
-        logger.error(f"Match context generation error: {e}")
-        return {"user_tokens": set(), "user_words": set(), "user_text": ""}
-
-def _calculate_match_score(job: Dict[str, Any], user: Optional[Dict[str, Any]], match_context: Optional[Dict[str, Any]] = None) -> int:
+def _calculate_match_score(job: Dict[str, Any], user: Optional[Dict[str, Any]]) -> int:
     """
     Calculate a realistic match score (0-99) based on user profile/resume and job description.
     Stricter logic to prevent high scores for irrelevant roles (e.g., Dentist vs AI Engineer).
@@ -4175,57 +4104,48 @@ def _calculate_match_score(job: Dict[str, Any], user: Optional[Dict[str, Any]], 
         job_desc = (job.get("description") or "").lower()
         job_text = f"{job_title} {job_desc}"
         
-        # 2. & 3. Contextual Match
-        if match_context:
-            user_words = match_context.get("user_words", set())
-            user_tokens = match_context.get("user_tokens", set())
-        else:
-            # Legacy/Single-call path
-            user_text = ""
-            user_title = ""
+        user_text = ""
+        user_title = ""
+        
+        # Extract from profile precisely if available
+        user_prefs = (user.get("preferences") or {}) if user else {}
+        if user_prefs.get("target_role"):
+            user_title = user_prefs["target_role"].lower()
+        elif user.get("target_role"):
+            user_title = user.get("target_role").lower()
             
-            # Extract from profile precisely if available
-            user_prefs = (user.get("preferences") or {}) if user else {}
-            if user_prefs.get("target_role"):
-                user_title = user_prefs["target_role"].lower()
-            elif user.get("target_role"):
-                user_title = user.get("target_role").lower()
-                
-            # Priority: Resume Text > Skills > Summary
-            if user.get("latest_resume") and user["latest_resume"].get("text_content"):
-                 user_text = user["latest_resume"]["text_content"]
-            elif user.get("resume_text"):
-                 user_text = user["resume_text"]
-            
-            # Supplement with structured skills
-            skills = user.get("skills", {})
-            if isinstance(skills, dict):
-                 user_text += " " + " ".join(skills.get("technical", []))
-                 user_text += " " + " ".join(skills.get("soft", []))
-            elif isinstance(skills, list):
-                 user_text += " " + " ".join(skills)
+        # Priority: Resume Text > Skills > Summary
+        if user.get("latest_resume") and user["latest_resume"].get("text_content"):
+             user_text = user["latest_resume"]["text_content"]
+        elif user.get("resume_text"):
+             user_text = user["resume_text"]
+        
+        # Supplement with structured skills
+        skills = user.get("skills", {})
+        if isinstance(skills, dict):
+             user_text += " " + " ".join(skills.get("technical", []))
+             user_text += " " + " ".join(skills.get("soft", []))
+        elif isinstance(skills, list):
+             user_text += " " + " ".join(skills)
 
-            # Supplement with structured experience
-            experience = user.get("experience") or user.get("employment_history")
-            if isinstance(experience, list):
-                for exp in experience:
-                    if isinstance(exp, dict):
-                        user_text += f" {exp.get('title', '')} {exp.get('company', '')} {exp.get('description', '')}"
-            
-            user_text = user_text.lower()
-            
-            # Tokenize locally
-            import re
-            user_words = set(re.findall(r'\b\w{2,}\b', user_title)) if user_title else set()
-            if not user_words and user_text:
-                extracted_title = _extract_target_role(user_text)
-                user_words = set(re.findall(r'\b\w{2,}\b', extracted_title.lower()))
-            user_tokens = set(re.findall(r'\b\w{2,}\b', user_text))
-
+        # Supplement with structured experience
+        experience = user.get("experience") or user.get("employment_history")
+        if isinstance(experience, list):
+            for exp in experience:
+                if isinstance(exp, dict):
+                    user_text += f" {exp.get('title', '')} {exp.get('company', '')} {exp.get('description', '')}"
+        
+        user_text = user_text.lower()
+        
         # 2. Strict Role Match Check
         import re
         job_words = set(re.findall(r'\b\w{2,}\b', job_title))
+        user_words = set(re.findall(r'\b\w{2,}\b', user_title)) if user_title else set()
         
+        if not user_words and user_text:
+            extracted_title = _extract_target_role(user_text).lower()
+            user_words = set(re.findall(r'\b\w{2,}\b', extracted_title))
+
         title_match = False
         if user_words and job_words:
             overlap = job_words.intersection(user_words)
@@ -4234,14 +4154,16 @@ def _calculate_match_score(job: Dict[str, Any], user: Optional[Dict[str, Any]], 
         
         # 3. Keyword Matching Score
         keyword_score = 0
-        job_tokens = set(re.findall(r'\b\w{2,}\b', job_text))
-        
-        if job_tokens and user_tokens:
-            common = job_tokens.intersection(user_tokens)
-            # Denom scaling: don't let short descriptions artificially boost scores
-            denom = max(20, min(len(job_tokens), 60)) 
-            overlap_ratio = len(common) / denom
-            keyword_score = int(overlap_ratio * 100)
+        if user_text:
+            job_tokens = set(re.findall(r'\b\w{2,}\b', job_text))
+            user_tokens = set(re.findall(r'\b\w{2,}\b', user_text))
+            
+            if job_tokens:
+                common = job_tokens.intersection(user_tokens)
+                # Denom scaling: don't let short descriptions artificially boost scores
+                denom = max(20, min(len(job_tokens), 60)) 
+                overlap_ratio = len(common) / denom
+                keyword_score = int(overlap_ratio * 100)
         
         # ---------------------------------------------------------
         # 4. Final Aggregation (Project Orion V3.1 - Dynamic)
@@ -4937,8 +4859,7 @@ async def ai_ninja_apply(
         resume_text = ""
         if resume:
             file_content = await resume.read()
-            resume_data = await parse_resume(file_content, resume.filename)
-            resume_text = resume_data.get("text", "") if isinstance(resume_data, dict) else resume_data
+            resume_text = await parse_resume(file_content, resume.filename)
         else:
             # Fallback to user's saved resume text
             resume_text = user.get("resume_text", "")
@@ -4958,47 +4879,10 @@ async def ai_ninja_apply(
         if not result:
             raise HTTPException(status_code=500, detail="AI Tailoring failed to produce results.")
 
-        # --- PERSISTENCE & TRACKING ---
-        ats_resume_text = result.get("ats_resume", "")
-        
-        # 1. Save Tailored Resume Content
-        try:
-            tailored_data = {
-                "user_id": str(user.get("id")),
-                "job_id": str(jobId) if 'jobId' in locals() else None, # Might be passed in Form
-                "resume_text": ats_resume_text,
-                "created_at": datetime.now(timezone.utc).isoformat()
-            }
-            SupabaseService.save_tailored_resume(tailored_data)
-        except Exception as e:
-            logger.warning(f"Failed to save tailored resume record: {e}")
-
-        # 2. Create Application Tracker Record
-        try:
-            app_record = {
-                "user_id": str(user.get("id")),
-                "user_email": user.get("email"),
-                "job_title": jobTitle or "Tailored Role",
-                "company": company or "Target Company",
-                "status": "applied",
-                "notes": "Generated via AI Ninja Tailoring",
-                "created_at": datetime.now(timezone.utc).isoformat(),
-                "metadata": {
-                    "resumeText": ats_resume_text,
-                    "jobDescription": jobDescription,
-                    "intensity": intensity,
-                    "origin": "ai-ninja"
-                }
-            }
-            SupabaseService.create_application(app_record)
-            logger.info(f"✅ Application tracked for {user.get('email')} - {jobTitle}")
-        except Exception as e:
-            logger.error(f"Failed to create application tracker record: {e}")
-
         return {
             "success": True,
-            "ats_resume": ats_resume_text,
-            "tailoredResume": ats_resume_text, # UI alias
+            "ats_resume": result.get("ats_resume"),
+            "tailoredResume": result.get("ats_resume"), # UI alias
             "cover_letter": result.get("cover_letter"),
             "tailoredCoverLetter": result.get("cover_letter"), # UI alias
             "analysis": result.get("alignment_highlights")
@@ -5104,10 +4988,8 @@ async def scan_resume(
             raise HTTPException(status_code=400, detail=validation_error)
 
         # Parse resume
-        resume_data = await parse_resume(file_content, resume.filename)
-        resume_text = resume_data.get("text", "") if isinstance(resume_data, dict) else resume_data
-        
-        if not resume_text or not resume_text.strip():
+        resume_text = await parse_resume(file_content, resume.filename)
+        if not resume_text.strip():
             raise HTTPException(
                 status_code=400,
                 detail="Could not extract text from resume. Please ensure it's not an image-based PDF.",
@@ -5187,14 +5069,13 @@ async def parse_resume_endpoint(
             raise HTTPException(status_code=400, detail=validation_error)
 
         # Parse resume text
-        resume_data = await parse_resume(file_content, resume.filename)
-        resume_text = resume_data.get("text", "") if isinstance(resume_data, dict) else resume_data
+        resume_text = await parse_resume(file_content, resume.filename)
         
         with open("debug_log.txt", "a") as f:
             f.write(f"Parsed Text Length: {len(resume_text)}\n")
             f.write(f"Parsed Text Preview: {resume_text[:100]}\n")
         
-        if not resume_text or not resume_text.strip():
+        if not resume_text.strip():
             with open("debug_log.txt", "a") as f:
                 f.write("Error: Empty resume text\n")
             raise HTTPException(
@@ -5584,8 +5465,6 @@ class SaveResumeRequest(BaseModel):
     file_name: str = ""
     replace_id: Optional[str] = None
     id: Optional[str] = None # Support 'id' field from frontend
-    font_family: Optional[str] = None
-    font_size: Optional[int] = None
 
 
 @app.get("/api/resumes/{email}")
@@ -5606,8 +5485,6 @@ async def get_unified_resumes(email: str):
             r["updatedAt"] = r.get("updated_at") or r.get("updatedAt") or r["createdAt"]
             r["textPreview"] = r["resumeText"][:200] + "..." if r["resumeText"] else ""
             r["isSystemGenerated"] = r.get("is_system_generated", False) or r.get("isSystemGenerated", False)
-            r["fontFamily"] = r.get("font_family") or r.get("fontFamily")
-            r["fontSize"] = r.get("font_size") or r.get("fontSize")
             merged.append(r)
 
 
@@ -5646,22 +5523,8 @@ async def save_user_resume(request: SaveResumeRequest):
             client.table("saved_resumes").update({
                 "resume_text": request.resume_text,
                 "file_name": request.file_name,
-                "font_family": request.font_family,
-                "font_size": request.font_size,
                 "updated_at": datetime.now(timezone.utc).isoformat(),
             }).eq("id", existing["id"]).execute()
-            
-            # Sync to profile for latest resume
-            try:
-                SupabaseService.update_user_profile(request.user_email, {
-                    "resume_text": request.resume_text,
-                    "latest_resume": existing["id"],
-                    "resume_metadata": {
-                        "font_family": request.font_family,
-                        "font_size": request.font_size
-                    }
-                })
-            except: pass
             
             return {
                 "success": True,
@@ -5680,35 +5543,16 @@ async def save_user_resume(request: SaveResumeRequest):
                 detail="You can only save up to 5 resumes. Please delete one to add a new one.",
             )
 
-        # Get user ID for the record
-        user_profile = SupabaseService.get_user_by_email(request.user_email)
-        user_uuid = user_profile.get("id") if user_profile else None
-
         # Save new resume to Supabase
         new_resume = {
-            "user_id": user_uuid,
             "user_email": request.user_email,
             "resume_name": request.resume_name,
             "resume_text": request.resume_text,
             "file_name": request.file_name,
-            "font_family": request.font_family,
-            "font_size": request.font_size,
             "created_at": datetime.now(timezone.utc).isoformat(),
             "updated_at": datetime.now(timezone.utc).isoformat(),
             "is_system_generated": False,
-            "is_base": "AI Tailored" not in request.resume_name # If it doesn't say AI Tailored, it's a base resume
         }
-        
-        # Sync to profile for latest resume
-        try:
-            SupabaseService.update_user_profile(request.user_email, {
-                "resume_text": request.resume_text,
-                "resume_metadata": {
-                    "font_family": request.font_family,
-                    "font_size": request.font_size
-                }
-            })
-        except: pass
         
         res = client.table("saved_resumes").insert(new_resume).execute()
         new_id = res.data[0]["id"] if res.data else None
@@ -5796,12 +5640,11 @@ async def export_resume_docx(request: dict):
         title = request.get("title", "Resume")
         template = request.get("template", "standard")
         font_family = request.get("font_family", "Times New Roman")
-        font_size = request.get("font_size", 11)
         
         # Ensure we don't have None
         text = text or ""
         
-        file_stream = create_text_docx(text, title=title, font_family=font_family, font_size=font_size, template=template)
+        file_stream = create_text_docx(text, title=title, font_family=font_family, template=template)
         
         safe_title = "".join([c if c.isalnum() else "_" for c in title])
         filename = f"{safe_title}.docx"
@@ -6084,9 +5927,8 @@ async def save_application(application: ApplicationData):
         if not job_id or len(job_id) < 30:
             client = SupabaseService.get_client()
             import datetime
-            from document_generator import sanitize_job_title
             job_data = {
-                "title": sanitize_job_title(application.jobTitle) or "Unknown Role",
+                "title": application.jobTitle or "Unknown Role",
                 "company": application.company or "Unknown Company",
                 "job_id": f"external-{int(datetime.datetime.utcnow().timestamp())}",
                 "description": application.jobDescription or "",
@@ -6457,14 +6299,11 @@ async def upload_resume_endpoint(
         # Validate
         try:
              from resume_parser import parse_resume, validate_resume_file
-             # Parse Text & Metadata
-             resume_data = await parse_resume(content, file.filename)
-             if isinstance(resume_data, dict):
-                 text_content = resume_data.get("text", "")
-                 resume_metadata = resume_data.get("metadata", {})
-             else:
-                 text_content = resume_data
-                 resume_metadata = {}
+             error = validate_resume_file(file.filename, content)
+             if error:
+                 raise HTTPException(status_code=400, detail=error)
+             # Parse Text
+             text_content = await parse_resume(content, file.filename)
         except ImportError:
              text_content = ""
              logger.warning("Resume parser not available")
@@ -6488,33 +6327,19 @@ async def upload_resume_endpoint(
         
         # ALSO save as a distinct Base Resume in the `saved_resumes` table
         try:
-            # Save to saved_resumes table
-            resume_item = {
-                "user_id": user.get("id"), # Use actual UUID from user object
+            resume_id = str(uuid.uuid4())
+            new_resume = {
+                "id": resume_id,
                 "user_email": user["email"],
                 "resume_name": file.filename,
                 "resume_text": text_content,
                 "file_name": file.filename,
-                "font_family": resume_metadata.get("font_family"),
-                "font_size": resume_metadata.get("font_size"),
                 "created_at": datetime.now(timezone.utc).isoformat(),
-                "is_system_generated": False,
-                "is_base": True # Flag as a base resume
+                "updated_at": datetime.now(timezone.utc).isoformat(),
+                "is_system_generated": False
             }
-            
             client = SupabaseService.get_client()
-            res = client.table("saved_resumes").insert(resume_item).execute()
-            resume_id = res.data[0]["id"] if res.data else None
-
-            # PROACTIVE PROFILE SYNC -> Now using Supabase (Project Orion Boost)
-            try:
-                SupabaseService.update_user_profile(user["email"], {
-                    "latest_resume": resume_id,
-                    "resume_text": text_content,
-                    "resume_metadata": resume_metadata
-                })
-            except Exception as e:
-                logger.warning(f"Failed to sync profile after resume upload: {e}")
+            client.table("saved_resumes").insert(new_resume).execute()
         except Exception as insert_err:
             logger.error(f"Failed to persist uploaded resume to saved_resumes table: {insert_err}")
         
@@ -6658,47 +6483,8 @@ async def generate_smart_answer_endpoint(
 
 
 
-WAVE_SIZE = 20  # Number of distinct companies shown per wave
+# Redundant mock helper functions removed
 
-def _interleave_jobs_by_company(jobs, max_contiguous=1):
-    """
-    Wave-based interleaving:
-      Wave 1 – pick the 1st job from each of the first WAVE_SIZE companies.
-      Wave 2 – pick the 2nd job from those same WAVE_SIZE companies (if available).
-      … repeat until all jobs are consumed.
-
-    This produces the pattern:
-      [co1_job1, co2_job1, … co20_job1,  co1_job2, co2_job2, … co20_job2, …]
-    """
-    if not jobs:
-        return []
-
-    # Group jobs by company, preserving the order companies first appear
-    buckets: dict = {}
-    companies_in_order: list = []
-    for job in jobs:
-        company = (job.get("company") or "Unknown").strip()
-        if company not in buckets:
-            buckets[company] = []
-            companies_in_order.append(company)
-        buckets[company].append(job)
-
-    # Build fixed-size waves of WAVE_SIZE companies
-    # If there are fewer than WAVE_SIZE companies just use them all.
-    wave_companies = companies_in_order[:WAVE_SIZE]
-
-    result = []
-    # Keep cycling through wave_companies until every bucket in the wave is empty
-    while any(buckets[c] for c in wave_companies):
-        for company in wave_companies:
-            if buckets[company]:
-                result.append(buckets[company].pop(0))
-
-    # Append any jobs from companies outside the first WAVE_SIZE (keeps them at the end)
-    for company in companies_in_order[WAVE_SIZE:]:
-        result.extend(buckets[company])
-
-    return result
 
 # Jobs API Endpoints
 @app.get("/api/jobs")
@@ -6738,9 +6524,6 @@ async def get_jobs(
                  logger.error(f"Project Orion Auth Error (get_jobs): {str(e)}")
                  pass
 
-        # 1.1 Generate Match Context for performance
-        match_context = _get_match_context(user) if user else None
-
         # 2. JOB FETCHING (SUPABASE)
         offset = (page - 1) * limit
         
@@ -6762,12 +6545,10 @@ async def get_jobs(
             # If we have multiple roles and no search, we use them as job_functions to trigger OR filtering in Supabase
             active_job_functions = ",".join(recommendation_roles)
             
-        # Primary fetch – always pull a large pool so company-wave interleaving
-        # has enough diversity (we paginate AFTER interleaving below).
-        FETCH_POOL = 200
+        # Primary fetch (Fresh jobs)
         supabase_jobs = SupabaseService.get_jobs(
-            limit=FETCH_POOL,
-            offset=0,
+            limit=limit if (recommendation_roles or active_job_functions) else 40,
+            offset=offset if not (recommendation_roles or active_job_functions) else 0,
             search=active_search,
             job_type=type,
             location=country,
@@ -6784,8 +6565,8 @@ async def get_jobs(
         if not supabase_jobs:
             logger.info("No fresh jobs found in last 72h. Falling back to older jobs...")
             supabase_jobs = SupabaseService.get_jobs(
-                limit=FETCH_POOL,
-                offset=0,
+                limit=limit if not target_role else 100,
+                offset=offset if not target_role else 0,
                 search=active_search,
                 job_type=type,
                 location=country,
@@ -6824,7 +6605,7 @@ async def get_jobs(
             job["job_id"] = job.get("job_id") or job.get("id")
             
             # Apply Match Score
-            match_val = _calculate_match_score(job, user, match_context) if user else 0
+            match_val = _calculate_match_score(job, user) if user else 0
             job["matchScore"] = match_val
             job["match_score"] = match_val
             
@@ -6833,15 +6614,17 @@ async def get_jobs(
             job["insiderConnections"] = _get_mock_insider_connections()
             formatted_results.append(job)
 
-        if sort == 'recommended' and user and formatted_results:
+        # Apply Sort
+        if sort == 'newest':
+            formatted_results.sort(key=lambda x: x.get("created_at") or "", reverse=True)
+        elif user and sort == 'recommended' and formatted_results:
             formatted_results.sort(key=lambda x: x.get("matchScore", 0), reverse=True)
 
-        # Wave-interleave: 20 companies × N rounds
-        if formatted_results:
-            formatted_results = _interleave_jobs_by_company(formatted_results)
-
-        # Paginate AFTER interleaving so page boundaries respect the wave order
-        results = formatted_results[offset:offset + limit]
+        # Manual Pagination if we fetched a larger pool
+        if target_role:
+            results = formatted_results[offset:offset + limit]
+        else:
+            results = formatted_results
 
         # 4. RECOMMENDED FILTERS (PROJECT ORION)
         recommended_filters = []

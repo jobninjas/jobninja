@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>jobNinjas.io | Recommended Jobs</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            --primary: #00C896;
+            --primary-hover: #00A97E;
+            --primary-light: #E6FAF5;
+            --primary-text: #007A5A;
+            --dark-match: #1a1f2e;
+            --white: #ffffff;
+            --bg-page: #f4f6f8;
+            --text-main: #111827;
+            --text-secondary: #6b7280;
+            --border: #e5e7eb;
+            --sidebar-width: 220px;
+            --right-panel-width: 280px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-page);
+            color: var(--text-main);
+            overflow: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Top Navbar */
+        .top-nav {
+            height: 64px;
+            background: var(--white);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .logo-box {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+        }
+
+        .logo-icon {
+            width: 34px;
+            height: 34px;
+            background: var(--primary);
+            border-radius: 9px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            box-shadow: 0 4px 10px rgba(0, 200, 150, 0.2);
+        }
+
+        .logo-text {
+            font-size: 1.35rem;
+            font-weight: 800;
+            color: var(--text-main);
+            letter-spacing: -0.02em;
+        }
+
+        .logo-text span {
+            color: var(--primary);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 28px;
+            margin-left: 40px;
+        }
+
+        .nav-link-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--text-secondary);
+            font-weight: 500;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .nav-link-item:hover {
+            color: var(--primary);
+        }
+
+        .nav-user-area {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .nav-avatar {
+            width: 36px;
+            height: 36px;
+            background: var(--primary-light);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary);
+            font-weight: 700;
+            font-size: 0.8rem;
+            border: 1px solid rgba(0, 200, 150, 0.1);
+        }
+
+        /* Main Layout Grid */
+        .app-container {
+            display: grid;
+            grid-template-columns: var(--sidebar-width) 1fr var(--right-panel-width);
+            height: calc(100vh - 64px);
+        }
+
+        /* Left Sidebar */
+        .sidebar {
+            background: var(--white);
+            border-right: 1px solid var(--border);
+            padding: 24px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            overflow-y: auto;
+        }
+
+        .sidebar-section {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .section-label {
+            font-size: 0.7rem;
+            font-weight: 800;
+            color: var(--text-secondary);
+            letter-spacing: 0.08em;
+            padding-left: 14px;
+            margin-bottom: 6px;
+            opacity: 0.6;
+        }
+
+        .sidebar-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 14px;
+            border-radius: 12px;
+            text-decoration: none;
+            color: var(--text-secondary);
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+
+        .sidebar-item:hover {
+            background: #f8fafc;
+            color: var(--text-main);
+        }
+
+        .sidebar-item.active {
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 4px 12px rgba(0, 200, 150, 0.15);
+        }
+
+        .sidebar-item.logout {
+            color: #ef4444;
+            margin-top: 10px;
+        }
+
+        .sidebar-item.logout:hover {
+            background: #fef2f2;
+        }
+
+        .soon-badge {
+            background: #f1f5f9;
+            color: #64748b;
+            font-size: 0.65rem;
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-weight: 700;
+            margin-left: auto;
+        }
+
+        /* Center Content */
+        .main-content {
+            padding: 32px 48px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 28px;
+        }
+
+        .content-header {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .content-header h1 {
+            font-size: 1.75rem;
+            font-weight: 800;
+            color: var(--text-main);
+            letter-spacing: -0.02em;
+        }
+
+        .content-header p {
+            font-size: 1rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        /* Filter Section */
+        .filter-section {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .filter-row {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .filter-pill {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 10px 16px;
+            background: var(--white);
+            border: 1px solid var(--border);
+            border-radius: 100px;
+            font-size: 0.88rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: var(--text-main);
+        }
+
+        .filter-pill:hover {
+            border-color: var(--primary);
+            background: #fcfdfe;
+        }
+
+        .filter-pill.active {
+            border-color: var(--primary);
+            color: var(--primary-text);
+            background: var(--primary-light);
+        }
+
+        .btn-filters-all {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 100px;
+            font-weight: 700;
+            font-size: 0.88rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 10px rgba(0, 200, 150, 0.15);
+        }
+
+        .btn-filters-all:hover {
+            background: var(--primary-hover);
+            transform: translateY(-1px);
+        }
+
+        .reset-link {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            text-decoration: none;
+            margin-left: 10px;
+            font-weight: 600;
+        }
+
+        .reset-link:hover {
+            color: #ef4444;
+        }
+
+        .results-count-pill {
+            display: inline-flex;
+            background: var(--primary-light);
+            color: var(--primary-text);
+            padding: 6px 14px;
+            border-radius: 100px;
+            font-size: 0.85rem;
+            font-weight: 800;
+            width: fit-content;
+            margin-top: 4px;
+        }
+
+        /* Job Cards */
+        .jobs-list {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            padding-bottom: 60px;
+        }
+
+        .job-card {
+            background: var(--white);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            overflow: hidden;
+            display: flex;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+        }
+
+        .job-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 30px -4px rgba(0, 0, 0, 0.08);
+            border-color: var(--primary);
+        }
+
+        .job-card-inner {
+            flex: 1;
+            padding: 28px;
+            display: flex;
+            gap: 24px;
+        }
+
+        .company-logo {
+            width: 56px;
+            height: 56px;
+            background: #f8fafc;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid var(--border);
+            flex-shrink: 0;
+            font-size: 24px;
+        }
+
+        .job-details {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .job-title-row h2 {
+            font-size: 1.25rem;
+            font-weight: 800;
+            color: var(--text-main);
+            margin-bottom: 6px;
+            letter-spacing: -0.01em;
+        }
+
+        .company-name {
+            font-size: 1rem;
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+
+        .job-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .tag {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: #f8fafc;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+
+        .job-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 6px;
+        }
+
+        .btn-apply {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 24px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-apply:hover {
+            background: var(--primary-hover);
+        }
+
+        .btn-ask-ai {
+            background: white;
+            color: var(--primary-text);
+            border: 1.5px solid var(--primary);
+            padding: 10px 24px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-ask-ai:hover {
+            background: var(--primary-light);
+        }
+
+        .match-score-box {
+            width: 140px;
+            background: var(--dark-match);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            flex-shrink: 0;
+        }
+
+        .match-value {
+            font-size: 2.2rem;
+            font-weight: 900;
+            line-height: 1;
+        }
+
+        .match-label {
+            font-size: 0.75rem;
+            font-weight: 800;
+            letter-spacing: 0.15em;
+            margin-top: 6px;
+            opacity: 0.7;
+        }
+
+        /* Right AI Ninja Panel */
+        .right-panel {
+            background: var(--white);
+            border-left: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .chat-header {
+            padding: 24px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .ai-avatar {
+            width: 44px;
+            height: 44px;
+            background: var(--primary-light);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary);
+            border: 1px solid rgba(0, 200, 150, 0.1);
+        }
+
+        .chat-header-info h3 {
+            font-size: 1.05rem;
+            font-weight: 800;
+            color: var(--text-main);
+        }
+
+        .chat-header-info p {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .chat-body {
+            flex: 1;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            overflow-y: auto;
+        }
+
+        .chat-bubble {
+            background: #f1f5f9;
+            padding: 14px 18px;
+            border-radius: 20px 20px 20px 6px;
+            font-size: 0.92rem;
+            line-height: 1.6;
+            max-width: 90%;
+            color: #334155;
+            font-weight: 500;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.02);
+        }
+
+        .user-avatar-indicator {
+            align-self: flex-end;
+            width: 32px;
+            height: 32px;
+            background: #e2e8f0;
+            border-radius: 50%;
+        }
+
+        .chat-footer {
+            padding: 24px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .chat-input-wrapper {
+            display: flex;
+            align-items: center;
+            background: #f8fafc;
+            border: 1.5px solid var(--border);
+            border-radius: 14px;
+            padding: 10px 14px;
+            gap: 10px;
+            transition: border-color 0.2s;
+        }
+
+        .chat-input-wrapper:focus-within {
+            border-color: var(--primary);
+        }
+
+        .chat-input-wrapper input {
+            flex: 1;
+            border: none;
+            background: none;
+            padding: 6px;
+            font-size: 0.95rem;
+            outline: none;
+            font-family: inherit;
+            color: var(--text-main);
+        }
+
+        .btn-send {
+            color: var(--primary);
+            cursor: pointer;
+            display: flex;
+            transition: transform 0.2s;
+        }
+
+        .btn-send:hover {
+            transform: scale(1.1);
+        }
+
+        .disclaimer {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            text-align: center;
+            line-height: 1.5;
+            padding: 0 10px;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #e2e8f0;
+            border-radius: 10px;
+            border: 2px solid white;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #cbd5e1;
+        }
+
+        /* Animation */
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .job-card {
+            animation: slideUp 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+
+        .job-card:nth-child(1) {
+            animation-delay: 0.1s;
+        }
+
+        .job-card:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .job-card:nth-child(3) {
+            animation-delay: 0.3s;
+        }
+
+        .job-card:nth-child(4) {
+            animation-delay: 0.4s;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Top Navigation -->
+    <nav class="top-nav">
+        <a href="#" class="logo-box">
+            <div class="logo-icon"><i data-lucide="zap" size="22"></i></div>
+            <div class="logo-text">job<span>Ninjas</span>.ai</div>
+        </a>
+
+        <div class="nav-links">
+            <div class="nav-link-item">Products <i data-lucide="chevron-down" size="16"></i></div>
+            <div class="nav-link-item">ATS Resume <i data-lucide="chevron-down" size="16"></i></div>
+            <div class="nav-link-item">LinkedIn <i data-lucide="chevron-down" size="16"></i></div>
+            <div class="nav-link-item">Job Board <i data-lucide="chevron-down" size="16"></i></div>
+        </div>
+
+        <div class="nav-user-area">
+            <div class="nav-avatar">JD</div>
+            <i data-lucide="chevron-down" size="16" style="color: var(--text-secondary); cursor: pointer;"></i>
+        </div>
+    </nav>
+
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="sidebar-section">
+                <div class="section-label">NAVIGATION</div>
+                <a href="#" class="sidebar-item">
+                    <i data-lucide="scan" size="18"></i> Resume Scanner
+                </a>
+                <a href="#" class="sidebar-item active">
+                    <i data-lucide="search" size="18"></i> Job Search
+                </a>
+                <a href="#" class="sidebar-item">
+                    <i data-lucide="sparkles" size="18"></i> AI Ninja
+                </a>
+                <a href="#" class="sidebar-item">
+                    <i data-lucide="briefcase" size="18"></i> Application Tracker
+                </a>
+                <a href="#" class="sidebar-item">
+                    <i data-lucide="file-text" size="18"></i> My Resumes
+                </a>
+                <a href="#" class="sidebar-item">
+                    <i data-lucide="book-open" size="18"></i> Interview Prep
+                </a>
+                <a href="#" class="sidebar-item">
+                    <i data-lucide="tool" size="18"></i> Free Tools
+                </a>
+                <a href="#" class="sidebar-item">
+                    <i data-lucide="rocket" size="18"></i> Auto-Fill Applications <span class="soon-badge">Soon</span>
+                </a>
+            </div>
+
+            <div class="sidebar-section" style="margin-top: auto; padding-top: 20px; border-top: 1px solid #f1f5f9;">
+                <div class="section-label">ACCOUNT</div>
+                <a href="#" class="sidebar-item">
+                    <i data-lucide="credit-card" size="18"></i> Pricing
+                </a>
+                <a href="#" class="sidebar-item">
+                    <i data-lucide="user" size="18"></i> My Profile
+                </a>
+                <a href="#" class="sidebar-item logout">
+                    <i data-lucide="log-out" size="18"></i> Logout
+                </a>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <header class="content-header">
+                <h1>Recommended Jobs</h1>
+                <p>Based on your resume profile &nbsp;•&nbsp; 13,542 total</p>
+            </header>
+
+            <div class="filter-section">
+                <!-- Filter Row 1 -->
+                <div class="filter-row">
+                    <div class="filter-pill">United States <i data-lucide="chevron-down" size="14"></i></div>
+                    <div class="filter-pill">Job Function <i data-lucide="chevron-down" size="14"></i></div>
+                    <div class="filter-pill">Experience Level <i data-lucide="chevron-down" size="14"></i></div>
+                    <div class="filter-pill">Any Type <i data-lucide="chevron-down" size="14"></i></div>
+                    <div class="filter-pill">Any Status <i data-lucide="chevron-down" size="14"></i></div>
+                    <div
+                        style="width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-secondary);">
+                        <i data-lucide="info" size="18"></i>
+                    </div>
+                    <div style="flex: 1;"></div>
+                    <div class="filter-pill">Recommended <i data-lucide="chevron-down" size="14"></i></div>
+                </div>
+
+                <!-- Filter Row 2 -->
+                <div class="filter-row">
+                    <div class="filter-pill">Any time <i data-lucide="chevron-down" size="14"></i></div>
+                    <div class="filter-pill">Any salary <i data-lucide="chevron-down" size="14"></i></div>
+                    <div class="filter-pill">All Industries <i data-lucide="chevron-down" size="14"></i></div>
+                    <div class="filter-pill">Any experience <i data-lucide="chevron-down" size="14"></i></div>
+                    <button class="btn-filters-all">All Filters</button>
+                    <a href="#" class="reset-link">× Reset Filters</a>
+                </div>
+
+                <div class="results-count-pill">13,542 jobs found</div>
+            </div>
+
+            <div class="jobs-list">
+                <!-- Card 1 -->
+                <div class="job-card">
+                    <div class="job-card-inner">
+                        <div class="company-logo" style="background: #eef2ff; color: #4f46e5;">
+                            <i data-lucide="building" size="28"></i>
+                        </div>
+                        <div class="job-details">
+                            <div class="job-title-row">
+                                <h2>Part Time Teller - Lee and Nutley</h2>
+                                <div class="company-name">PNC Bank</div>
+                            </div>
+                            <div class="job-tags">
+                                <div class="tag"><i data-lucide="map-pin" size="14"></i> US, United States</div>
+                                <div class="tag"><i data-lucide="layout" size="14"></i> Onsite</div>
+                                <div class="tag"><i data-lucide="bar-chart-2" size="14"></i> Mid-Senior Level</div>
+                                <div class="tag"><i data-lucide="dollar-sign" size="14"></i> Competitive</div>
+                            </div>
+                            <div class="job-actions">
+                                <button class="btn-apply">Apply Now</button>
+                                <button class="btn-ask-ai">Ask AI Ninja</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="match-score-box">
+                        <div class="match-value">71%</div>
+                        <div class="match-label">MATCH</div>
+                    </div>
+                </div>
+
+                <!-- Card 2 -->
+                <div class="job-card">
+                    <div class="job-card-inner">
+                        <div class="company-logo" style="background: #fff7ed; color: #ea580c;">
+                            <i data-lucide="sun" size="28"></i>
+                        </div>
+                        <div class="job-details">
+                            <div class="job-title-row">
+                                <h2>Assistant Preconstruction Design Phase Manager - Solar</h2>
+                                <div class="company-name">Mortenson</div>
+                            </div>
+                            <div class="job-tags">
+                                <div class="tag"><i data-lucide="map-pin" size="14"></i> Minnesota, US</div>
+                                <div class="tag"><i data-lucide="layout" size="14"></i> Onsite</div>
+                                <div class="tag"><i data-lucide="bar-chart-2" size="14"></i> Mid-Senior Level</div>
+                                <div class="tag"><i data-lucide="dollar-sign" size="14"></i> Competitive</div>
+                            </div>
+                            <div class="job-actions">
+                                <button class="btn-apply">Apply Now</button>
+                                <button class="btn-ask-ai">Ask AI Ninja</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="match-score-box">
+                        <div class="match-value" style="color: var(--primary);">89%</div>
+                        <div class="match-label">MATCH</div>
+                    </div>
+                </div>
+
+                <!-- Card 3 -->
+                <div class="job-card">
+                    <div class="job-card-inner">
+                        <div class="company-logo" style="background: #f0fdf4; color: #16a34a;">
+                            <i data-lucide="landmark" size="28"></i>
+                        </div>
+                        <div class="job-details">
+                            <div class="job-title-row">
+                                <h2>Personal Banker</h2>
+                                <div class="company-name">PNC Bank</div>
+                            </div>
+                            <div class="job-tags">
+                                <div class="tag"><i data-lucide="map-pin" size="14"></i> United States</div>
+                                <div class="tag"><i data-lucide="globe" size="14"></i> Remote</div>
+                                <div class="tag"><i data-lucide="bar-chart-2" size="14"></i> Entry Level</div>
+                                <div class="tag"><i data-lucide="dollar-sign" size="14"></i> $65k - $90k</div>
+                            </div>
+                            <div class="job-actions">
+                                <button class="btn-apply">Apply Now</button>
+                                <button class="btn-ask-ai">Ask AI Ninja</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="match-score-box">
+                        <div class="match-value">84%</div>
+                        <div class="match-label">MATCH</div>
+                    </div>
+                </div>
+
+                <!-- Card 4 -->
+                <div class="job-card">
+                    <div class="job-card-inner">
+                        <div class="company-logo" style="background: #fdf2f8; color: #db2777;">
+                            <i data-lucide="code" size="28"></i>
+                        </div>
+                        <div class="job-details">
+                            <div class="job-title-row">
+                                <h2>Senior Full Stack Engineer</h2>
+                                <div class="company-name">TechFlow Systems</div>
+                            </div>
+                            <div class="job-tags">
+                                <div class="tag"><i data-lucide="map-pin" size="14"></i> Remote</div>
+                                <div class="tag"><i data-lucide="cpu" size="14"></i> Flexible</div>
+                                <div class="tag"><i data-lucide="bar-chart-2" size="14"></i> Senior Level</div>
+                                <div class="tag"><i data-lucide="dollar-sign" size="14"></i> $140k - $180k</div>
+                            </div>
+                            <div class="job-actions">
+                                <button class="btn-apply">Apply Now</button>
+                                <button class="btn-ask-ai">Ask AI Ninja</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="match-score-box">
+                        <div class="match-value" style="color: var(--primary);">94%</div>
+                        <div class="match-label">MATCH</div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- AI Ninja Right Panel -->
+        <aside class="right-panel">
+            <div class="chat-header">
+                <div class="ai-avatar"><i data-lucide="sparkles" size="24"></i></div>
+                <div class="chat-header-info">
+                    <h3>AI Ninja</h3>
+                    <p>Your Career Copilot</p>
+                </div>
+            </div>
+
+            <div class="chat-body" id="chatBody">
+                <div class="chat-bubble">
+                    Hello! I'm your AI Ninja. I've analyzed 13,542 jobs and found several high-match opportunities based
+                    on your software engineering background. Which one would you like to explore first?
+                </div>
+                <div class="user-avatar-indicator"></div>
+            </div>
+
+            <div class="chat-footer">
+                <div class="chat-input-wrapper">
+                    <input type="text" placeholder="Ask AI Ninja anything..." id="chatInput">
+                    <div class="btn-send"><i data-lucide="send" size="20"></i></div>
+                </div>
+                <p class="disclaimer">AI Ninja can make mistakes. Please verify important information before making
+                    career decisions.</p>
+            </div>
+        </aside>
+    </div>
+
+    <script>
+        // Initialize Lucide Icons
+        lucide.createIcons();
+
+        // Filter Toggle Logic
+        document.querySelectorAll('.filter-pill').forEach(pill => {
+            pill.addEventListener('click', () => {
+                pill.classList.toggle('active');
+            });
+        });
+
+        // Simple Chat Interaction
+        const chatInput = document.getElementById('chatInput');
+        const chatBody = document.getElementById('chatBody');
+
+        function appendMessage(text, isAi = true) {
+            const bubble = document.createElement('div');
+            bubble.className = 'chat-bubble';
+            if (!isAi) {
+                bubble.style.background = 'var(--primary-light)';
+                bubble.style.color = 'var(--primary-text)';
+                bubble.style.alignSelf = 'flex-end';
+                bubble.style.borderRadius = '20px 20px 6px 20px';
+            }
+            bubble.textContent = text;
+            chatBody.appendChild(bubble);
+            chatBody.scrollTop = chatBody.scrollHeight;
+        }
+
+        chatInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && chatInput.value.trim()) {
+                const text = chatInput.value;
+                appendMessage(text, false);
+                chatInput.value = '';
+
+                setTimeout(() => {
+                    appendMessage("Interesting! Let me double-check the requirements for that role to see if it's a good fit for your skill set.");
+                }, 1000);
+            }
+        });
+
+        // Make buttons functional for demo
+        document.querySelectorAll('.btn-apply').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                btn.textContent = 'Applied';
+                btn.style.background = '#94a3b8';
+                btn.disabled = true;
+            });
+        });
+    </script>
+</body>
+
+</html>

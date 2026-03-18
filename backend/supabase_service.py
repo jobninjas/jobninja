@@ -721,7 +721,7 @@ class SupabaseService:
             return False
 
     @staticmethod
-    def get_saved_resumes(identifier: str, limit: int = 5) -> List[Dict[str, Any]]:
+    def get_saved_resumes(identifier: str, limit: int = 50) -> List[Dict[str, Any]]:
         """Get saved resumes for a user from Supabase (by user_id or user_email)"""
         client = SupabaseService.get_client()
         if not client: return []

@@ -1125,3 +1125,37 @@ Traceback (most recent call last):
                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 TypeError: extract_resume_data() got an unexpected keyword argument 'byok_config'
 
+
+--- PARSE RESUME 2026-03-17 09:13:54.721271 ---
+User: srkreddy452@gmail.com
+Filename: Sairam_Veereddy_Resumee.docx
+Content Length: 12310
+Parsed Text Length: 8082
+Parsed Text Preview: SAIRAM VEEREDDY
+AI ENGINEER
+vsairamkumarreddy@gmail.com   |   (217) 862-4693   |   Alpharetta, Georg
+Starting extraction...
+EXCEPTION: extract_resume_data() got an unexpected keyword argument 'byok_config'
+Traceback (most recent call last):
+  File "C:\Users\vsair\Downloads\novasquar-main\novasquad-main\nova-ninjas\backend\server.py", line 5207, in parse_resume_endpoint
+    parsed_data = await extract_resume_data(resume_text, byok_config=byok_config)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: extract_resume_data() got an unexpected keyword argument 'byok_config'
+
+
+--- PARSE RESUME 2026-03-17 09:13:54.908301 ---
+User: srkreddy452@gmail.com
+Filename: Sairam_Veereddy_Resumee.docx
+Content Length: 12310
+Parsed Text Length: 8082
+Parsed Text Preview: SAIRAM VEEREDDY
+AI ENGINEER
+vsairamkumarreddy@gmail.com   |   (217) 862-4693   |   Alpharetta, Georg
+Starting extraction...
+EXCEPTION: extract_resume_data() got an unexpected keyword argument 'byok_config'
+Traceback (most recent call last):
+  File "C:\Users\vsair\Downloads\novasquar-main\novasquad-main\nova-ninjas\backend\server.py", line 5207, in parse_resume_endpoint
+    parsed_data = await extract_resume_data(resume_text, byok_config=byok_config)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: extract_resume_data() got an unexpected keyword argument 'byok_config'
+

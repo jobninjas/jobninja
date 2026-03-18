@@ -59,21 +59,27 @@ async def extract_text_from_docx(file_content: bytes) -> dict:
         
         text_parts = []
         detected_font = None
+        detected_size = None
         
         for paragraph in doc.paragraphs:
             if paragraph.text.strip():
                 text_parts.append(paragraph.text)
                 
-                # Try to detect font from the first few meaningful paragraphs
-                if not detected_font:
+                # Try to detect font and size from the first few meaningful paragraphs
+                if not detected_font or not detected_size:
                     # Check runs
                     for run in paragraph.runs:
-                        if run.font.name:
+                        if not detected_font and run.font.name:
                             detected_font = run.font.name
+                        if not detected_size and run.font.size:
+                            detected_size = int(run.font.size.pt)
+                        if detected_font and detected_size:
                             break
                     # Check style if runs didn't have it
                     if not detected_font and paragraph.style and paragraph.style.font and paragraph.style.font.name:
                         detected_font = paragraph.style.font.name
+                    if not detected_size and paragraph.style and paragraph.style.font and paragraph.style.font.size:
+                        detected_size = int(paragraph.style.font.size.pt)
 
         # Final fallback - check document defaults if still not found
         if not detected_font:
@@ -84,9 +90,18 @@ async def extract_text_from_docx(file_content: bytes) -> dict:
             except Exception:
                 pass
         
-        # If still nothing, default to Arial (more standard than Times New Roman for tech resumes)
+        if not detected_size:
+            try:
+                if 'Normal' in doc.styles and doc.styles['Normal'].font.size:
+                    detected_size = int(doc.styles['Normal'].font.size.pt)
+            except Exception:
+                pass
+        
+        # If still nothing, defaults
         if not detected_font:
             detected_font = "Arial"
+        if not detected_size:
+            detected_size = 11
 
         # Also extract from tables
         for table in doc.tables:
@@ -101,7 +116,8 @@ async def extract_text_from_docx(file_content: bytes) -> dict:
         return {
             "text": "\n".join(text_parts),
             "metadata": {
-                "font_family": detected_font
+                "font_family": detected_font,
+                "font_size": detected_size
             }
         }
         

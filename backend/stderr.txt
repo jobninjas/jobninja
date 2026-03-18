@@ -1,0 +1,122 @@
+C:\Users\vsair\AppData\Local\Programs\Python\Python312\Lib\site-packages\razorpay\client.py:4: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  import pkg_resources
+WARNING:razorpay_service:Razorpay credentials not configured
+WARNING:__main__:OPENAI_API_KEY not set. OpenAI features will be disabled.
+INFO:apscheduler.scheduler:Adding job tentatively -- it will be properly scheduled when the scheduler starts
+INFO:apscheduler.scheduler:Added job "scheduled_job_fetch" to job store "default"
+INFO:apscheduler.scheduler:Scheduler started
+INFO:__main__:Job sync scheduler started successfully (Scheduled Fetch: 1hr, Cleanup: daily)
+C:\Users\vsair\Downloads\novasquar-main\novasquad-main\nova-ninjas\backend\server.py:5984: DeprecationWarning: 
+        on_event is deprecated, use lifespan event handlers instead.
+
+        Read more about it in the
+        [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+        
+  @app.on_event("startup")
+WARNING:server:OPENAI_API_KEY not set. OpenAI features will be disabled.
+INFO:apscheduler.scheduler:Adding job tentatively -- it will be properly scheduled when the scheduler starts
+INFO:apscheduler.scheduler:Added job "scheduled_job_fetch" to job store "default"
+INFO:apscheduler.scheduler:Scheduler started
+INFO:server:Job sync scheduler started successfully (Scheduled Fetch: 1hr, Cleanup: daily)
+INFO:     Started server process [7288]
+INFO:     Waiting for application startup.
+INFO:server:\U0001f680 Starting Job Ninjas backend...
+INFO:server:\U0001f4c5 Job fetch scheduler started (fetches immediately, then every 6 hours)
+INFO:server:\u23f3 Waiting 30s before initial job fetch to pass health checks...
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:server:Health check hit: /health
+INFO:supabase_service:\u2705 Supabase client initialized successfully.
+INFO:httpx:HTTP Request: GET https://zvcvlfthffidmwkhhhfn.supabase.co/rest/v1/profiles?select=%2A&email=ilike.srkreddy452%40gmail.com "HTTP/2 200 OK"
+INFO:server:Retrieved user from Supabase: srkreddy452@gmail.com
+INFO:httpx:HTTP Request: GET https://zvcvlfthffidmwkhhhfn.supabase.co/rest/v1/profiles?select=%2A&email=ilike.srkreddy452%40gmail.com "HTTP/2 200 OK"
+INFO:server:Retrieved user from Supabase: srkreddy452@gmail.com
+INFO:httpx:HTTP Request: GET https://zvcvlfthffidmwkhhhfn.supabase.co/rest/v1/saved_resumes?select=%2A&user_email=eq.srkreddy452%40gmail.com&order=created_at.desc&limit=5 "HTTP/2 200 OK"
+INFO:httpx:HTTP Request: GET https://zvcvlfthffidmwkhhhfn.supabase.co/rest/v1/profiles?select=%2A&email=ilike.srkreddy452%40gmail.com "HTTP/2 200 OK"
+INFO:httpx:HTTP Request: GET https://zvcvlfthffidmwkhhhfn.supabase.co/rest/v1/saved_resumes?select=%2A&user_id=eq.891ed464-fdc6-4697-9d6d-e15e3e017eba&limit=0 "HTTP/2 206 Partial Content"
+INFO:httpx:HTTP Request: GET https://zvcvlfthffidmwkhhhfn.supabase.co/rest/v1/daily_usage?select=%2A&email=eq.srkreddy452%40gmail.com&date=eq.2026-03-12 "HTTP/2 200 OK"
+INFO:httpx:HTTP Request: GET https://zvcvlfthffidmwkhhhfn.supabase.co/rest/v1/saved_resumes?select=%2A&user_email=eq.srkreddy452%40gmail.com&order=created_at.desc&limit=5 "HTTP/2 200 OK"
+INFO:httpx:HTTP Request: GET https://zvcvlfthffidmwkhhhfn.supabase.co/rest/v1/profiles?select=%2A&email=ilike.srkreddy452%40gmail.com "HTTP/2 200 OK"
+INFO:httpx:HTTP Request: GET https://zvcvlfthffidmwkhhhfn.supabase.co/rest/v1/saved_resumes?select=%2A&user_id=eq.891ed464-fdc6-4697-9d6d-e15e3e017eba&limit=0 "HTTP/2 206 Partial Content"
+INFO:httpx:HTTP Request: GET https://zvcvlfthffidmwkhhhfn.supabase.co/rest/v1/daily_usage?select=%2A&email=eq.srkreddy452%40gmail.com&date=eq.2026-03-12 "HTTP/2 200 OK"
+INFO:server:\U0001f680 Running initial job fetch after startup delay...
+INFO:httpx:HTTP Request: GET https://zvcvlfthffidmwkhhhfn.supabase.co/rest/v1/saved_resumes?select=%2A&user_email=eq.srkreddy452%40gmail.com&order=created_at.desc&limit=5 "HTTP/2 200 OK"
+INFO:httpx:HTTP Request: GET https://zvcvlfthffidmwkhhhfn.supabase.co/rest/v1/profiles?select=%2A&email=ilike.srkreddy452%40gmail.com "HTTP/2 200 OK"
+INFO:httpx:HTTP Request: GET https://zvcvlfthffidmwkhhhfn.supabase.co/rest/v1/saved_resumes?select=%2A&user_id=eq.891ed464-fdc6-4697-9d6d-e15e3e017eba&limit=0 "HTTP/2 206 Partial Content"
+INFO:httpx:HTTP Request: GET https://zvcvlfthffidmwkhhhfn.supabase.co/rest/v1/daily_usage?select=%2A&email=eq.srkreddy452%40gmail.com&date=eq.2026-03-12 "HTTP/2 200 OK"
+INFO:httpx:HTTP Request: GET https://zvcvlfthffidmwkhhhfn.supabase.co/rest/v1/profiles?select=%2A&email=ilike.srkreddy452%40gmail.com "HTTP/2 200 OK"
+INFO:server:Retrieved user from Supabase: srkreddy452@gmail.com
+ERROR:server:Resume parse error details: extract_resume_data() got an unexpected keyword argument 'byok_config'
+INFO:server:SERVER VERSION SCAN PATCHED: Starting resume scan...
+INFO:resume_analyzer:[GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start='\nYou are an expert ATS (Applicant Tracking System) and resume analyst. Analyze t'
+INFO:resume_analyzer:Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+INFO:resume_analyzer:[GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start='\nYou are an Elite Resume Architect and ATS Optimization Expert. Your goal is to '
+INFO:resume_analyzer:Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+INFO:httpx:HTTP Request: GET https://zvcvlfthffidmwkhhhfn.supabase.co/rest/v1/profiles?select=%2A&email=ilike.srkreddy452%40gmail.com "HTTP/2 200 OK"
+INFO:server:Retrieved user from Supabase: srkreddy452@gmail.com
+INFO:httpx:HTTP Request: GET https://zvcvlfthffidmwkhhhfn.supabase.co/rest/v1/profiles?select=%2A&email=ilike.srkreddy452%40gmail.com "HTTP/2 200 OK"
+INFO:httpx:HTTP Request: GET https://zvcvlfthffidmwkhhhfn.supabase.co/rest/v1/saved_resumes?select=%2A&user_id=eq.891ed464-fdc6-4697-9d6d-e15e3e017eba&limit=0 "HTTP/2 206 Partial Content"
+INFO:httpx:HTTP Request: GET https://zvcvlfthffidmwkhhhfn.supabase.co/rest/v1/daily_usage?select=%2A&email=eq.srkreddy452%40gmail.com&date=eq.2026-03-12 "HTTP/2 200 OK"
+INFO:httpx:HTTP Request: GET https://zvcvlfthffidmwkhhhfn.supabase.co/rest/v1/daily_usage?select=%2A&email=eq.srkreddy452%40gmail.com&date=eq.2026-03-12 "HTTP/2 200 OK"
+INFO:httpx:HTTP Request: GET https://zvcvlfthffidmwkhhhfn.supabase.co/rest/v1/daily_usage?select=%2A&email=eq.srkreddy452%40gmail.com&date=eq.2026-03-12 "HTTP/2 200 OK"
+INFO:httpx:HTTP Request: PATCH https://zvcvlfthffidmwkhhhfn.supabase.co/rest/v1/daily_usage?email=eq.srkreddy452%40gmail.com&date=eq.2026-03-12 "HTTP/2 200 OK"
+INFO:document_generator:Stage 1: Deterministic resume parse
+INFO:resume_parser_deterministic:[DET PARSER] 4 employers, 3 projects, 2 edu, 4 certs
+INFO:resume_analyzer:[GROQ CALL] json_mode=True model=llama-3.3-70b-versatile prompt_has_json=True prompt_start='\nSYSTEM:\nYou are a precision fact extractor. Output JSON ONLY. No prose.\n\nUSER:\n'
+INFO:resume_analyzer:Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+INFO:document_generator:Stage 1 facts_json employers: ['Astra Corp | AI Engineer', 'Ai Talent Inc | AI Engineer', 'Precisesoft Inc | Data Analyst', 'Tech Mahindra | Associate Software Engineer']
+INFO:document_generator:Stage 1 facts_json projects: ['Enterprise Patent & Research Assistant', 'Text-to-SQL Analytics Copilot', 'AI Job Application Copilot (Agentic RAG Workflow)']
+INFO:document_generator:Stage 1 facts_json education: [{'degree': 'Master of Science', 'major': 'Management Information Systems', 'university': 'University of Illinois at Springfield', 'year': '2024'}, {'degree': 'Bachelor of Technology', 'major': 'Electronics & Communication Engineering', 'university': 'ACE Engineering College, Hyderabad', 'year': '2020'}]
+INFO:document_generator:Stage 1 facts_json certifications: ['Microsoft Azure AZ-900 – Microsoft Azure Fundamentals', 'Robotic Enterprise Framework Overview – UiPath', 'Orchestrator for RPA Developers – UiPath', 'ARIS Business Process Analysis Platform']
+ERROR:document_generator:RESUME_PROMPT_FIRST_500: You are a JSON API. Output only a JSON object. No prose. No advice. No markdown. Start with {
+
+TARGET JOB:
+Overview
+Please note that visa sponsorship is unavailable for this position
+Fanatics Betting & Gaming (FBG) is on a mission to create the best online sportsbook in the industry, and we’re looking for an experienced
+Software Engineer III, Back End (Java)
+to help us get there.
+
+As a Software Engineer III, you will play a key role in designing, developing, and optimizing the
+backend sys
+ERROR:document_generator:RESUME_PROMPT_LAST_200: ne. Specific to this JD and company.",
+  "changes": [],
+  "skills_added": ["Java", "Spring Boot", "Distributed caching"],
+  "self_check_passed": true
+}
+
+Respond with valid JSON only. Begin with { now:
+INFO:resume_analyzer:[GROQ CALL] json_mode=True model=llama-3.3-70b-versatile prompt_has_json=True prompt_start='You are a JSON API. Output only a JSON object. No prose. No advice. No markdown.'
+INFO:resume_analyzer:Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+ERROR:document_generator:STAGE2_RESPONSE_FIRST_300: {
+  "think_phase_summary": "With 2 years of experience in software development and expertise in Java and FastAPI, I am confident in my ability to contribute to the backend systems of Fanatics Betting and Gaming.",
+   "jd_extraction": {
+       "job_title": "Software Engineer III, Back End (Java)",
+  
+ERROR:document_generator:Stage 2 Expert failed: 'ExperienceNew' object has no attribute 'job_title'
+INFO:document_generator:Starting 3-stage tailoring pipeline for Company
+INFO:resume_analyzer:[GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start='\nExtract structured data from this resume text for a professional profile. Retur'
+INFO:resume_analyzer:Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+INFO:resume_analyzer:[GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start='\nYou are a resume analyst. Output ONLY valid JSON. No explanation, no markdown, '
+INFO:resume_analyzer:Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+INFO:document_generator:Stage 1 Analysis complete for Company
+INFO:resume_analyzer:[GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start="\nYou are a professional resume writer. Rewrite ONE job role's bullets for a resu"
+INFO:resume_analyzer:Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+INFO:resume_analyzer:[GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start="\nYou are a professional resume writer. Rewrite ONE job role's bullets for a resu"
+INFO:resume_analyzer:Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+INFO:resume_analyzer:[GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start="\nYou are a professional resume writer. Rewrite ONE job role's bullets for a resu"
+INFO:resume_analyzer:Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+INFO:resume_analyzer:[GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start="\nYou are a professional resume writer. Rewrite ONE job role's bullets for a resu"
+INFO:resume_analyzer:Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+INFO:document_generator:Stage 2 Rewriting complete for 4 roles
+INFO:resume_analyzer:[GROQ CALL] json_mode=True model=llama-3.3-70b-versatile prompt_has_json=True prompt_start='\nYou are a professional resume writer. Respond ONLY with a JSON object. No prose'
+INFO:resume_analyzer:Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+INFO:resume_analyzer:[GROQ CALL] json_mode=False model=default prompt_has_json=False prompt_start='\nWrite a professional, compelling cover letter for this job application.\n\nAPPLIC'
+INFO:resume_analyzer:Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+INFO:httpx:HTTP Request: POST https://zvcvlfthffidmwkhhhfn.supabase.co/rest/v1/saved_resumes "HTTP/2 201 Created"
+INFO:httpx:HTTP Request: POST https://zvcvlfthffidmwkhhhfn.supabase.co/rest/v1/applications "HTTP/2 400 Bad Request"
+ERROR:supabase_service:Error creating application: {'code': 'PGRST204', 'details': None, 'hint': None, 'message': "Could not find the 'resume_id' column of 'applications' in the schema cache"}
+INFO:server:EXPERT DOCS CHANGES: []
+INFO:httpx:HTTP Request: GET https://zvcvlfthffidmwkhhhfn.supabase.co/rest/v1/profiles?select=%2A&email=ilike.srkreddy452%40gmail.com "HTTP/2 200 OK"
+INFO:httpx:HTTP Request: GET https://zvcvlfthffidmwkhhhfn.supabase.co/rest/v1/saved_resumes?select=%2A&user_id=eq.891ed464-fdc6-4697-9d6d-e15e3e017eba&limit=0 "HTTP/2 206 Partial Content"
+INFO:httpx:HTTP Request: GET https://zvcvlfthffidmwkhhhfn.supabase.co/rest/v1/daily_usage?select=%2A&email=eq.srkreddy452%40gmail.com&date=eq.2026-03-12 "HTTP/2 200 OK"
