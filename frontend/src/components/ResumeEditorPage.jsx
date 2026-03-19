@@ -132,8 +132,15 @@ const ResumeEditorPage = () => {
                 setResumeData(latest);
                 setResumeName(latest.resumeName || latest.resume_name || latest.file_name || 'My_Resume.docx');
                 setTailoredResume(latest.resumeText || latest.resume_text || '');
-                if (latest.fontFamily || latest.font_family) setFontFamily(latest.fontFamily || latest.font_family);
-                if (latest.fontSize || latest.font_size) setFontSize(latest.fontSize || latest.font_size);
+
+                // Normalizing styling
+                if (latest.fontFamily || latest.font_family) {
+                    setFontFamily('FAANG Font');
+                }
+                const detectedSize = parseInt(latest.fontSize || latest.font_size);
+                if (detectedSize) {
+                    setFontSize(Math.min(Math.max(detectedSize, 9), 12));
+                }
                 setHistory({ past: [], future: [] });
             }
         } catch (error) {
@@ -176,14 +183,15 @@ const ResumeEditorPage = () => {
                     setResumeName(latestMeta.name || 'Uploaded_Resume.docx');
                     setTailoredResume(profile.resume_text || '');
 
-                    // Apply detected styling if available
-                    if (data.metadata?.font_family) {
-                        setFontFamily(data.metadata.font_family);
-                    } else if (profile.resume_metadata?.font_family) {
-                        setFontFamily(profile.resume_metadata.font_family);
+                    // Apply detected styling with normalization
+                    if (data.metadata?.font_family || profile.resume_metadata?.font_family) {
+                        setFontFamily('FAANG Font');
                     }
-                    if (profile.resume_metadata?.font_size) {
-                        setFontSize(profile.resume_metadata.font_size);
+                    const uploadSize = parseInt(profile.resume_metadata?.font_size);
+                    if (uploadSize) {
+                        setFontSize(Math.min(Math.max(uploadSize, 9), 12));
+                    } else {
+                        setFontSize(11); // Safe default
                     }
                 }
             }
@@ -370,8 +378,14 @@ const ResumeEditorPage = () => {
         setResumeData(selected);
         setResumeName(selected.resumeName || selected.resume_name || 'Selected_Resume.docx');
         setTailoredResume(selected.resumeText || selected.resume_text || '');
-        if (selected.fontFamily || selected.font_family) setFontFamily(selected.fontFamily || selected.font_family);
-        if (selected.fontSize || selected.font_size) setFontSize(selected.fontSize || selected.font_size);
+
+        if (selected.fontFamily || selected.font_family) {
+            setFontFamily('FAANG Font');
+        }
+        const detectedSize = parseInt(selected.fontSize || selected.font_size);
+        if (detectedSize) {
+            setFontSize(Math.min(Math.max(detectedSize, 9), 12));
+        }
         setHistory({ past: [], future: [] });
         setShowSelector(false);
     };
@@ -982,12 +996,12 @@ const ResumeEditorPage = () => {
 
                                     <h3 className="design-section-title mt-6">Typography</h3>
                                     <div className="font-selection-list">
-                                        {['Times New Roman', 'Arial', 'Georgia', 'Inter', 'Roboto', 'Outfit'].map(font => (
+                                        {['FAANG Font', 'Times New Roman', 'Arial', 'Georgia', 'Inter', 'Roboto', 'Outfit'].map(font => (
                                             <button
                                                 key={font}
                                                 className={`font-choice-btn ${fontFamily === font ? 'active' : ''}`}
                                                 onClick={() => setFontFamily(font)}
-                                                style={{ fontFamily: font }}
+                                                style={{ fontFamily: font === 'FAANG Font' ? 'Arial' : font }}
                                             >
                                                 <span>{font}</span>
                                                 {fontFamily === font && <CheckCircle2 className="w-4 h-4 text-emerald-500" />}
@@ -1258,7 +1272,7 @@ const ResumeEditorPage = () => {
                             <div className="toolbar-segment">
                                 <span className="segment-label">Font</span>
                                 <div className="toolbar-group" onClick={() => setFontFamily(f => f === 'Times New Roman' ? 'Arial' : 'Times New Roman')}>
-                                    <span className="font-name">{fontFamily}</span>
+                                    <span className="font-name" style={{ fontFamily: fontFamily === 'FAANG Font' ? 'Arial' : fontFamily }}>{fontFamily}</span>
                                     <ChevronDown className="w-3.5 h-3.5" />
                                 </div>
                             </div>

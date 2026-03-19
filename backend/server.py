@@ -114,6 +114,27 @@ except (ImportError, ModuleNotFoundError):
     async def enrich_company(name, db=None): return {"name": name}
     def enrich_job_metadata(job): return job
 
+# --- Consolidated Local Module Imports ---
+from resume_parser import parse_resume, validate_resume_file
+from resume_analyzer import (
+    analyze_resume, 
+    extract_resume_data,
+    process_resume_feedback
+)
+from document_generator import (
+    generate_optimized_resume_content,
+    generate_expert_documents,
+    create_resume_docx,
+    create_text_docx,
+    create_cover_letter_docx,
+    render_preview_text_from_json,
+    generate_expert_tailored_content,
+    unified_api_call,
+    refine_resume_section,
+    generate_cover_letter_content,
+    sanitize_job_title
+)
+
 # Google Auth imports
 try:
     from google.oauth2 import id_token
@@ -4862,18 +4883,7 @@ async def job_fetch_background_task():
 # RESUME SCANNER API ENDPOINTS
 # ============================================
 
-from resume_parser import parse_resume, validate_resume_file
-from resume_analyzer import analyze_resume, extract_resume_data
-from document_generator import (
-    generate_optimized_resume_content,
-    generate_expert_documents,
-    create_resume_docx,
-    create_text_docx,
-    create_cover_letter_docx,
-    render_preview_text_from_json,
-    generate_expert_tailored_content,
-    unified_api_call
-)
+# Endpoints moved to consolidated imports section at top of file
 from fastapi.responses import StreamingResponse
 
 # ============================================
@@ -5757,16 +5767,20 @@ async def delete_saved_resume(resume_id: str):
     Delete a saved resume
     """
     try:
-        # Check if it's a MongoDB ObjectId (24 hex characters)
-        is_mongo_id = len(resume_id) == 24 and all(c in "0123456789abcdefABCDEF" for c in resume_id)
+        # Now using SupabaseService for all operations
+        client = SupabaseService.get_client()
+        result = client.table("saved_resumes").delete().eq("id", resume_id).execute()
         
-        if is_mongo_id:
-            from bson.objectid import ObjectId
-            import config
-            result = config.db.saved_resumes.delete_one({"_id": ObjectId(resume_id)})
-            if result.deleted_count == 0:
-                raise HTTPException(status_code=404, detail="Legacy resume not found")
-            return {"success": True, "message": "Legacy resume deleted"}
+        if not result.data:
+            # Try UUID if the first one failed (just in case)
+            try:
+                import uuid
+                val = uuid.UUID(resume_id)
+                result = client.table("saved_resumes").delete().eq("id", str(val)).execute()
+            except:
+                pass
+                
+        return {"success": True, "message": "Resume deleted successfully"}
             
         # Otherwise, it's a Supabase UUID
         client = SupabaseService.get_client()
@@ -6084,8 +6098,7 @@ async def save_application(application: ApplicationData):
         job_id = application.jobId
         if not job_id or len(job_id) < 30:
             client = SupabaseService.get_client()
-            import datetime
-            from document_generator import sanitize_job_title
+            client = SupabaseService.get_client()
             job_data = {
                 "title": sanitize_job_title(application.jobTitle) or "Unknown Role",
                 "company": application.company or "Unknown Company",
@@ -6567,9 +6580,9 @@ async def nova_chat_endpoint(
     job_text = ""
     if req.jobContext:
         job_text = f"""
-        Job Title: {req.jobContext.get('title')}
-        Company: {req.jobContext.get('company')}
-        Description: {req.jobContext.get('description')}
+        Job Title: {req.jobContext.get('title') or 'N/A'}
+        Company: {req.jobContext.get('company') or 'N/A'}
+        Description: {req.jobContext.get('description') or 'N/A'}
         Skills/Keywords: {req.jobContext.get('keywords', [])}
         """
 

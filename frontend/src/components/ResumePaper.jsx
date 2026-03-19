@@ -176,7 +176,8 @@ const ResumePaper = ({
         'Georgia': 'Georgia, serif',
         'Inter': '"Inter", sans-serif',
         'Roboto': '"Roboto", sans-serif',
-        'Outfit': '"Outfit", sans-serif'
+        'Outfit': '"Outfit", sans-serif',
+        'FAANG Font': 'Arial, Helvetica, sans-serif'
     };
 
     const actualFont = fontMap[fontFamily] || fontFamily;
@@ -287,8 +288,9 @@ const ResumePaper = ({
                 transform: `scale(${scale})`,
                 padding: '48px',
                 fontFamily: actualFont,
-                fontSize: `${fontSize}pt`,
-                color: '#000'
+                fontSize: `${Math.min(Math.max(fontSize, 9), 12)}pt`,
+                color: '#000',
+                lineHeight: 1.4
             }}
         >
             <div className="absolute top-4 right-4 flex gap-2 z-10 no-print" style={{ transform: `scale(${1 / scale})`, transformOrigin: 'top right' }}>

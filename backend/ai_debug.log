@@ -1166,3 +1166,13 @@ AttributeError: 'str' object has no attribute 'get'
 2026-03-16 14:35:13,932 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
 2026-03-16 14:35:22,193 - document_generator - INFO - Expert AI Tailoring complete.
 2026-03-16 14:35:22,208 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-18 08:19:28,612 - resume_analyzer - INFO - [GROQ CALL] json_mode=False model=llama-3.1-8b-instant prompt_has_json=True prompt_start='Extract job details from the following raw text scraped from https://www.linkedi'
+2026-03-18 08:19:28,616 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-18 08:19:33,445 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start='\nExtract structured data from this resume text for a professional profile. Retur'
+2026-03-18 08:19:33,446 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-18 08:19:36,242 - document_generator - INFO - Starting Expert AI Tailoring Pipeline...
+2026-03-18 08:19:36,243 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start='\nExtract structured data from this resume text for a professional profile. Retur'
+2026-03-18 08:19:36,244 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-18 08:19:38,500 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-18 08:19:47,827 - document_generator - INFO - Expert AI Tailoring complete.
+2026-03-18 08:19:47,846 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)

@@ -582,3 +582,10 @@ Return ONLY the JSON, no other text.
         logger.error(f"Failed to generate optimized resume: {e}")
         return {"error": str(e)}
 
+async def process_resume_feedback(resume_text: str, feedback: str) -> Dict[str, Any]:
+    """
+    Stub for processing resume feedback.
+    """
+    logger.info("process_resume_feedback called (stub)")
+    return {"status": "success", "message": "Feedback received"}
+
