@@ -109,7 +109,7 @@ class SupabaseService:
 
             # Search filter
             if search:
-                query = query.or_(f"title.ilike.%{search}%,company.ilike.%{search}%,description.ilike.%{search}%")
+                query = query.or_(f"title.ilike.%{search}%,company.ilike.%{search}%")
             
             # Visa filter
             if visa:
@@ -129,7 +129,6 @@ class SupabaseService:
                 conditions = []
                 for f in funcs:
                     conditions.append(f"title.ilike.%{f}%")
-                    conditions.append(f"description.ilike.%{f}%")
                 if conditions:
                     query = query.or_(",".join(conditions))
             
@@ -138,7 +137,6 @@ class SupabaseService:
                 conditions = []
                 for l in levels:
                     conditions.append(f"title.ilike.%{l}%")
-                    conditions.append(f"description.ilike.%{l}%")
                 if conditions:
                     query = query.or_(",".join(conditions))
             
@@ -187,14 +185,14 @@ class SupabaseService:
         if not client: return 0
         
         try:
-            query = client.table("jobs").select("*", count="exact")
+            query = client.table("jobs").select("*", count="estimated")
             
             if fresh_only:
                 cutoff = (datetime.utcnow() - timedelta(hours=72)).isoformat()
                 query = query.gte("created_at", cutoff)
 
             if search:
-                query = query.or_(f"title.ilike.%{search}%,company.ilike.%{search}%,description.ilike.%{search}%")
+                query = query.or_(f"title.ilike.%{search}%,company.ilike.%{search}%")
             if visa:
                 query = query.contains("categories", ["sponsoring"])
             if job_type and job_type != "all":
@@ -208,7 +206,6 @@ class SupabaseService:
                 conditions = []
                 for f in funcs:
                     conditions.append(f"title.ilike.%{f}%")
-                    conditions.append(f"description.ilike.%{f}%")
                 if conditions:
                     query = query.or_(",".join(conditions))
             
@@ -217,7 +214,6 @@ class SupabaseService:
                 conditions = []
                 for l in levels:
                     conditions.append(f"title.ilike.%{l}%")
-                    conditions.append(f"description.ilike.%{l}%")
                 if conditions:
                     query = query.or_(",".join(conditions))
             

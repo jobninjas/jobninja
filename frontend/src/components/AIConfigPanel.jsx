@@ -38,9 +38,11 @@ const AIConfigPanel = ({
     const [jobUrl, setJobUrl] = useState('');
     const [isFetchingSlot, setIsFetchingSlot] = useState(false);
 
+    const [fetchError, setFetchError] = useState('');
     const handleFetch = async () => {
         if (!jobUrl.trim()) return;
         setIsFetchingSlot(true);
+        setFetchError('');
         try {
             const data = await apiCall('/api/fetch-job-description', {
                 method: 'POST',
@@ -48,17 +50,20 @@ const AIConfigPanel = ({
             });
             if (data.success) {
                 setJobDescription(data.description || '');
-                // Also notify parent of full data if needed (title, company, etc)
                 if (onJobDataFetch) {
                     onJobDataFetch(data);
                 }
+            } else {
+                setFetchError(data.error || 'Failed to fetch job description');
             }
         } catch (error) {
             console.error('Fetch failed:', error);
+            setFetchError('Connection error. Please try again.');
         } finally {
             setIsFetchingSlot(false);
         }
     };
+
 
     return (
         <div className="ai-config-panel-premium">

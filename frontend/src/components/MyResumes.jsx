@@ -111,8 +111,8 @@ const MyResumes = () => {
     }
   };
 
-  const handleStartApplication = (resumeId) => {
-    navigate('/ai-ninja', { state: { selectedResumeId: resumeId } });
+  const handleStartApplication = (resume) => {
+    navigate('/scanner', { state: { resumeData: resume } });
   };
 
   const formatDate = (dateString) => {
@@ -156,44 +156,7 @@ const MyResumes = () => {
             </div>
           </div>
 
-          {/* Usage Stats Banner */}
-          {usageLimits && (
-            <Card className="mb-8 border-orange-200 bg-orange-50/50">
-              <CardContent className="py-4 px-6 flex flex-col md:flex-row items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-orange-100 rounded-lg">
-                    <Zap className="w-5 h-5 text-orange-600" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-orange-900 text-sm md:text-base">
-                      {(usageLimits.tier || 'Free').charAt(0).toUpperCase() + (usageLimits.tier || 'free').slice(1)} Tier Usage
-                    </h3>
-                    <p className="text-orange-700 text-xs md:text-sm">
-                      {usageLimits.currentCount} / {usageLimits.limit} resumes generated {usageLimits.tier === 'beginner' ? 'this month' : 'total'}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-4 w-full md:w-auto">
-                  <div className="flex-1 md:w-48 h-2 bg-orange-200 rounded-full overflow-hidden">
-                    <div
-                      className={`h-full ${usageLimits.canGenerate ? 'bg-orange-500' : 'bg-red-500'}`}
-                      style={{ width: `${Math.min(100, (usageLimits.currentCount / (usageLimits.limit === 'Unlimited' ? 1000 : usageLimits.limit)) * 100)}%` }}
-                    />
-                  </div>
-                  {usageLimits.tier !== 'pro' && (
-                    <Button
-                      size="sm"
-                      className="bg-orange-600 hover:bg-orange-700 text-white border-none h-8 px-4 text-xs font-bold"
-                      onClick={() => navigate('/pricing')}
-                    >
-                      Upgrade
-                    </Button>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          )}
+          {/* Removed Usage Stats Banner */}
 
           {isLoading ? (
             <div className="loading-state">
@@ -268,7 +231,7 @@ const MyResumes = () => {
                       <Button
                         variant="outline"
                         className="w-full"
-                        onClick={() => handleStartApplication(resume.id)}
+                        onClick={() => handleStartApplication(resume)}
                       >
                         <Bot className="w-4 h-4 mr-2" /> Use for New Application
                       </Button>

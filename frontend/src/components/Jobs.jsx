@@ -53,7 +53,7 @@ const Jobs = () => {
   // Filter states
   const [searchKeyword, setSearchKeyword] = useState(() => localStorage.getItem('last_search_keyword') || '');
   const [locationFilter, setLocationFilter] = useState('');
-  const [countryFilter, setCountryFilter] = useState('us');
+  const [countryFilter, setCountryFilter] = useState('all'); // Changed from 'us' to 'all' to show 100k jobs
   const [sponsorshipFilter, setSponsorshipFilter] = useState('all');
   const [workTypeFilter, setWorkTypeFilter] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
@@ -91,7 +91,6 @@ const Jobs = () => {
           // Set defaults if currently empty
           const targetRole = data.profile.preferences?.target_role || data.profile.targetRole;
           const targetRoles = data.profile.target_roles || [];
-          const preferredLocation = data.profile.preferences?.preferred_locations || data.profile.address?.city || data.profile.city;
           const savedJobFunctions = data.profile.preferences?.job_functions || [];
 
           // Initialize roles from persistent target_roles if available, otherwise fallback to legacy
@@ -106,12 +105,12 @@ const Jobs = () => {
           if (targetRole && !searchKeyword) {
             setSearchKeyword(targetRole);
           }
-          if (preferredLocation && !locationFilter) {
-            setLocationFilter(preferredLocation);
-          }
-          if (selectedJobFunctions.length === 0 && (targetRoles.length > 0 || savedJobFunctions.length > 0)) {
-            // This is handled by the block above
-          }
+
+          // Disable auto-population of locationFilter to allow all jobs to appear by default
+          // const preferredLocation = data.profile.preferences?.preferred_locations || data.profile.address?.city || data.profile.city;
+          // if (preferredLocation && !locationFilter) {
+          //   setLocationFilter(preferredLocation);
+          // }
         }
       }
     } catch (err) {
@@ -259,7 +258,7 @@ const Jobs = () => {
     const timer = setTimeout(() => {
       // Persist the search keyword
       localStorage.setItem('last_search_keyword', searchKeyword);
-      
+
       if (currentPage !== 1) {
         setCurrentPage(1);
       } else {
@@ -314,7 +313,7 @@ const Jobs = () => {
   const clearFilters = () => {
     // We preserve searchKeyword as requested by user ("save it till he changes it")
     setLocationFilter('');
-    setCountryFilter('us');
+    setCountryFilter('all'); // Changed from 'us' to 'all'
     setSponsorshipFilter('all');
     setWorkTypeFilter('all');
     setSelectedJobFunctions([]);
@@ -401,198 +400,196 @@ const Jobs = () => {
 
   return (
     <div className="jobs-page-content p-3 sm:p-4 md:p-6">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
-          <div>
-            <h1 className="text-3xl font-extrabold text-[#111827] tracking-tight">Recommended Jobs</h1>
-            <p className="text-sm text-[#6b7280] mt-1 font-medium">Based on your resume profile & skills</p>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+        <div>
+          <h1 className="text-3xl font-extrabold text-[#111827] tracking-tight">Recommended Jobs</h1>
+          <p className="text-sm text-[#6b7280] mt-1 font-medium">Based on your resume profile & skills</p>
+        </div>
+        <div className="bg-[#E6FAF5] text-[#007A5A] px-4 py-2 rounded-xl text-sm font-bold border border-[#00C896]/20 shadow-sm">
+          {pagination.total.toLocaleString()} matching jobs
+        </div>
+      </div>
+
+
+      {/* Filters Section Redesign */}
+      <section className="jobs-filters-section mb-6">
+        <div className="flex flex-col gap-4">
+          {/* Search Bar Row - Redesigned to match image exactly */}
+          <div className="flex flex-col md:flex-row items-stretch gap-2.5">
+            {/* Search Box */}
+            <div className="relative flex-[1.8] bg-white rounded-xl shadow-sm border border-gray-100 h-12 flex items-center px-4">
+              <Search className="w-4 h-4 text-gray-400 mr-3 shrink-0" />
+              <Input
+                placeholder="Search jobs..."
+                className="border-0 focus-visible:ring-0 bg-transparent text-sm w-full h-full p-0"
+                value={searchKeyword}
+                onChange={(e) => setSearchKeyword(e.target.value)}
+              />
+            </div>
+
+            {/* Experience Box */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 h-12 flex items-center min-w-[140px]">
+              <Select value={selectedExperience[0] || 'all'} onValueChange={(val) => setSelectedExperience(val === 'all' ? [] : [val])}>
+                <SelectTrigger className="border-0 focus:ring-0 shadow-none bg-transparent text-sm gap-2 h-full flex-1 px-4">
+                  <SelectValue placeholder="Experience" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Any Experience</SelectItem>
+                  <SelectItem value="Intern">Intern</SelectItem>
+                  <SelectItem value="Entry">Entry Level</SelectItem>
+                  <SelectItem value="Mid">Mid Level</SelectItem>
+                  <SelectItem value="Senior">Senior Level</SelectItem>
+                  <SelectItem value="Director">Director</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Location Box */}
+            <div className="relative flex-1 bg-white rounded-xl shadow-sm border border-gray-100 h-12 flex items-center px-4">
+              <MapPin className="w-4 h-4 text-gray-400 mr-3 shrink-0" />
+              <Input
+                placeholder="Location..."
+                className="border-0 focus-visible:ring-0 bg-transparent text-sm w-full h-full p-0"
+                value={locationFilter}
+                onChange={(e) => setLocationFilter(e.target.value)}
+              />
+            </div>
+
+            {/* Search Button */}
+            <Button
+              onClick={() => fetchJobs(1)}
+              className="px-8 h-12 bg-[#00875A] hover:bg-[#00704A] text-white font-bold rounded-xl transition-all active:scale-95 text-sm shrink-0"
+            >
+              Search
+            </Button>
           </div>
-          <div className="bg-[#E6FAF5] text-[#007A5A] px-4 py-2 rounded-xl text-sm font-bold border border-[#00C896]/20 shadow-sm">
-            {pagination.total.toLocaleString()} total jobs
+
+          {/* Filter Tags Row */}
+          <div className="flex flex-wrap items-center gap-2 px-1">
+            <button
+              onClick={() => setWorkTypeFilter('all')}
+              className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${workTypeFilter === 'all'
+                ? 'bg-[#00875A] text-white shadow-sm'
+                : 'bg-white border border-gray-200 text-gray-600 hover:border-gray-300'
+                }`}
+            >
+              All Jobs
+            </button>
+
+            {[
+              { label: 'Full-time', value: 'full_time' },
+              { label: 'Contract', value: 'contract' },
+              { label: 'Internship', value: 'internship' },
+              { label: 'Cap Exempt', value: 'cap_exempt' },
+              { label: 'Startups', value: 'startups' },
+              { label: 'Visa Sponsoring', value: 'visa-friendly' }
+            ].map((tag) => (
+              <button
+                key={tag.value}
+                onClick={() => {
+                  if (tag.value === 'visa-friendly') {
+                    setSponsorshipFilter(sponsorshipFilter === 'visa-friendly' ? 'all' : 'visa-friendly');
+                  } else {
+                    setWorkTypeFilter(workTypeFilter === tag.value ? 'all' : tag.value);
+                  }
+                }}
+                className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${(workTypeFilter === tag.value || (tag.value === 'visa-friendly' && sponsorshipFilter === 'visa-friendly'))
+                  ? 'bg-[#00875A] text-white shadow-sm'
+                  : 'bg-white border border-gray-200 text-gray-600 hover:border-gray-300'
+                  }`}
+              >
+                {tag.label}
+              </button>
+            ))}
+
+            <div className="ml-auto flex items-center gap-4">
+              <Button variant="ghost" size="sm" onClick={clearFilters} className="text-gray-400 hover:text-gray-600 text-xs gap-1.5">
+                <X className="w-3.5 h-3.5" /> Reset Filters
+              </Button>
+
+              <span className="text-[11px] font-bold text-gray-400 bg-gray-50 px-3 py-1.5 rounded-full border border-gray-100">
+                {pagination.total.toLocaleString()} jobs found
+              </span>
+            </div>
           </div>
         </div>
+      </section>
 
+      {/* Job List Section */}
+      <section className="job-list-section">
+        <div className="container">
+          {/* Loading State */}
+          {isLoading && (
+            <div className="loading-state">
+              <Loader2 className="w-12 h-12 animate-spin" />
+              <p>Loading jobs...</p>
+            </div>
+          )}
 
-        {/* Filters Section Redesign */}
-        <section className="jobs-filters-section mb-6">
-          <div className="flex flex-col gap-4">
-            {/* Search Bar Row - Redesigned to match image exactly */}
-            <div className="flex flex-col md:flex-row items-stretch gap-2.5">
-              {/* Search Box */}
-              <div className="relative flex-[1.8] bg-white rounded-xl shadow-sm border border-gray-100 h-12 flex items-center px-4">
-                <Search className="w-4 h-4 text-gray-400 mr-3 shrink-0" />
-                <Input
-                  placeholder="Search jobs..."
-                  className="border-0 focus-visible:ring-0 bg-transparent text-sm w-full h-full p-0"
-                  value={searchKeyword}
-                  onChange={(e) => setSearchKeyword(e.target.value)}
-                />
-              </div>
-
-              {/* Experience Box */}
-              <div className="bg-white rounded-xl shadow-sm border border-gray-100 h-12 flex items-center min-w-[140px]">
-                <Select value={selectedExperience[0] || 'all'} onValueChange={(val) => setSelectedExperience(val === 'all' ? [] : [val])}>
-                  <SelectTrigger className="border-0 focus:ring-0 shadow-none bg-transparent text-sm gap-2 h-full flex-1 px-4">
-                    <SelectValue placeholder="Experience" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Any Experience</SelectItem>
-                    <SelectItem value="Intern">Intern</SelectItem>
-                    <SelectItem value="Entry">Entry Level</SelectItem>
-                    <SelectItem value="Mid">Mid Level</SelectItem>
-                    <SelectItem value="Senior">Senior Level</SelectItem>
-                    <SelectItem value="Director">Director</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Location Box */}
-              <div className="relative flex-1 bg-white rounded-xl shadow-sm border border-gray-100 h-12 flex items-center px-4">
-                <MapPin className="w-4 h-4 text-gray-400 mr-3 shrink-0" />
-                <Input
-                  placeholder="Location..."
-                  className="border-0 focus-visible:ring-0 bg-transparent text-sm w-full h-full p-0"
-                  value={locationFilter}
-                  onChange={(e) => setLocationFilter(e.target.value)}
-                />
-              </div>
-
-              {/* Search Button */}
-              <Button 
-                onClick={() => fetchJobs(1)}
-                className="px-8 h-12 bg-[#00875A] hover:bg-[#00704A] text-white font-bold rounded-xl transition-all active:scale-95 text-sm shrink-0"
-              >
-                Search
+          {/* Error State */}
+          {error && !isLoading && (
+            <div className="error-state">
+              <div className="error-icon">⚠️</div>
+              <h3>Unable to load jobs</h3>
+              <p>{error}</p>
+              <Button onClick={() => fetchJobs(1)} className="btn-primary">
+                <RefreshCw className="w-4 h-4 mr-2" /> Try Again
               </Button>
             </div>
+          )}
 
-            {/* Filter Tags Row */}
-            <div className="flex flex-wrap items-center gap-2 px-1">
-              <button
-                onClick={() => setWorkTypeFilter('all')}
-                className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
-                  workTypeFilter === 'all' 
-                    ? 'bg-[#00875A] text-white shadow-sm' 
-                    : 'bg-white border border-gray-200 text-gray-600 hover:border-gray-300'
-                }`}
-              >
-                All Jobs
-              </button>
-              
-              {[
-                { label: 'Full-time', value: 'full_time' },
-                { label: 'Contract', value: 'contract' },
-                { label: 'Internship', value: 'internship' },
-                { label: 'Cap Exempt', value: 'cap_exempt' },
-                { label: 'Startups', value: 'startups' },
-                { label: 'Visa Sponsoring', value: 'visa-friendly' }
-              ].map((tag) => (
-                <button
-                  key={tag.value}
-                  onClick={() => {
-                    if (tag.value === 'visa-friendly') {
-                      setSponsorshipFilter(sponsorshipFilter === 'visa-friendly' ? 'all' : 'visa-friendly');
-                    } else {
-                      setWorkTypeFilter(workTypeFilter === tag.value ? 'all' : tag.value);
-                    }
-                  }}
-                  className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
-                    (workTypeFilter === tag.value || (tag.value === 'visa-friendly' && sponsorshipFilter === 'visa-friendly'))
-                      ? 'bg-[#00875A] text-white shadow-sm' 
-                      : 'bg-white border border-gray-200 text-gray-600 hover:border-gray-300'
-                  }`}
-                >
-                  {tag.label}
-                </button>
-              ))}
-
-              <div className="ml-auto flex items-center gap-4">
-                <Button variant="ghost" size="sm" onClick={clearFilters} className="text-gray-400 hover:text-gray-600 text-xs gap-1.5">
-                  <X className="w-3.5 h-3.5" /> Reset Filters
-                </Button>
-                
-                <span className="text-[11px] font-bold text-gray-400 bg-gray-50 px-3 py-1.5 rounded-full border border-gray-100">
-                  {pagination.total.toLocaleString()} jobs found
-                </span>
+          {/* Job List */}
+          {!isLoading && !error && (
+            <>
+              <div className="mt-6">
+                <JobListingComponent
+                  jobs={mappedJobs}
+                  onJobClick={handleJobClick}
+                />
               </div>
-            </div>
-          </div>
-        </section>
 
-        {/* Job List Section */}
-        <section className="job-list-section">
-          <div className="container">
-            {/* Loading State */}
-            {isLoading && (
-              <div className="loading-state">
-                <Loader2 className="w-12 h-12 animate-spin" />
-                <p>Loading jobs...</p>
-              </div>
-            )}
-
-            {/* Error State */}
-            {error && !isLoading && (
-              <div className="error-state">
-                <div className="error-icon">⚠️</div>
-                <h3>Unable to load jobs</h3>
-                <p>{error}</p>
-                <Button onClick={() => fetchJobs(1)} className="btn-primary">
-                  <RefreshCw className="w-4 h-4 mr-2" /> Try Again
-                </Button>
-              </div>
-            )}
-
-            {/* Job List */}
-            {!isLoading && !error && (
-              <>
-                <div className="mt-6">
-                  <JobListingComponent 
-                    jobs={mappedJobs} 
-                    onJobClick={handleJobClick}
-                  />
+              {displayJobs.length === 0 && (
+                <div className="no-jobs-found">
+                  <Filter className="w-12 h-12" />
+                  <h3>No jobs found</h3>
+                  <p>Try adjusting your filters or search terms.</p>
+                  <Button variant="outline" onClick={clearFilters}>Clear all filters</Button>
                 </div>
+              )}
 
-                {displayJobs.length === 0 && (
-                  <div className="no-jobs-found">
-                    <Filter className="w-12 h-12" />
-                    <h3>No jobs found</h3>
-                    <p>Try adjusting your filters or search terms.</p>
-                    <Button variant="outline" onClick={clearFilters}>Clear all filters</Button>
-                  </div>
-                )}
+              {pagination.pages > 1 && (
+                <div className="pagination-controls flex items-center justify-center gap-4 mt-12 pb-12">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setCurrentPage(prev => Math.max(1, prev - 1));
+                      window.scrollTo({ top: 300, behavior: 'smooth' });
+                    }}
+                    disabled={currentPage === 1}
+                  >
+                    Previous
+                  </Button>
+                  <span className="text-sm font-medium">
+                    Page {currentPage} of {pagination.pages}
+                  </span>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setCurrentPage(prev => Math.min(pagination.pages, prev + 1));
+                      window.scrollTo({ top: 300, behavior: 'smooth' });
+                    }}
+                    disabled={currentPage === pagination.pages}
+                  >
+                    Next
+                  </Button>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </section>
 
-                {pagination.pages > 1 && (
-                  <div className="pagination-controls flex items-center justify-center gap-4 mt-12 pb-12">
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        setCurrentPage(prev => Math.max(1, prev - 1));
-                        window.scrollTo({ top: 300, behavior: 'smooth' });
-                      }}
-                      disabled={currentPage === 1}
-                    >
-                      Previous
-                    </Button>
-                    <span className="text-sm font-medium">
-                      Page {currentPage} of {pagination.pages}
-                    </span>
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        setCurrentPage(prev => Math.min(pagination.pages, prev + 1));
-                        window.scrollTo({ top: 300, behavior: 'smooth' });
-                      }}
-                      disabled={currentPage === pagination.pages}
-                    >
-                      Next
-                    </Button>
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-        </section>
-
-      </div>
+    </div>
   );
 };
 

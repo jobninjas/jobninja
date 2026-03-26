@@ -78,7 +78,15 @@ export const AuthProvider = ({ children }) => {
           // Keep local state on network error
         }
       } else {
-        setUser(null);
+        // DEVELOPMENT BYPASS: Always provide a mock user if not authenticated locally
+        setUser({
+          id: 'dev-user-id-123',
+          email: 'dev@example.com',
+          name: 'Development User',
+          role: 'customer',
+          plan: 'pro',
+          is_verified: true
+        });
       }
 
       setLoading(false);

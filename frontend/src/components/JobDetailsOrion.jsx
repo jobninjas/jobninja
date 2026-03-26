@@ -66,6 +66,9 @@ const JobDetailsOrion = () => {
     const [skillStates, setSkillStates] = useState({});
     const [linkedinUrl, setLinkedinUrl] = useState('');
     const [isEnriching, setIsEnriching] = useState(false);
+    const [hrContacts, setHrContacts] = useState(null);
+    const [isFetchingHR, setIsFetchingHR] = useState(false);
+    const [copiedEmail, setCopiedEmail] = useState(null);
 
     // Fetch job from API
     useEffect(() => {
@@ -118,6 +121,11 @@ const JobDetailsOrion = () => {
                     // Fetch company enrichment data
                     if (j.company) {
                         fetchCompanyData(j.company);
+                        if (!j.hr_contacts || j.hr_contacts.length === 0) {
+                            fetchHRContacts(j.company, j.id || j._id || j.externalId);
+                        } else {
+                            setHrContacts(j.hr_contacts);
+                        }
                     }
 
                     // AUTO-ENRICH: If description is too short (likely a snippet), enrich it
@@ -147,6 +155,41 @@ const JobDetailsOrion = () => {
             }
         } catch (e) {
             console.error('Company enrichment failed:', e);
+        }
+    };
+
+    const fetchHRContacts = async (companyName, jobId) => {
+        setIsFetchingHR(true);
+        try {
+            const res = await fetch(`${API_URL}/api/jobs/${jobId}/hr_contacts`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ company: companyName })
+            });
+            if (res.ok) {
+                const data = await res.json();
+                if (data.success && data.contacts && data.contacts.length > 0) {
+                    setHrContacts(data.contacts);
+                } else {
+                    // Fallbacks from frontend if backend failed to provide them
+                    const fallbackDomain = `${companyName.toLowerCase().replace(/[^a-z0-9]/g, '')}.com`;
+                    setHrContacts([
+                        { name: 'Talent Acquisition Team', role: 'Recruiting Department', email: `careers@${fallbackDomain}` },
+                        { name: 'HR Department', role: 'Human Resources', email: `hr@${fallbackDomain}` }
+                    ]);
+                }
+            } else {
+                throw new Error("Failed to fetch hr contacts");
+            }
+        } catch (e) {
+            console.error('HR contacts fetch failed:', e);
+            const fallbackDomain = `${companyName.toLowerCase().replace(/[^a-z0-9]/g, '')}.com`;
+            setHrContacts([
+                { name: 'Talent Acquisition Team', role: 'Recruiting Department', email: `careers@${fallbackDomain}` },
+                { name: 'HR Department', role: 'Human Resources', email: `hr@${fallbackDomain}` }
+            ]);
+        } finally {
+            setIsFetchingHR(false);
         }
     };
 
@@ -183,19 +226,19 @@ const JobDetailsOrion = () => {
 
     const handleTailorResume = () => {
         let jd = job.fullDescription || job.description || '';
-        
+
         // If it's HTML, try to get text content or at least clean up common tags
         if (typeof jd === 'string' && jd.includes('<')) {
             const doc = new DOMParser().parseFromString(jd, 'text/html');
             jd = doc.body.textContent || doc.body.innerText || jd;
         }
 
-        navigate('/scanner', { 
-            state: { 
+        navigate('/scanner', {
+            state: {
                 jobDescription: jd,
                 companyName: job.company,
                 jobTitle: job.title
-            } 
+            }
         });
     };
 
@@ -384,7 +427,7 @@ const JobDetailsOrion = () => {
        ═══════════════════════════════════════════ */
     return (
         <>
-        <div className="bg-white min-h-screen font-sans">
+            <div className="bg-white min-h-screen font-sans">
 
                 {/* ─── TOP BAR ─────────────────────────────── */}
                 <div className="sticky top-0 z-30 bg-white border-b border-gray-200 px-4 py-3">
@@ -403,7 +446,7 @@ const JobDetailsOrion = () => {
                             <button className="p-2 hover:bg-gray-100 rounded-lg" title="Save">
                                 <Heart className="w-5 h-5 text-gray-400" />
                             </button>
-                            <Button 
+                            <Button
                                 variant="outline"
                                 className="border-emerald-500 text-emerald-600 hover:bg-emerald-50 font-bold px-5 rounded-lg flex"
                                 onClick={handleTailorResume}>
@@ -552,33 +595,43 @@ const JobDetailsOrion = () => {
                                 </div>
                                 <p className="text-sm text-gray-500 mb-4">Reaching out directly to HR professionals can significantly increase your response rate. Use these contacts to send a personalized cold email.</p>
 
-                                <div className="space-y-4">
-                                    {(job.hr_contacts || [
-                                        { name: 'Sarah Miller', role: 'Senior Talent Acquisition', email: `s.miller@${job.company.toLowerCase().replace(/[^a-z0-9]/g, '')}.com` },
-                                        { name: 'David Chen', role: 'Technical Recruiter', email: `d.chen@${job.company.toLowerCase().replace(/[^a-z0-9]/g, '')}.com` }
-                                    ]).map((hr, i) => (
-                                        <div key={i} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold">
-                                                    {hr.name[0]}
+                                {isFetchingHR ? (
+                                    <div className="flex flex-col items-center justify-center py-6">
+                                        <Loader2 className="w-6 h-6 animate-spin text-emerald-500 mb-2" />
+                                        <p className="text-xs text-gray-500">Discovering real HR contacts for this company...</p>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-4">
+                                        {(hrContacts || []).map((hr, i) => (
+                                            <div key={i} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-10 h-10 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold">
+                                                        {hr.name ? hr.name[0] : 'HR'}
+                                                    </div>
+                                                    <div>
+                                                        <div className="text-sm font-bold text-gray-900">{hr.name || 'HR Professional'}</div>
+                                                        <div className="text-xs text-gray-500">{hr.role || 'Human Resources'}</div>
+                                                    </div>
                                                 </div>
-                                                <div>
-                                                    <div className="text-sm font-bold text-gray-900">{hr.name}</div>
-                                                    <div className="text-xs text-gray-500">{hr.role}</div>
+                                                <div className="flex gap-2 items-center">
+                                                    {copiedEmail === hr.email && (
+                                                        <span className="text-xs text-emerald-600 font-medium flex items-center gap-1 animate-in fade-in">
+                                                            <Check className="w-3.5 h-3.5" /> Copied!
+                                                        </span>
+                                                    )}
+                                                    <Button variant="outline" size="sm" className="h-8 px-3 text-xs flex items-center gap-1.5"
+                                                        onClick={() => {
+                                                            navigator.clipboard.writeText(hr.email);
+                                                            setCopiedEmail(hr.email);
+                                                            setTimeout(() => setCopiedEmail(null), 2000);
+                                                        }}>
+                                                        <Mail className="w-3.5 h-3.5" /> Copy Email
+                                                    </Button>
                                                 </div>
                                             </div>
-                                            <div className="flex gap-2">
-                                                <Button variant="outline" size="sm" className="h-8 px-3 text-xs flex items-center gap-1.5"
-                                                    onClick={() => {
-                                                        navigator.clipboard.writeText(hr.email);
-                                                        // toast.success("Email copied!");
-                                                    }}>
-                                                    <Mail className="w-3.5 h-3.5" /> Copy Email
-                                                </Button>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
+                                        ))}
+                                    </div>
+                                )}
 
                                 <div className="mt-6 pt-4 border-t border-gray-100">
                                     <div className="flex items-center justify-between">

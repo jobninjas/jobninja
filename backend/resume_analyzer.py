@@ -48,15 +48,88 @@ GROQ_API_KEYS = get_all_groq_keys()
 GROQ_KEY_INDEX = 0  # Global index for round-robin
 
 GOOGLE_API_KEY = os.environ.get('GOOGLE_API_KEY')
+DEEPSEEK_API_KEY = os.environ.get('DEEPSEEK_API_KEY')
+
+# DeepSeek API settings
+DEEPSEEK_API_URL = "https://api.deepseek.com/chat/completions"
+DEEPSEEK_MODEL = "deepseek-chat"
+
+# Circuit-breaker: set True after first 402 so subsequent calls skip DeepSeek with zero latency
+_deepseek_disabled: bool = False
 
 # Groq API settings
 GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
 GROQ_MODEL = "llama-3.3-70b-versatile"  # Latest and most powerful
 
+async def call_deepseek_api(prompt: str, max_tokens: int = 4000, model: Optional[str] = None,
+                           temperature: float = 0.1, system_prompt: Optional[str] = None,
+                           json_mode: bool = False) -> Optional[str]:
+    """Call DeepSeek API for text generation. Returns None and trips circuit-breaker on 402."""
+    global _deepseek_disabled
+    if not DEEPSEEK_API_KEY:
+        logger.debug("DeepSeek API key not configured — skipping")
+        return None
+    if _deepseek_disabled:
+        logger.debug("DeepSeek circuit-breaker active — skipping (use Groq fallback)")
+        return None
 
-async def call_groq_api(prompt: str, max_tokens: int = 4000, model: str = None, 
-                         max_retries: int = None, api_key: str = None, 
-                         json_mode: bool = False) -> Optional[str]:
+    target_model = model or DEEPSEEK_MODEL
+    headers = {
+        "Authorization": f"Bearer {DEEPSEEK_API_KEY}",
+        "Content-Type": "application/json"
+    }
+
+    # System message handling
+    if system_prompt:
+        system_content = system_prompt
+    elif json_mode:
+        system_content = "You are a professional resume assistant. Output ONLY valid JSON."
+    else:
+        system_content = "You are a professional resume writer. Output ONLY the requested content."
+
+    payload = {
+        "model": target_model,
+        "messages": [
+            {"role": "system", "content": system_content},
+            {"role": "user", "content": prompt}
+        ],
+        "max_tokens": max_tokens,
+    }
+
+    # deepseek-reasoner (R1) does NOT support temperature or response_format.
+    # Non-reasoner models support both.
+    is_reasoner = target_model == "deepseek-reasoner"
+    if not is_reasoner:
+        payload["temperature"] = temperature
+    if json_mode and not is_reasoner:
+        payload["response_format"] = {"type": "json_object"}
+
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.post(DEEPSEEK_API_URL, headers=headers, json=payload) as response:
+                if response.status == 200:
+                    data = await response.json()
+                    return data['choices'][0]['message']['content']
+                elif response.status == 402:
+                    _deepseek_disabled = True
+                    logger.warning(
+                        "DeepSeek API returned 402 (Insufficient Balance). "
+                        "Circuit-breaker tripped — all calls will fall back to Groq. "
+                        "Top up your DeepSeek account at https://platform.deepseek.com/"
+                    )
+                    return None
+                else:
+                    error_text = await response.text()
+                    logger.error(f"DeepSeek API error {response.status}: {error_text}")
+                    return None
+    except Exception as e:
+        logger.error(f"Error calling DeepSeek API: {e}")
+        return None
+
+
+async def call_groq_api(prompt: str, max_tokens: int = 4000, model: Optional[str] = None, 
+                        max_retries: Optional[int] = 3, api_key: Optional[str] = None, 
+                        json_mode: bool = False) -> Optional[str]:
     """Call Groq API for text generation with exponential backoff"""
     # ADD THIS — log every call so you can see if json_mode is reaching here
     import logging
@@ -216,7 +289,12 @@ async def call_anthropic_api(prompt: str, api_key: str, max_tokens: int = 4000, 
             async with session.post("https://api.anthropic.com/v1/messages", headers=headers, json=payload) as response:
                 if response.status == 200:
                     data = await response.json()
-                    return data['content'][0]['text']
+                    text_blocks = [
+                        block["text"]
+                        for block in data.get("content", [])
+                        if block.get("type") == "text"
+                    ]
+                    return " ".join(text_blocks) if text_blocks else None
                 else:
                     logger.error(f"Anthropic API error {response.status}: {await response.text()}")
                     return None
@@ -240,15 +318,17 @@ async def call_google_api(prompt: str, api_key: str, max_tokens: int = 4000) -> 
         logger.error(f"Error calling Google Gemini API: {e}")
         return None
 
-async def unified_api_call(prompt: str, max_tokens: int = 4000, model: str = None, json_mode: bool = False) -> Optional[str]:
+async def unified_api_call(prompt: str, max_tokens: int = 4000, model: Optional[str] = None,
+                           temperature: float = 0.1, system_prompt: Optional[str] = None,
+                           json_mode: bool = False) -> Optional[str]:
     """
-    Unified AI call point. Falls back to internal Groq pooling.
+    Unified AI call point. Uses Groq as the primary (and only) provider.
     """
     processed_prompt = prompt
     if json_mode and "json" not in (prompt or "").lower():
         processed_prompt = f"{prompt}\n\nRespond with a valid JSON object ONLY."
-        
-    # Fallback to internal Groq key pooling
+
+    # Use Groq directly — it is the primary provider
     return await call_groq_api(processed_prompt, max_tokens=max_tokens, model=model, json_mode=json_mode)
 
 
@@ -588,4 +668,115 @@ async def process_resume_feedback(resume_text: str, feedback: str) -> Dict[str, 
     """
     logger.info("process_resume_feedback called (stub)")
     return {"status": "success", "message": "Feedback received"}
+
+
+# ---------------------------------------------------------------------------
+# DeepSeek R1 — tailored resume generation
+# ---------------------------------------------------------------------------
+
+DEEPSEEK_RESUME_PROMPT = """\
+You are an elite ATS-optimization and resume-writing specialist.
+
+TASK
+Given:
+  • Original resume (plain text)
+  • Target job description
+
+Produce a tailored resume in **strict JSON only** (no markdown, no prose outside the JSON).
+
+OUTPUT SCHEMA
+{{
+  "name"       : "<full name>",
+  "contact"    : "<email | phone | LinkedIn>",
+  "summary"    : "<2-3 sentence professional summary, keyword-rich>",
+  "experience" : [
+    {{
+      "title"    : "<job title>",
+      "company"  : "<company>",
+      "dates"    : "<start – end>",
+      "bullets"  : ["<achievement bullet 1>", "<achievement bullet 2>", "..."]
+    }}
+  ],
+  "skills"     : ["<skill1>", "<skill2>", "..."],
+  "education"  : [
+    {{
+      "degree"  : "<degree>",
+      "school"  : "<institution>",
+      "year"    : "<graduation year>"
+    }}
+  ],
+  "certifications": ["<cert1>", "..."],
+  "keywords_added": ["<keyword1>", "..."]
+}}
+
+RULES
+1. Do NOT invent facts — tailor truthfully.
+2. Mirror exact keywords and phrases from the job description wherever plausible.
+3. Every experience bullet must start with a strong action verb and include a quantified result when the source resume provides one.
+4. The summary must open with the exact job title from the JD.
+5. Return ONLY the JSON — no introduction, no commentary, no markdown fences.
+
+--- ORIGINAL RESUME ---
+{resume_text}
+
+--- JOB DESCRIPTION ---
+{job_description}
+"""
+
+
+async def generate_tailored_resume_deepseek(
+    resume_text: str,
+    job_description: str,
+) -> Dict[str, Any]:
+    """
+    Generate a fully tailored resume JSON using DeepSeek R1 (deepseek-reasoner).
+
+    Falls back to Groq (llama-3.3-70b-versatile) when DeepSeek is unavailable.
+
+    Returns a dict with keys: name, contact, summary, experience, skills,
+    education, certifications, keywords_added  — plus an optional 'error' key.
+    """
+    prompt = DEEPSEEK_RESUME_PROMPT.format(
+        resume_text=resume_text,
+        job_description=job_description,
+    )
+
+    system_prompt = (
+        "You are a JSON API. Output ONLY a single valid JSON object matching "
+        "the schema provided. No markdown, no prose, no commentary."
+    )
+
+    response_text: Optional[str] = None
+
+    # ── Primary: Groq ────────────────────────────────────────────────────────
+    logger.info("[TailorResume] Calling Groq (llama-3.3-70b-versatile)…")
+    groq_prompt = (
+        prompt
+        + "\n\nIMPORTANT: Respond with a valid JSON object ONLY. Begin with { now:"
+    )
+    response_text = await call_groq_api(
+        groq_prompt,
+        max_tokens=4000,
+        model="llama-3.3-70b-versatile",
+        json_mode=True,
+    )
+    if response_text:
+        logger.info("[TailorResume] Groq responded ✓")
+
+    if not response_text:
+        return {"error": "All AI providers failed. Please retry later."}
+
+    # ── Parse ─────────────────────────────────────────────────────────────────
+    try:
+        clean = clean_json_response(response_text)
+        result = json.loads(clean)
+        logger.info("[TailorResume] JSON parsed successfully ✓")
+        return result
+    except json.JSONDecodeError as exc:
+        logger.error(f"[TailorResume] JSON parse error: {exc}")
+        logger.error(f"[TailorResume] Raw (first 500): {response_text[:500]}")
+        return {
+            "error": "Could not parse AI response as JSON.",
+            "raw": response_text[:1000],
+        }
 

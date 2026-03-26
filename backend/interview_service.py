@@ -29,6 +29,11 @@ if Groq:
 else:
     groq_client = None
 
+# DeepSeek Configuration
+DEEPSEEK_API_KEY = os.getenv('DEEPSEEK_API_KEY')
+DEEPSEEK_API_URL = "https://api.deepseek.com/chat/completions"
+DEEPSEEK_MODEL = "deepseek-chat"
+
 
 class InterviewPrompts:
     """Interview prompts for different stages"""
@@ -126,14 +131,86 @@ class InterviewPrompts:
 
 
 class AIService:
-    """AI service using Groq"""
+    """AI service using DeepSeek (with Groq fallback)"""
     
     @staticmethod
-    def chat(prompt: str, json_mode: bool = True) -> str:
-        """Call Groq chat API"""
+    async def call_deepseek_chat(prompt: str, json_mode: bool = True) -> Optional[str]:
+        """Call DeepSeek API for chat"""
+        if not DEEPSEEK_API_KEY:
+            return None
+            
+        import aiohttp
+        headers = {
+            "Authorization": f"Bearer {DEEPSEEK_API_KEY}",
+            "Content-Type": "application/json"
+        }
+        
+        payload = {
+            "model": DEEPSEEK_MODEL,
+            "messages": [{"role": "user", "content": prompt}],
+            "temperature": 0.7
+        }
+        
+        if json_mode:
+            payload["response_format"] = {"type": "json_object"}
+            
         try:
+            async with aiohttp.ClientSession() as session:
+                async with session.post(DEEPSEEK_API_URL, headers=headers, json=payload) as response:
+                    if response.status == 200:
+                        data = await response.json()
+                        return data['choices'][0]['message']['content']
+                    else:
+                        logger.error(f"DeepSeek chat failed: {response.status}")
+                        return None
+        except Exception as e:
+            logger.error(f"DeepSeek chat error: {e}")
+            return None
+
+    @staticmethod
+    def chat(prompt: str, json_mode: bool = True) -> str:
+        """Call AI chat API (Sync wrapper for internal compatibility)"""
+        # Note: The existing code calls this synchronously. 
+        # To maintain compatibility without major refactor, we'll use a sync call or asyncio.run if safe.
+        # However, interview_service seems to be used in async contexts mostly.
+        # Let's check how it's called.
+        
+        try:
+            # 1. Try DeepSeek (using event loop if available)
+            try:
+                loop = asyncio.get_event_loop()
+                if loop.is_running():
+                    # This is tricky if called from an async function.
+                    # But wait, looking at the code, chat is called from async functions like generate_initial_question.
+                    # This means we should probably make chat async or handle the sync call carefully.
+                    # Actually, the ORIGINAL code was sync (groq_client.chat.completions.create is sync).
+                    pass
+            except:
+                pass
+
+            # For now, let's implement a sync request for DeepSeek using requests or just use Groq as fallback
+            # to avoid blocking issues if we can't easily switch to full async yet.
+            import requests
+            headers = {
+                "Authorization": f"Bearer {DEEPSEEK_API_KEY}",
+                "Content-Type": "application/json"
+            }
+            payload = {
+                "model": DEEPSEEK_MODEL,
+                "messages": [{"role": "user", "content": prompt}],
+                "temperature": 0.7
+            }
+            if json_mode:
+                payload["response_format"] = {"type": "json_object"}
+                
+            response = requests.post(DEEPSEEK_API_URL, headers=headers, json=payload, timeout=30)
+            if response.status_code == 200:
+                return response.json()['choices'][0]['message']['content']
+            
+            logger.warning(f"DeepSeek sync chat failed ({response.status_code}), falling back to Groq")
+            
             if not groq_client:
-                raise ValueError("Groq client not initialized")
+                raise ValueError("DeepSeek failed and Groq client not initialized")
                 
             response = groq_client.chat.completions.create(
                 model="llama-3.3-70b-versatile",
@@ -142,7 +219,7 @@ class AIService:
             )
             return response.choices[0].message.content or ""
         except Exception as e:
-            logger.error(f"Groq chat failed: {e}")
+            logger.error(f"AI chat failed: {e}")
             raise
 
     @staticmethod

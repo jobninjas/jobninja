@@ -4,7 +4,6 @@ import { Button } from './ui/button';
 import { Bot, UserCheck, Menu } from 'lucide-react';
 import { BRAND } from '../config/branding';
 import { useAuth } from '../contexts/AuthContext';
-import BrandLogo from './BrandLogo';
 
 const Navbar = ({ onOpenSideMenu, rightContent }) => {
   const navigate = useNavigate();
@@ -20,27 +19,34 @@ const Navbar = ({ onOpenSideMenu, rightContent }) => {
         <button className="hamburger-btn" onClick={onOpenSideMenu}>
           <Menu className="w-5 h-5" />
         </button>
-        <button onClick={() => { navigate('/'); window.scrollTo(0, 0); }} className="nav-logo flex items-center">
-          <img src={BRAND.logoPath} alt={BRAND.logoAlt} className="logo-image mr-2" />
-          <BrandLogo />
+        <button onClick={() => navigate('/')} className="nav-logo">
+          <img src={BRAND.logoPath} alt={BRAND.logoAlt} className="logo-image" />
+          <span className="logo-text">{BRAND.name}</span>
         </button>
       </div>
       <nav className="nav-links-modern">
-        <button
-          onClick={() => navigate('/ai-ninja')}
+        <button 
+          onClick={() => navigate('/ai-ninja')} 
           className={`nav-link-modern nav-ninja-btn ai ${isActive('/ai-ninja') ? 'active' : ''}`}
         >
           <Bot className="w-5 h-5" />
           <span>AI Ninja</span>
         </button>
-        <button
-          onClick={() => navigate('/jobs')}
+        <button 
+          onClick={() => navigate('/human-ninja')} 
+          className={`nav-link-modern nav-ninja-btn human ${isActive('/human-ninja') ? 'active' : ''}`}
+        >
+          <UserCheck className="w-5 h-5" />
+          <span>Human Ninja</span>
+        </button>
+        <button 
+          onClick={() => navigate('/jobs')} 
           className={`nav-link-modern ${isActive('/jobs') ? 'text-primary font-semibold' : ''}`}
         >
           Job Board
         </button>
-        <button
-          onClick={() => navigate('/pricing')}
+        <button 
+          onClick={() => navigate('/pricing')} 
           className={`nav-link-modern ${isActive('/pricing') ? 'text-primary font-semibold' : ''}`}
         >
           Pricing
@@ -60,6 +66,11 @@ const Navbar = ({ onOpenSideMenu, rightContent }) => {
               </Button>
             </>
           )
+        )}
+        {isAuthenticated && !rightContent && (
+             <Button variant="secondary" className="btn-secondary" onClick={() => navigate('/dashboard')}>
+                Dashboard
+             </Button>
         )}
       </div>
     </header>

@@ -138,183 +138,59 @@ OUTPUT JSON SCHEMA:
 }}
 """
 
-EXPERT_TAILORING_PROMPT = """
-╔══════════════════════════════════════════════════════════════╗
-║  YOU ARE A JSON API. OUTPUT ONLY A JSON OBJECT.             ║
-║  NO PROSE. NO ADVICE. NO MARKDOWN. START WITH {{            ║
-║  BANNED: "PRD", "Job Title — ", "Here is your resume", etc. ║
-╚══════════════════════════════════════════════════════════════╝
+EXPERT_SYSTEM_PROMPT = """
+You are an expert resume writer specializing in AI/ML and software engineering roles in the US job market. Your job is to rewrite and tailor a candidate's resume to match a specific job description WITHOUT removing, summarizing, or shortening any experience. 
 
-════════════════════════════════════════════
-STEP 0 — STRIP INPUT FORMATTING (do this first, silently)
-════════════════════════════════════════════
-The raw resume text contains markdown artifacts from DOCX extraction.
-Before doing anything else, strip ALL of these from every string you output:
-  ** bold markers **   → remove asterisks
-  * italic *           → remove asterisks  
-  # headings           → remove hash
-  \| pipe escapes      → replace with |
-  --- horizontal rules → ignore
-  - list prefixes      → ignore (bullets handled by JSON structure)
-Output ONLY clean plain text strings. Zero markdown in any JSON value.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+‼️ RULE ZERO — BEFORE ANYTHING ELSE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+NEVER start your output with "Dear", "Hello", "Hi", or any greeting.
+NEVER write a cover letter. NEVER write an introduction paragraph.
+NEVER write "Dear Hiring Team,".
+NEVER invent companies, job titles, dates, or people.
 
-════════════════════════════════════════════
-STEP 1 — READ AND LOCK CANDIDATE FACTS
-════════════════════════════════════════════
-Extract from the raw resume below. These facts are LOCKED — you cannot
-change, invent, or omit any of them.
+STRICT RULES — never break these:
+1. NEVER shrink, summarize, or remove bullet points from any job. Every role must have at least 6-8 detailed bullet points.
+2. NEVER reduce the total length of the resume. The output must be LONGER than the input, not shorter.
+3. Every job must include a "Project Summary" paragraph describing the company and the candidate's role context.
+4. Every job must end with an "Environment:" line listing all tools and technologies used in that role.
+5. Bullet points must be BOLD and detailed — minimum 25 words each.
+6. Add or strengthen keywords from the job description naturally inside existing bullets. Do NOT invent fake experience.
+7. Rewrite the Professional Summary to directly mirror the job description language and requirements.
+8. Skills section must be a full categorized list — minimum 8 categories.
+9. Output must be structured as valid JSON.
+10. Never output a shortened or "clean" version. The goal is a COMPREHENSIVE, ATS-optimized resume.
+"""
 
-RAW RESUME:
+EXPERT_TAILORING_USER_PROMPT = """
+Tailor this resume for the job description below. Follow every rule in the system prompt strictly.
+
+=== CANDIDATE RESUME ===
 {raw_resume_text}
 
-LOCKED FACTS YOU MUST EXTRACT:
-  name:         (exact, NO markdown, NO job titles, HUMAN NAME ONLY)
-  email:        (exact)
-  phone:        (exact)
-  location:     (exact)
-  
-  employers:    EXACTLY the employers in the resume — no more, no fewer.
-                Each entry MUST have:
-                  company:   exact name
-                  title:     exact title
-                  location:  exact location
-                  start:     format "Mon YYYY" (e.g. "Feb 2026") — NEVER ISO
-                  end:       format "Mon YYYY" or "Present" — NEVER ISO
-                  bullets:   ALL original bullets verbatim (you will reframe later)
-                  
-  projects:     ONLY the projects that exist in the raw resume.
-                NEVER invent project names. NEVER use generic names like
-                "Project 1", "Intelligent Talent Discovery", "Batch ETL Pipelines".
-                
-  certifications: exact list from resume
-  education:    exact degrees, universities, years — degree field ONCE, not doubled
-
-════════════════════════════════════════════
-STEP 2 — ANALYZE THE JOB DESCRIPTION
-════════════════════════════════════════════
-TARGET JOB DESCRIPTION:
+=== JOB DESCRIPTION ===
 {job_description}
 
-Extract:
-  jd_title:         exact job title from JD
-  must_have:        top 5 required skills/experiences from JD
-  nice_to_have:     bonus skills from JD
-  mission:          what does this team/product actually build? (1 sentence)
-  experience_gap:   if JD asks for more years than candidate has, note it here
-                    — do NOT lie about years. Bridge with scope/impact instead.
-
-════════════════════════════════════════════
-STEP 3 — SKILLS TIMELINE LAW (CRITICAL)
-════════════════════════════════════════════
-Only assign a technology to a role if it was in mainstream production use
-BEFORE OR DURING that role's date range. This is non-negotiable.
-
-TIMELINE REFERENCE GUIDE:
-- 2024+: LangGraph, LlamaIndex (v0.10+), GPT-4o, Claude 3.5
-- 2023+: QLoRA, DPO, Llama 2, GPT-4, Mistral, Vector DBs (mainstream)
-- 2022+: LangChain, ChatGPT, LoRA, Stable Diffusion, Whisper
-- 2021+: Vertex AI, Copilot, Vision Transformers
-- 2019-2020: FastAPI, Transformers (Hugging Face), PyTorch (mainstream), BERT
-
-════════════════════════════════════════════
-STEP 4 — EXPERIENCE GAP STRATEGY
-════════════════════════════════════════════
-If JD asks for more experience than candidate has, NEVER:
-  ✗ Inflate years ("10+ years" when candidate has 5)
-  ✗ Invent roles or dates
-  ✗ Add fake projects
-  ✗ Copy JD phrases verbatim as if candidate said them (e.g. "vibe coding")
-  ✗ Use any term, phrase, or buzzword not found in the original resume
-    UNLESS it accurately describes work the candidate actually did
-
-INSTEAD, bridge the gap by:
-  ✓ Surfacing depth: reframe existing bullets to show senior-level judgment
-    (system design, failure modes, architectural decisions)
-  ✓ Stacking scope: show cross-functional impact, production scale, SLA ownership
-  ✓ Matching mission: tie candidate's AI/ML pipeline work to the JD's
-    "production-grade software", "agentic workflows", "regulated domains" framing
-  ✓ Summary strategy: lead with technical depth and production scope, 
-    NOT years of experience if there's a gap
-
-════════════════════════════════════════════
-STEP 5 — WRITE THE TAILORED RESUME
-════════════════════════════════════════════
-
-SUMMARY (3 sentences, no candidate name, no "I"):
-  S1: Strongest technical depth sentence — map candidate's actual skills to JD's
-      top must_have. State scope/scale. Do NOT state years if gap exists.
-  S2: Production + system reasoning evidence — pick the most impressive
-      technical fact from original resume and reframe toward JD mission.
-  S3: Collaboration + delivery + tie to this specific company's domain.
-  BANNED WORDS: "passionate", "motivated", "excited", "leverage", "synergy",
-                "vibe coding", "PRD", "[Company]", "[Job Title]"
-  CRITICAL: DO NOT include any metacommentary or "advice" in the summary or bullets.
-            DO NOT start with "Sure, here is your tailored resume".
-
-SKILLS (exactly 4 categories):
-  Label each category to match JD clusters.
-  Apply TIMELINE LAW — only include tools valid for candidate's career span.
-  For each tool: only add if candidate plausibly used it given role dates.
-
-EXPERIENCE BULLET COUNT LAW (NON-NEGOTIABLE):
-  — TAILORING DEPTH LAW: ONLY tailor 2-3 high-impact bullets per role. Keep the rest of the original content EXACTLY as it was.
-  — NO SHRINKAGE LAW: DO NOT scale the resume down to one page. Maintain the original length and detail. Output ALL original bullets.
-  — Output EVERY bullet from the original resume per role. NEVEr truncate.
-  — Each bullet minimum 20 words.
-  — Format: [Strong verb] + [what was built] + [specific tool] + [outcome/scale]
-  — Reframe original content toward JD keywords — do NOT rewrite the meaning
-  — NEVER copy JD phrases verbatim into bullets as if candidate said them
-  — NEVER add tools that violate the TIMELINE LAW for that role's dates
-  — Most recent role: present tense verbs
-  — All other roles: past tense verbs
-  — For roles that need "senior framing": add judgment language —
-    "designed for failure tolerance", "reasoned about edge cases",
-    "defined acceptance criteria", "governed data quality standards"
-
-PROJECT BULLET RULES:
-  — Use ONLY bullet content that exists in the original resume.
-  — If a project has 2 original bullets, output exactly 2 — do NOT pad to 3.
-  — NEVER invent: "Developed a user interface", "Developed a conversational interface", "Developed a system for users to interact", or any generic UI/UX sentence.
-  — If you cannot find a real third bullet from the original, use the second bullet reframed from a different technical angle — do NOT fabricate new functionality.
-  — Original project bullets are your only source of truth.
-
-CERTIFICATIONS: copy verbatim from locked facts
-EDUCATION: Degree and Major on one line. University and Year on the next line. No duplication of major.
-
-════════════════════════════════════════════
-REQUIRED OUTPUT JSON STRUCTURE:
-════════════════════════════════════════════
+=== OUTPUT FORMAT (Return JSON only) ===
 {{
-  "step1_locked_facts": {{
-    "employer_count": 0,
-    "project_names": [],
-    "experience_gap_detected": true,
-    "gap_strategy": "one sentence: how you are bridging without lying"
-  }},
-  "step2_jd_analysis": {{
-    "jd_title": "exact title",
-    "must_have": ["skill1","skill2","skill3","skill4","skill5"],
-    "mission": "what the team builds in one sentence",
-    "experience_gap": "JD asks X years, candidate has Y — bridging via Z"
-  }},
   "tailored_resume": {{
     "name": "Full Name",
-    "title": "job title from JD",
+    "title": "Exact Job Title from JD",
     "contact": {{
-      "email": "email@example.com",
-      "phone": "phone",
-      "location": "location"
+       "email": "email",
+       "phone": "phone",
+       "location": "location"
     }},
-    "summary": [
-      "sentence 1",
-      "sentence 2",
-      "sentence 3"
-    ],
+    "summary": ["sentence 1", "sentence 2", "sentence 3", "sentence 4"],
     "skills": {{
-      "Category 1": ["skill","skill"],
-      "Category 2": ["skill","skill"],
-      "Category 3": ["skill","skill"],
-      "Category 4": ["skill","skill"]
+       "AI/ML": [],
+       "Languages": [],
+       "Data Engineering": [],
+       "Cloud & MLOps": [],
+       "GenAI & LLMs": [],
+       "Databases": [],
+       "DevOps": [],
+       "Frameworks": []
     }},
     "experience": [
       {{
@@ -322,22 +198,24 @@ REQUIRED OUTPUT JSON STRUCTURE:
         "title": "Title",
         "location": "Location",
         "start": "Mon YYYY",
-        "end": "Mon YYYY or Present",
+        "end": "Mon YYYY",
+        "project_summary": "2-3 sentences describing the company and candidate's context.",
         "bullets": [
-          "bullet 1",
-          "bullet 2"
-        ]
+           "**Bold 25+ word detailed bullet 1...**",
+           "**Bold 25+ word detailed bullet 2...**",
+           "**Bold 25+ word detailed bullet 3...**",
+           "**Bold 25+ word detailed bullet 4...**",
+           "**Bold 25+ word detailed bullet 5...**",
+           "**Bold 25+ word detailed bullet 6...**"
+        ],
+        "environment": "tool1, tool2, tool3..."
       }}
     ],
     "projects": [
       {{
-        "name": "Project Name",
+        "name": "Name",
         "tech": "Stack",
-        "bullets": [
-          "bullet 1",
-          "bullet 2",
-          "bullet 3"
-        ]
+        "bullets": ["detailed bullet 1", "detailed bullet 2"]
       }}
     ],
     "certifications": [],
@@ -350,16 +228,9 @@ REQUIRED OUTPUT JSON STRUCTURE:
       }}
     ]
   }},
-  "cover_letter": "3 paragraphs.",
-  "self_check": {{
-    "zero_markdown_in_output": true,
-    "all_employers_present": true,
-    "timeline_law_respected": true,
-    "experience_gap_bridged_not_lied_about": true
-  }}
+  "cover_letter": "Detailed cover letter text"
 }}
-
-Respond with valid JSON only. Begin with {{ now:"""
+"""
 
 # ============================================
 # STRUCTURED RESUME SCHEMA (Step 3 & 4)
@@ -387,7 +258,9 @@ class ExperienceRole(BaseModel):
     city_state_or_remote: str
     start: str
     end: str
+    project_summary: str = ""
     bullets: List[str]
+    environment: str = ""
 
 class ProjectItem(BaseModel):
     name: str
@@ -738,39 +611,44 @@ async def generate_expert_tailored_content(resume_text: str, job_description: st
     """
     Expert Tailoring Pipeline (Phase 21):
     One-shot, high-fidelity generation of tailored resume data + cover letter.
+    Using DeepSeek with detailed system instructions for maximum quality.
     """
     try:
+        if not resume_text or len(str(resume_text)) < 50:
+            logger.error(f"[Validation Guard] Resume content is missing or too short. Length: {len(str(resume_text)) if resume_text else 0}")
+            return {"error": "Resume content is missing or too short. Could not load original resume data before tailoring."}
+        
+        logger.info(f"[Validation Guard] Sending Resume Text (length: {len(str(resume_text))}):\n{str(resume_text)[:100]}...")
         logger.info("Starting Expert AI Tailoring Pipeline...")
         
-        # 1. Extract structured facts from original resume
-        resume_json = await extract_resume_data(resume_text)
-        if not resume_json or "error" in resume_json:
-            raise Exception(f"Failed to extract structured data: {resume_json.get('error', 'Unknown')}")
-            
-        # 2. Prepare facts for prompt
-        facts = prepare_tailoring_facts(resume_json)
-        
-        # 3. Fill the prompt
-        prompt = EXPERT_TAILORING_PROMPT.format(
+        # 1. Prepare User Prompt
+        prompt = EXPERT_TAILORING_USER_PROMPT.format(
             raw_resume_text=resume_text,
             job_description=job_description
         )
         
-        # 4. Call LLM (High-speed model for extraction, heavy model for tailoring)
-        # Using llama-3.3-70b-versatile as requested/indicated in prompt for max quality
+        # 2. Call LLM with Expert System Prompt and specifically configured temperature
         response_raw = await unified_api_call(
             prompt, 
-            max_tokens=12000, 
-            model="llama-3.3-70b-versatile", 
+            max_tokens=8000, # Increased for detailed comprehensive output
+            temperature=0.3, # Specific requested temperature for creative yet professional output
+            system_prompt=EXPERT_SYSTEM_PROMPT,
             json_mode=True
         ) or ""
         
-        # 5. Extract and parse JSON
+        # 3. Extract and parse JSON
         result = extract_json_from_response(response_raw)
         
         if not result or "tailored_resume" not in result:
-            logger.error(f"Expert tailoring failed to return valid JSON. Raw: {response_raw[:500]}")
-            return {"error": "Expert tailoring failed to generate valid content"}
+            logger.error(f"Expert tailoring failed to return valid JSON. Raw result length: {len(response_raw)}")
+            # Fallback attempt if JSON extraction failed but we have text
+            if response_raw.strip().startswith('{'):
+                 try:
+                     result = json.loads(response_raw)
+                 except: pass
+            
+            if not result or "tailored_resume" not in result:
+                return {"error": "Expert tailoring failed to generate valid content"}
             
         # Recursive cleanup of any leaked advice or placeholders
         result["tailored_resume"] = recursive_cleanup(result["tailored_resume"])
@@ -976,8 +854,19 @@ def render_preview_text_from_json(data: Dict) -> str:
         dates = job.get('dates') or f"{job.get('start', '')} - {job.get('end', '')}".strip(" -")
         
         job_header = f"{company} — {title} | {location}\n{dates}"
+        entry_text = f"{job_header}\n"
+        
+        if job.get("project_summary"):
+            entry_text += f"\nProject Summary: {job['project_summary']}\n"
+            entry_text += "\nRoles and Responsibilities:\n"
+            
         bullets = "\n".join([f"- {b}" for b in job.get("bullets", [])])
-        exp_entries.append(f"{job_header}\n{bullets}")
+        entry_text += bullets
+        
+        if job.get("environment"):
+            entry_text += f"\n\nEnvironment: {job['environment']}"
+            
+        exp_entries.append(entry_text)
     out.append("\n".join(exp_entries))
             
     # Projects
@@ -1615,6 +1504,17 @@ async def generate_expert_documents(
     """Generate ATS Resume and Detailed CV using the Expert AI Ninja Engine (Phase 21)"""
     
     try:
+        if not resume_text or len(str(resume_text)) < 50:
+            logger.error(f"[Validation Guard] Resume content is missing or too short. Length: {len(str(resume_text)) if resume_text else 0}")
+            return {
+                "alignment_highlights": [],
+                "ats_resume": "",
+                "detailed_cv": "",
+                "cover_letter": "",
+                "resume_json": {},
+                "error": "Resume content is missing or too short. Could not load original resume data before tailoring."
+            }
+            
         # Intensity mapping
         if intensity == "aggressive":
             intensity_instruction = "RADICAL TAILORING: Rewrite bullets to use as many JD keywords as possible while maintaining factual truth. Prioritize impact and matching."
@@ -1812,19 +1712,45 @@ def create_resume_docx(resume_data: Dict, font_family: str = "Times New Roman", 
             exp_header.add_run(company_text)
             exp_header.paragraph_format.space_after = Pt(0)
             
-            # Dates
-            if exp.get("dates"):
-                dates_para = doc.add_paragraph()
-                dates_run = dates_para.add_run(exp["dates"])
-                dates_run.italic = True
-                dates_para.paragraph_format.space_after = Pt(0)
-            
+            # Project Summary
+            if exp.get("project_summary"):
+                proj_sum_para = doc.add_paragraph()
+                proj_sum_run = proj_sum_para.add_run(f"Project Summary: {exp['project_summary']}")
+                proj_sum_para.paragraph_format.space_after = Pt(2)
+
+            # Roles and Responsibilities Heading
+            rar_para = doc.add_paragraph()
+            rar_run = rar_para.add_run("Roles and Responsibilities:")
+            rar_run.bold = True
+            rar_para.paragraph_format.space_after = Pt(0)
+
             # Bullets - all of them
             bullets = exp.get("bullets", [])
             for bullet in bullets:
                 if bullet and bullet.strip():
-                    bullet_para = doc.add_paragraph(bullet, style='List Bullet')
+                    # Check if bullet contains bold markers
+                    bullet_para = doc.add_paragraph(style='List Bullet')
+                    
+                    # Simple bold logic for markdown-like **bold** in bullets
+                    text = bullet.strip()
+                    parts = re.split(r'(\*\*.*?\*\*)', text)
+                    for part in parts:
+                        if part.startswith('**') and part.endswith('**'):
+                            run = bullet_para.add_run(part[2:-2])
+                            run.bold = True
+                        else:
+                            bullet_para.add_run(part)
+                    
                     bullet_para.paragraph_format.space_after = Pt(0)
+            
+            # Environment
+            if exp.get("environment"):
+                env_para = doc.add_paragraph()
+                env_label = env_para.add_run("Environment: ")
+                env_label.bold = True
+                env_para.add_run(exp["environment"])
+                env_para.paragraph_format.space_before = Pt(2)
+                env_para.paragraph_format.space_after = Pt(6)
             
             # Add space between experiences
             if i < len(resume_data["experience"]) - 1:

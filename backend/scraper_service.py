@@ -57,7 +57,17 @@ async def fetch_url_content(url: str) -> Tuple[Optional[str], int]:
         "Upgrade-Insecure-Requests": "1",
     }
     
-    headers_list = [desktop_headers, mobile_headers]
+    # Safari Mac headers
+    safari_headers = {
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Accept-Encoding": "gzip, deflate, br",
+        "Connection": "keep-alive",
+    }
+    
+    headers_list = [desktop_headers, safari_headers, mobile_headers]
+
     
     # Domain specific routing
     if "monster.com" in url.lower():
@@ -284,35 +294,30 @@ async def scrape_job_description(url: str) -> Dict[str, Any]:
         if status == 404:
             return {
                 "success": False,
-                "error": "This job posting appears to be inactive or no longer exists (404 Error). Please verify the link is still valid."
+                "error": "This job posting appears to be inactive or no longer exists (404 Error)."
             }
         
-        domain_name = "This site"
+        domain_name = "this site"
         if "linkedin" in url.lower(): domain_name = "LinkedIn"
+        elif "workable" in url.lower(): domain_name = "Workable"
         elif "monster" in url.lower(): domain_name = "Monster"
         elif "indeed" in url.lower(): domain_name = "Indeed"
-        elif "jpmc" in url.lower() or "oraclecloud" in url.lower(): domain_name = "JPMorgan/Oracle"
         
         return {
             "success": False, 
-            "error": f"Access blocked by {domain_name}. This site has strong anti-scraping measures. Please copy and paste the job description manually."
+            "error": f"Access blocked by {domain_name}. Please copy and paste the JD manually."
         }
 
     raw_text = extract_main_text(html)
     logger.info(f"Extracted {len(raw_text)} chars from {url}")
     
-    # Check if text is too short or just boilerplate after cleaning
-    if len(raw_text) < 300:
-        logger.warning(f"Extracted text too short or blocked ({len(raw_text)} chars). Sample: {raw_text[:200]}")
-        
-        domain_name = "The job board"
-        if "linkedin" in url.lower(): domain_name = "LinkedIn"
-        elif "jpmc" in url.lower() or "oraclecloud" in url.lower(): domain_name = "JPMorgan/Oracle"
-
+    # If text is too short, it might be a block page or empty
+    if len(raw_text) < 200:
         return {
             "success": False,
-            "error": f"{domain_name} is blocking access to this job's details. Please copy the job description and paste it manually into the field below."
+            "error": "Extracted content too short. The site might be blocking our scraper. Please paste the JD manually."
         }
+
     
     # Truncate text to avoid hitting token limits
     # Reduced to 4000 to drastically reduce token usage and rate limits
