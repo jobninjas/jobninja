@@ -1006,10 +1006,7 @@ async def send_waitlist_email(name: str, email: str, source: str = "general"):
     Send a confirmation email to users who join the waitlist.
     """
     
-    if source == "ai_ninja":
-        description_copy = "<p>You've taken the first step toward transforming your job search. Our AI Ninja will analyze your skills, build a personalized monthly roadmap, and train you every day with real interview simulations to ensure you land your dream job faster.</p>"
-    else:
-        description_copy = "<p>You've taken the first step toward transforming your job search. No more endless applications – let our human specialists handle the grind while you focus on interviews and skill-building.</p>"
+    description_copy = "<p>You've taken the first step toward transforming your job search. Our AI Ninja will analyze your skills, build a personalized monthly roadmap, and train you every day with real interview simulations to ensure you land your dream job faster.</p>"
 
     html_content = f"""
 <!DOCTYPE html>
@@ -1061,7 +1058,7 @@ async def send_waitlist_email(name: str, email: str, source: str = "general"):
     """
 
     return await send_email_resend(
-        email, "Welcome to jobNinjas Waitlist! 🥷", html_content
+        email, "Welcome to jobNinjas Waitlist!", html_content
     )
 
 
