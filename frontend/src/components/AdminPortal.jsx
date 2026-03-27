@@ -28,6 +28,7 @@ const AdminPortal = () => {
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [activeTab, setActiveTab] = useState('overview');
+    const [waitlist, setWaitlist] = useState([]);
 
     const handleLogin = async (e) => {
         e.preventDefault();
@@ -65,10 +66,11 @@ const AdminPortal = () => {
                 apiCall('/api/admin/users?limit=200'),
                 apiCall('/api/admin/call-bookings'),
                 apiCall('/api/admin/contact-messages'),
-                apiCall('/api/admin/job-stats')
+                apiCall('/api/admin/job-stats'),
+                apiCall('/api/waitlist')
             ]);
 
-            const [statsRes, usersRes, bookingsRes, messagesRes, jStatsRes] = results;
+            const [statsRes, usersRes, bookingsRes, messagesRes, jStatsRes, waitlistRes] = results;
 
             if (statsRes.status === 'fulfilled') setStats(statsRes.value);
             else {
@@ -101,6 +103,13 @@ const AdminPortal = () => {
                 console.error("Job Stats API failed:", jStatsRes.reason);
                 // Optional: set a visible error state for this specific card
                 setJobStats({ error: jStatsRes.reason.message });
+            }
+
+            if (waitlistRes.status === 'fulfilled') {
+                const data = waitlistRes.value;
+                setWaitlist(Array.isArray(data) ? data : []);
+            } else {
+                console.error("Waitlist API failed:", waitlistRes.reason);
             }
 
         } catch (error) {
@@ -266,6 +275,7 @@ const AdminPortal = () => {
                         <TabsTrigger value="today" className="data-[state=active]:bg-indigo-50 data-[state=active]:text-indigo-700 px-6 py-2.5 rounded-lg font-semibold">Today's Users</TabsTrigger>
                         <TabsTrigger value="requests" className="data-[state=active]:bg-indigo-50 data-[state=active]:text-indigo-700 px-6 py-2.5 rounded-lg font-semibold">Call Requests</TabsTrigger>
                         <TabsTrigger value="messages" className="data-[state=active]:bg-indigo-50 data-[state=active]:text-indigo-700 px-6 py-2.5 rounded-lg font-semibold">Messages</TabsTrigger>
+                        <TabsTrigger value="waitlist" className="data-[state=active]:bg-indigo-50 data-[state=active]:text-indigo-700 px-6 py-2.5 rounded-lg font-semibold">Waitlist</TabsTrigger>
                     </TabsList>
 
                     <TabsContent value="overview">
@@ -566,6 +576,46 @@ const AdminPortal = () => {
                                         </div>
                                     ))
                                 )}
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+                    <TabsContent value="waitlist">
+                        <Card className="border-none shadow-sm bg-white">
+                            <CardHeader>
+                                <CardTitle>Waitlist Signups</CardTitle>
+                                <CardDescription>Users waiting for the AI Ninja feature ({waitlist.length} total)</CardDescription>
+                            </CardHeader>
+                            <CardContent className="p-0">
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-sm text-left">
+                                        <thead className="bg-slate-50 text-slate-500 font-bold border-b">
+                                            <tr>
+                                                <th className="px-6 py-4">Name</th>
+                                                <th className="px-6 py-4">Email</th>
+                                                <th className="px-6 py-4">Phone</th>
+                                                <th className="px-6 py-4">Joined At</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-100">
+                                            {waitlist.length === 0 ? (
+                                                <tr>
+                                                    <td colSpan="4" className="p-12 text-center text-slate-400 italic">No waitlist entries yet.</td>
+                                                </tr>
+                                            ) : (
+                                                waitlist.map((w, index) => (
+                                                    <tr key={w.id || index} className="hover:bg-slate-50/80 transition-colors">
+                                                        <td className="px-6 py-4 font-bold text-slate-900">{w.name}</td>
+                                                        <td className="px-6 py-4 text-slate-600 font-medium">{w.email}</td>
+                                                        <td className="px-6 py-4 text-slate-500">{w.phone || 'N/A'}</td>
+                                                        <td className="px-6 py-4 text-slate-500">
+                                                            {w.created_at ? new Date(w.created_at).toLocaleDateString() : 'Unknown'}
+                                                        </td>
+                                                    </tr>
+                                                ))
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
                             </CardContent>
                         </Card>
                     </TabsContent>

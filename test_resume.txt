@@ -1,0 +1,15 @@
+John Doe
+Email: john.doe@example.com
+Phone: 123-456-7890
+Location: San Francisco, CA
+
+Professional Summary:
+Software Engineer with 5 years of experience in AI and Web Development.
+
+Experience:
+Senior Developer at Tech Corp (2020-Present)
+- Built AI-powered applications.
+- Optimized backend services.
+
+Education:
+BS in Computer Science, University of AI (2016-2020)

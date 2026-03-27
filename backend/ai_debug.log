@@ -1176,3 +1176,85 @@ AttributeError: 'str' object has no attribute 'get'
 2026-03-18 08:19:38,500 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
 2026-03-18 08:19:47,827 - document_generator - INFO - Expert AI Tailoring complete.
 2026-03-18 08:19:47,846 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-19 09:43:30,233 - resume_analyzer - ERROR - DeepSeek API error 402: {"error":{"message":"Insufficient Balance","type":"unknown_error","param":null,"code":"invalid_request_error"}}
+2026-03-19 09:43:30,252 - resume_analyzer - WARNING - DeepSeek API failed or not configured, falling back to Groq
+2026-03-19 09:43:30,253 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start='\nExtract structured data from this resume text for a professional profile. Retur'
+2026-03-19 09:43:30,255 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-19 09:43:33,473 - document_generator - INFO - Starting Expert AI Tailoring Pipeline...
+2026-03-19 09:43:34,306 - resume_analyzer - ERROR - DeepSeek API error 402: {"error":{"message":"Insufficient Balance","type":"unknown_error","param":null,"code":"invalid_request_error"}}
+2026-03-19 09:43:34,308 - resume_analyzer - WARNING - DeepSeek API failed or not configured, falling back to Groq
+2026-03-19 09:43:34,309 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start='\nExtract structured data from this resume text for a professional profile. Retur'
+2026-03-19 09:43:34,311 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-19 09:43:37,476 - resume_analyzer - ERROR - DeepSeek API error 402: {"error":{"message":"Insufficient Balance","type":"unknown_error","param":null,"code":"invalid_request_error"}}
+2026-03-19 09:43:37,478 - resume_analyzer - WARNING - DeepSeek API failed or not configured, falling back to Groq
+2026-03-19 09:43:37,541 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-19 09:43:47,444 - document_generator - INFO - Expert AI Tailoring complete.
+2026-03-19 09:43:48,258 - resume_analyzer - ERROR - DeepSeek API error 402: {"error":{"message":"Insufficient Balance","type":"unknown_error","param":null,"code":"invalid_request_error"}}
+2026-03-19 09:43:48,260 - resume_analyzer - WARNING - DeepSeek API failed or not configured, falling back to Groq
+2026-03-19 09:43:48,284 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-20 16:04:12,437 - resume_analyzer - INFO - [GROQ CALL] json_mode=False model=llama-3.1-8b-instant prompt_has_json=True prompt_start='Extract job details from the following raw text scraped from https://www.linkedi'
+2026-03-20 16:04:12,446 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-20 16:06:29,085 - resume_analyzer - INFO - [GROQ CALL] json_mode=False model=llama-3.1-8b-instant prompt_has_json=True prompt_start='Extract job details from the following raw text scraped from https://www.linkedi'
+2026-03-20 16:06:29,086 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-20 16:06:54,489 - resume_analyzer - INFO - [GROQ CALL] json_mode=False model=llama-3.1-8b-instant prompt_has_json=True prompt_start='Extract job details from the following raw text scraped from https://www.linkedi'
+2026-03-20 16:06:54,489 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-20 16:13:42,142 - resume_analyzer - INFO - [GROQ CALL] json_mode=False model=llama-3.1-8b-instant prompt_has_json=True prompt_start='Extract job details from the following raw text scraped from https://www.linkedi'
+2026-03-20 16:13:42,144 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-20 16:13:47,933 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start='\nExtract structured data from this resume text for a professional profile. Retur'
+2026-03-20 16:13:47,934 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-20 16:13:50,243 - document_generator - INFO - Starting Expert AI Tailoring Pipeline...
+2026-03-20 16:13:51,470 - resume_analyzer - WARNING - DeepSeek API returned 402 (Insufficient Balance). Circuit-breaker tripped — all calls will fall back to Groq. Top up your DeepSeek account at https://platform.deepseek.com/
+2026-03-20 16:13:51,476 - resume_analyzer - WARNING - DeepSeek unavailable, falling back to Groq
+2026-03-20 16:13:51,477 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=default prompt_has_json=True prompt_start='\nTailor this resume for the job description below. Follow every rule in the syst'
+2026-03-20 16:13:51,479 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-20 16:13:55,835 - document_generator - INFO - Expert AI Tailoring complete.
+2026-03-20 16:13:55,916 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-20 16:17:21,094 - resume_analyzer - INFO - [GROQ CALL] json_mode=False model=llama-3.1-8b-instant prompt_has_json=True prompt_start='Extract job details from the following raw text scraped from https://www.linkedi'
+2026-03-20 16:17:21,095 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-20 16:18:22,623 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start='\nExtract structured data from this resume text for a professional profile. Retur'
+2026-03-20 16:18:22,624 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-20 16:18:25,962 - document_generator - INFO - Starting Expert AI Tailoring Pipeline...
+2026-03-20 16:18:25,965 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=default prompt_has_json=True prompt_start='\nTailor this resume for the job description below. Follow every rule in the syst'
+2026-03-20 16:18:25,966 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-20 16:18:30,703 - document_generator - INFO - Expert AI Tailoring complete.
+2026-03-20 16:18:30,740 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-20 17:03:58,696 - resume_analyzer - INFO - [GROQ CALL] json_mode=False model=llama-3.1-8b-instant prompt_has_json=True prompt_start='Extract job details from the following raw text scraped from https://www.linkedi'
+2026-03-20 17:03:58,699 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-20 17:04:00,380 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start='\nExtract structured data from this resume text for a professional profile. Retur'
+2026-03-20 17:04:00,382 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-20 17:04:03,116 - document_generator - INFO - Starting Expert AI Tailoring Pipeline...
+2026-03-20 17:04:04,651 - resume_analyzer - WARNING - DeepSeek API returned 402 (Insufficient Balance). Circuit-breaker tripped — all calls will fall back to Groq. Top up your DeepSeek account at https://platform.deepseek.com/
+2026-03-20 17:04:04,654 - resume_analyzer - WARNING - DeepSeek unavailable, falling back to Groq
+2026-03-20 17:04:04,656 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=default prompt_has_json=True prompt_start='\nTailor this resume for the job description below. Follow every rule in the syst'
+2026-03-20 17:04:04,657 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-20 17:04:08,423 - document_generator - INFO - Expert AI Tailoring complete.
+2026-03-20 17:04:08,509 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-21 09:03:55,835 - resume_analyzer - INFO - [GROQ CALL] json_mode=False model=llama-3.1-8b-instant prompt_has_json=True prompt_start='Extract job details from the following raw text scraped from https://www.linkedi'
+2026-03-21 09:03:55,840 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-21 09:04:02,749 - resume_analyzer - INFO - [GROQ CALL] json_mode=False model=llama-3.1-8b-instant prompt_has_json=True prompt_start='Extract job details from the following raw text scraped from https://www.linkedi'
+2026-03-21 09:04:02,750 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-21 15:17:14,739 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=llama-3.1-8b-instant prompt_has_json=True prompt_start='\nExtract structured data from this resume text for a professional profile. Retur'
+2026-03-21 15:17:14,743 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-21 15:17:17,730 - document_generator - INFO - Starting Expert AI Tailoring Pipeline...
+2026-03-21 15:17:18,546 - resume_analyzer - WARNING - DeepSeek API returned 402 (Insufficient Balance). Circuit-breaker tripped — all calls will fall back to Groq. Top up your DeepSeek account at https://platform.deepseek.com/
+2026-03-21 15:17:18,552 - resume_analyzer - WARNING - DeepSeek unavailable, falling back to Groq
+2026-03-21 15:17:18,553 - resume_analyzer - INFO - [GROQ CALL] json_mode=True model=default prompt_has_json=True prompt_start='\nTailor this resume for the job description below. Follow every rule in the syst'
+2026-03-21 15:17:18,553 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-21 15:17:25,498 - document_generator - INFO - Expert AI Tailoring complete.
+2026-03-21 15:17:25,560 - resume_analyzer - INFO - Calling Groq API with model: llama-3.3-70b-versatile (max_retries: 3)
+2026-03-24 12:20:32,563 - resume_analyzer - INFO - [GROQ CALL] json_mode=False model=llama-3.1-8b-instant prompt_has_json=True prompt_start='Extract job details from the following raw text scraped from https://www.linkedi'
+2026-03-24 12:20:32,570 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-24 12:20:41,345 - resume_analyzer - INFO - [GROQ CALL] json_mode=False model=llama-3.1-8b-instant prompt_has_json=True prompt_start='Extract job details from the following raw text scraped from https://www.linkedi'
+2026-03-24 12:20:41,345 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-24 13:17:49,616 - resume_analyzer - INFO - [GROQ CALL] json_mode=False model=llama-3.1-8b-instant prompt_has_json=True prompt_start='Extract job details from the following raw text scraped from https://jobs.ashbyh'
+2026-03-24 13:17:49,688 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-24 13:17:49,744 - resume_analyzer - INFO - [GROQ CALL] json_mode=False model=llama-3.1-8b-instant prompt_has_json=True prompt_start='Extract job details from the following raw text scraped from https://jobs.ashbyh'
+2026-03-24 13:17:49,745 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-24 13:40:57,652 - resume_analyzer - INFO - [GROQ CALL] json_mode=False model=llama-3.1-8b-instant prompt_has_json=True prompt_start='Extract job details from the following raw text scraped from https://jobs.ashbyh'
+2026-03-24 13:40:57,654 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-24 13:40:57,676 - resume_analyzer - INFO - [GROQ CALL] json_mode=False model=llama-3.1-8b-instant prompt_has_json=True prompt_start='Extract job details from the following raw text scraped from https://jobs.ashbyh'
+2026-03-24 13:40:57,676 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-27 11:35:24,772 - resume_analyzer - INFO - [GROQ CALL] json_mode=False model=llama-3.1-8b-instant prompt_has_json=True prompt_start='Extract job details from the following raw text scraped from https://jobs.ashbyh'
+2026-03-27 11:35:24,787 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)
+2026-03-27 11:35:24,808 - resume_analyzer - INFO - [GROQ CALL] json_mode=False model=llama-3.1-8b-instant prompt_has_json=True prompt_start='Extract job details from the following raw text scraped from https://jobs.ashbyh'
+2026-03-27 11:35:24,809 - resume_analyzer - INFO - Calling Groq API with model: llama-3.1-8b-instant (max_retries: 3)

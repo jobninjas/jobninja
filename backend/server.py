@@ -523,6 +523,7 @@ class WaitlistCreate(BaseModel):
     current_role: Optional[str] = None
     target_role: Optional[str] = None
     urgency: Optional[str] = None
+    source: Optional[str] = 'general'
 
 
 class CallBooking(BaseModel):
@@ -1000,33 +1001,39 @@ async def send_email_resend(to_email: str, subject: str, html_content: str):
         raise e
 
 
-async def send_waitlist_email(name: str, email: str):
+async def send_waitlist_email(name: str, email: str, source: str = "general"):
     """
     Send a confirmation email to users who join the waitlist.
     """
+    
+    if source == "ai_ninja":
+        description_copy = "<p>You've taken the first step toward transforming your job search. Our AI Ninja will analyze your skills, build a personalized monthly roadmap, and train you every day with real interview simulations to ensure you land your dream job faster.</p>"
+    else:
+        description_copy = "<p>You've taken the first step toward transforming your job search. No more endless applications – let our human specialists handle the grind while you focus on interviews and skill-building.</p>"
+
     html_content = f"""
 <!DOCTYPE html>
 <html>
 <head>
     <style>
-        body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+        body {{ font-family: 'Inter', Arial, sans-serif; line-height: 1.6; color: #333; }}
         .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
         .header {{ background: linear-gradient(135deg, #1a472a 0%, #2d5a3d 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }}
         .content {{ background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }}
         .highlight {{ background: #e8f5e9; padding: 15px; border-radius: 8px; margin: 20px 0; }}
         .footer {{ text-align: center; margin-top: 20px; color: #666; font-size: 14px; }}
         h1 {{ margin: 0; font-size: 28px; }}
-        .emoji {{ font-size: 40px; }}
+        .logo-img {{ max-height: 40px; margin-bottom: 15px; }}
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <div class="emoji">🥷</div>
+            <img src="https://jobninjas.ai/logo.png" alt="jobNinjas" class="logo-img" />
             <h1>Welcome to jobNinjas!</h1>
         </div>
         <div class="content">
-            <p>Hi <strong>{name}</strong>,</p>
+            <p>Hi <strong>{{name}}</strong>,</p>
             
             <p>Thank you for joining the jobNinjas waitlist! We're excited to have you on board.</p>
             
@@ -1039,7 +1046,7 @@ async def send_waitlist_email(name: str, email: str):
                 </ul>
             </div>
             
-            <p>You've taken the first step toward transforming your job search. No more endless applications – let our human specialists handle the grind while you focus on interviews and skill-building.</p>
+            {{description_copy}}
             
             <p>If you have any questions, simply reply to this email.</p>
             
@@ -1848,7 +1855,7 @@ async def join_waitlist(input: WaitlistCreate):
     logger.info(f"New waitlist entry: {input.email}")
 
     # Send confirmation email in background (don't wait)
-    asyncio.create_task(send_waitlist_email(input.name, input.email))
+    asyncio.create_task(send_waitlist_email(input.name, input.email, input.source))
 
     waitlist_obj = WaitlistEntry(**input.model_dump())
     return waitlist_obj
