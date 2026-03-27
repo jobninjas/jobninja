@@ -141,30 +141,31 @@ function App() {
                 <Route path="/verify-email" element={<VerifyEmail />} />
                 <Route path="/contact" element={<ContactPage />} />
 
+                <Route path="/pricing" element={<Pricing />} />
+                <Route path="/ai-ninja" element={<AINinja />} />
+
                 {/* Internal App Routes (Wrapped in DashboardLayout) */}
-                <Route element={<DashboardLayout />}>
-                  <Route path="/pricing" element={<Pricing />} />
-                  <Route path="/dashboard" element={<ProtectedRoute allowedRoles={['customer', 'admin']}><Dashboard /></ProtectedRoute>} />
-                  <Route path="/ai-ninja" element={<AINinja />} />
+                <Route element={<ProtectedRoute allowedRoles={['customer', 'admin']} requireVerification={false}><DashboardLayout /></ProtectedRoute>}>
+                  <Route path="/dashboard" element={<Dashboard />} />
                   <Route path="/ai-ninja/jobs/:id" element={<JobDetailsOrion />} />
                   <Route path="/ai-ninja/apply/:id" element={<AIApply />} />
-                  <Route path="/ai-apply" element={<ProtectedRoute allowedRoles={['customer', 'admin']} requireVerification={false}><AIApplyFlow /></ProtectedRoute>} />
+                  <Route path="/ai-apply" element={<AIApplyFlow />} />
                   <Route path="/human-ninja" element={<HumanNinja />} />
                   <Route path="/jobs" element={<Jobs />} />
-                  <Route path="/resumes" element={<ProtectedRoute allowedRoles={['customer', 'admin']} requireVerification={false}><MyResumes /></ProtectedRoute>} />
+                  <Route path="/resumes" element={<MyResumes />} />
                   <Route path="/interview-prep" element={<InterviewPrep />} />
                   <Route path="/interview-prep/:sessionId" element={<InterviewRoom />} />
                   <Route path="/interview-prep/:sessionId/report" element={<InterviewReport />} />
-                  <Route path="/admin/analytics" element={<ProtectedRoute allowedRoles={['customer', 'admin']} requireVerification={false}><AdminAnalytics /></ProtectedRoute>} />
-                  <Route path="/one-click-optimize" element={<ProtectedRoute allowedRoles={['customer', 'admin']} requireVerification={false}><OneClickOptimize /></ProtectedRoute>} />
-                  <Route path="/bullet-points" element={<ProtectedRoute allowedRoles={['customer', 'admin']} requireVerification={false}><BulletPointsGenerator /></ProtectedRoute>} />
-                  <Route path="/summary-generator" element={<ProtectedRoute allowedRoles={['customer', 'admin']} requireVerification={false}><SummaryGenerator /></ProtectedRoute>} />
-                  <Route path="/linkedin-optimizer" element={<ProtectedRoute allowedRoles={['customer', 'admin']} requireVerification={false}><LinkedInOptimizer /></ProtectedRoute>} />
-                  <Route path="/career-change" element={<ProtectedRoute allowedRoles={['customer', 'admin']} requireVerification={false}><CareerChangeTool /></ProtectedRoute>} />
-                  <Route path="/chatgpt-resume" element={<ProtectedRoute allowedRoles={['customer', 'admin']} requireVerification={false}><ChatGPTResume /></ProtectedRoute>} />
-                  <Route path="/chatgpt-cover-letter" element={<ProtectedRoute allowedRoles={['customer', 'admin']} requireVerification={false}><ChatGPTCoverLetter /></ProtectedRoute>} />
-                  <Route path="/scanner" element={<ProtectedRoute allowedRoles={['customer', 'admin']} requireVerification={false}><ResumeEditorPage /></ProtectedRoute>} />
-                  <Route path="/editor" element={<ProtectedRoute allowedRoles={['customer', 'admin']} requireVerification={false}><ResumeEditorPage /></ProtectedRoute>} />
+                  <Route path="/admin/analytics" element={<AdminAnalytics />} />
+                  <Route path="/one-click-optimize" element={<OneClickOptimize />} />
+                  <Route path="/bullet-points" element={<BulletPointsGenerator />} />
+                  <Route path="/summary-generator" element={<SummaryGenerator />} />
+                  <Route path="/linkedin-optimizer" element={<LinkedInOptimizer />} />
+                  <Route path="/career-change" element={<CareerChangeTool />} />
+                  <Route path="/chatgpt-resume" element={<ChatGPTResume />} />
+                  <Route path="/chatgpt-cover-letter" element={<ChatGPTCoverLetter />} />
+                  <Route path="/scanner" element={<ResumeEditorPage />} />
+                  <Route path="/editor" element={<ResumeEditorPage />} />
                   
                   {/* Tools and Guides */}
                   <Route path="/networking-templates" element={<NetworkingTemplates />} />
