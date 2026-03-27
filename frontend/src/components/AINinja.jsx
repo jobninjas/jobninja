@@ -59,8 +59,7 @@ const AINinja = () => {
 
   return (
     <div style={{ fontFamily: "'Inter', sans-serif" }}>
-      <SideMenu isOpen={sideMenuOpen} onClose={() => setSideMenuOpen(false)} />
-      <Header onMenuClick={() => setSideMenuOpen(true)} />
+      {/* Moved Header and SideMenu to DashboardLayout wrapping this route */}
 
       {/* Main Light Theme Sub-Wrapper */}
       <div className="ninja-wrapper">

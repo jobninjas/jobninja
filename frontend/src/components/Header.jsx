@@ -55,7 +55,7 @@ const Header = ({ onMenuClick }) => {
         <div className="nav-actions">
           {loading ? (
             <div style={{ width: '150px' }} /> /* Placeholder while loading */
-          ) : !isAuthenticated && (
+          ) : !isAuthenticated ? (
             <>
               <Button variant="secondary" className="btn-secondary" onClick={() => navigate('/login')}>
                 Login
@@ -64,6 +64,10 @@ const Header = ({ onMenuClick }) => {
                 Get Started
               </Button>
             </>
+          ) : (
+            <Button className="btn-primary" onClick={() => navigate('/dashboard')}>
+              Dashboard
+            </Button>
           )}
         </div>
       </header>

@@ -141,12 +141,11 @@ function App() {
                 <Route path="/verify-email" element={<VerifyEmail />} />
                 <Route path="/contact" element={<ContactPage />} />
 
-                <Route path="/pricing" element={<Pricing />} />
-                <Route path="/ai-ninja" element={<AINinja />} />
-
                 {/* Internal App Routes (Wrapped in DashboardLayout) */}
                 <Route element={<ProtectedRoute allowedRoles={['customer', 'admin']} requireVerification={false}><DashboardLayout /></ProtectedRoute>}>
                   <Route path="/dashboard" element={<Dashboard />} />
+                  <Route path="/pricing" element={<Pricing />} />
+                  <Route path="/ai-ninja" element={<AINinja />} />
                   <Route path="/ai-ninja/jobs/:id" element={<JobDetailsOrion />} />
                   <Route path="/ai-ninja/apply/:id" element={<AIApply />} />
                   <Route path="/ai-apply" element={<AIApplyFlow />} />
