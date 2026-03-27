@@ -120,7 +120,7 @@ class SupabaseService:
                 query = query.ilike("job_type", f"%{job_type}%")
                 
             # Location filter
-            if location:
+            if location and location.lower() not in ["all", "none", ""]:
                 query = query.ilike("location", f"%{location}%")
 
             # NEW ADVANCED FILTERS
@@ -197,7 +197,7 @@ class SupabaseService:
                 query = query.contains("categories", ["sponsoring"])
             if job_type and job_type != "all":
                 query = query.ilike("job_type", f"%{job_type}%")
-            if location:
+            if location and location.lower() not in ["all", "none", ""]:
                 query = query.ilike("location", f"%{location}%")
 
             # NEW ADVANCED FILTERS

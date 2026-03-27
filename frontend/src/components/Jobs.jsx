@@ -378,7 +378,7 @@ const Jobs = () => {
     fetchJobs(1);
   };
 
-  const hasActiveFilters = searchKeyword || locationFilter || countryFilter !== 'usa' || sponsorshipFilter !== 'all' || workTypeFilter !== 'all';
+  const hasActiveFilters = searchKeyword || locationFilter || countryFilter !== 'all' || sponsorshipFilter !== 'all' || workTypeFilter !== 'all';
 
   // Map jobs to the new component format
   const mappedJobs = displayJobs.map(job => ({

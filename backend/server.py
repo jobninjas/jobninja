@@ -6903,12 +6903,14 @@ async def get_jobs(
         #     # If we have multiple roles and no search, we use them as job_functions to trigger OR filtering in Supabase
         #     active_job_functions = ",".join(recommendation_roles)
             
-        # Primary fetch – always pull a large pool so company-wave interleaving
-        # has enough diversity (we paginate AFTER interleaving below).
+        # Use a large pool for interleaving diversity, but start at the requested offset
         FETCH_POOL = 200
+        supabase_offset = offset
+        supabase_limit = FETCH_POOL
+        
         supabase_jobs = SupabaseService.get_jobs(
-            limit=FETCH_POOL,
-            offset=0,
+            limit=supabase_limit,
+            offset=supabase_offset,
             search=active_search,
             job_type=type,
             location=country,
@@ -6923,10 +6925,10 @@ async def get_jobs(
         
         # Fallback is no longer needed since fresh_only is False by default
         if not supabase_jobs:
-            logger.info("No jobs found with target filters. Falling back to older/all jobs...")
+            logger.info("No jobs found with target filters. Falling back to all jobs...")
             supabase_jobs = SupabaseService.get_jobs(
-                limit=FETCH_POOL,
-                offset=0,
+                limit=supabase_limit,
+                offset=supabase_offset,
                 search=active_search,
                 job_type=type,
                 location=country,
@@ -6982,8 +6984,9 @@ async def get_jobs(
         if formatted_results:
             formatted_results = _interleave_jobs_by_company(formatted_results)
 
-        # Paginate AFTER interleaving so page boundaries respect the wave order
-        results = formatted_results[offset:offset + limit]
+        # Paginate results (since we fetched a pool starting at the offset, 
+        # we take the first 'limit' jobs from the processed pool)
+        results = formatted_results[:limit]
 
         # 4. RECOMMENDED FILTERS (PROJECT ORION)
         recommended_filters = []
