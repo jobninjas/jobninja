@@ -1018,11 +1018,11 @@ async def send_waitlist_email(name: str, email: str, source: str = "general"):
     <style>
         body {{ font-family: 'Inter', Arial, sans-serif; line-height: 1.6; color: #333; }}
         .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
-        .header {{ background: linear-gradient(135deg, #1a472a 0%, #2d5a3d 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }}
+        .header {{ background: linear-gradient(135deg, #00C896 0%, #0ea5e9 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }}
         .content {{ background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }}
         .highlight {{ background: #e8f5e9; padding: 15px; border-radius: 8px; margin: 20px 0; }}
         .footer {{ text-align: center; margin-top: 20px; color: #666; font-size: 14px; }}
-        h1 {{ margin: 0; font-size: 28px; }}
+        h1 {{ margin: 0; font-size: 28px; text-shadow: 0 1px 2px rgba(0,0,0,0.1); }}
         .logo-img {{ max-height: 40px; margin-bottom: 15px; }}
     </style>
 </head>
@@ -1033,7 +1033,7 @@ async def send_waitlist_email(name: str, email: str, source: str = "general"):
             <h1>Welcome to jobNinjas!</h1>
         </div>
         <div class="content">
-            <p>Hi <strong>{{name}}</strong>,</p>
+            <p>Hi <strong>{name}</strong>,</p>
             
             <p>Thank you for joining the jobNinjas waitlist! We're excited to have you on board.</p>
             
@@ -1046,7 +1046,7 @@ async def send_waitlist_email(name: str, email: str, source: str = "general"):
                 </ul>
             </div>
             
-            {{description_copy}}
+            {description_copy}
             
             <p>If you have any questions, simply reply to this email.</p>
             
