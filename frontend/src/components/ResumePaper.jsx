@@ -324,20 +324,36 @@ const ResumePaper = ({
                             <h1 style={{ fontSize: `${fontSize * 2.2}pt`, fontWeight: 700, textTransform: 'uppercase', margin: 0, padding: 0, color: isModern ? '#1e293b' : '#000' }}>
                                 {(() => {
                                     let n = String(parsed.name || '').replace(/[*_]/g, '').replace(/undefined|none|null/gi, '').trim();
+                                    
+                                    // Robust removal of common role-related keywords that AI might append to the name
+                                    const roleKeywords = [
+                                        'AI ENGINEER', 'ML ENGINEER', 'SOFTWARE ENGINEER', 'DATA SCIENTIST', 
+                                        'DATA ENGINEER', 'MACHINE LEARNING', 'APPLIED ML', 'RESEARCHER',
+                                        'DEVELOPER', 'MANAGER', 'ARCHITECT', 'LEAD', 'SENIOR', 'PRINCIPAL'
+                                    ];
+                                    
+                                    // 1. Clean using jobTitle if provided
                                     if (jobTitle && n.length > 3) {
-                                        // Robust removal of jobTitle or partial jobTitle from name
-                                        // 1. Try exact match (case insensitive)
-                                        const cleanRole = String(jobTitle).replace(/[.*+?${}()|[\]\\]/g, '\\$&');
-                                        const fullRegex = new RegExp(cleanRole, 'gi');
+                                        const cleanRole = String(jobTitle).replace(/[.*+?${}()|[\]\\]/g, '\\$&').toUpperCase();
+                                        const fullRegex = new RegExp(`\\b${cleanRole}\\b`, 'gi');
                                         n = n.replace(fullRegex, '').trim();
 
-                                        // 2. Try base role match (before - or |)
-                                        const baseRole = String(jobTitle).split(/[-|]/)[0].trim();
+                                        const baseRole = String(jobTitle).split(/[-|]/)[0].trim().toUpperCase();
                                         if (baseRole.length > 3) {
-                                            const baseRegex = new RegExp(baseRole.replace(/[.*+?${}()|[\]\\]/g, '\\$&'), 'gi');
+                                            const baseRegex = new RegExp(`\\b${baseRole.replace(/[.*+?${}()|[\]\\]/g, '\\$&')}\\b`, 'gi');
                                             n = n.replace(baseRegex, '').trim();
                                         }
                                     }
+
+                                    // 2. Clean using generic role keywords if they appear at the end or in common patterns
+                                    roleKeywords.forEach(keyword => {
+                                        const kwRegex = new RegExp(`\\b${keyword}\\b`, 'gi');
+                                        n = n.replace(kwRegex, '').trim();
+                                    });
+
+                                    // Final cleanup of extra spaces or separators
+                                    n = n.replace(/\s+[-|]\s*$/, '').replace(/^[-\|]\s+/, '').trim();
+                                    
                                     return n || 'YOUR NAME';
                                 })()}
                             </h1>

@@ -158,8 +158,9 @@ STRICT RULES — never break these:
 6. Add or strengthen keywords from the job description naturally inside existing bullets. Do NOT invent fake experience.
 7. Rewrite the Professional Summary to directly mirror the job description language and requirements.
 8. Skills section must be a full categorized list — minimum 8 categories.
-9. Output must be structured as valid JSON.
-10. Never output a shortened or "clean" version. The goal is a COMPREHENSIVE, ATS-optimized resume.
+9. "name" field MUST ONLY contain the candidate's full legal name (e.g., "Sairam Veereddy"). NEVER append job titles or designations to the name.
+10. Output must be structured as valid JSON.
+11. Never output a shortened or "clean" version. The goal is a COMPREHENSIVE, ATS-optimized resume.
 """
 
 EXPERT_TAILORING_USER_PROMPT = """
