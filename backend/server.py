@@ -5996,10 +5996,15 @@ async def google_login(request: Request, login_data: GoogleLoginRequest, backgro
         # 4. Check for existing user
         existing_user = SupabaseService.get_user_by_email(email)
         
+        user_id = None
+        referral_code = None
+        is_new_user = False
+
         if existing_user:
             logger.info(f"Existing user logging in via Google: {email}")
             user_id = existing_user.get("id")
-            # Clear password hash and update google_id if missing
+            referral_code = existing_user.get("referral_code")
+            # Update google_id if missing
             if not existing_user.get("google_id"):
                 try:
                     SupabaseService.client.table("profiles").update({
@@ -6010,31 +6015,31 @@ async def google_login(request: Request, login_data: GoogleLoginRequest, backgro
                     logger.warning(f"Could not update google_id for existing user {email}: {e}")
         else:
             # Create new user profile
+            is_new_user = True
             logger.info(f"Creating new user via Google signup: {email}")
-            new_user_id = str(uuid.uuid4())
+            user_id = str(uuid.uuid4())
+            referral_code = f"INV-{uuid.uuid4().hex[:6].upper()}"
             now_iso = datetime.datetime.utcnow().isoformat()
             
             profile_dict = {
-                "id": new_user_id,
+                "id": user_id,
                 "email": email,
                 "name": name,
                 "google_id": google_id,
                 "auth_method": "google",
-                "password_hash": "google-oauth",  # Placeholder
+                "password_hash": "google-oauth",
                 "is_verified": True,
-                "referral_code": f"INV-{uuid.uuid4().hex[:6].upper()}",
+                "referral_code": referral_code,
                 "created_at": now_iso,
                 "role": "customer",
                 "plan": "free"
             }
 
             try:
-                # Use standard create_profile for consistency
                 result = SupabaseService.create_profile(profile_dict)
                 if not result:
-                    logger.error(f"FAILED to create user profile in Supabase for {email}")
                     raise Exception("Profile creation returned None")
-                user_id = result.get("id", new_user_id)
+                user_id = result.get("id", user_id)
             except Exception as e:
                 logger.error(f"Supabase creation error for Google user {email}: {e}")
                 raise HTTPException(
@@ -6044,33 +6049,31 @@ async def google_login(request: Request, login_data: GoogleLoginRequest, backgro
 
             logger.info(f"New user created via Google OAuth in Supabase: {email}")
 
-
             # Send welcome email in background
             try:
                 background_tasks.add_task(
-                    send_welcome_email, name, email, None, profile_dict.get("referral_code")
+                    send_welcome_email, name, email, None, referral_code
                 )
             except Exception as email_error:
-                logger.error(
-                    f"Error sending welcome email to Google user: {email_error}"
-                )
+                logger.error(f"Error sending welcome email to Google user: {email_error}")
 
-            token = create_access_token(data={"sub": email, "id": new_user_id})
+        # 5. Shared success response for all Google logins
+        token = create_access_token(data={"sub": email, "id": user_id})
 
-            return {
-                "success": True,
-                "token": token,
-                "user": {
-                    "id": new_user_id,
-                    "email": email,
-                    "name": name,
-                    "role": "customer",
-                    "plan": "free",
-                    "is_verified": True,
-                    "referral_code": profile_dict.get("referral_code"),
-                    "profile_picture": picture,
-                },
-            }
+        return {
+            "success": True,
+            "token": token,
+            "user": {
+                "id": user_id,
+                "email": email,
+                "name": name,
+                "role": existing_user.get("role") if existing_user else "customer",
+                "plan": existing_user.get("plan") if existing_user else "free",
+                "is_verified": True,
+                "referral_code": referral_code,
+                "profile_picture": picture,
+            },
+        }
 
     except HTTPException:
         raise
