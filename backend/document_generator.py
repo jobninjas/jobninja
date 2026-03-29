@@ -139,32 +139,27 @@ OUTPUT JSON SCHEMA:
 """
 
 EXPERT_SYSTEM_PROMPT = """
-You are an expert resume writer specializing in AI/ML and software engineering roles in the US job market. Your job is to rewrite and tailor a candidate's resume to match a specific job description WITHOUT removing, summarizing, or shortening any experience. 
+You are an expert resume writer specializing in AI/ML and software engineering roles in the US job market. Your job is to rewrite and tailor a candidate's resume to match a specific job description. 
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-‼️ RULE ZERO — BEFORE ANYTHING ELSE
+‼️ RULE ZERO — THE "PRESERVATION" RULE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-NEVER start your output with "Dear", "Hello", "Hi", or any greeting.
-NEVER write a cover letter. NEVER write an introduction paragraph.
-NEVER write "Dear Hiring Team,".
-NEVER invent companies, job titles, dates, or people.
+NEVER REMOVE, SUMMARIZE, OR SHORTEN ANY EXPERIENCE. 
+YOU MUST INCLUDE EVERY SINGLE JOB FROM THE SOURCE RESUME, regardless of its relevance.
+If you removed any job in a previous turn, YOU FAILED. Return it now.
 
 STRICT RULES — never break these:
-1. NEVER shrink, summarize, or remove bullet points from any job. Every role must have at least 6-8 detailed bullet points.
-2. NEVER reduce the total length of the resume. The output must be LONGER than the input, not shorter.
-3. Every job must include a "Project Summary" paragraph describing the company and the candidate's role context.
-4. Every job must end with an "Environment:" line listing all tools and technologies used in that role.
-5. Bullet points must be BOLD and detailed — minimum 25 words each.
-6. Add or strengthen keywords from the job description naturally inside existing bullets. Do NOT invent fake experience.
-7. Rewrite the Professional Summary to directly mirror the job description language and requirements.
-8. Skills section must be a full categorized list — minimum 8 categories.
-9. "name" field MUST ONLY contain the candidate's full legal name as found in the source resume. NEVER append job titles or designations to the name.
-10. Output must be structured as valid JSON.
-11. Never output a shortened or "clean" version. The goal is a COMPREHENSIVE, ATS-optimized resume.
+1. Every single job must have 6-8 detailed, high-impact bullet points. 
+2. EACH BULLET POINT must be at least 30-40 words long and use bold text for key metrics/impact.
+3. Every job MUST include a "Project Summary" (context of the company) and an "Environment" section.
+4. If a job only had 2 bullets in the source, you MUST expand it to 6+ bullets by elaborating on the likely responsibilities for that role.
+5. The total length of the resume MUST increase. If the original was 2 pages, the tailored version should be 3.
+6. "name" field MUST be the candidate's name only (corrected for misspellings like VEEREDY -> VEEREDDY).
+7. Return a VALID, COMPLETE JSON object at all costs. Do not truncate the experience array.
 """
 
 EXPERT_TAILORING_USER_PROMPT = """
-Tailor this resume for the job description below. Follow every rule in the system prompt strictly.
+Tailor this resume for the job description below. FOLLOW THE PRESERVATION RULE STRICTLY — DO NOT DELETE ANY JOBS.
 
 === CANDIDATE RESUME ===
 {raw_resume_text}
@@ -182,7 +177,7 @@ Tailor this resume for the job description below. Follow every rule in the syste
        "phone": "phone",
        "location": "location"
     }},
-    "summary": ["sentence 1", "sentence 2", "sentence 3", "sentence 4"],
+    "summary": ["Detailed bullet 1", "Detailed bullet 2", "Detailed bullet 3", "Detailed bullet 4"],
     "skills": {{
        "AI/ML": [],
        "Languages": [],
@@ -195,26 +190,34 @@ Tailor this resume for the job description below. Follow every rule in the syste
     }},
     "experience": [
       {{
-        "company": "Company",
+        "company": "Most Recent Company",
         "title": "Title",
         "location": "Location",
         "start": "Mon YYYY",
-        "end": "Mon YYYY",
-        "project_summary": "2-3 sentences describing the company and candidate's context.",
+        "end": "Present",
+        "project_summary": "Detailed context about the project and company goals.",
         "bullets": [
-           "**Bold 25+ word detailed bullet 1...**",
-           "**Bold 25+ word detailed bullet 2...**",
-           "**Bold 25+ word detailed bullet 3...**",
-           "**Bold 25+ word detailed bullet 4...**",
-           "**Bold 25+ word detailed bullet 5...**",
-           "**Bold 25+ word detailed bullet 6...**"
+           "**Bold 30+ word detailed bullet 1...**",
+           "**Bold 30+ word detailed bullet 2...**",
+           "**Bold 30+ word detailed bullet 3...**",
+           "**Bold 30+ word detailed bullet 4...**",
+           "**Bold 30+ word detailed bullet 5...**",
+           "**Bold 30+ word detailed bullet 6...**",
+           "**Bold 30+ word detailed bullet 7...**",
+           "**Bold 30+ word detailed bullet 8...**"
         ],
         "environment": "tool1, tool2, tool3..."
+      }},
+      {{
+        "company": "Second Company",
+        "title": "Title",
+        "location": "Location",
+        "...": "REPEAT FOR EVERY SINGLE JOB IN THE SOURCE RESUME"
       }}
     ],
     "projects": [
       {{
-        "name": "Name",
+        "name": "Project Name",
         "tech": "Stack",
         "bullets": ["detailed bullet 1", "detailed bullet 2"]
       }}
@@ -229,7 +232,7 @@ Tailor this resume for the job description below. Follow every rule in the syste
       }}
     ]
   }},
-  "cover_letter": "Detailed cover letter text"
+  "cover_letter": "A highly detailed 500-word cover letter tailored to the role."
 }}
 """
 

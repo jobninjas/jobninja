@@ -429,7 +429,7 @@ const ResumePaper = ({
                                     containerRef={containerRef}
                                     baseFontSize={fontSize}
                                 />
-                                <p style={{ fontSize: `${fontSize * 0.9}pt`, lineHeight: '1.2', textAlign: 'justify', margin: '2px 0 0 0', padding: 0 }}>
+                                <p style={{ fontSize: `${fontSize * 0.9}pt`, lineHeight: '1.4', textAlign: 'justify', margin: '4px 0 0 0', padding: 0 }}>
                                     <HighlightChange changes={resumeChanges} text={String(parsed.summary || '').replace(/[*_]/g, '').trim()} />
                                 </p>
                             </div>
@@ -473,7 +473,7 @@ const ResumePaper = ({
                                     containerRef={containerRef}
                                     baseFontSize={fontSize}
                                 />
-                                <div style={{ fontSize: `${fontSize * 0.9}pt`, lineHeight: '1.2', margin: '2px 0 0 0', padding: 0 }}>
+                                <div style={{ fontSize: `${fontSize * 0.9}pt`, lineHeight: '1.4', margin: '4px 0 0 0', padding: 0 }}>
                                     {String(parsed.experience || '').split('\n').map((line, i, arr) => {
                                         const trimmed = String(line || '').trim();
                                         if (!trimmed) return null;
