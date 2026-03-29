@@ -199,7 +199,8 @@
 .action-buttons-group {
     display: flex;
     align-items: center;
-    gap: 0.625rem;
+    gap: 0.75rem;
+    flex-shrink: 0;
 }
 
 .btn-secondary-editor {
@@ -211,9 +212,11 @@
     background: white;
     border: 1.5px solid #e2e8f0;
     border-radius: 12px;
-    font-size: 0.85rem;
+    font-size: 0.825rem;
     font-weight: 700;
     color: #475569;
+    white-space: nowrap;
+    flex-shrink: 0;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     cursor: pointer;
 }
@@ -235,9 +238,11 @@
     color: white;
     border: none;
     border-radius: 12px;
-    font-size: 0.85rem;
+    font-size: 0.825rem;
     font-weight: 700;
     box-shadow: 0 4px 12px rgba(0, 200, 150, 0.2);
+    white-space: nowrap;
+    flex-shrink: 0;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     cursor: pointer;
 }
@@ -1574,9 +1579,11 @@
     border-radius: 12px;
     background: white;
     border: 1.5px solid #e2e8f0;
-    font-size: 0.875rem;
+    font-size: 0.825rem;
     font-weight: 700;
     color: #1e293b;
+    white-space: nowrap;
+    flex-shrink: 0;
     cursor: pointer;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -1723,9 +1730,11 @@
     color: white;
     border: none;
     border-radius: 12px;
-    font-size: 0.85rem;
+    font-size: 0.825rem;
     font-weight: 700;
     box-shadow: 0 4px 12px rgba(5, 150, 105, 0.2);
+    white-space: nowrap;
+    flex-shrink: 0;
     transition: var(--transition-fast);
 }
 
