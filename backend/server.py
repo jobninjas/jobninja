@@ -6019,7 +6019,7 @@ async def google_login(request: Request, login_data: GoogleLoginRequest, backgro
             logger.info(f"Creating new user via Google signup: {email}")
             user_id = str(uuid.uuid4())
             referral_code = f"INV-{uuid.uuid4().hex[:6].upper()}"
-            now_iso = datetime.datetime.utcnow().isoformat()
+            now_iso = datetime.utcnow().isoformat()
             
             profile_dict = {
                 "id": user_id,
@@ -6201,7 +6201,7 @@ async def save_application(application: ApplicationData):
             job_data = {
                 "title": sanitize_job_title(application.jobTitle) or "Unknown Role",
                 "company": application.company or "Unknown Company",
-                "job_id": f"external-{int(datetime.datetime.utcnow().timestamp())}",
+                "job_id": f"external-{int(datetime.utcnow().timestamp())}",
                 "description": application.jobDescription or "",
                 "location": application.location or "",
                 "url": application.sourceUrl or "",
