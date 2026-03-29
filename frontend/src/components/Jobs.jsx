@@ -96,7 +96,10 @@ const Jobs = () => {
           // Initialize roles from persistent target_roles if available, otherwise fallback to legacy
           if (targetRoles.length > 0) {
             setSelectedJobFunctions(targetRoles);
-          } else if (savedJobFunctions.length > 0) {
+          }
+          // Disable auto-population of filters to allow viewing all jobs by default
+          /*
+          if (savedJobFunctions && savedJobFunctions.length > 0) {
             setSelectedJobFunctions(savedJobFunctions);
           } else if (targetRole) {
             setSelectedJobFunctions([targetRole]);
@@ -105,6 +108,7 @@ const Jobs = () => {
           if (targetRole && !searchKeyword) {
             setSearchKeyword(targetRole);
           }
+          */
 
           // Disable auto-population of locationFilter to allow all jobs to appear by default
           // const preferredLocation = data.profile.preferences?.preferred_locations || data.profile.address?.city || data.profile.city;
@@ -402,8 +406,12 @@ const Jobs = () => {
     <div className="jobs-page-content p-3 sm:p-4 md:p-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-extrabold text-[#111827] tracking-tight">Recommended Jobs</h1>
-          <p className="text-sm text-[#6b7280] mt-1 font-medium">Based on your resume profile & skills</p>
+          <h1 className="text-3xl font-extrabold text-[#111827] tracking-tight">
+            {searchKeyword || locationFilter || selectedJobFunctions.length > 0 ? "Filtered Jobs" : "All Jobs"}
+          </h1>
+          <p className="text-sm text-[#6b7280] mt-1 font-medium">
+            {searchKeyword || locationFilter ? `Showing results for "${searchKeyword || locationFilter}"` : "Showing all 110,000+ available roles across the globe"}
+          </p>
         </div>
         <div className="bg-[#E6FAF5] text-[#007A5A] px-4 py-2 rounded-xl text-sm font-bold border border-[#00C896]/20 shadow-sm">
           {pagination.total.toLocaleString()} matching jobs
@@ -467,8 +475,16 @@ const Jobs = () => {
           {/* Filter Tags Row */}
           <div className="flex flex-wrap items-center gap-2 px-1">
             <button
-              onClick={() => setWorkTypeFilter('all')}
-              className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${workTypeFilter === 'all'
+              onClick={() => {
+                setWorkTypeFilter('all');
+                setSearchKeyword('');
+                setLocationFilter('');
+                setSelectedJobFunctions([]);
+                localStorage.removeItem('last_search_keyword');
+                setCurrentPage(1);
+                fetchJobs(1);
+              }}
+              className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${workTypeFilter === 'all' && !searchKeyword && !locationFilter
                 ? 'bg-[#00875A] text-white shadow-sm'
                 : 'bg-white border border-gray-200 text-gray-600 hover:border-gray-300'
                 }`}
