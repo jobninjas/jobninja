@@ -324,12 +324,16 @@ const ResumePaper = ({
                             <h1 style={{ fontSize: `${fontSize * 2.2}pt`, fontWeight: 700, textTransform: 'uppercase', margin: 0, padding: 0, color: isModern ? '#1e293b' : '#000' }}>
                                 {(() => {
                                     let n = String(parsed.name || '').replace(/[*_]/g, '').replace(/undefined|none|null/gi, '').trim();
+
+                                    // 0. Specific fix for common user-specific misspelling in AI output
+                                    n = n.replace(/\bVEEREDY\b/gi, 'VEEREDDY');
                                     
                                     // Robust removal of common role-related keywords that AI might append to the name
                                     const roleKeywords = [
                                         'AI ENGINEER', 'ML ENGINEER', 'SOFTWARE ENGINEER', 'DATA SCIENTIST', 
                                         'DATA ENGINEER', 'MACHINE LEARNING', 'APPLIED ML', 'RESEARCHER',
-                                        'DEVELOPER', 'MANAGER', 'ARCHITECT', 'LEAD', 'SENIOR', 'PRINCIPAL'
+                                        'DEVELOPER', 'MANAGER', 'ARCHITECT', 'LEAD', 'SENIOR', 'PRINCIPAL',
+                                        'APPLIED', 'ENGINEER', 'SCI'
                                     ];
                                     
                                     // 1. Clean using jobTitle if provided
@@ -352,7 +356,7 @@ const ResumePaper = ({
                                     });
 
                                     // Final cleanup of extra spaces or separators
-                                    n = n.replace(/\s+[-|]\s*$/, '').replace(/^[-\|]\s+/, '').trim();
+                                    n = n.replace(/\s+[-|]\s*$/, '').replace(/^[-\|,\s]+|[\\-\|,\s]+$/g, '').trim();
                                     
                                     return n || 'YOUR NAME';
                                 })()}
