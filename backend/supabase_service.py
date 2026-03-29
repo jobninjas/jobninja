@@ -67,18 +67,40 @@ class SupabaseService:
         if 'email' in user_data:
             user_data['email'] = user_data['email'].lower().strip()
             
+        """
+        Create a new user profile in Supabase.
+        """
         try:
-            # Ensure plan defaults and timestamps
-            if 'plan' not in user_data:
-                user_data['plan'] = 'free'
-            
-            # Explicitly log user data for debugging
-            logger.info(f"Supabase SIGNUP attempt for: {user_data.get('email')}")
-            
+            client = SupabaseService.get_client()
+            if not client:
+                logger.error("Failed to get Supabase client in create_profile")
+                return None
+
+            # 1. Normalize email
+            if "email" in user_data:
+                user_data["email"] = user_data["email"].lower().strip()
+
+            # 2. Set default plan and role if missing
+            if "plan" not in user_data:
+                user_data["plan"] = "free"
+            if "role" not in user_data:
+                user_data["role"] = "customer"
+
+            # 3. Perform insert
             response = client.table("profiles").insert(user_data).execute()
-            return response.data[0] if response.data else None
+            
+            if response.data and len(response.data) > 0:
+                logger.info(f"Successfully created profile for {user_data.get('email')}")
+                return response.data[0]
+            else:
+                logger.error(f"Supabase insert returned no data for {user_data.get('email')}")
+                return None
+
         except Exception as e:
-            logger.error(f"Error creating profile: {e}")
+            error_msg = str(e)
+            logger.error(f"❌ DATABASE ERROR creating profile for {user_data.get('email', 'unknown')}: {error_msg}")
+            # Re-raise or return None? The server handles None by raising 500, 
+            # but we want to log the error here.
             return None
 
     @staticmethod
@@ -115,9 +137,16 @@ class SupabaseService:
             if visa:
                 query = query.contains("categories", ["sponsoring"])
             
-            # Type filter
+            # Type and Category filters
             if job_type and job_type != "all":
-                query = query.ilike("job_type", f"%{job_type}%")
+                if job_type == "cap_exempt":
+                    # Cap Exempt is usually a category or in title
+                    query = query.or_("title.ilike.%cap%ex%,categories.cs.{cap-exempt}")
+                elif job_type == "startups":
+                    query = query.ilike("company", "%startup%") # Or title or categories
+                else:
+                    # Map full_time/contract to database values if needed, otherwise ilike
+                    query = query.ilike("type", f"%{job_type}%")
                 
             # Location filter
             if location and location.lower() not in ["all", "none", ""]:
@@ -174,7 +203,7 @@ class SupabaseService:
         job_type: Optional[str] = None,
         location: Optional[str] = None,
         visa: bool = False,
-        fresh_only: bool = True,
+        fresh_only: bool = False, # Default to False to show all jobs
         job_functions: Optional[str] = None,
         experience: Optional[str] = None,
         cities: Optional[str] = None,
@@ -185,7 +214,8 @@ class SupabaseService:
         if not client: return 0
         
         try:
-            query = client.table("jobs").select("*", count="estimated")
+            # Use exact count for precision when user requests all jobs
+            query = client.table("jobs").select("*", count="exact")
             
             if fresh_only:
                 cutoff = (datetime.utcnow() - timedelta(hours=72)).isoformat()
@@ -196,7 +226,12 @@ class SupabaseService:
             if visa:
                 query = query.contains("categories", ["sponsoring"])
             if job_type and job_type != "all":
-                query = query.ilike("job_type", f"%{job_type}%")
+                if job_type == "cap_exempt":
+                    query = query.or_("title.ilike.%cap%ex%,categories.cs.{cap-exempt}")
+                elif job_type == "startups":
+                    query = query.ilike("company", "%startup%")
+                else:
+                    query = query.ilike("type", f"%{job_type}%")
             if location and location.lower() not in ["all", "none", ""]:
                 query = query.ilike("location", f"%{location}%")
 
@@ -260,6 +295,7 @@ class SupabaseService:
                 "resume_text": user_dict.get("resume_text") or user_dict.get("resumeText"),
                 "latest_resume": user_dict.get("latest_resume"),
                 "resume_metadata": user_dict.get("resume_metadata") or user_dict.get("resumeMetadata"),
+                "password_hash": user_dict.get("password_hash") or user_dict.get("passwordHash"),
                 "profile_picture": user_dict.get("profile_picture") or user_dict.get("picture"),
 
                 # Orion Boost: Detailed structured data
