@@ -16,27 +16,54 @@ interface ToolbarProps {
   onOpenTemplates?: () => void;
 }
 
-export const AGENTS = [
-  { icon: UserCheck, label: "Sarah Chen (Candidate)", role: "candidate-node", color: "text-pink-600", bg: "bg-pink-100 dark:bg-pink-900/30 dark:text-pink-400" },
-  { icon: PlaneTakeoff, label: "Candidate Concierge", role: "candidate-concierge", color: "text-rose-600", bg: "bg-rose-100 dark:bg-rose-900/30 dark:text-rose-400" },
-  { icon: Bot, label: "Input / Job Details", role: "entry-node", color: "text-muted-foreground", bg: "bg-muted/50" },
-  { icon: Search, label: "Sourcing Agent", role: "sourcing-agent", color: "text-blue-600", bg: "bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400" },
-  { icon: Database, label: "Database Connector", role: "database-connector", color: "text-sky-600", bg: "bg-sky-100 dark:bg-sky-900/30 dark:text-sky-400" },
-  { icon: Plug, label: "MCP / API Connector", role: "mcp-api-connector", color: "text-orange-600", bg: "bg-orange-100 dark:bg-orange-900/30 dark:text-orange-400" },
-  { icon: Building, label: "Workday / Venus", role: "workday-venus-connector", color: "text-indigo-600", bg: "bg-indigo-50 dark:bg-indigo-900/30 dark:text-indigo-400" },
-  { icon: FileText, label: "Resume Verifier", role: "resume-verifier", color: "text-purple-600", bg: "bg-purple-100 dark:bg-purple-900/30 dark:text-purple-400" },
-  { icon: ShieldCheck, label: "Background Checker", role: "background-checker", color: "text-slate-600", bg: "bg-slate-100 dark:bg-slate-900/30 dark:text-slate-400" },
-  { icon: Code, label: "Tech Assessor", role: "tech-assessor", color: "text-teal-600", bg: "bg-teal-100 dark:bg-teal-900/30 dark:text-teal-400" },
-  { icon: MessageSquare, label: "Interview Topic Gen", role: "interview-topic-generator", color: "text-emerald-600", bg: "bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400" },
-  { icon: Users, label: "Culture Fit Interviewer", role: "culture-fit-interviewer", color: "text-rose-600", bg: "bg-rose-100 dark:bg-rose-900/30 dark:text-rose-400" },
-  { icon: CheckSquare, label: "Transcript Analyzer", role: "transcript-analyzer", color: "text-amber-600", bg: "bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400" },
-  { icon: BarChart, label: "Candidate Ranker", role: "candidate-ranker", color: "text-violet-600", bg: "bg-violet-100 dark:bg-violet-900/30 dark:text-violet-400" },
-  { icon: Handshake, label: "Offer Negotiator", role: "offer-negotiator", color: "text-green-600", bg: "bg-green-100 dark:bg-green-900/30 dark:text-green-400" },
-  { icon: Mail, label: "Onboarding Agent", role: "onboarding-agent", color: "text-pink-600", bg: "bg-pink-100 dark:bg-pink-900/30 dark:text-pink-400" },
-  { icon: Bot, label: "Ophelia Agent (Post-Interview)", role: "ophelia-agent", color: "text-indigo-600", bg: "bg-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-400" },
-  { icon: FileText, label: "Word Document", role: "word-doc", color: "text-blue-700", bg: "bg-blue-50 dark:bg-blue-900/30 dark:text-blue-400" },
-  { icon: TableProperties, label: "Excel Document", role: "excel-doc", color: "text-green-700", bg: "bg-green-50 dark:bg-green-900/30 dark:text-green-400" },
-  { icon: Bot, label: "Custom Agent", role: "custom-agent", color: "text-foreground", bg: "bg-muted dark:bg-muted/50" },
+export const NODE_CATEGORIES = [
+  {
+    category: "Inputs",
+    items: [
+      { icon: Briefcase, label: "Job Details", role: "input-job-details", color: "text-blue-600", bg: "bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400" },
+      { icon: UserCheck, label: "Candidate", role: "input-candidate", color: "text-blue-600", bg: "bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400" },
+      { icon: FileText, label: "Resume", role: "input-resume", color: "text-blue-600", bg: "bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400" },
+      { icon: MessageSquare, label: "Interview Transcript", role: "input-transcript", color: "text-blue-600", bg: "bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400" },
+    ]
+  },
+  {
+    category: "Real AI Agents",
+    items: [
+      { icon: Bot, label: "Resume Intelligence Agent", role: "agent-resume", color: "text-indigo-600", bg: "bg-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-400" },
+      { icon: Bot, label: "Interview Planning Agent", role: "agent-interview-plan", color: "text-indigo-600", bg: "bg-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-400" },
+      { icon: Bot, label: "Interview Analysis Agent", role: "agent-interview-analysis", color: "text-indigo-600", bg: "bg-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-400" },
+      { icon: Bot, label: "Candidate Decision Agent", role: "agent-decision", color: "text-indigo-600", bg: "bg-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-400" },
+      { icon: PlaneTakeoff, label: "Candidate Concierge Agent", role: "agent-concierge", color: "text-indigo-600", bg: "bg-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-400" },
+    ]
+  },
+  {
+    category: "Integrations",
+    items: [
+      { icon: Plug, label: "Ophelia", role: "integration-ophelia", color: "text-orange-600", bg: "bg-orange-100 dark:bg-orange-900/30 dark:text-orange-400" },
+      { icon: Building, label: "ATS / Workday", role: "integration-ats", color: "text-orange-600", bg: "bg-orange-100 dark:bg-orange-900/30 dark:text-orange-400" },
+      { icon: Database, label: "Database", role: "integration-db", color: "text-orange-600", bg: "bg-orange-100 dark:bg-orange-900/30 dark:text-orange-400" },
+      { icon: Plug, label: "MCP/API", role: "integration-mcp", color: "text-orange-600", bg: "bg-orange-100 dark:bg-orange-900/30 dark:text-orange-400" },
+    ]
+  },
+  {
+    category: "Human Gates",
+    items: [
+      { icon: ShieldCheck, label: "Shortlist Approval", role: "gate-shortlist", color: "text-emerald-600", bg: "bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400" },
+      { icon: ShieldCheck, label: "Interview Decision", role: "gate-interview", color: "text-emerald-600", bg: "bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400" },
+      { icon: ShieldCheck, label: "Final Decision", role: "gate-final", color: "text-emerald-600", bg: "bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400" },
+      { icon: ShieldCheck, label: "Transaction Approval", role: "gate-transaction", color: "text-emerald-600", bg: "bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400" },
+    ]
+  },
+  {
+    category: "Outputs",
+    items: [
+      { icon: FileText, label: "Candidate Profile", role: "output-profile", color: "text-slate-600", bg: "bg-slate-100 dark:bg-slate-900/30 dark:text-slate-400" },
+      { icon: FileText, label: "Interview Plan", role: "output-interview-plan", color: "text-slate-600", bg: "bg-slate-100 dark:bg-slate-900/30 dark:text-slate-400" },
+      { icon: FileText, label: "Interview Evaluation", role: "output-evaluation", color: "text-slate-600", bg: "bg-slate-100 dark:bg-slate-900/30 dark:text-slate-400" },
+      { icon: FileText, label: "Candidate Decision", role: "output-decision", color: "text-slate-600", bg: "bg-slate-100 dark:bg-slate-900/30 dark:text-slate-400" },
+      { icon: FileText, label: "Candidate Experience / Itinerary", role: "output-itinerary", color: "text-slate-600", bg: "bg-slate-100 dark:bg-slate-900/30 dark:text-slate-400" },
+    ]
+  }
 ];
 
 export const Toolbar = ({ canvasState, setCanvasState, onOpenTemplates }: ToolbarProps) => {
@@ -204,22 +231,29 @@ export const Toolbar = ({ canvasState, setCanvasState, onOpenTemplates }: Toolba
           </button>
           
           {activeMenu === 'agents' && (
-            <div className="absolute left-full bottom-0 ml-2 bg-card shadow-xl border border-border rounded-xl p-2 flex flex-col gap-1 w-60 max-h-[70vh] overflow-y-auto scrollbar-thin animate-in fade-in slide-in-from-left-2">
-              <div className="text-xs font-semibold text-muted-foreground px-2 py-1 uppercase tracking-wider mb-1 sticky top-0 bg-card z-10">Agent Nodes</div>
-              {AGENTS.map((agent) => (
-                <button
-                  key={agent.role}
-                  onClick={() => {
-                    setCanvasState({ mode: CanvasMode.Inserting, layerType: LayerType.Agent, agentRole: agent.role });
-                    setActiveMenu(null);
-                  }}
-                  className="flex items-center gap-3 px-2 py-2 hover:bg-muted rounded-lg transition-colors text-foreground text-sm group/btn"
-                >
-                  <div className={`p-1.5 rounded-md ${agent.bg} ${agent.color}`}>
-                    <agent.icon className="w-4 h-4 shrink-0" />
+            <div className="absolute left-full bottom-0 ml-2 bg-card shadow-xl border border-border rounded-xl p-2 flex flex-col gap-1 w-64 max-h-[80vh] overflow-y-auto scrollbar-thin animate-in fade-in slide-in-from-left-2">
+              <div className="text-xs font-semibold text-muted-foreground px-2 py-1 uppercase tracking-wider mb-1 sticky top-0 bg-card z-10">Workflow Nodes</div>
+              {NODE_CATEGORIES.map((group) => (
+                <div key={group.category} className="mb-2">
+                  <div className="text-[10px] font-bold text-muted-foreground/70 px-2 py-1 uppercase tracking-wider">
+                    {group.category}
                   </div>
-                  <span className="font-medium text-left leading-tight">{agent.label}</span>
-                </button>
+                  {group.items.map((agent) => (
+                    <button
+                      key={agent.role}
+                      onClick={() => {
+                        setCanvasState({ mode: CanvasMode.Inserting, layerType: LayerType.Agent, agentRole: agent.role });
+                        setActiveMenu(null);
+                      }}
+                      className="flex items-center gap-3 px-2 py-2 hover:bg-muted rounded-lg transition-colors text-foreground text-sm group/btn w-full"
+                    >
+                      <div className={`p-1.5 rounded-md ${agent.bg} ${agent.color}`}>
+                        <agent.icon className="w-4 h-4 shrink-0" />
+                      </div>
+                      <span className="font-medium text-left leading-tight">{agent.label}</span>
+                    </button>
+                  ))}
+                </div>
               ))}
             </div>
           )}
@@ -249,3 +283,5 @@ const SparklesIcon = () => (
     <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" />
   </svg>
 );
+
+export const AGENTS = NODE_CATEGORIES.flatMap(c => c.items);

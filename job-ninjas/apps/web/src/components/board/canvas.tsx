@@ -127,54 +127,74 @@ export const Canvas = ({ boardId }: { boardId: string }) => {
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleRunSingleAgent = (layerId: string) => {
+  const handleRunSingleAgent = async (layerId: string) => {
     const layer = layers[layerId];
     if (!layer || layer.type !== LayerType.Agent) return;
-    if (layer.agentRole === 'word-doc' || layer.agentRole === 'excel-doc' || layer.agentRole === 'entry-node') return;
-
-    updateLayer(layerId, { status: 'running' });
     
-    setTimeout(() => {
-      // Find incoming edges to see if we're connected to an entry-node with resumes, or if we have instructions
-      const incomingEdges = Object.values(edges).filter(e => e.toNodeId === layerId);
-      const connectedInputLayers = incomingEdges.map(e => layers[e.fromNodeId]).filter(l => l && l.agentRole === 'entry-node');
+    // Inputs, human gates, and outputs don't "run" the same way in MVP
+    if (!layer.agentRole?.startsWith('agent-')) {
+       updateLayer(layerId, { status: 'success' });
+       return;
+    }
+
+    updateLayer(layerId, { status: 'running', errorDetails: null });
+    
+    // Find incoming edges
+    const incomingEdges = Object.values(edges).filter(e => e.toNodeId === layerId);
+    const upstreamNodeIds = incomingEdges.map(e => e.fromNodeId);
+
+    try {
+      const response = await fetch('/api/agents/execute', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nodeId: layerId,
+          agentType: layer.agentRole,
+          roleId: currentRole?.id || boardId, 
+          candidateId: window.localStorage.getItem('activeCandidateId') || '',
+          upstreamNodeIds
+        })
+      });
+
+      const data = await response.json();
       
-      const hasResumes = connectedInputLayers.some(l => (l as any).config?.resumes);
-      const hasData = hasResumes || (layer as any).config?.instructions || layer.agentRole === 'ophelia-agent';
-      
-      updateLayer(layerId, { status: hasData ? 'success' : 'error' });
-      
-      // Calculate offset based on existing notes connected to this agent
-      const outEdges = Object.values(edges).filter(e => e.fromNodeId === layerId);
-      const connectedNotes = outEdges.map(e => layers[e.toNodeId]).filter(l => l?.type === LayerType.Note);
-      
-      const noteX = layer.x + (layer.width || 250) + 100;
-      const noteY = layer.y + (connectedNotes.length * 170); // Stack below previous notes
-      
-      const noteId = insertLayer(LayerType.Note, { x: noteX, y: noteY }, hasData ? { r: 253, g: 224, b: 71 } : { r: 254, g: 202, b: 202 });
-      
-      if (!hasData) {
-        updateLayer(noteId, { 
-          value: `[Execution Failed]\n\nMissing input data for ${layer.value || 'Agent'}.\n\nFix: Connect this agent to a Job Details node containing Candidate Resumes, or provide explicit Custom Instructions.`,
-          width: 250,
-          height: 160
+      if (response.ok) {
+        updateLayer(layerId, { 
+          status: 'success', 
+          output: data.output,
+          // Store output visually in a note or just show green
         });
-      } else if (layer.agentRole === 'ophelia-agent') {
+        
+        // MVP Visual Output: create a sticky note below it to display the result
+        const outEdges = Object.values(edges).filter(e => e.fromNodeId === layerId);
+        const connectedNotes = outEdges.map(e => layers[e.toNodeId]).filter(l => l?.type === LayerType.Note);
+        const noteX = layer.x + (layer.width || 250) + 100;
+        const noteY = layer.y + (connectedNotes.length * 170);
+        
+        const noteId = insertLayer(LayerType.Note, { x: noteX, y: noteY }, { r: 217, g: 249, b: 157 });
         updateLayer(noteId, { 
-          value: `🚀 [Ophelia Action Triggered]\n\nOphelia Test Key Authenticated: oph_test_92416f6...\n\nCandidate: Sarah Chen\nStatus: Offer Accepted\n\n✅ Employment Contract generated & signed\n✅ Background Check initiated via API\n✅ Equipment procurement requested`,
+          value: `[REAL AGENT EXECUTION]\n\nType: ${layer.agentRole}\nStatus: SUCCESS\n\nOutput:\n${JSON.stringify(data.output, null, 2).substring(0, 300)}...`,
           width: 320,
-          height: 200
+          height: 250
         });
+        insertEdge(layerId, noteId);
+        
       } else {
+        updateLayer(layerId, { status: 'error', errorDetails: data.error || data.missingInputs?.join(', ') });
+        
+        const noteX = layer.x + (layer.width || 250) + 100;
+        const noteY = layer.y;
+        const noteId = insertLayer(LayerType.Note, { x: noteX, y: noteY }, { r: 254, g: 202, b: 202 });
         updateLayer(noteId, { 
-          value: `[Execution Result - Run ${connectedNotes.length + 1}]\n\nAnalyzed latest payload.\n- Extracted key candidate metrics.\n- Confidence Score: ${Math.floor(Math.random() * 20 + 80)}%\n\nAction items are ready for review.`,
-          width: 250,
+          value: `[EXECUTION FAILED]\n\nError: ${data.error}\nMissing: ${data.missingInputs?.join(', ')}`,
+          width: 300,
           height: 160
         });
+        insertEdge(layerId, noteId);
       }
-      
-      insertEdge(layerId, noteId);
-    }, 2000);
+    } catch (e: any) {
+      updateLayer(layerId, { status: 'error', errorDetails: e.message });
+    }
   };
 
   useEffect(() => {
@@ -276,54 +296,14 @@ export const Canvas = ({ boardId }: { boardId: string }) => {
       return;
     }
 
+    // Reset status
     agentIds.forEach(id => updateLayer(id, { status: 'idle', result: undefined }));
     
-    // Set first agents to running for effect
-    const entryAgents = agentIds.filter(id => layers[id].agentRole === 'entry-node');
-    entryAgents.forEach(id => updateLayer(id, { status: 'running' }));
+    // Very naive topological execution for MVP: run left to right based on X coordinate
+    const sortedAgentIds = [...agentIds].sort((a, b) => layers[a].x - layers[b].x);
     
-    await wait(1500);
-
-    // Early Access: Check for real data sources (connectors or uploaded files)
-    const hasDataSources = Object.values(layers).some(l => 
-      l.type === LayerType.Agent && (l.agentRole?.includes('connector') || l.agentRole === 'word-doc' || l.agentRole === 'excel-doc' || (l.agentRole === 'entry-node' && (l as any).config?.resumes))
-    );
-
-    const lastAgentId = agentIds[agentIds.length - 1];
-    const lastAgent = layers[lastAgentId];
-
-    if (!hasDataSources && lastAgent) {
-      agentIds.forEach(id => updateLayer(id, { status: 'error' }));
-      
-      const outEdges = Object.values(edges).filter(e => e.fromNodeId === lastAgentId);
-      const connectedNotes = outEdges.map(e => layers[e.toNodeId]).filter(l => l?.type === LayerType.Note);
-      
-      const noteX = lastAgent.x;
-      const noteY = lastAgent.y + (lastAgent.height || 164) + 60 + (connectedNotes.length * 170);
-      
-      const noteId = insertLayer(LayerType.Note, { x: noteX, y: noteY }, { r: 254, g: 202, b: 202 });
-      updateLayer(noteId, { 
-        value: `❌ Execution Failed: Missing Candidate Data\n\nThis pipeline requires real applicant data to process.\n\n🛠️ FIX: Click "Connectors" to add a Workday/Greenhouse integration, or "Upload Files" to provide resumes manually.`,
-        width: 320,
-        height: 180
-      });
-      insertEdge(lastAgentId, noteId);
-    } else if (lastAgent) {
-      agentIds.forEach(id => updateLayer(id, { status: 'success' }));
-      
-      const outEdges = Object.values(edges).filter(e => e.fromNodeId === lastAgentId);
-      const connectedNotes = outEdges.map(e => layers[e.toNodeId]).filter(l => l?.type === LayerType.Note);
-      
-      const noteX = lastAgent.x;
-      const noteY = lastAgent.y + (lastAgent.height || 164) + 60 + (connectedNotes.length * 170);
-      
-      const noteId = insertLayer(LayerType.Note, { x: noteX, y: noteY }, { r: 217, g: 249, b: 157 }); // Greenish
-      updateLayer(noteId, { 
-        value: `✅ Pipeline Complete - Run ${connectedNotes.length + 1}\n\nProcessed 3 candidate resumes against the Job Description.\n- Top Match: Sarah Jenkins (94%)\n- Missing skills identified.\n\nProceed to interview scheduling.`,
-        width: 320,
-        height: 180
-      });
-      insertEdge(lastAgentId, noteId);
+    for (const id of sortedAgentIds) {
+      await handleRunSingleAgent(id);
     }
 
     setIsRunning(false);

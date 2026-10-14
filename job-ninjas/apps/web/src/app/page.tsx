@@ -59,7 +59,7 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-6 flex items-center justify-between h-16">
           <div className="flex items-center gap-10">
             <Link href="/" className="flex items-center gap-2.5 shrink-0">
-              <Image src="/logo.svg" alt="JobNinjas" width={36} height={36} className="object-contain" quality={100} priority />
+              <Image src="/logo.png" alt="JobNinjas" width={36} height={36} className="object-contain" priority unoptimized />
               <span className="font-extrabold text-slate-900 text-xl tracking-tight">JobNinjas</span>
             </Link>
             <div className="hidden lg:flex items-center gap-2">
@@ -625,7 +625,7 @@ export default function Home() {
           <div className="grid grid-cols-2 md:grid-cols-5 gap-10 mb-14">
             <div className="col-span-2">
               <div className="flex items-center gap-2.5 mb-4">
-                <Image src="/logo.svg" alt="JobNinjas" width={32} height={32} className="object-contain" quality={100} />
+                <Image src="/logo.png" alt="JobNinjas" width={32} height={32} className="object-contain" unoptimized />
                 <span className="text-white font-extrabold text-lg">JobNinjas</span>
               </div>
               <p className="text-[14px] leading-relaxed mb-5">The intelligent hiring canvas for modern HR teams. AI-powered sourcing, screening, and onboarding on one collaborative board.</p>

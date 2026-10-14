@@ -5,7 +5,7 @@ export function LoadingScreen() {
     <div className="fixed inset-0 bg-[#f8fafc] flex flex-col items-center justify-center z-50">
       <div className="relative w-32 h-32 mb-8 animate-vibrate-3d">
         <img 
-          src="/logo.svg" 
+          src="/logo.png" 
           alt="Company Logo" 
           className="w-full h-full object-contain "
         />

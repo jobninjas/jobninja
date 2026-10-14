@@ -17,7 +17,7 @@ export const metadata: Metadata = {
   title: "JobNinjas | AI-Powered HR Workspace",
   description: "Automate your hiring pipelines with JobNinjas.",
   icons: {
-    icon: "/logo.svg",
+    icon: "/logo.png",
   },
 };
 

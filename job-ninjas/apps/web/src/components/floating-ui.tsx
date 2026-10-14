@@ -120,7 +120,7 @@ export function FloatingHeader() {
         <div className="flex items-center gap-2 px-3 border-r border-border">
           <div className="w-6 h-6 text-blue-600 flex items-center justify-center">
             <Image 
-              src="/logo.svg" 
+              src="/logo.png" 
               alt="Job Ninjas" 
               width={24} 
               height={24}

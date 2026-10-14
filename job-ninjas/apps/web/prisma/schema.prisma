@@ -18,6 +18,9 @@ model Organization {
   connectors Connector[]
   candidates Candidate[]
   workflows  Workflow[]
+  roles      Role[]
+  agentRuns  AgentRun[]
+  boards     Board[]
 }
 
 model User {
@@ -45,18 +48,43 @@ model Connector {
   organization   Organization @relation(fields: [organizationId], references: [id])
 }
 
+model Role {
+  id             String       @id @default(uuid())
+  organizationId String
+  title          String
+  department     String
+  location       String
+  hiringManager  String
+  jobDescription String
+  status         String       @default("open")
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  candidates     Candidate[]
+  interviews     Interview[]
+  agentRuns      AgentRun[]
+  agentEvents    AgentEvent[]
+  boards         Board[]
+}
+
 model Candidate {
   id             String       @id @default(uuid())
   organizationId String
-  atsId          String       // Original ID in ATS
+  roleId         String
+  atsId          String?      // Optional since we're creating locally
   firstName      String
   lastName       String
   email          String
+  location       String?
   resumeUrl      String?
+  resumeText     String?
   linkedinUrl    String?
-  status         String       @default("NEW") // "SCREENING", "INTERVIEW", "OFFER", "HIRED", "REJECTED"
+  stage          String       @default("APPLIED") // APPLIED, RECRUITER_SCREEN, SHORTLISTED, ONSITE, FINAL, HIRED, REJECTED
   
-  // Agentic Signals
+  travelBudget   Float?
+
+  // Agentic Signals (Legacy/Convenience)
   fraudScore     Float?
   technicalScore Float?
   cultureScore   Float?
@@ -65,7 +93,42 @@ model Candidate {
   updatedAt      DateTime     @updatedAt
 
   organization   Organization @relation(fields: [organizationId], references: [id])
+  role           Role         @relation(fields: [roleId], references: [id])
   agentRuns      AgentRun[]
+  resumes        Resume[]
+  interviews     Interview[]
+  artifacts      AgentArtifact[]
+  events         AgentEvent[]
+  stageHistory   CandidateStageHistory[]
+}
+
+model Resume {
+  id             String       @id @default(uuid())
+  candidateId    String
+  fileUrl        String?
+  parsedText     String?
+  extractedSkills Json?
+  createdAt      DateTime     @default(now())
+
+  candidate      Candidate    @relation(fields: [candidateId], references: [id])
+}
+
+model Interview {
+  id                  String       @id @default(uuid())
+  candidateId         String
+  roleId              String
+  round               String
+  type                String
+  scheduledAt         DateTime?
+  transcriptUrl       String?
+  transcriptText      String?
+  interviewerFeedback String?
+  status              String       @default("SCHEDULED") // SCHEDULED, COMPLETED, CANCELLED
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+
+  candidate           Candidate    @relation(fields: [candidateId], references: [id])
+  role                Role         @relation(fields: [roleId], references: [id])
 }
 
 model Workflow {
@@ -81,15 +144,76 @@ model Workflow {
   organization   Organization @relation(fields: [organizationId], references: [id])
 }
 
+model Board {
+  id             String       @id @default(uuid())
+  organizationId String
+  roleId         String       @unique
+  layers         Json
+  layerIds       Json
+  edges          Json
+  edgeIds        Json
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  role           Role         @relation(fields: [roleId], references: [id])
+}
+
 model AgentRun {
   id             String       @id @default(uuid())
+  organizationId String
+  roleId         String
   candidateId    String
-  agentType      String       // "RESUME_PARSER", "TRANSCRIPT_ANALYZER", "FRAUD_VERIFIER"
-  status         String       // "QUEUED", "RUNNING", "COMPLETED", "FAILED"
+  nodeId         String?      // Links back to the canvas node
+  agentType      String       // "RESUME_INTELLIGENCE", "INTERVIEW_PLANNING", etc.
+  status         String       // "QUEUED", "RUNNING", "SUCCESS", "ERROR"
   inputPayload   Json?
   outputPayload  Json?
+  errorDetails   String?
   startedAt      DateTime?
   completedAt    DateTime?
   
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  role           Role         @relation(fields: [roleId], references: [id])
+  candidate      Candidate    @relation(fields: [candidateId], references: [id])
+  artifacts      AgentArtifact[]
+  events         AgentEvent[]
+}
+
+model AgentArtifact {
+  id             String       @id @default(uuid())
+  agentRunId     String
+  candidateId    String
+  artifactType   String       // e.g., "ResumeAnalysis", "InterviewPlan"
+  data           Json
+  createdAt      DateTime     @default(now())
+
+  agentRun       AgentRun     @relation(fields: [agentRunId], references: [id])
+  candidate      Candidate    @relation(fields: [candidateId], references: [id])
+}
+
+model AgentEvent {
+  id             String       @id @default(uuid())
+  eventType      String       // e.g., "candidate.shortlisted", "resume.analysis_completed"
+  roleId         String
+  candidateId    String
+  agentRunId     String?
+  payload        Json?
+  createdAt      DateTime     @default(now())
+
+  role           Role         @relation(fields: [roleId], references: [id])
+  candidate      Candidate    @relation(fields: [candidateId], references: [id])
+  agentRun       AgentRun?    @relation(fields: [agentRunId], references: [id])
+}
+
+model CandidateStageHistory {
+  id             String       @id @default(uuid())
+  candidateId    String
+  fromStage      String
+  toStage        String
+  reason         String?
+  changedBy      String?      // Could be User ID or "SYSTEM"/"AGENT"
+  createdAt      DateTime     @default(now())
+
   candidate      Candidate    @relation(fields: [candidateId], references: [id])
 }

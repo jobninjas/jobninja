@@ -6,7 +6,7 @@ export default function LoginPage() {
       <div className="w-full max-w-md space-y-8 rounded-xl bg-card p-8 shadow-lg ring-1 ring-gray-900/5">
         <div className="text-center flex flex-col items-center">
           <div className="w-24 h-24 relative mb-4">
-            <img src="/logo.svg" alt="Logo" className="object-contain w-full h-full drop-shadow-lg " />
+            <img src="/logo.png" alt="Logo" className="object-contain w-full h-full drop-shadow-lg " />
           </div>
           <h2 className="text-3xl font-bold tracking-tight text-gray-900">
             Job Ninjas

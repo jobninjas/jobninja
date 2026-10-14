@@ -2,6 +2,7 @@
 
 import { use, useEffect, useRef, useState } from "react";
 import { Canvas } from "@/components/board/canvas";
+import CandidateManager from "@/components/board/CandidateManager";
 import { useBoardStore } from "@/store/board";
 import { LayerType } from "@/types/canvas";
 import { Loader2 } from "lucide-react";
@@ -89,7 +90,7 @@ export default function RoleBoardPage({ params }: { params: Promise<{ roleId: st
     <div className="absolute inset-0">
 
       <div className="absolute top-6 left-6 z-50 flex items-center gap-3 bg-white/80 backdrop-blur-md px-4 py-2 rounded-2xl shadow-sm border border-slate-200/50 cursor-pointer hover:bg-white transition-colors" onClick={() => window.location.href='/roles'}>
-        <img src="/logo.svg" alt="JobNinjas" className="w-8 h-8 object-contain" />
+        <img src="/logo.png" alt="JobNinjas" className="w-8 h-8 object-contain" />
         <span className="font-extrabold text-slate-800 tracking-tight">JobNinjas</span>
       </div>
 
