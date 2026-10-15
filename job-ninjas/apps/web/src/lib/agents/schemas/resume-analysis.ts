@@ -6,7 +6,7 @@ export const ResumeAnalysisSchema = z.object({
     z.object({
       name: z.string(),
       status: z.enum(['VERIFIED', 'PARTIAL', 'NOT_FOUND']),
-      evidence: z.string().optional().describe("Snippet from resume proving this skill"),
+      evidence: z.string().describe("Snippet from resume proving this skill, or 'Not mentioned'"),
     })
   ).describe("Key skills extracted from the resume and verified against job requirements."),
   experience: z.array(
@@ -19,7 +19,7 @@ export const ResumeAnalysisSchema = z.object({
   ),
   requirements: z.object({
     meetsBasic: z.boolean(),
-    missingBasic: z.array(z.string()).optional(),
+    missingBasic: z.array(z.string()).describe("List of missing basic requirements, or empty array if none"),
   }),
   strengths: z.array(z.string()),
   gaps: z.array(z.string()),

@@ -12,8 +12,8 @@ export const CandidateDecisionSchema = z.object({
   compensationRecommendation: z.object({
     suggestedSalary: z.number(),
     currency: z.string(),
-    notes: z.string().optional()
-  }).optional().describe("Suggested compensation based on performance and market")
+    notes: z.string().describe("Compensation notes or empty string"),
+  }).describe("Suggested compensation based on performance and market"),
 });
 
 export type CandidateDecision = z.infer<typeof CandidateDecisionSchema>;
