@@ -33,7 +33,7 @@ ${resumeAnalysis.interviewFocusAreas.join('\n')}
       systemPrompt,
       input,
       schema: InterviewPlanSchema,
-      modelName: 'llama-3.3-70b-versatile',
+      modelName: 'openai/gpt-oss-120b',
     });
 
     return {
