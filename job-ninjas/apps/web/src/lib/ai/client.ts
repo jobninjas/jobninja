@@ -2,10 +2,6 @@ import { generateObject } from 'ai';
 import { createGroq } from '@ai-sdk/groq';
 import { z } from 'zod';
 
-const groq = createGroq({
-  apiKey: process.env.GROQ_API_KEY,
-});
-
 export interface GenerateStructuredOutputOptions<T> {
   systemPrompt: string;
   input: string;
@@ -23,9 +19,14 @@ export async function generateStructuredOutput<T>({
   schema,
   modelName = 'llama-3.3-70b-versatile',
 }: GenerateStructuredOutputOptions<T>): Promise<T> {
-  if (!process.env.GROQ_API_KEY) {
-    throw new Error('GROQ_API_KEY environment variable is missing.');
+  const apiKey = process.env.GROQ_API_KEY;
+  if (!apiKey) {
+    throw new Error('GROQ_API_KEY environment variable is missing in server environment.');
   }
+
+  const groq = createGroq({
+    apiKey,
+  });
 
   const { object } = await generateObject({
     model: groq(modelName),
