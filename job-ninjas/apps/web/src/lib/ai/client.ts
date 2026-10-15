@@ -17,7 +17,7 @@ export async function generateStructuredOutput<T>({
   systemPrompt,
   input,
   schema,
-  modelName = 'llama-3.3-70b-versatile',
+  modelName = process.env.GROQ_MODEL || 'openai/gpt-oss-120b',
 }: GenerateStructuredOutputOptions<T>): Promise<T> {
   const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) {
