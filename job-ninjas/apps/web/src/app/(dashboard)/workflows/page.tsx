@@ -1,173 +1,132 @@
 "use client";
 
-import { useState } from 'react';
-import { Play, CheckCircle, Clock, Workflow, ArrowRight, Settings, Plus, TerminalSquare } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Play, CheckCircle, Clock, Workflow, ArrowRight, Plus, Loader2, Sparkles, Layers } from 'lucide-react';
 import Link from 'next/link';
-
-const MOCK_WORKFLOWS = [
-  { 
-    id: 'wf-1', 
-    name: 'Candidate Intake & Evidence', 
-    description: 'Automatically parses incoming resumes from email, extracts key skills, and creates a candidate profile in the ATS.',
-    status: 'active', 
-    lastRun: '10 mins ago',
-    steps: ['Email Parser', 'Resume Analyzer', 'Greenhouse Sync']
-  },
-  { 
-    id: 'wf-2', 
-    name: 'Interview Transcript Analysis', 
-    description: 'Reads raw interview transcripts, generates a summarized scorecard, and flags potential red flags.',
-    status: 'active', 
-    lastRun: '2 hours ago',
-    steps: ['Zoom Transcripts', 'Scorecard Generator', 'Slack Alert']
-  },
-];
+import { useRouter } from 'next/navigation';
 
 export default function WorkflowsPage() {
-  const [running, setRunning] = useState<string | null>(null);
-  const [logs, setLogs] = useState<string[]>([]);
+  const router = useRouter();
+  const [roles, setRoles] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const runWorkflow = (id: string) => {
-    setRunning(id);
-    setLogs(['[SYSTEM] Initializing workflow execution...', '[SYSTEM] Connecting to agent network...']);
-    
-    setTimeout(() => setLogs(l => [...l, '[NODE: Step 1] Fetching input data...']), 1000);
-    setTimeout(() => setLogs(l => [...l, '[NODE: Step 1] Success. Data passed to next agent.']), 2500);
-    setTimeout(() => setLogs(l => [...l, '[NODE: Step 2] AI Analysis running...']), 3000);
-    setTimeout(() => setLogs(l => [...l, '[NODE: Step 2] Success. Generated insights.']), 5000);
-    setTimeout(() => setLogs(l => [...l, '[NODE: Step 3] Syncing output to integrations...']), 5500);
-    setTimeout(() => {
-      setLogs(l => [...l, '[SYSTEM] Workflow execution completed successfully.']);
-      setRunning(null);
-    }, 7000);
-  };
+  useEffect(() => {
+    async function fetchWorkflows() {
+      try {
+        setLoading(true);
+        const res = await fetch('/api/roles');
+        const data = await res.json();
+        if (data.success && data.roles) {
+          setRoles(data.roles);
+        }
+      } catch (e) {
+        console.error('Failed to load workflow boards:', e);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchWorkflows();
+  }, []);
 
   return (
-    <div className="p-8 h-full flex flex-col gap-8 relative overflow-y-auto">
-      {/* Header & Onboarding Context */}
-      <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl p-8 text-white shadow-lg relative overflow-hidden flex-shrink-0">
+    <div className="p-8 h-full flex flex-col gap-8 relative overflow-y-auto font-sans">
+      {/* Header */}
+      <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 rounded-2xl p-8 text-white shadow-lg relative overflow-hidden flex-shrink-0">
         <div className="relative z-10 max-w-3xl">
           <div className="flex items-center gap-3 mb-4">
-            <div className="p-2 bg-card/20 rounded-lg backdrop-blur-sm">
+            <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
               <Workflow className="w-6 h-6 text-white" />
             </div>
-            <h2 className="text-3xl font-bold">Automated Workflows</h2>
+            <h2 className="text-3xl font-bold">Autonomous Hiring Workflows</h2>
           </div>
-          <p className="text-indigo-100 text-lg leading-relaxed mb-6">
-            Workflows are automated sequences of AI agents that run in the background. 
-            Instead of manually reviewing every resume or interview, you can string together multiple agents 
-            on the canvas to process candidates from end-to-end automatically.
+          <p className="text-indigo-100 text-base leading-relaxed mb-6">
+            Every job role in JobNinjas operates an interconnected AI pipeline. Sourcing agents pass candidate intelligence to resume verifiers, interview planners, transcript analyzers, and concierge nodes on an infinite canvas with human-in-the-loop decision gates.
           </p>
-          <Link href="/workflows/new" className="bg-card text-indigo-600 px-5 py-2.5 rounded-lg font-semibold flex items-center gap-2 hover:bg-indigo-50 transition-colors shadow-sm">
-            <Plus className="w-5 h-5" />
-            Create New Workflow
+          <Link
+            href="/roles"
+            className="inline-flex items-center gap-2 bg-white text-indigo-700 font-semibold px-5 py-2.5 rounded-lg hover:bg-indigo-50 transition-colors shadow-sm text-sm"
+          >
+            <Plus className="w-4 h-4" />
+            Create Role Workflow
           </Link>
         </div>
-        {/* Decorative background shapes */}
-        <div className="absolute right-0 top-0 w-64 h-64 bg-card/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
       </div>
 
-      <div className="flex gap-8 flex-1 min-h-0">
-        {/* Workflows List */}
-        <div className="flex-1 overflow-y-auto pr-2 space-y-4 custom-scrollbar">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-lg font-semibold text-gray-900">Your Active Workflows</h3>
-          </div>
+      {/* Workflows List */}
+      <div>
+        <h3 className="text-lg font-bold text-slate-900 mb-4">Active Pipeline Boards</h3>
 
-          {MOCK_WORKFLOWS.map(wf => (
-            <div key={wf.id} className="bg-card p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-              <div className="flex justify-between items-start mb-4">
+        {loading ? (
+          <div className="py-20 flex flex-col items-center justify-center text-slate-400 gap-3">
+            <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+            <p className="text-sm font-medium">Loading workflows...</p>
+          </div>
+        ) : roles.length === 0 ? (
+          <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center shadow-sm">
+            <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mx-auto mb-4">
+              <Workflow className="w-6 h-6" />
+            </div>
+            <h4 className="text-base font-bold text-slate-800 mb-1">No active workflow pipelines</h4>
+            <p className="text-xs text-slate-500 max-w-md mx-auto mb-5">
+              Create a role to deploy a tailored agent graph with resume intelligence, interview analysis, and concierge bookings.
+            </p>
+            <Link
+              href="/roles"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700 transition-colors"
+            >
+              <Plus className="w-4 h-4" /> Create First Workflow
+            </Link>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {roles.map((role) => (
+              <div
+                key={role.id}
+                className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between"
+              >
                 <div>
-                  <h3 className="text-xl font-bold text-gray-900">{wf.name}</h3>
-                  <p className="text-gray-500 text-sm mt-1 mb-3 max-w-lg">{wf.description}</p>
-                  
-                  <div className="flex items-center gap-4 text-xs font-medium">
-                    <span className="flex items-center gap-1 text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full border border-emerald-100">
-                      <CheckCircle size={14}/> {wf.status}
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-blue-600 bg-blue-50 px-2.5 py-1 rounded-md">
+                      {role.department}
                     </span>
-                    <span className="flex items-center gap-1 text-gray-500 bg-gray-50 px-2 py-1 rounded-full border border-gray-200">
-                      <Clock size={14}/> Last run: {wf.lastRun}
+                    <span className="text-[11px] font-medium text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                      LIVE
                     </span>
+                  </div>
+                  <h4 className="text-base font-bold text-slate-900 mb-1">{role.title}</h4>
+                  <p className="text-xs text-slate-500 mb-4 line-clamp-2">
+                    {role.jobDescription || 'Autonomous recruiting pipeline with connected AI agents and decision gates.'}
+                  </p>
+
+                  <div className="space-y-1.5 border-t border-slate-100 pt-3 mb-4 text-xs text-slate-600">
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">Location:</span>
+                      <span className="font-medium text-slate-800">{role.location}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">Candidates in DAG:</span>
+                      <span className="font-medium text-slate-800">{role.candidates?.length || 0}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">Hiring Manager:</span>
+                      <span className="font-medium text-slate-800">{role.hiringManager}</span>
+                    </div>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2">
-                  <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors" title="Edit Workflow Canvas">
-                    <Settings className="w-5 h-5" />
-                  </button>
-                  <button 
-                    onClick={() => runWorkflow(wf.id)}
-                    disabled={running !== null}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-sm transition-all shadow-sm ${
-                      running === wf.id 
-                        ? 'bg-indigo-100 text-indigo-700 cursor-wait' 
-                        : 'bg-indigo-600 text-white hover:bg-indigo-700 hover:shadow disabled:opacity-50 disabled:cursor-not-allowed'
-                    }`}
-                  >
-                    {running === wf.id ? (
-                      <>Running Sequence...</>
-                    ) : (
-                      <><Play size={16} fill="currentColor" /> Run Manually</>
-                    )}
-                  </button>
-                </div>
+                <Link
+                  href={`/roles/${role.id}/board`}
+                  className="w-full flex items-center justify-center gap-2 bg-slate-900 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg text-xs transition-colors"
+                >
+                  <Layers className="w-3.5 h-3.5" />
+                  Open Canvas Board
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
               </div>
-
-              {/* Workflow Steps Visualization */}
-              <div className="mt-6 pt-4 border-t border-gray-100">
-                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Agent Sequence</p>
-                <div className="flex items-center gap-2 overflow-x-auto pb-2">
-                  {wf.steps.map((step, index) => (
-                    <div key={index} className="flex items-center gap-2">
-                      <div className="bg-gray-50 border border-gray-200 px-3 py-1.5 rounded-md text-sm font-medium text-gray-700 whitespace-nowrap shadow-sm">
-                        {step}
-                      </div>
-                      {index < wf.steps.length - 1 && (
-                        <ArrowRight className="w-4 h-4 text-gray-300 flex-shrink-0" />
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Execution Logs Panel */}
-        <div className="w-[400px] flex flex-col flex-shrink-0 bg-[#0f172a] rounded-2xl shadow-xl border border-slate-700 overflow-hidden">
-          <div className="bg-slate-800/80 backdrop-blur-md px-4 py-3 border-b border-slate-700 flex justify-between items-center shadow-sm">
-            <div className="flex items-center gap-2">
-              <TerminalSquare className="w-4 h-4 text-muted-foreground" />
-              <h3 className="text-xs font-bold text-slate-300 tracking-widest uppercase">Live Terminal</h3>
-            </div>
-            {running && (
-              <span className="flex items-center gap-2">
-                <span className="text-[10px] text-emerald-400 font-mono font-medium animate-pulse">EXECUTING</span>
-                <span className="flex h-2 w-2 relative">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                </span>
-              </span>
-            )}
+            ))}
           </div>
-          <div className="p-5 flex-1 overflow-y-auto font-mono text-sm leading-relaxed text-emerald-400/90 space-y-3 custom-scrollbar">
-            {logs.length === 0 ? (
-              <div className="h-full flex flex-col items-center justify-center text-muted-foreground gap-3 opacity-50">
-                <TerminalSquare className="w-8 h-8" />
-                <p>Waiting for manual execution trigger...</p>
-              </div>
-            ) : (
-              logs.map((log, i) => (
-                <div key={i} className="animate-in fade-in slide-in-from-bottom-1 duration-300">
-                  <span className="text-muted-foreground mr-3">[{new Date().toLocaleTimeString([], {hour12: false, hour: '2-digit', minute:'2-digit', second:'2-digit'})}]</span>
-                  <span className={log.includes('Success') ? 'text-emerald-300 font-semibold' : log.includes('SYSTEM') ? 'text-blue-300' : 'text-emerald-400'}>
-                    {log}
-                  </span>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
+        )}
       </div>
     </div>
   );

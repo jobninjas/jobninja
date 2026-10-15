@@ -69,16 +69,29 @@ export function FloatingSidebar() {
 }
 
 export function FloatingHeader() {
-  const { roles, updateRole } = useDemoStore();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isShareOpen, setIsShareOpen] = useState(false);
+  const [roleTitle, setRoleTitle] = useState("");
   
   const pathname = usePathname();
   
   // Extract roleId if we are in a role page
   const roleMatch = pathname.match(/\/roles\/([^\/]+)/);
   const roleId = roleMatch ? roleMatch[1] : null;
-  const currentRole = roleId ? roles.find(r => r.id === roleId) : null;
+
+  useEffect(() => {
+    if (roleId) {
+      fetch('/api/roles')
+        .then(res => res.json())
+        .then(data => {
+          if (data.roles) {
+            const found = data.roles.find((r: any) => r.id === roleId);
+            if (found) setRoleTitle(found.title);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [roleId]);
   
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [editedTitle, setEditedTitle] = useState("");

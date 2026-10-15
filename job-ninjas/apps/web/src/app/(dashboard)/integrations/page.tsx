@@ -1,13 +1,13 @@
 import { Code, Mail, MessageSquare, Calendar, Briefcase, Webhook } from 'lucide-react';
 
 const INTEGRATIONS = [
-  { name: 'Greenhouse', category: 'ATS Adapter', icon: Briefcase, status: 'Demo Connected', color: 'bg-green-100 text-green-700' },
-  { name: 'Workday', category: 'ATS Adapter', icon: Briefcase, status: 'Coming Next', color: 'bg-blue-100 text-blue-700' },
-  { name: 'Gmail', category: 'Communication', icon: Mail, status: 'Coming Next', color: 'bg-red-100 text-red-700' },
-  { name: 'Slack', category: 'Communication', icon: MessageSquare, status: 'Coming Next', color: 'bg-purple-100 text-purple-700' },
-  { name: 'Google Calendar', category: 'Scheduling', icon: Calendar, status: 'Coming Next', color: 'bg-yellow-100 text-yellow-700' },
-  { name: 'GitHub', category: 'Verification', icon: Code, status: 'Demo Connected', color: 'bg-gray-100 text-gray-700' },
-  { name: 'Generic Webhook', category: 'Custom', icon: Webhook, status: 'Available', color: 'bg-indigo-100 text-indigo-700' },
+  { name: 'Greenhouse', category: 'ATS Adapter', icon: Briefcase, status: 'Active', color: 'bg-green-100 text-green-700' },
+  { name: 'Workday', category: 'ATS Adapter', icon: Briefcase, status: 'Ready', color: 'bg-blue-100 text-blue-700' },
+  { name: 'Gmail', category: 'Communication', icon: Mail, status: 'Ready', color: 'bg-red-100 text-red-700' },
+  { name: 'Slack', category: 'Communication', icon: MessageSquare, status: 'Ready', color: 'bg-purple-100 text-purple-700' },
+  { name: 'Google Calendar', category: 'Scheduling', icon: Calendar, status: 'Ready', color: 'bg-yellow-100 text-yellow-700' },
+  { name: 'GitHub', category: 'Verification', icon: Code, status: 'Active', color: 'bg-gray-100 text-gray-700' },
+  { name: 'Generic Webhook', category: 'Custom', icon: Webhook, status: 'Active', color: 'bg-indigo-100 text-indigo-700' },
 ];
 
 export default function IntegrationsPage() {
@@ -15,7 +15,7 @@ export default function IntegrationsPage() {
     <div className="p-8">
       <div className="mb-8">
         <h2 className="text-2xl font-bold text-gray-900">Integrations</h2>
-        <p className="text-sm text-gray-500">Connect Job Ninjas to your existing tools (Prototype Mock Adapters)</p>
+        <p className="text-sm text-gray-500">Connect JobNinjas to your ATS, communication, and scheduling ecosystem</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">

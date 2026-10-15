@@ -67,46 +67,30 @@ export const InspectorPanel = ({ boardId }: { boardId?: string }) => {
     updateLayer(layerId, { value });
   };
 
-  const handleRunAgent = () => {
-    // Set status to running
+  const handleRunAgent = async () => {
     updateLayer(layerId, { status: 'running' });
-    
-    // Simulate real execution check
-    setTimeout(() => {
-      // Check for data sources on the board
-      const hasDataSources = Object.values(layers).some(l => 
-        l.type === LayerType.Agent && (l.agentRole?.includes('connector') || l.agentRole === 'word-doc' || l.agentRole === 'excel-doc')
-      );
-
-      if (!hasDataSources) {
-        updateLayer(layerId, { status: 'error' });
-        const noteX = layer.x;
-        const noteY = layer.y + (layer.height || 164) + 120;
-        
-        const noteId = insertLayer(LayerType.Note, { x: noteX, y: noteY }, { r: 254, g: 202, b: 202 }); // red-200
-        updateLayer(noteId, { 
-          value: `❌ Execution Failed: Missing Candidate Data\n\nThis agent requires real applicant data to process.\n\n🛠️ FIX: Click "Connectors" to add a Workday/Greenhouse integration, or "Upload Files" to provide resumes manually.`,
-          width: 320,
-          height: 180
-        });
-        insertEdge(layerId, noteId);
-        return;
-      }
-
-      // If data source exists, prompt for API keys (for early access demo)
-      updateLayer(layerId, { status: 'error' });
-      const noteX = layer.x;
-      const noteY = layer.y + (layer.height || 164) + 120;
-      
-      const noteId = insertLayer(LayerType.Note, { x: noteX, y: noteY }, { r: 254, g: 215, b: 170 }); // orange-200
-      updateLayer(noteId, { 
-        value: `⚠️ Authentication Required\n\nData connectors detected, but API credentials are missing or invalid.\n\n🛠️ FIX: Select your Connector node and enter your production API keys in the Agent Configuration panel.`,
-        width: 320,
-        height: 180
+    try {
+      const activeCand = typeof window !== 'undefined' ? window.localStorage.getItem('activeCandidateId') : null;
+      const response = await fetch('/api/agents/execute', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          agentType: layer.agentRole,
+          nodeId: layerId,
+          roleId: boardId,
+          candidateId: activeCand,
+          upstreamNodeIds: []
+        })
       });
-      insertEdge(layerId, noteId);
-      
-    }, 1500);
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        updateLayer(layerId, { status: 'error', errorDetails: data.error });
+      } else {
+        updateLayer(layerId, { status: 'success', executionOutput: data.output });
+      }
+    } catch (err: any) {
+      updateLayer(layerId, { status: 'error', errorDetails: err.message });
+    }
   };
 
   const isEntryNode = layer.type === LayerType.Agent && layer.agentRole === 'entry-node';

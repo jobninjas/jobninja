@@ -95,16 +95,16 @@ function HotelCard({ hotel, recommended, selected, onSelect, onApprove, disabled
 }
 
 export const CandidateConciergeNode = ({ layerId, layer, isSelected }: { layerId: string; layer: any; isSelected: boolean }) => {
-  const SARAH = {
-    name: layer.config?.candidateName || 'Sarah Chen',
-    role: layer.config?.role || 'AI Engineer • Final Interview',
-    fromCity: layer.config?.fromLocation || 'Atlanta, GA',
-    toCity: layer.config?.toLocation || 'New York, NY',
-    fromCode: (layer.config?.fromLocation || 'Atlanta').substring(0, 3).toUpperCase(),
-    toCode: (layer.config?.toLocation || 'New York').substring(0, 3).toUpperCase(),
-    checkIn: layer.config?.date || 'Oct 14',
-    checkOut: 'Oct 15',
-    budget: '$' + (layer.config?.budget || '800'),
+  const candidateData = {
+    name: layer.config?.candidateName || layer.value || 'Candidate',
+    role: layer.config?.role || 'Candidate Onsite Logistics',
+    fromCity: layer.config?.fromLocation || 'Candidate Location',
+    toCity: layer.config?.toLocation || 'Company Office',
+    fromCode: (layer.config?.fromLocation || 'NYC').substring(0, 3).toUpperCase(),
+    toCode: (layer.config?.toLocation || 'NYC').substring(0, 3).toUpperCase(),
+    checkIn: layer.config?.date || 'Scheduled Date',
+    checkOut: layer.config?.checkOut || 'Next Day',
+    budget: '$' + (layer.config?.budget || '1000'),
   };
 
   const updateLayer = useBoardStore(s => s.updateLayer);
@@ -132,7 +132,7 @@ export const CandidateConciergeNode = ({ layerId, layer, isSelected }: { layerId
         method: 'POST',
         cache: 'no-store',
         headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' },
-        body: JSON.stringify({ vertical: 'travel', providers: ['flights'], origin: SARAH.fromCode, destination: SARAH.toCode, date: SARAH.checkIn, _t: Date.now() })
+        body: JSON.stringify({ vertical: 'travel', providers: ['flights'], origin: candidateData.fromCode, destination: candidateData.toCode, date: candidateData.checkIn, _t: Date.now() })
       });
       const data = await res.json();
       setFlights(data.results || []);
@@ -150,7 +150,7 @@ export const CandidateConciergeNode = ({ layerId, layer, isSelected }: { layerId
         method: 'POST',
         cache: 'no-store',
         headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' },
-        body: JSON.stringify({ vertical: 'lifestyle', providers: ['dining'], location: SARAH.toCode, date: SARAH.checkIn, _t: Date.now() })
+        body: JSON.stringify({ vertical: 'lifestyle', providers: ['dining'], location: candidateData.toCode, date: candidateData.checkIn, _t: Date.now() })
       });
       const data = await res.json();
       setDiningOptions(data.results || []);
@@ -170,10 +170,10 @@ export const CandidateConciergeNode = ({ layerId, layer, isSelected }: { layerId
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'search',
-          destination: SARAH.toCity,
-          checkIn: SARAH.checkIn,
-          checkOut: SARAH.checkOut,
-          budget: parseFloat(SARAH.budget.replace('$', '')),
+          destination: candidateData.toCity,
+          checkIn: candidateData.checkIn,
+          checkOut: candidateData.checkOut,
+          budget: parseFloat(candidateData.budget.replace('$', '')),
           rooms: 1,
           party_size: 1
         })
@@ -198,7 +198,7 @@ export const CandidateConciergeNode = ({ layerId, layer, isSelected }: { layerId
       const res = await fetch('/api/ophelia/search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'availability', hotelId: hotel.id, checkIn: SARAH.checkIn, checkOut: SARAH.checkOut })
+        body: JSON.stringify({ action: 'availability', hotelId: hotel.id, checkIn: candidateData.checkIn, checkOut: candidateData.checkOut })
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
@@ -217,7 +217,7 @@ export const CandidateConciergeNode = ({ layerId, layer, isSelected }: { layerId
       const res = await fetch('/api/ophelia/book', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ quoteId: availability.quoteId, guestName: SARAH.name, contactEmail: 'test@example.com' })
+        body: JSON.stringify({ quoteId: availability.quoteId, guestName: candidateData.name, contactEmail: 'test@example.com' })
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
@@ -252,18 +252,18 @@ export const CandidateConciergeNode = ({ layerId, layer, isSelected }: { layerId
           
           <div className="flex items-center gap-4">
             <div className="bg-slate-800 rounded-xl px-4 py-2 border border-slate-700 flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center font-bold text-[12px]">{SARAH.name.substring(0, 2).toUpperCase()}</div>
+              <div className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center font-bold text-[12px]">{candidateData.name.substring(0, 2).toUpperCase()}</div>
               <div>
-                <p className="font-bold text-[13px] text-white leading-tight">{SARAH.name}</p>
-                <p className="text-[10px] text-slate-400">{SARAH.role}</p>
+                <p className="font-bold text-[13px] text-white leading-tight">{candidateData.name}</p>
+                <p className="text-[10px] text-slate-400">{candidateData.role}</p>
               </div>
             </div>
             
             <div className="bg-slate-800 rounded-xl px-4 py-2 border border-slate-700 flex flex-col justify-center">
               <div className="flex items-center gap-2 text-[12px] font-bold text-white mb-0.5">
-                {SARAH.fromCity} <ArrowRight className="w-3 h-3 text-slate-500" /> {SARAH.toCity}
+                {candidateData.fromCity} <ArrowRight className="w-3 h-3 text-slate-500" /> {candidateData.toCity}
               </div>
-              <div className="text-[10px] text-slate-400">{SARAH.checkIn} — {SARAH.checkOut} • Budget: {SARAH.budget}</div>
+              <div className="text-[10px] text-slate-400">{candidateData.checkIn} — {candidateData.checkOut} • Budget: {candidateData.budget}</div>
             </div>
 
             <div className="flex flex-col gap-1 items-end ml-4">
@@ -331,7 +331,7 @@ export const CandidateConciergeNode = ({ layerId, layer, isSelected }: { layerId
               {conciergeState === 'IDLE' && (
                 <div className="bg-violet-50 rounded-xl p-4 border border-violet-100">
                   <p className="text-[13px] text-slate-700 leading-relaxed mb-4">
-                    {SARAH.name} needs accommodation for the night before their 10:00 AM interview. I can search options within the travel policy.
+                    {candidateData.name} needs accommodation for the night before their 10:00 AM interview. I can search options within the travel policy.
                   </p>
                   <button onPointerDown={(e) => { e.stopPropagation(); startConcierge(); }} className="text-[11px] bg-violet-600 text-white px-3 py-1.5 rounded-lg font-bold flex items-center gap-1 cursor-pointer pointer-events-auto">
                     Start Search <ChevronRight className="w-3 h-3" />
@@ -366,11 +366,11 @@ export const CandidateConciergeNode = ({ layerId, layer, isSelected }: { layerId
                 <div className="bg-slate-50 rounded-xl border border-slate-200 p-4 space-y-4">
                   <div>
                     <p className="text-[10px] text-slate-500 font-bold mb-0.5">FROM</p>
-                    <p className="text-[13px] font-medium text-slate-900">{SARAH.fromCity}</p>
+                    <p className="text-[13px] font-medium text-slate-900">{candidateData.fromCity}</p>
                   </div>
                   <div>
                     <p className="text-[10px] text-slate-500 font-bold mb-0.5">TO</p>
-                    <p className="text-[13px] font-medium text-slate-900">{SARAH.toCity}</p>
+                    <p className="text-[13px] font-medium text-slate-900">{candidateData.toCity}</p>
                   </div>
                   <div>
                     <p className="text-[10px] text-slate-500 font-bold mb-0.5">INTERVIEW</p>
@@ -384,14 +384,14 @@ export const CandidateConciergeNode = ({ layerId, layer, isSelected }: { layerId
                 <div className="bg-slate-50 rounded-xl border border-slate-200 p-4">
                   <div className="flex justify-between items-center mb-2">
                     <p className="text-[11px] text-slate-500 font-bold">TOTAL</p>
-                    <p className="text-[13px] font-bold text-slate-900">{SARAH.budget}</p>
+                    <p className="text-[13px] font-bold text-slate-900">{candidateData.budget}</p>
                   </div>
                   <div className="flex justify-between items-center mb-2">
                     <p className="text-[11px] text-slate-500 font-bold">SPENT</p>
                     <p className="text-[13px] font-bold text-violet-600">${spent.toFixed(2)}</p>
                   </div>
                   <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden mt-3">
-                    <div className="bg-violet-500 h-full" style={{ width: `${Math.min(100, (spent / parseFloat(SARAH.budget.replace('$', ''))) * 100)}%` }} />
+                    <div className="bg-violet-500 h-full" style={{ width: `${Math.min(100, (spent / parseFloat(candidateData.budget.replace('$', ''))) * 100)}%` }} />
                   </div>
                 </div>
               </div>
@@ -404,8 +404,8 @@ export const CandidateConciergeNode = ({ layerId, layer, isSelected }: { layerId
           <div className="p-5 flex flex-col h-full overflow-y-auto pointer-events-auto">
             <div className="flex justify-between items-end mb-6">
               <div>
-                <h3 className="font-bold text-[18px] text-slate-900">Stay in {SARAH.toCity.split(',')[0]}</h3>
-                <p className="text-[12px] text-slate-500">{SARAH.checkIn} → {SARAH.checkOut} • 1 guest • 1 room</p>
+                <h3 className="font-bold text-[18px] text-slate-900">Stay in {candidateData.toCity.split(',')[0]}</h3>
+                <p className="text-[12px] text-slate-500">{candidateData.checkIn} → {candidateData.checkOut} • 1 guest • 1 room</p>
               </div>
             </div>
 
@@ -414,7 +414,7 @@ export const CandidateConciergeNode = ({ layerId, layer, isSelected }: { layerId
                 <div className="bg-slate-50 p-8 rounded-2xl border border-slate-200 text-center max-w-sm">
                   <Hotel className="w-12 h-12 text-slate-300 mx-auto mb-4" />
                   <h4 className="font-bold text-slate-700 mb-2">Find Accommodation</h4>
-                  <p className="text-[12px] text-slate-500 mb-6">Ophelia will search for hotels within the {SARAH.budget} budget near the {SARAH.toCity} office.</p>
+                  <p className="text-[12px] text-slate-500 mb-6">Ophelia will search for hotels within the {candidateData.budget} budget near the {candidateData.toCity} office.</p>
                   <button onPointerDown={(e) => { e.stopPropagation(); startConcierge(); }} className="w-full bg-violet-600 hover:bg-violet-700 text-white font-bold py-2.5 rounded-xl cursor-pointer pointer-events-auto">
                     Search Hotels
                   </button>
@@ -501,7 +501,7 @@ export const CandidateConciergeNode = ({ layerId, layer, isSelected }: { layerId
                   <Plane className="w-10 h-10 text-slate-300 mx-auto mb-3" />
                   <h4 className="font-bold text-slate-700 mb-1">Flights</h4>
                   <div className="flex items-center justify-center gap-3 text-slate-600 font-bold text-[13px] mb-4">
-                    <span>{SARAH.fromCode}</span> <ArrowRight className="w-4 h-4 text-slate-400" /> <span>{SARAH.toCode}</span>
+                    <span>{candidateData.fromCode}</span> <ArrowRight className="w-4 h-4 text-slate-400" /> <span>{candidateData.toCode}</span>
                   </div>
                   <button onPointerDown={(e) => { e.stopPropagation(); searchFlights(); }} className="mt-4 w-full bg-violet-600 hover:bg-violet-700 text-white font-bold py-2.5 rounded-xl cursor-pointer pointer-events-auto">
                     Search Flights
@@ -572,7 +572,7 @@ export const CandidateConciergeNode = ({ layerId, layer, isSelected }: { layerId
                 <div className="bg-slate-50 border border-slate-200 rounded-2xl p-8 text-center max-w-sm">
                   <Utensils className="w-10 h-10 text-slate-300 mx-auto mb-3" />
                   <h4 className="font-bold text-slate-700 mb-1">Candidate Dinner</h4>
-                  <p className="text-sm text-slate-500 mb-4">{SARAH.toCity}</p>
+                  <p className="text-sm text-slate-500 mb-4">{candidateData.toCity}</p>
                   <button onPointerDown={(e) => { e.stopPropagation(); searchDining(); }} className="w-full bg-violet-600 hover:bg-violet-700 text-white font-bold py-2.5 rounded-xl cursor-pointer pointer-events-auto">
                     Find Dinner Options
                   </button>
@@ -619,4 +619,4 @@ export const CandidateConciergeNode = ({ layerId, layer, isSelected }: { layerId
       </div>
     </div>
   );
-};
+};

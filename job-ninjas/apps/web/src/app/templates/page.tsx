@@ -106,9 +106,9 @@ export default function AgentTemplatesPage() {
               </p>
 
               <div className="mt-8 pt-6 border-t border-slate-100">
-                <button className="text-[13px] font-bold text-slate-900 flex items-center gap-2 group-hover:text-indigo-600 transition-colors">
+                <Link href="/workflows/new" className="text-[13px] font-bold text-slate-900 flex items-center gap-2 group-hover:text-indigo-600 transition-colors">
                   Add to Canvas <ArrowRight className="w-3.5 h-3.5" />
-                </button>
+                </Link>
               </div>
             </div>
           ))}

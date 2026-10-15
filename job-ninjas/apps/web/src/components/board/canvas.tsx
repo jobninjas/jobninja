@@ -94,7 +94,21 @@ export const Canvas = ({ boardId }: { boardId: string }) => {
   const insertTemplate = useBoardStore(state => state.insertTemplate);
   
   const roles = useDemoStore(state => state.roles);
-  const currentRole = roles.find(r => r.id === boardId);
+  const [roleData, setRoleData] = useState<any>(null);
+
+  useEffect(() => {
+    if (!boardId || boardId === 'new-workflow') return;
+    fetch('/api/roles')
+      .then(res => res.json())
+      .then(data => {
+        const rolesList = Array.isArray(data) ? data : data?.roles || [];
+        const match = rolesList.find((r: any) => r.id === boardId);
+        if (match) setRoleData(match);
+      })
+      .catch(console.error);
+  }, [boardId]);
+
+  const currentRole = roleData || roles.find(r => r.id === boardId);
 
   const getInitialConfig = (roleType?: string) => {
     if (!roleType) return undefined;
@@ -143,6 +157,17 @@ export const Canvas = ({ boardId }: { boardId: string }) => {
     const incomingEdges = Object.values(edges).filter(e => e.toNodeId === layerId);
     const upstreamNodeIds = incomingEdges.map(e => e.fromNodeId);
 
+    let activeCandId = window.localStorage.getItem('activeCandidateId') || '';
+    if (!activeCandId) {
+      for (const upId of upstreamNodeIds) {
+        const upLayer = layers[upId];
+        if (upLayer?.config?.candidateId) {
+          activeCandId = upLayer.config.candidateId;
+          break;
+        }
+      }
+    }
+
     try {
       const response = await fetch('/api/agents/execute', {
         method: 'POST',
@@ -151,7 +176,7 @@ export const Canvas = ({ boardId }: { boardId: string }) => {
           nodeId: layerId,
           agentType: layer.agentRole,
           roleId: currentRole?.id || boardId, 
-          candidateId: window.localStorage.getItem('activeCandidateId') || '',
+          candidateId: activeCandId,
           upstreamNodeIds
         })
       });

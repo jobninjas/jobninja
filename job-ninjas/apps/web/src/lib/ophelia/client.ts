@@ -270,7 +270,7 @@ export class OpheliaClient {
       party_size: 1,
       check_in: '2026-10-14',
       check_out: '2026-10-15',
-      customer: { name: candidateDetails.name || 'Sarah Chen', email: candidateDetails.email || 'sarah.chen@example.com' },
+      customer: { name: candidateDetails.name || 'Candidate', email: candidateDetails.email || 'candidate@company.com' },
       idempotency_key: `jobninja_${Date.now()}`
     });
 

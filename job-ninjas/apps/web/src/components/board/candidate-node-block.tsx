@@ -2,6 +2,13 @@ import React from 'react';
 import { UserCheck, MapPin, DollarSign, Calendar } from 'lucide-react';
 
 export const CandidateNodeBlock = ({ layer, isSelected }: { layer: any, isSelected: boolean }) => {
+  const candidateName = layer.config?.candidateName || layer.value || 'Candidate';
+  const fromLocation = layer.config?.fromLocation || 'Remote / Not specified';
+  const toLocation = layer.config?.toLocation || 'Onsite';
+  const date = layer.config?.date;
+  const budget = layer.config?.budget;
+  const status = layer.config?.status || 'Active Candidate';
+
   return (
     <div 
       className={`w-full h-full rounded-xl border-2 flex flex-col overflow-hidden bg-card shadow-xl ${
@@ -14,8 +21,8 @@ export const CandidateNodeBlock = ({ layer, isSelected }: { layer: any, isSelect
             <UserCheck className="w-4 h-4" />
           </div>
           <div>
-            <h3 className="font-bold text-sm text-foreground">{layer.config?.candidateName || 'Sarah Chen'}</h3>
-            <p className="text-[10px] uppercase font-semibold text-pink-600 dark:text-pink-400">{layer.config?.status || 'Final Interview'}</p>
+            <h3 className="font-bold text-sm text-foreground">{candidateName}</h3>
+            <p className="text-[10px] uppercase font-semibold text-pink-600 dark:text-pink-400">{status}</p>
           </div>
         </div>
       </div>
@@ -23,20 +30,26 @@ export const CandidateNodeBlock = ({ layer, isSelected }: { layer: any, isSelect
         <div className="space-y-2">
           <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
             <MapPin className="w-4 h-4" />
-            <span>From: <b>{layer.config?.fromLocation || 'Atlanta, GA'}</b></span>
+            <span>Origin: <b>{fromLocation}</b></span>
           </div>
-          <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
-            <MapPin className="w-4 h-4 text-rose-500" />
-            <span>To: <b>{layer.config?.toLocation || 'New York, NY'}</b></span>
-          </div>
-          <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
-            <Calendar className="w-4 h-4" />
-            <span>{layer.config?.date || 'October 15, 2026 • 10:00 AM'}</span>
-          </div>
-          <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
-            <DollarSign className="w-4 h-4" />
-            <span>Budget: <b>${layer.config?.budget || '800'}</b></span>
-          </div>
+          {toLocation && (
+            <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+              <MapPin className="w-4 h-4 text-rose-500" />
+              <span>Destination: <b>{toLocation}</b></span>
+            </div>
+          )}
+          {date && (
+            <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+              <Calendar className="w-4 h-4" />
+              <span>Interview: <b>{date}</b></span>
+            </div>
+          )}
+          {budget && (
+            <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+              <DollarSign className="w-4 h-4" />
+              <span>Budget: <b>${budget}</b></span>
+            </div>
+          )}
         </div>
         
         {layer.status === 'Onsite Ready' && (

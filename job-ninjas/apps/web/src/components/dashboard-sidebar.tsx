@@ -11,9 +11,10 @@ import {
 import { useState } from "react";
 
 const mainNav = [
-  { name: "Home", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Recent", href: "/roles", icon: Clock },
-  { name: "Starred", href: "/roles?filter=starred", icon: Star },
+  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { name: "Roles & Boards", href: "/roles", icon: Briefcase },
+  { name: "Candidates", href: "/candidates", icon: Users },
+  { name: "Workflows", href: "/workflows", icon: Workflow },
 ];
 
 const spaces = [

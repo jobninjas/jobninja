@@ -20,7 +20,7 @@ export async function POST(request: Request) {
         party_size: payload.party_size || 1,
         check_in: payload.check_in || '2026-10-14',
         check_out: payload.check_out || '2026-10-15',
-        customer: payload.customer || { name: candidateDetails?.name || 'Sarah Chen', email: candidateDetails?.email || 'sarah.chen@example.com' },
+        customer: payload.customer || { name: candidateDetails?.name || 'Candidate', email: candidateDetails?.email || 'candidate@company.com' },
         idempotency_key: payload.idempotency_key || `jobninja_${Date.now()}`
       });
       return NextResponse.json({ ...result, practiceMode: ophelia.practiceMode });
