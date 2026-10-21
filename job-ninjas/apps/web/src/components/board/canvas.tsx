@@ -9,7 +9,8 @@ import { ZoomControls } from './zoom-controls';
 import { LibraryModal } from './library-modal';
 import { getStroke } from 'perfect-freehand';
 import Link from 'next/link';
-import { Play, Loader2, Plus, X, Bot, LayoutTemplate, Trash2, Upload, Plug, Mail, Calendar, MessageSquare, Database, Workflow, CheckCircle, FileText, ChevronRight, ArrowLeft, Presentation, Maximize, ChevronLeft } from 'lucide-react';
+import { Play, Loader2, Plus, X, Bot, LayoutTemplate, Trash2, Upload, Plug, Mail, Calendar, MessageSquare, Database, Workflow, CheckCircle, FileText, ChevronRight, ArrowLeft, Presentation, Maximize, ChevronLeft, Sparkles } from 'lucide-react';
+import { getNodeSpec } from '@/lib/agents/node-specs';
 import { SelectionBox } from './selection-box';
 import { resizeBounds } from '@/lib/geometry';
 import { Side, XYWH } from '@/types/canvas';
@@ -141,30 +142,43 @@ export const Canvas = ({ boardId }: { boardId: string }) => {
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleRunSingleAgent = async (layerId: string) => {
+  const handleRunSingleAgent = async (layerId: string): Promise<boolean> => {
     const layer = layers[layerId];
-    if (!layer || layer.type !== LayerType.Agent) return;
+    if (!layer || layer.type !== LayerType.Agent) return false;
     
-    // Inputs, human gates, and outputs don't "run" the same way in MVP
+    // Non-agent nodes (e.g. input nodes, human gates) succeed immediately
     if (!layer.agentRole?.startsWith('agent-')) {
        updateLayer(layerId, { status: 'success' });
-       return;
+       return true;
     }
 
-    updateLayer(layerId, { status: 'running', errorDetails: null });
+    updateLayer(layerId, { status: 'running', errorDetails: undefined });
     
     // Find incoming edges
     const incomingEdges = Object.values(edges).filter(e => e.toNodeId === layerId);
     const upstreamNodeIds = incomingEdges.map(e => e.fromNodeId);
 
-    let activeCandId = window.localStorage.getItem('activeCandidateId') || '';
+    let activeCandId = typeof window !== 'undefined' ? window.localStorage.getItem('activeCandidateId') || '' : '';
     if (!activeCandId) {
       for (const upId of upstreamNodeIds) {
-        const upLayer = layers[upId];
+        const upLayer = layers[upId] as any;
         if (upLayer?.config?.candidateId) {
           activeCandId = upLayer.config.candidateId;
           break;
         }
+      }
+    }
+
+    // Collect latest client outputs from upstream layers
+    const clientUpstreamOutputs: Record<string, any> = {};
+    for (const upId of upstreamNodeIds) {
+      const upLayer = layers[upId] as any;
+      if (upLayer?.outputData) {
+        if (upLayer.agentRole === 'agent-resume') clientUpstreamOutputs['ResumeAnalysis'] = upLayer.outputData;
+        if (upLayer.agentRole === 'agent-interview-plan') clientUpstreamOutputs['InterviewPlan'] = upLayer.outputData;
+        if (upLayer.agentRole === 'agent-interview-analysis') clientUpstreamOutputs['InterviewAnalysis'] = upLayer.outputData;
+        if (upLayer.agentRole === 'agent-decision') clientUpstreamOutputs['CandidateDecision'] = upLayer.outputData;
+        if (upLayer.agentRole === 'agent-concierge') clientUpstreamOutputs['ConciergeItinerary'] = upLayer.outputData;
       }
     }
 
@@ -177,48 +191,35 @@ export const Canvas = ({ boardId }: { boardId: string }) => {
           agentType: layer.agentRole,
           roleId: currentRole?.id || boardId, 
           candidateId: activeCandId,
-          upstreamNodeIds
+          upstreamNodeIds,
+          clientUpstreamOutputs
         })
       });
 
       const data = await response.json();
       
-      if (response.ok) {
+      if (response.ok && data.status !== 'ERROR' && data.status !== 'BLOCKED') {
         updateLayer(layerId, { 
           status: 'success', 
-          output: data.output,
-          // Store output visually in a note or just show green
+          outputData: data.output,
+          inputData: data.input,
+          executionTimeMs: data.executionTimeMs,
+          runId: data.runId,
+          errorDetails: undefined
         });
-        
-        // MVP Visual Output: create a sticky note below it to display the result
-        const outEdges = Object.values(edges).filter(e => e.fromNodeId === layerId);
-        const connectedNotes = outEdges.map(e => layers[e.toNodeId]).filter(l => l?.type === LayerType.Note);
-        const noteX = layer.x + (layer.width || 250) + 100;
-        const noteY = layer.y + (connectedNotes.length * 170);
-        
-        const noteId = insertLayer(LayerType.Note, { x: noteX, y: noteY }, { r: 217, g: 249, b: 157 });
-        updateLayer(noteId, { 
-          value: `[REAL AGENT EXECUTION]\n\nType: ${layer.agentRole}\nStatus: SUCCESS\n\nOutput:\n${JSON.stringify(data.output, null, 2).substring(0, 300)}...`,
-          width: 320,
-          height: 250
-        });
-        insertEdge(layerId, noteId);
-        
+        return true;
       } else {
-        updateLayer(layerId, { status: 'error', errorDetails: data.error || data.missingInputs?.join(', ') });
-        
-        const noteX = layer.x + (layer.width || 250) + 100;
-        const noteY = layer.y;
-        const noteId = insertLayer(LayerType.Note, { x: noteX, y: noteY }, { r: 254, g: 202, b: 202 });
-        updateLayer(noteId, { 
-          value: `[EXECUTION FAILED]\n\nError: ${data.error}\nMissing: ${data.missingInputs?.join(', ')}`,
-          width: 300,
-          height: 160
+        updateLayer(layerId, { 
+          status: 'error', 
+          errorDetails: data.error || data.missingInputs?.join(', ') || 'Execution failed',
+          inputData: data.input,
+          executionTimeMs: data.executionTimeMs
         });
-        insertEdge(layerId, noteId);
+        return false;
       }
     } catch (e: any) {
       updateLayer(layerId, { status: 'error', errorDetails: e.message });
+      return false;
     }
   };
 
@@ -286,31 +287,30 @@ export const Canvas = ({ boardId }: { boardId: string }) => {
     const gap = 340;
 
     if (templateId === 'standard') {
-      const n1 = insertLayer(LayerType.Agent, { x: cx, y: cy }, { r: 255, g: 255, b: 255 }, undefined, 'entry-node', undefined, getInitialConfig('entry-node'));
-      const n2 = insertLayer(LayerType.Agent, { x: cx + gap, y: cy }, { r: 255, g: 255, b: 255 }, undefined, 'resume-verifier', undefined, getInitialConfig('resume-verifier'));
-      const n3 = insertLayer(LayerType.Agent, { x: cx + gap * 2, y: cy }, { r: 255, g: 255, b: 255 }, undefined, 'interview-topic-generator', undefined, getInitialConfig('interview-topic-generator'));
-      const n4 = insertLayer(LayerType.Agent, { x: cx + gap * 3, y: cy }, { r: 255, g: 255, b: 255 }, undefined, 'offer-negotiator', undefined, getInitialConfig('offer-negotiator'));
-      const n5 = insertLayer(LayerType.Agent, { x: cx + gap * 4, y: cy }, { r: 255, g: 255, b: 255 }, undefined, 'onboarding-agent', undefined, getInitialConfig('onboarding-agent'));
-      insertEdge(n1, n2); insertEdge(n2, n3); insertEdge(n3, n4); insertEdge(n4, n5);
+      const n1 = insertLayer(LayerType.Agent, { x: cx, y: cy }, { r: 255, g: 255, b: 255 }, undefined, 'input-job-details', undefined, getInitialConfig('entry-node'));
+      const n2 = insertLayer(LayerType.Agent, { x: cx + gap, y: cy }, { r: 255, g: 255, b: 255 }, undefined, 'agent-resume', undefined, getInitialConfig('agent-resume'));
+      const n3 = insertLayer(LayerType.Agent, { x: cx + gap * 2, y: cy }, { r: 255, g: 255, b: 255 }, undefined, 'agent-interview-plan', undefined, getInitialConfig('agent-interview-plan'));
+      const n4 = insertLayer(LayerType.Agent, { x: cx + gap * 3, y: cy }, { r: 255, g: 255, b: 255 }, undefined, 'agent-interview-analysis', undefined, getInitialConfig('agent-interview-analysis'));
+      const n5 = insertLayer(LayerType.Agent, { x: cx + gap * 4, y: cy }, { r: 255, g: 255, b: 255 }, undefined, 'agent-decision', undefined, getInitialConfig('agent-decision'));
+      const n6 = insertLayer(LayerType.Agent, { x: cx + gap * 5, y: cy }, { r: 255, g: 255, b: 255 }, undefined, 'agent-concierge', undefined, getInitialConfig('agent-concierge'));
+      insertEdge(n1, n2); insertEdge(n2, n3); insertEdge(n3, n4); insertEdge(n4, n5); insertEdge(n5, n6);
     } else if (templateId === 'tech') {
-      const n1 = insertLayer(LayerType.Agent, { x: cx, y: cy }, { r: 255, g: 255, b: 255 }, undefined, 'entry-node', undefined, getInitialConfig('entry-node'));
-      const n2 = insertLayer(LayerType.Agent, { x: cx + gap, y: cy }, { r: 255, g: 255, b: 255 }, undefined, 'resume-verifier', undefined, getInitialConfig('resume-verifier'));
-      const n3 = insertLayer(LayerType.Agent, { x: cx + gap * 2, y: cy }, { r: 255, g: 255, b: 255 }, undefined, 'tech-assessor', undefined, getInitialConfig('tech-assessor'));
-      const n4 = insertLayer(LayerType.Agent, { x: cx + gap * 3, y: cy }, { r: 255, g: 255, b: 255 }, undefined, 'transcript-analyzer', undefined, getInitialConfig('transcript-analyzer'));
-      const n5 = insertLayer(LayerType.Agent, { x: cx + gap * 4, y: cy }, { r: 255, g: 255, b: 255 }, undefined, 'candidate-ranker', undefined, getInitialConfig('candidate-ranker'));
+      const n1 = insertLayer(LayerType.Agent, { x: cx, y: cy }, { r: 255, g: 255, b: 255 }, undefined, 'input-job-details', undefined, getInitialConfig('entry-node'));
+      const n2 = insertLayer(LayerType.Agent, { x: cx + gap, y: cy }, { r: 255, g: 255, b: 255 }, undefined, 'agent-resume', undefined, getInitialConfig('agent-resume'));
+      const n3 = insertLayer(LayerType.Agent, { x: cx + gap * 2, y: cy }, { r: 255, g: 255, b: 255 }, undefined, 'agent-interview-plan', undefined, getInitialConfig('agent-interview-plan'));
+      const n4 = insertLayer(LayerType.Agent, { x: cx + gap * 3, y: cy }, { r: 255, g: 255, b: 255 }, undefined, 'agent-interview-analysis', undefined, getInitialConfig('agent-interview-analysis'));
+      const n5 = insertLayer(LayerType.Agent, { x: cx + gap * 4, y: cy }, { r: 255, g: 255, b: 255 }, undefined, 'agent-decision', undefined, getInitialConfig('agent-decision'));
       insertEdge(n1, n2); insertEdge(n2, n3); insertEdge(n3, n4); insertEdge(n4, n5);
     } else if (templateId === 'highvolume') {
-      const n1 = insertLayer(LayerType.Agent, { x: cx, y: cy }, { r: 255, g: 255, b: 255 }, undefined, 'sourcing-agent', undefined, getInitialConfig('sourcing-agent'));
-      const n2 = insertLayer(LayerType.Agent, { x: cx + gap, y: cy - 80 }, { r: 255, g: 255, b: 255 }, undefined, 'resume-verifier', undefined, getInitialConfig('resume-verifier'));
-      const n3 = insertLayer(LayerType.Agent, { x: cx + gap, y: cy + 80 }, { r: 255, g: 255, b: 255 }, undefined, 'background-checker', undefined, getInitialConfig('background-checker'));
-      const n4 = insertLayer(LayerType.Agent, { x: cx + gap * 2, y: cy }, { r: 255, g: 255, b: 255 }, undefined, 'candidate-ranker', undefined, getInitialConfig('candidate-ranker'));
-      const n5 = insertLayer(LayerType.Agent, { x: cx + gap * 3, y: cy }, { r: 255, g: 255, b: 255 }, undefined, 'offer-negotiator', undefined, getInitialConfig('offer-negotiator'));
-      insertEdge(n1, n2); insertEdge(n1, n3); insertEdge(n2, n4); insertEdge(n3, n4); insertEdge(n4, n5);
+      const n1 = insertLayer(LayerType.Agent, { x: cx, y: cy }, { r: 255, g: 255, b: 255 }, undefined, 'input-candidate', undefined, getInitialConfig('input-candidate'));
+      const n2 = insertLayer(LayerType.Agent, { x: cx + gap, y: cy }, { r: 255, g: 255, b: 255 }, undefined, 'agent-resume', undefined, getInitialConfig('agent-resume'));
+      const n3 = insertLayer(LayerType.Agent, { x: cx + gap * 2, y: cy }, { r: 255, g: 255, b: 255 }, undefined, 'gate-shortlist', undefined, getInitialConfig('gate-shortlist'));
+      const n4 = insertLayer(LayerType.Agent, { x: cx + gap * 3, y: cy }, { r: 255, g: 255, b: 255 }, undefined, 'agent-decision', undefined, getInitialConfig('agent-decision'));
+      insertEdge(n1, n2); insertEdge(n2, n3); insertEdge(n3, n4);
     }
   }, [insertLayer, insertEdge, currentRole]);
 
-  // Workflow orchestration engine
-  // Workflow orchestration engine
+  // Workflow orchestration engine - True DAG Topological Execution (n8n paradigm)
   const runWorkflow = async () => {
     if (isRunning) return;
     setIsRunning(true);
@@ -321,14 +321,69 @@ export const Canvas = ({ boardId }: { boardId: string }) => {
       return;
     }
 
-    // Reset status
-    agentIds.forEach(id => updateLayer(id, { status: 'idle', result: undefined }));
+    // Reset status of all nodes
+    agentIds.forEach(id => updateLayer(id, { status: 'idle', errorDetails: undefined }));
+
+    // Build DAG adjacency and in-degree map
+    const inDegree: Record<string, number> = {};
+    const adj: Record<string, string[]> = {};
     
-    // Very naive topological execution for MVP: run left to right based on X coordinate
-    const sortedAgentIds = [...agentIds].sort((a, b) => layers[a].x - layers[b].x);
+    agentIds.forEach(id => {
+      inDegree[id] = 0;
+      adj[id] = [];
+    });
+
+    Object.values(edges).forEach(edge => {
+      if (inDegree[edge.toNodeId] !== undefined && adj[edge.fromNodeId] !== undefined) {
+        inDegree[edge.toNodeId]++;
+        adj[edge.fromNodeId].push(edge.toNodeId);
+      }
+    });
+
+    // Nodes with in-degree 0 are ready to execute first
+    const readyQueue: string[] = agentIds.filter(id => inDegree[id] === 0);
     
-    for (const id of sortedAgentIds) {
-      await handleRunSingleAgent(id);
+    // Fallback: If no node has in-degree 0 (e.g. cycles), sort by x coordinate
+    if (readyQueue.length === 0) {
+      readyQueue.push(...[...agentIds].sort((a, b) => (layers[a]?.x || 0) - (layers[b]?.x || 0)));
+    }
+
+    const executed = new Set<string>();
+    const failed = new Set<string>();
+
+    while (readyQueue.length > 0) {
+      const currentId = readyQueue.shift()!;
+      if (executed.has(currentId)) continue;
+
+      // Check if any upstream node failed
+      const upstreamEdges = Object.values(edges).filter(e => e.toNodeId === currentId);
+      const hasFailedUpstream = upstreamEdges.some(e => failed.has(e.fromNodeId));
+
+      if (hasFailedUpstream) {
+        updateLayer(currentId, { 
+          status: 'error', 
+          errorDetails: 'Blocked: Upstream node execution failed.' 
+        });
+        failed.add(currentId);
+        executed.add(currentId);
+        continue;
+      }
+
+      // Execute current node
+      const success = await handleRunSingleAgent(currentId);
+      executed.add(currentId);
+
+      if (!success) {
+        failed.add(currentId);
+      } else {
+        // Decrement in-degree of downstream neighbors
+        for (const neighborId of adj[currentId] || []) {
+          inDegree[neighborId]--;
+          if (inDegree[neighborId] <= 0 && !executed.has(neighborId)) {
+            readyQueue.push(neighborId);
+          }
+        }
+      }
     }
 
     setIsRunning(false);
@@ -579,6 +634,7 @@ export const Canvas = ({ boardId }: { boardId: string }) => {
     if (!layer) return null;
     
     const isSelected = (selections['local-user'] || []).includes(layerId);
+    const nodeSpec = getNodeSpec(layer.agentRole);
     
     return (
       <g 
@@ -759,79 +815,148 @@ export const Canvas = ({ boardId }: { boardId: string }) => {
               </div>
             ) : (
             <div 
-              className={`w-full h-full rounded-2xl border flex flex-col overflow-hidden bg-white/95 backdrop-blur-xl shadow-xl transition-all duration-300 ${
-                isSelected ? 'border-indigo-500 ring-4 ring-indigo-500/10 shadow-indigo-500/20 scale-[1.02] z-50' : 'border-slate-200 shadow-slate-200/50 hover:shadow-slate-300/50 hover:border-slate-300'
+              className={`w-full h-full rounded-2xl border flex flex-col overflow-visible bg-white/95 backdrop-blur-xl shadow-lg transition-all duration-200 relative group/node ${
+                isSelected 
+                  ? 'border-indigo-500 ring-4 ring-indigo-500/15 shadow-indigo-500/20 scale-[1.01] z-30' 
+                  : 'border-slate-200/90 hover:border-slate-300 hover:shadow-xl'
               }`}
             >
-              <div className="bg-slate-50/80 backdrop-blur-md px-4 py-3 border-b border-slate-100 flex items-center justify-between">
+              {/* Left Input Port Connector (n8n port dot) */}
+              <div
+                className="absolute -left-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-white border-2 border-slate-300 hover:border-indigo-600 flex items-center justify-center cursor-crosshair z-30 transition-transform hover:scale-110 shadow-xs group/inport pointer-events-auto"
+                title="Input Port (Connect upstream node)"
+                onPointerDown={(e) => {
+                  e.stopPropagation();
+                  if (canvasState.mode === CanvasMode.Connecting && canvasState.fromNodeId && canvasState.fromNodeId !== layerId) {
+                    insertEdge(canvasState.fromNodeId, layerId);
+                    setCanvasState({ mode: CanvasMode.None });
+                  }
+                }}
+              >
+                <div className="w-2 h-2 rounded-full bg-slate-400 group-hover/inport:bg-indigo-600" />
+              </div>
+
+              {/* Right Output Port Connector (n8n port dot) */}
+              <div
+                className="absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-white border-2 border-indigo-500 hover:border-indigo-700 flex items-center justify-center cursor-crosshair z-30 transition-transform hover:scale-110 shadow-xs group/outport pointer-events-auto"
+                title="Output Port (Drag or click to connect downstream node)"
+                onPointerDown={(e) => {
+                  e.stopPropagation();
+                  setCanvasState({
+                    mode: CanvasMode.Connecting,
+                    fromNodeId: layerId,
+                    currentPoint: { x: layer.x + (layer.width || 250), y: layer.y + (layer.height || 164) / 2 }
+                  });
+                }}
+              >
+                <div className="w-2 h-2 rounded-full bg-indigo-600 group-hover/outport:scale-125 transition-transform" />
+              </div>
+
+              {/* Node Header */}
+              <div className="px-3.5 py-2.5 bg-slate-50/90 rounded-t-2xl border-b border-slate-100 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  {(() => {
-                    const meta = AGENTS.find(a => a.role === layer.agentRole) || AGENTS.find(a => a.role === 'custom-agent');
-                    const Icon = meta?.icon;
-                    return (
-                      <>
-                        <div className={`p-1.5 rounded-md ${meta?.bg} ${meta?.color}`}>
-                          {Icon ? <Icon className="w-4 h-4" /> : <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg>}
-                        </div>
-                        <span className="font-bold text-[13px] text-slate-700 capitalize tracking-tight">
-                          {meta?.label || layer.agentRole?.replace('-', ' ') || 'AI Agent'}
-                        </span>
-                      </>
-                    );
-                  })()}
+                  <div className={`p-1.5 rounded-lg border text-xs ${nodeSpec.bg} ${nodeSpec.color} flex items-center justify-center`}>
+                    <Sparkles className="w-3.5 h-3.5" />
+                  </div>
+                  <span className={`text-[10px] font-extrabold uppercase px-1.5 py-0.5 rounded-md border ${nodeSpec.bg} ${nodeSpec.color}`}>
+                    {nodeSpec.category}
+                  </span>
                 </div>
-                {/* Status indicator */}
+
+                {/* Status Indicator Pill */}
                 <div className="flex items-center gap-1.5">
-                  <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">{layer.status || 'IDLE'}</span>
-                  <div className={`w-2 h-2 rounded-full ${
-                    layer.status === 'running' ? 'bg-blue-500 animate-pulse' :
-                    layer.status === 'success' ? 'bg-emerald-500' :
-                    layer.status === 'error' ? 'bg-red-500' :
-                    'bg-slate-300'
-                  }`} />
+                  {layer.status === 'running' && (
+                    <span className="flex items-center gap-1 text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-200 animate-pulse">
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                      Running
+                    </span>
+                  )}
+                  {layer.status === 'success' && (
+                    <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                      ✓ {layer.executionTimeMs ? `${(layer.executionTimeMs / 1000).toFixed(1)}s` : 'Done'}
+                    </span>
+                  )}
+                  {layer.status === 'error' && (
+                    <span className="flex items-center gap-1 text-[10px] font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded-md border border-rose-200">
+                      ✕ Error
+                    </span>
+                  )}
+                  {(!layer.status || layer.status === 'idle') && (
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                      Idle
+                    </span>
+                  )}
                 </div>
               </div>
-              <div className="flex-1 p-4 flex flex-col justify-between bg-white">
-                <div className="mb-2">
-                  <h4 className="font-extrabold text-slate-900 text-[17px] mb-1 leading-tight">{layer.value || 'AI Agent'}</h4>
-                  <p className="text-xs text-muted-foreground line-clamp-2">
-                    {layer.result ? 'Result available' : 'Waiting for input to process.'}
+
+              {/* Node Body */}
+              <div className="flex-1 px-4 py-3 flex flex-col justify-between bg-white rounded-b-2xl">
+                <div>
+                  <h4 className="font-bold text-slate-900 text-[14px] leading-tight mb-1">
+                    {layer.value || nodeSpec.displayName}
+                  </h4>
+                  <p className="text-[11px] text-slate-500 line-clamp-2 leading-snug">
+                    {layer.outputData ? (
+                      layer.agentRole === 'agent-resume' 
+                        ? `Score: ${layer.outputData.overallMatch}% • ${layer.outputData.skills?.length || 0} skills verified`
+                        : layer.agentRole === 'agent-interview-plan'
+                        ? `${layer.outputData.sections?.length || 0} stages • ${layer.outputData.durationMinutes || 60}m`
+                        : 'Structured output ready'
+                    ) : (
+                      nodeSpec.subtitle
+                    )}
                   </p>
                 </div>
-                <div className="flex justify-end gap-2 mt-2">
-                  {layer.agentRole !== 'word-doc' && layer.agentRole !== 'excel-doc' && layer.agentRole !== 'entry-node' && (
-                    <button 
-                      onClick={(e) => { e.stopPropagation(); handleRunSingleAgent(layerId); }}
-                      disabled={layer.status === 'running'}
-                      className="px-4 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 disabled:bg-emerald-50/50 disabled:text-emerald-600/50 text-[13px] font-bold rounded-lg transition-colors flex items-center gap-1.5"
-                    >
-                      {layer.status === 'running' ? <Loader2 className="w-3 h-3 animate-spin" /> : <Play className="w-3 h-3 fill-current" />}
-                      Run
-                    </button>
-                  )}
-                  {(layer.agentRole === 'word-doc' || layer.agentRole === 'excel-doc') && (
-                    <button 
-                      onPointerDown={(e) => { 
-                        e.stopPropagation(); 
-                        updateLayer(layerId, {
-                          type: LayerType.Slide,
-                          width: 800,
-                          height: 450,
-                          fileSrc: layer.config?.docUrl || undefined,
-                          fileName: layer.value || 'Document',
-                          agentRole: undefined,
-                          status: undefined
-                        } as any);
-                      }}
-                      className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 text-sm font-semibold rounded transition-colors flex items-center gap-1 cursor-pointer pointer-events-auto"
-                    >
-                      <Maximize className="w-3 h-3" />
-                      View Mode
-                    </button>
-                  )}
-                  <button className="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 text-sm font-semibold rounded transition-colors">
-                    Configure
+
+                {/* Node Action Footer */}
+                <div className="flex items-center justify-between pt-2 border-t border-slate-100 mt-2">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setInspectedNodeId(layerId);
+                    }}
+                    className="text-xs font-semibold text-slate-600 hover:text-indigo-600 transition-colors pointer-events-auto cursor-pointer"
+                  >
+                    Inspector
                   </button>
+
+                  <div className="flex items-center gap-1.5">
+                    {(layer.agentRole === 'word-doc' || layer.agentRole === 'excel-doc') && (
+                      <button 
+                        onPointerDown={(e) => { 
+                          e.stopPropagation(); 
+                          updateLayer(layerId, {
+                            type: LayerType.Slide,
+                            width: 800,
+                            height: 450,
+                            fileSrc: layer.config?.docUrl || undefined,
+                            fileName: layer.value || 'Document',
+                            agentRole: undefined,
+                            status: undefined
+                          } as any);
+                        }}
+                        className="px-2 py-1 bg-blue-50 hover:bg-blue-100 text-blue-600 text-xs font-semibold rounded-lg transition-colors flex items-center gap-1 cursor-pointer pointer-events-auto"
+                      >
+                        <Maximize className="w-3 h-3" />
+                        View
+                      </button>
+                    )}
+
+                    {layer.agentRole?.startsWith('agent-') && (
+                      <button 
+                        onClick={(e) => { 
+                          e.stopPropagation(); 
+                          handleRunSingleAgent(layerId); 
+                        }}
+                        disabled={layer.status === 'running'}
+                        className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 disabled:bg-slate-100 disabled:text-slate-400 text-xs font-bold rounded-lg transition-colors flex items-center gap-1 pointer-events-auto cursor-pointer"
+                        title="Test step"
+                      >
+                        {layer.status === 'running' ? <Loader2 className="w-3 h-3 animate-spin" /> : <Play className="w-3 h-3 fill-current" />}
+                        Test step
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>

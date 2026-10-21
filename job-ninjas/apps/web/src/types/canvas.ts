@@ -84,6 +84,11 @@ export type AgentLayer = {
   result?: string // JSON string or text result
   value?: string // Name of the agent
   config?: any // To store properties like jobTitle, jobDescription
+  outputData?: any
+  inputData?: any
+  executionTimeMs?: number
+  errorDetails?: string
+  runId?: string
 }
 
 export type ImageLayer = {

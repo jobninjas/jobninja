@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { CanvasMode, CanvasState, Color, Layer, LayerType, Point, XYWH, Side, Edge } from '@/types/canvas';
+import { getNodeSpec } from '@/lib/agents/node-specs';
 
 interface BoardState {
   layerIds: string[];
@@ -50,7 +51,8 @@ export const useBoardStore = create<BoardState>((set, get) => ({
     const id = Math.random().toString(36).substring(7);
     const width = layerType === LayerType.Agent ? 250 : layerType === LayerType.Slide ? 800 : 100;
     const height = layerType === LayerType.Agent ? 164 : layerType === LayerType.Slide ? 450 : 100;
-    const defaultAgentValue = agentRole ? agentRole.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : 'Custom Agent';
+    const nodeSpec = agentRole ? getNodeSpec(agentRole) : null;
+    const defaultAgentValue = nodeSpec ? nodeSpec.displayName : (agentRole ? agentRole.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : 'Custom Agent');
     
     const newLayer = {
       type: layerType,
@@ -116,57 +118,47 @@ export const useBoardStore = create<BoardState>((set, get) => ({
       };
 
       if (templateId === 'ultimate-recruiter' || templateId === 'standard') {
-        const inputId = addNode(LayerType.Agent, startPos.x, startPos.y, 'Input / Job Details', 'entry-node');
-        const dbId = addNode(LayerType.Agent, startPos.x, startPos.y + 180, 'Database Connector', 'database-connector');
+        const inputId = addNode(LayerType.Agent, startPos.x, startPos.y, 'Job Details', 'input-job-details');
+        const resumeId = addNode(LayerType.Agent, startPos.x + 350, startPos.y, 'Resume Intelligence', 'agent-resume');
+        const gateId = addNode(LayerType.Agent, startPos.x + 700, startPos.y, 'Shortlist Gate', 'gate-shortlist');
+        const interviewGenId = addNode(LayerType.Agent, startPos.x + 1050, startPos.y, 'Interview Planning', 'agent-interview-plan');
+        const transcriptId = addNode(LayerType.Agent, startPos.x + 1400, startPos.y, 'Interview Analysis', 'agent-interview-analysis');
+        const decisionId = addNode(LayerType.Agent, startPos.x + 1750, startPos.y, 'Candidate Decision', 'agent-decision');
+        const conciergeId = addNode(LayerType.Agent, startPos.x + 2100, startPos.y, 'Candidate Concierge', 'agent-concierge');
         
-        const sourceId = addNode(LayerType.Agent, startPos.x + 350, startPos.y, 'Sourcing Agent', 'sourcing-agent');
-        const resumeId = addNode(LayerType.Agent, startPos.x + 700, startPos.y, 'Resume Verifier', 'resume-verifier');
-        const techId = addNode(LayerType.Agent, startPos.x + 700, startPos.y + 180, 'Tech Assessor', 'tech-assessor');
-        
-        const interviewGenId = addNode(LayerType.Agent, startPos.x + 1050, startPos.y, 'Interview Topic Gen', 'interview-topic-generator');
-        const cultureId = addNode(LayerType.Agent, startPos.x + 1050, startPos.y + 180, 'Culture Fit Interviewer', 'culture-fit-interviewer');
-        const transcriptId = addNode(LayerType.Agent, startPos.x + 1400, startPos.y, 'Transcript Analyzer', 'transcript-analyzer');
-        
-        const rankerId = addNode(LayerType.Agent, startPos.x + 1750, startPos.y, 'Candidate Ranker', 'candidate-ranker');
-        
-        const offerId = addNode(LayerType.Agent, startPos.x + 2100, startPos.y, 'Offer Negotiator', 'offer-negotiator');
-        const onboardId = addNode(LayerType.Agent, startPos.x + 2450, startPos.y, 'Onboarding Agent', 'onboarding-agent');
-        
-        addEdge(inputId, sourceId);
-        addEdge(dbId, sourceId);
-        addEdge(sourceId, resumeId);
-        addEdge(resumeId, techId);
-        addEdge(techId, interviewGenId);
-        addEdge(interviewGenId, cultureId);
-        addEdge(cultureId, transcriptId);
-        addEdge(transcriptId, rankerId);
-        addEdge(rankerId, offerId);
-        addEdge(offerId, onboardId);
+        addEdge(inputId, resumeId);
+        addEdge(resumeId, gateId);
+        addEdge(gateId, interviewGenId);
+        addEdge(interviewGenId, transcriptId);
+        addEdge(transcriptId, decisionId);
+        addEdge(decisionId, conciergeId);
       } else if (templateId === 'tech-talent-scout') {
-        const sourceId = addNode(LayerType.Agent, startPos.x, startPos.y, 'Sourcing Agent', 'sourcing-agent');
-        const techId = addNode(LayerType.Agent, startPos.x + 350, startPos.y, 'Tech Assessor', 'tech-assessor');
-        const resumeId = addNode(LayerType.Agent, startPos.x + 700, startPos.y, 'Resume Verifier', 'resume-verifier');
+        const inputId = addNode(LayerType.Agent, startPos.x, startPos.y, 'Job Details', 'input-job-details');
+        const resumeId = addNode(LayerType.Agent, startPos.x + 350, startPos.y, 'Resume Intelligence', 'agent-resume');
+        const interviewId = addNode(LayerType.Agent, startPos.x + 700, startPos.y, 'Interview Planning', 'agent-interview-plan');
+        const analysisId = addNode(LayerType.Agent, startPos.x + 1050, startPos.y, 'Interview Analysis', 'agent-interview-analysis');
         
-        addEdge(sourceId, techId);
-        addEdge(techId, resumeId);
+        addEdge(inputId, resumeId);
+        addEdge(resumeId, interviewId);
+        addEdge(interviewId, analysisId);
       } else if (templateId === 'volume-hiring') {
-        const dbId = addNode(LayerType.Agent, startPos.x, startPos.y, 'Database Connector', 'database-connector');
-        const resumeId = addNode(LayerType.Agent, startPos.x + 350, startPos.y, 'Resume Verifier', 'resume-verifier');
-        const rankerId = addNode(LayerType.Agent, startPos.x + 700, startPos.y, 'Candidate Ranker', 'candidate-ranker');
+        const candId = addNode(LayerType.Agent, startPos.x, startPos.y, 'Candidate Input', 'input-candidate');
+        const resumeId = addNode(LayerType.Agent, startPos.x + 350, startPos.y, 'Resume Intelligence', 'agent-resume');
+        const decisionId = addNode(LayerType.Agent, startPos.x + 700, startPos.y, 'Candidate Decision', 'agent-decision');
         
-        addEdge(dbId, resumeId);
-        addEdge(resumeId, rankerId);
+        addEdge(candId, resumeId);
+        addEdge(resumeId, decisionId);
       } else if (templateId === 'executive-headhunter' || templateId === 'executive') {
-        const sourceId = addNode(LayerType.Agent, startPos.x, startPos.y, 'Sourcing Agent', 'sourcing-agent');
-        const dbId = addNode(LayerType.Agent, startPos.x, startPos.y + 180, 'Workday / Venus', 'workday-venus-connector');
-        const cultureId = addNode(LayerType.Agent, startPos.x + 350, startPos.y, 'Culture Fit Interviewer', 'culture-fit-interviewer');
-        const rankerId = addNode(LayerType.Agent, startPos.x + 700, startPos.y, 'Candidate Ranker', 'candidate-ranker');
-        const offerId = addNode(LayerType.Agent, startPos.x + 1050, startPos.y, 'Offer Negotiator', 'offer-negotiator');
+        const inputId = addNode(LayerType.Agent, startPos.x, startPos.y, 'Job Details', 'input-job-details');
+        const resumeId = addNode(LayerType.Agent, startPos.x + 350, startPos.y, 'Resume Intelligence', 'agent-resume');
+        const interviewId = addNode(LayerType.Agent, startPos.x + 700, startPos.y, 'Interview Planning', 'agent-interview-plan');
+        const decisionId = addNode(LayerType.Agent, startPos.x + 1050, startPos.y, 'Candidate Decision', 'agent-decision');
+        const conciergeId = addNode(LayerType.Agent, startPos.x + 1400, startPos.y, 'Candidate Concierge', 'agent-concierge');
         
-        addEdge(sourceId, cultureId);
-        addEdge(dbId, cultureId);
-        addEdge(cultureId, rankerId);
-        addEdge(rankerId, offerId);
+        addEdge(inputId, resumeId);
+        addEdge(resumeId, interviewId);
+        addEdge(interviewId, decisionId);
+        addEdge(decisionId, conciergeId);
       } else if (templateId === 'university-recruiting') {
         const sourceId = addNode(LayerType.Agent, startPos.x, startPos.y, 'Sourcing Agent', 'sourcing-agent');
         const bgId = addNode(LayerType.Agent, startPos.x + 350, startPos.y, 'Background Checker', 'background-checker');
