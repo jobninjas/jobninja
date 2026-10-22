@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import prisma from "@/lib/prisma";
-const pdfParse = require('pdf-parse');
 
 export async function POST(req: Request) {
   try {
@@ -38,6 +37,14 @@ export async function POST(req: Request) {
 
     const importedCandidates: any[] = [];
 
+    // Safely attempt to load pdf-parse
+    let pdfParse: any = null;
+    try {
+      pdfParse = require('pdf-parse');
+    } catch (e) {
+      console.warn('pdf-parse not available on this runtime, using text fallback');
+    }
+
     for (const c of candidates) {
       let extractedResumeText = c.resumeTextSample || '';
 
@@ -48,10 +55,10 @@ export async function POST(req: Request) {
           const fileRes = await fetch(c.resumeUrl, {
             headers: { 'Authorization': `Basic ${basicAuth}` }
           });
-          if (fileRes.ok) {
+          if (fileRes.ok && pdfParse) {
             const buffer = Buffer.from(await fileRes.arrayBuffer());
             const parsed = await pdfParse(buffer);
-            if (parsed.text) {
+            if (parsed?.text) {
               extractedResumeText = parsed.text;
             }
           }
@@ -66,7 +73,6 @@ export async function POST(req: Request) {
       }
 
       // Upsert candidate in Prisma
-      // Look for candidate with same email or atsId
       const existing = await prisma.candidate.findFirst({
         where: {
           organizationId,
