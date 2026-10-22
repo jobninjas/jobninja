@@ -77,6 +77,16 @@ export const InspectorPanel = ({ boardId }: { boardId?: string }) => {
       .catch(console.error);
   }, [boardId]);
 
+  useEffect(() => {
+    const handleCandidateChanged = (e: any) => {
+      if (e.detail?.candidate) {
+        setSelectedCandidate(e.detail.candidate);
+      }
+    };
+    window.addEventListener('candidateChanged', handleCandidateChanged);
+    return () => window.removeEventListener('candidateChanged', handleCandidateChanged);
+  }, []);
+
   // UNCONDITIONAL RESOLUTION FOR RULES OF HOOKS
   const layerId = selectedIds.length === 1 ? selectedIds[0] : null;
   const layer = layerId ? layers[layerId] : null;

@@ -96,8 +96,11 @@ export default function RoleBoardPage({ params }: { params?: Promise<{ roleId: s
         <span className="font-extrabold text-slate-800 tracking-tight">JobNinjas</span>
       </div>
 
+      {/* Candidate Pipeline Management & ATS Ingestion Widget */}
+      {roleId && <CandidateManager roleId={roleId} />}
+
       {saving && (
-        <div className="absolute top-20 right-4 z-50 bg-card/80 backdrop-blur px-3 py-1.5 rounded-full shadow-sm text-xs font-medium text-muted-foreground flex items-center gap-2 border border-border/50">
+        <div className="absolute bottom-6 right-6 z-50 bg-card/80 backdrop-blur px-3 py-1.5 rounded-full shadow-sm text-xs font-medium text-muted-foreground flex items-center gap-2 border border-border/50">
           <Loader2 className="w-3 h-3 animate-spin" />
           Saving...
         </div>
