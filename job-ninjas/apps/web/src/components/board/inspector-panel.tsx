@@ -77,15 +77,14 @@ export const InspectorPanel = ({ boardId }: { boardId?: string }) => {
       .catch(console.error);
   }, [boardId]);
 
-  if (selectedIds.length !== 1) return null;
-  const layerId = selectedIds[0];
-  const layer = layers[layerId];
-  if (!layer) return null;
+  // UNCONDITIONAL RESOLUTION FOR RULES OF HOOKS
+  const layerId = selectedIds.length === 1 ? selectedIds[0] : null;
+  const layer = layerId ? layers[layerId] : null;
+  const nodeSpec: NodeDescription = getNodeSpec(layer?.agentRole);
 
-  const nodeSpec: NodeDescription = getNodeSpec(layer.agentRole);
-
-  // Incoming edges and upstream nodes
+  // Incoming edges and upstream nodes (always called unconditionally)
   const incomingEdges = useMemo(() => {
+    if (!layerId) return [];
     return Object.values(edges).filter(e => e.toNodeId === layerId);
   }, [edges, layerId]);
 
@@ -101,9 +100,8 @@ export const InspectorPanel = ({ boardId }: { boardId?: string }) => {
   const clientUpstreamOutputs = useMemo(() => {
     const outputs: Record<string, any> = {};
     for (const upId of upstreamNodeIds) {
-      const upLayer = layers[upId];
+      const upLayer = layers[upId] as any;
       if (upLayer?.outputData) {
-        // Map based on agent role
         if (upLayer.agentRole === 'agent-resume') outputs['ResumeAnalysis'] = upLayer.outputData;
         if (upLayer.agentRole === 'agent-interview-plan') outputs['InterviewPlan'] = upLayer.outputData;
         if (upLayer.agentRole === 'agent-interview-analysis') outputs['InterviewAnalysis'] = upLayer.outputData;
@@ -117,6 +115,32 @@ export const InspectorPanel = ({ boardId }: { boardId?: string }) => {
   // Resolved candidate ID
   const activeCandidateId = selectedCandidate?.id || (typeof window !== 'undefined' ? window.localStorage.getItem('activeCandidateId') : null);
 
+  // Compile real input view data (always called unconditionally)
+  const consolidatedInputData = useMemo(() => {
+    if (!layer) return {};
+    if ((layer as any).inputData) return (layer as any).inputData;
+    return {
+      role: currentRole ? {
+        id: currentRole.id,
+        title: currentRole.title,
+        location: currentRole.location,
+        description: currentRole.jobDescription
+      } : null,
+      candidate: selectedCandidate ? {
+        id: selectedCandidate.id,
+        firstName: selectedCandidate.firstName,
+        lastName: selectedCandidate.lastName,
+        email: selectedCandidate.email,
+        location: selectedCandidate.location,
+        stage: selectedCandidate.stage || selectedCandidate.currentStage || 'APPLIED',
+        currentStage: selectedCandidate.stage || selectedCandidate.currentStage || 'APPLIED',
+        hasResume: !!selectedCandidate.resumeText,
+        resumePreview: selectedCandidate.resumeText ? selectedCandidate.resumeText.slice(0, 200) + '...' : null
+      } : null,
+      upstreamOutputs: clientUpstreamOutputs
+    };
+  }, [layer, currentRole, selectedCandidate, clientUpstreamOutputs]);
+
   const handleCopy = (text: string, key: string) => {
     navigator.clipboard.writeText(text);
     setCopiedKey(key);
@@ -124,7 +148,8 @@ export const InspectorPanel = ({ boardId }: { boardId?: string }) => {
   };
 
   const handleConfigChange = (key: string, value: any) => {
-    const currentConfig = (layer as any).config || {};
+    if (!layerId) return;
+    const currentConfig = (layer as any)?.config || {};
     updateLayer(layerId, {
       config: {
         ...currentConfig,
@@ -134,6 +159,7 @@ export const InspectorPanel = ({ boardId }: { boardId?: string }) => {
   };
 
   const handleRunAgent = async () => {
+    if (!layerId || !layer) return;
     updateLayer(layerId, { status: 'running', errorDetails: undefined });
     setActiveTab('output');
     try {
@@ -172,33 +198,11 @@ export const InspectorPanel = ({ boardId }: { boardId?: string }) => {
     }
   };
 
-  // Compile real input view data
-  const consolidatedInputData = useMemo(() => {
-    if (layer.inputData) return layer.inputData;
-    return {
-      role: currentRole ? {
-        id: currentRole.id,
-        title: currentRole.title,
-        location: currentRole.location,
-        description: currentRole.jobDescription
-      } : null,
-      candidate: selectedCandidate ? {
-        id: selectedCandidate.id,
-        firstName: selectedCandidate.firstName,
-        lastName: selectedCandidate.lastName,
-        email: selectedCandidate.email,
-        location: selectedCandidate.location,
-        stage: selectedCandidate.stage || selectedCandidate.currentStage || 'APPLIED',
-        currentStage: selectedCandidate.stage || selectedCandidate.currentStage || 'APPLIED',
-        hasResume: !!selectedCandidate.resumeText,
-        resumePreview: selectedCandidate.resumeText ? selectedCandidate.resumeText.slice(0, 200) + '...' : null
-      } : null,
-      upstreamOutputs: clientUpstreamOutputs
-    };
-  }, [layer.inputData, currentRole, selectedCandidate, clientUpstreamOutputs]);
+  // NOW safe to return null if no node is inspected (all hooks have been executed in identical order)
+  if (!layerId || !layer) return null;
 
-  const executionOutput = layer.outputData || (layer as any).executionOutput;
-  const executionTimeSec = layer.executionTimeMs ? (layer.executionTimeMs / 1000).toFixed(2) + 's' : null;
+  const executionOutput = (layer as any).outputData || (layer as any).executionOutput;
+  const executionTimeSec = (layer as any).executionTimeMs ? ((layer as any).executionTimeMs / 1000).toFixed(2) + 's' : null;
 
   return (
     <div 
@@ -629,7 +633,7 @@ export const InspectorPanel = ({ boardId }: { boardId?: string }) => {
                   Execution Failed
                 </div>
                 <p className="text-xs text-rose-700 font-mono leading-relaxed bg-white/70 p-3 rounded-lg border border-rose-100">
-                  {layer.errorDetails || 'Unknown error occurred during agent execution.'}
+                  {(layer as any).errorDetails || 'Unknown error occurred during agent execution.'}
                 </p>
                 <button
                   onClick={handleRunAgent}

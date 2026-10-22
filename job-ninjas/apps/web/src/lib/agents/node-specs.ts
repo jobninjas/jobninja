@@ -335,8 +335,8 @@ export const NODE_SPECS: Record<string, NodeDescription> = {
   }
 };
 
-export function getNodeSpec(role?: string): NodeDescription {
-  if (!role) {
+export function getNodeSpec(role?: any): NodeDescription {
+  if (!role || typeof role !== 'string') {
     return {
       role: 'custom-agent',
       displayName: 'Custom Agent',

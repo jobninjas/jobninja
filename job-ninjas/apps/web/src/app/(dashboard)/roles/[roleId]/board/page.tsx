@@ -1,14 +1,16 @@
 "use client";
 
-import { use, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useParams } from "next/navigation";
 import { Canvas } from "@/components/board/canvas";
 import CandidateManager from "@/components/board/CandidateManager";
 import { useBoardStore } from "@/store/board";
 import { LayerType } from "@/types/canvas";
 import { Loader2 } from "lucide-react";
 
-export default function RoleBoardPage({ params }: { params: Promise<{ roleId: string }> }) {
-  const resolvedParams = use(params);
+export default function RoleBoardPage({ params }: { params?: Promise<{ roleId: string }> | { roleId: string } }) {
+  const routeParams = useParams();
+  const roleId = (routeParams?.roleId as string) || "";
   
   const layerIds = useBoardStore(state => state.layerIds);
   const layers = useBoardStore(state => state.layers);
@@ -26,6 +28,7 @@ export default function RoleBoardPage({ params }: { params: Promise<{ roleId: st
 
   // Load initial state
   useEffect(() => {
+    if (!roleId) return;
     setLoading(true);
     // Optimistically clear the board to prevent flickering old data
     setLayerIds([]);
@@ -33,7 +36,7 @@ export default function RoleBoardPage({ params }: { params: Promise<{ roleId: st
     setEdgeIds([]);
     setEdges({});
     
-    fetch(`/api/boards/${resolvedParams.roleId}`)
+    fetch(`/api/boards/${roleId}`)
       .then(res => res.json())
       .then(data => {
         if (!data.error) {
@@ -54,19 +57,19 @@ export default function RoleBoardPage({ params }: { params: Promise<{ roleId: st
         setLoading(false);
         initialLoadRef.current = true;
       });
-  }, [resolvedParams.roleId, setLayerIds, setLayers, setEdgeIds, setEdges]);
+  }, [roleId, setLayerIds, setLayers, setEdgeIds, setEdges]);
 
   // Save changes automatically
   const saveTimeout = useRef<any>(null);
   
   useEffect(() => {
-    if (loading || !initialLoadRef.current) return;
+    if (loading || !initialLoadRef.current || !roleId) return;
     
     if (saveTimeout.current) clearTimeout(saveTimeout.current);
     
     setSaving(true);
     saveTimeout.current = setTimeout(() => {
-      fetch(`/api/boards/${resolvedParams.roleId}`, {
+      fetch(`/api/boards/${roleId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ layerIds, layers, edgeIds, edges })
@@ -75,9 +78,9 @@ export default function RoleBoardPage({ params }: { params: Promise<{ roleId: st
     }, 1500); // Debounce saves by 1.5s
     
     return () => clearTimeout(saveTimeout.current);
-  }, [layerIds, layers, edgeIds, edges, resolvedParams.roleId, loading]);
+  }, [layerIds, layers, edgeIds, edges, roleId, loading]);
 
-  if (loading) {
+  if (loading && !initialLoadRef.current) {
     return (
       <div className="absolute inset-0 flex flex-col items-center justify-center bg-muted text-muted-foreground">
         <Loader2 className="w-8 h-8 animate-spin mb-4 text-blue-500" />
@@ -88,7 +91,6 @@ export default function RoleBoardPage({ params }: { params: Promise<{ roleId: st
 
   return (
     <div className="absolute inset-0">
-
       <div className="absolute top-6 left-6 z-50 flex items-center gap-3 bg-white/80 backdrop-blur-md px-4 py-2 rounded-2xl shadow-sm border border-slate-200/50 cursor-pointer hover:bg-white transition-colors" onClick={() => window.location.href='/roles'}>
         <img src="/logo.png" alt="JobNinjas" className="w-8 h-8 object-contain" />
         <span className="font-extrabold text-slate-800 tracking-tight">JobNinjas</span>
@@ -100,7 +102,7 @@ export default function RoleBoardPage({ params }: { params: Promise<{ roleId: st
           Saving...
         </div>
       )}
-      <Canvas boardId={resolvedParams.roleId} />
+      <Canvas boardId={roleId} />
     </div>
   );
 }
