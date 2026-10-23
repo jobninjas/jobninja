@@ -92,3 +92,37 @@ export async function POST(req: Request) {
     );
   }
 }
+
+export async function PATCH(req: Request) {
+  try {
+    const data = await req.json();
+    const { id, title, department, location, hiringManager, jobDescription, status } = data;
+
+    if (!id) {
+      return NextResponse.json(
+        { success: false, error: 'Role ID is required for update' },
+        { status: 400 }
+      );
+    }
+
+    const updatedRole = await prisma.role.update({
+      where: { id },
+      data: {
+        ...(title !== undefined ? { title } : {}),
+        ...(department !== undefined ? { department } : {}),
+        ...(location !== undefined ? { location } : {}),
+        ...(hiringManager !== undefined ? { hiringManager } : {}),
+        ...(jobDescription !== undefined ? { jobDescription } : {}),
+        ...(status !== undefined ? { status } : {}),
+      },
+    });
+
+    return NextResponse.json({ success: true, role: updatedRole });
+  } catch (error: any) {
+    console.error('Error updating role:', error);
+    return NextResponse.json(
+      { success: false, error: error?.message || 'Failed to update role' },
+      { status: 500 }
+    );
+  }
+}

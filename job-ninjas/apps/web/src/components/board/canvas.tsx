@@ -244,6 +244,57 @@ export const Canvas = ({ boardId }: { boardId: string }) => {
 
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
+      const isResume = file.name.match(/\.(pdf|docx|doc|txt)$/i);
+
+      // Auto-ingest resumes directly into candidate pipeline
+      if (isResume && boardId && boardId !== 'new-workflow') {
+        try {
+          let targetCandId = typeof window !== 'undefined' ? window.localStorage.getItem('activeCandidateId') : null;
+
+          if (!targetCandId) {
+            const cleanName = file.name.replace(/\.(pdf|docx|doc|txt)$/i, '').replace(/[-_]/g, ' ').replace(/\s+resume\b/i, '').trim();
+            const parts = cleanName.split(/\s+/);
+            const fName = parts[0] || 'Applicant';
+            const lName = parts.slice(1).join(' ') || 'Candidate';
+            
+            const createRes = await fetch('/api/candidates', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                roleId: currentRole?.id || boardId,
+                firstName: fName,
+                lastName: lName,
+                email: `${fName.toLowerCase()}.${lName.toLowerCase()}@candidate.com`,
+              })
+            });
+            const createData = await createRes.json();
+            if (createData.success && createData.candidate) {
+              targetCandId = createData.candidate.id;
+            }
+          }
+
+          if (targetCandId) {
+            const formData = new FormData();
+            formData.append('candidateId', targetCandId);
+            formData.append('file', file);
+            const uploadRes = await fetch('/api/resumes/upload', {
+              method: 'POST',
+              body: formData
+            });
+            const uploadData = await uploadRes.json();
+            if (uploadData.success && uploadData.candidate) {
+              if (typeof window !== 'undefined') {
+                window.localStorage.setItem('activeCandidateId', uploadData.candidate.id);
+                window.dispatchEvent(new CustomEvent('candidateChanged', { detail: { candidate: uploadData.candidate } }));
+              }
+            }
+          }
+        } catch (uploadErr) {
+          console.error('Failed to auto-ingest resume from canvas drop:', uploadErr);
+        }
+        continue;
+      }
+
       const isOfficeDoc = file.name.match(/\.(ppt|pptx)$/i);
       
       if (isOfficeDoc) {
@@ -275,7 +326,7 @@ export const Canvas = ({ boardId }: { boardId: string }) => {
         reader.readAsDataURL(file);
       }
     }
-  }, [camera, insertLayer, updateLayer]);
+  }, [camera, insertLayer, updateLayer, boardId, currentRole]);
 
   // Handle template selection on new board dialog
   const handleTemplateSetup = useCallback((templateId: string | null) => {
@@ -1203,11 +1254,11 @@ export const Canvas = ({ boardId }: { boardId: string }) => {
 
       {/* === FEATURE 1: Drag & Drop overlay === */}
       {isDragOver && (
-        <div className="absolute inset-0 z-[200] bg-blue-500/10 border-4 border-dashed border-blue-400 flex flex-col items-center justify-center pointer-events-none">
+        <div className="absolute inset-0 z-[200] bg-indigo-500/10 border-4 border-dashed border-indigo-400 flex flex-col items-center justify-center pointer-events-none">
           <div className="bg-white rounded-2xl shadow-2xl px-10 py-8 flex flex-col items-center gap-3">
-            <Upload className="w-12 h-12 text-blue-500" />
-            <p className="text-xl font-bold text-slate-800">Drop files here</p>
-            <p className="text-sm text-slate-500">PDFs, Word, Excel files will be auto-parsed into canvas nodes</p>
+            <Upload className="w-12 h-12 text-indigo-600 animate-bounce" />
+            <p className="text-xl font-bold text-slate-800">Drop Resumes Here</p>
+            <p className="text-sm text-slate-500">PDF, Word, or TXT files will be parsed into candidate profiles automatically</p>
           </div>
         </div>
       )}
@@ -1355,61 +1406,64 @@ export const Canvas = ({ boardId }: { boardId: string }) => {
       <ZoomControls camera={camera} setCamera={setCamera} />
       <InspectorPanel boardId={boardId} />
       
-      {/* Top Left Header / Home Bar */}
-      <div className="absolute top-4 left-4 z-50 flex items-center gap-3">
-        <Link 
-          href="/dashboard"
-          className="flex items-center justify-center w-10 h-10 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors shadow-sm text-slate-600 hover:text-indigo-600"
-          title="Back to Dashboard"
-        >
-          <ArrowLeft className="w-5 h-5" />
-        </Link>
-        <div className="bg-white border border-slate-200 rounded-xl px-4 py-2.5 shadow-sm flex items-center gap-2">
-          <Workflow className="w-4 h-4 text-indigo-500" />
-          <h1 className="font-semibold text-slate-800 text-sm">
-            {boardId === 'new-workflow' ? 'New AI Workflow' : (currentRole?.title || boardId)}
-          </h1>
+      {/* Top Left Header / Home Bar (Only shown in standalone new-workflow mode to avoid duplicate header) */}
+      {boardId === 'new-workflow' && (
+        <div className="absolute top-4 left-4 z-50 flex items-center gap-3">
+          <Link 
+            href="/roles"
+            className="flex items-center justify-center w-10 h-10 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors shadow-sm text-slate-600 hover:text-indigo-600"
+            title="Back to Roles"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </Link>
+          <div className="bg-white border border-slate-200 rounded-xl px-4 py-2.5 shadow-sm flex items-center gap-2">
+            <Workflow className="w-4 h-4 text-indigo-500" />
+            <h1 className="font-semibold text-slate-800 text-sm">
+              New AI Workflow
+            </h1>
+          </div>
         </div>
-      </div>
+      )}
       
-      {/* Toolbar extra buttons: Upload Files + MCP Connectors */}
-      <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2">
+      {/* Top Bar Actions: Upload Resumes + Integrations */}
+      <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2">
         <button
           onClick={() => fileInputRef.current?.click()}
-          className="flex items-center gap-2 px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-700 hover:bg-slate-50 shadow-sm hover:shadow-md transition-all"
-          title="Upload resumes or documents"
+          className="flex items-center gap-2 px-3 py-2 bg-white/95 backdrop-blur-md border border-slate-200/80 rounded-xl text-xs font-bold text-slate-700 hover:bg-white shadow-xs hover:shadow-sm transition-all cursor-pointer"
+          title="Upload candidate resumes (PDF, Word, TXT)"
         >
-          <Upload className="w-4 h-4 text-blue-500" />
-          Upload Files
+          <Upload className="w-3.5 h-3.5 text-indigo-600" />
+          Upload Resumes
         </button>
         <button
           onClick={() => setIsMcpPanelOpen(v => !v)}
-          className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium shadow-sm transition-all ${isMcpPanelOpen ? 'bg-blue-600 text-white border border-blue-600' : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:shadow-md'}`}
-          title="MCP Connectors (Gmail, Slack, Calendar...)"
+          className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold shadow-xs transition-all cursor-pointer ${isMcpPanelOpen ? 'bg-indigo-600 text-white border border-indigo-600' : 'bg-white/95 backdrop-blur-md border border-slate-200/80 text-slate-700 hover:bg-white hover:shadow-sm'}`}
+          title="Connect Greenhouse, Workday, Gmail, Calendar..."
         >
-          <Plug className="w-4 h-4" />
-          Connectors
+          <Plug className="w-3.5 h-3.5 text-emerald-600" />
+          Integrations
         </button>
       </div>
       
-      {/* Run Workflow Button */}
-      <div className="absolute top-4 right-4 z-50">
+      {/* Run Full Pipeline Button */}
+      <div className="absolute top-4 right-6 z-50">
         <button
           onClick={runWorkflow}
           disabled={isRunning}
           className={`
-            flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm shadow-lg transition-all
+            flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-xs shadow-md transition-all cursor-pointer
             ${isRunning 
-              ? 'bg-muted/50 text-muted-foreground cursor-not-allowed' 
-              : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white hover:shadow-xl hover:-translate-y-0.5'}
+              ? 'bg-indigo-300 text-white cursor-not-allowed' 
+              : 'bg-indigo-600 hover:bg-indigo-700 text-white hover:shadow-lg hover:-translate-y-0.5'}
           `}
+          title="Execute all pipeline evaluation steps sequentially"
         >
           {isRunning ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
+            <Loader2 className="w-3.5 h-3.5 animate-spin" />
           ) : (
-            <Play className="w-4 h-4 fill-current" />
+            <Play className="w-3.5 h-3.5 fill-current" />
           )}
-          {isRunning ? 'Running Pipeline...' : 'Run Agents'}
+          {isRunning ? 'Evaluating Pipeline...' : 'Run Full Pipeline'}
         </button>
       </div>
 

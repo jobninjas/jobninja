@@ -119,3 +119,42 @@ export async function POST(req: Request) {
     );
   }
 }
+
+export async function PATCH(req: Request) {
+  try {
+    const data = await req.json();
+    const { id, firstName, lastName, email, location, resumeText, resumeUrl, stage, travelBudget } = data;
+
+    if (!id) {
+      return NextResponse.json(
+        { success: false, error: 'Candidate ID is required' },
+        { status: 400 }
+      );
+    }
+
+    const updated = await prisma.candidate.update({
+      where: { id },
+      data: {
+        ...(firstName !== undefined ? { firstName } : {}),
+        ...(lastName !== undefined ? { lastName } : {}),
+        ...(email !== undefined ? { email } : {}),
+        ...(location !== undefined ? { location } : {}),
+        ...(resumeText !== undefined ? { resumeText } : {}),
+        ...(resumeUrl !== undefined ? { resumeUrl } : {}),
+        ...(stage !== undefined ? { stage } : {}),
+        ...(travelBudget !== undefined ? { travelBudget: parseFloat(String(travelBudget)) } : {}),
+      },
+      include: {
+        role: true,
+      }
+    });
+
+    return NextResponse.json({ success: true, candidate: updated });
+  } catch (error: any) {
+    console.error('Error updating candidate:', error);
+    return NextResponse.json(
+      { success: false, error: error?.message || 'Failed to update candidate' },
+      { status: 500 }
+    );
+  }
+}

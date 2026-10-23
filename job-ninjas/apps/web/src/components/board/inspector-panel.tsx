@@ -7,7 +7,9 @@ import {
   ChevronDown, ChevronRight, RefreshCw, Cpu, Database, 
   User, FileText, CheckCircle2, AlertCircle, Info, 
   Sliders, Layers, Sparkles, ArrowDownRight, ArrowUpRight,
-  Code2, ExternalLink
+  Code2, ExternalLink, Upload, Edit3, Save, AlertTriangle,
+  Building, Briefcase, ThumbsUp, ThumbsDown, Award, CalendarDays,
+  DollarSign, MapPin
 } from "lucide-react";
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { useDemoStore } from "@/lib/store";
@@ -19,7 +21,7 @@ export const InspectorPanel = ({ boardId }: { boardId?: string }) => {
   const currentRole = roles.find(r => r.id === boardId);
   const selectedIds = inspectedNodeId ? [inspectedNodeId] : [];
   
-  const [width, setWidth] = useState(540);
+  const [width, setWidth] = useState(560);
   const [isDragging, setIsDragging] = useState(false);
   const [activeTab, setActiveTab] = useState<'input' | 'parameters' | 'output'>('parameters');
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
@@ -27,6 +29,19 @@ export const InspectorPanel = ({ boardId }: { boardId?: string }) => {
   const [outputViewMode, setOutputViewMode] = useState<'formatted' | 'raw'>('formatted');
   const [selectedCandidate, setSelectedCandidate] = useState<any>(null);
   const [availableCandidates, setAvailableCandidates] = useState<any[]>([]);
+
+  // Real Database Role & JD Editing
+  const [dbRole, setDbRole] = useState<any>(null);
+  const [isEditingJd, setIsEditingJd] = useState(false);
+  const [jdText, setJdText] = useState("");
+  const [savingJd, setSavingJd] = useState(false);
+
+  // Resume Upload & Manual Paste
+  const [isEditingResume, setIsEditingResume] = useState(false);
+  const [pastedResumeText, setPastedResumeText] = useState("");
+  const [uploadingResume, setUploadingResume] = useState(false);
+  const [resumeUploadError, setResumeUploadError] = useState<string | null>(null);
+  const [resumeUploadSuccess, setResumeUploadSuccess] = useState<string | null>(null);
 
   // Drag-to-resize inspector drawer
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -37,7 +52,7 @@ export const InspectorPanel = ({ boardId }: { boardId?: string }) => {
   const handleMouseMove = useCallback((e: MouseEvent) => {
     if (!isDragging) return;
     const newWidth = window.innerWidth - e.clientX - 16;
-    if (newWidth > 360 && newWidth < 1100) {
+    if (newWidth > 380 && newWidth < 1200) {
       setWidth(newWidth);
     }
   }, [isDragging]);
@@ -60,8 +75,28 @@ export const InspectorPanel = ({ boardId }: { boardId?: string }) => {
     };
   }, [isDragging, handleMouseMove, handleMouseUp]);
 
-  // Fetch candidates for current role to ensure accurate context
+  // Fetch real role from DB
+  const fetchRole = useCallback(() => {
+    if (!boardId || boardId === 'new-workflow') return;
+    fetch('/api/roles')
+      .then(res => res.json())
+      .then(data => {
+        const list = Array.isArray(data) ? data : data?.roles || [];
+        const match = list.find((r: any) => r.id === boardId);
+        if (match) {
+          setDbRole(match);
+          setJdText(match.jobDescription || "");
+        }
+      })
+      .catch(console.error);
+  }, [boardId]);
+
   useEffect(() => {
+    fetchRole();
+  }, [fetchRole]);
+
+  // Fetch candidates for current role to ensure accurate context
+  const fetchCandidates = useCallback(() => {
     if (!boardId || boardId === 'new-workflow') return;
     fetch(`/api/candidates?roleId=${boardId}`)
       .then(res => res.json())
@@ -78,6 +113,10 @@ export const InspectorPanel = ({ boardId }: { boardId?: string }) => {
   }, [boardId]);
 
   useEffect(() => {
+    fetchCandidates();
+  }, [fetchCandidates]);
+
+  useEffect(() => {
     const handleCandidateChanged = (e: any) => {
       if (e.detail?.candidate) {
         setSelectedCandidate(e.detail.candidate);
@@ -87,12 +126,104 @@ export const InspectorPanel = ({ boardId }: { boardId?: string }) => {
     return () => window.removeEventListener('candidateChanged', handleCandidateChanged);
   }, []);
 
+  // Save Job Description to DB
+  const handleSaveJd = async () => {
+    if (!boardId) return;
+    try {
+      setSavingJd(true);
+      const res = await fetch('/api/roles', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: boardId, jobDescription: jdText })
+      });
+      const data = await res.json();
+      if (data.success && data.role) {
+        setDbRole(data.role);
+        setIsEditingJd(false);
+      }
+    } catch (err) {
+      console.error('Failed to save JD:', err);
+    } finally {
+      setSavingJd(false);
+    }
+  };
+
+  // Upload Resume File
+  const handleUploadResumeFile = async (file: File) => {
+    if (!selectedCandidate?.id) return;
+    setUploadingResume(true);
+    setResumeUploadError(null);
+    setResumeUploadSuccess(null);
+    try {
+      const formData = new FormData();
+      formData.append('candidateId', selectedCandidate.id);
+      formData.append('file', file);
+      const res = await fetch('/api/resumes/upload', {
+        method: 'POST',
+        body: formData
+      });
+      const data = await res.json();
+      if (data.success && data.candidate) {
+        setSelectedCandidate(data.candidate);
+        setResumeUploadSuccess(`Resume parsed (${data.candidate.resumeText?.length || 0} characters)`);
+        setIsEditingResume(false);
+        fetchCandidates();
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('candidateChanged', { detail: { candidate: data.candidate } }));
+        }
+      } else {
+        setResumeUploadError(data.error || 'Failed to upload resume');
+      }
+    } catch (err: any) {
+      setResumeUploadError(err.message || 'Error uploading file');
+    } finally {
+      setUploadingResume(false);
+    }
+  };
+
+  // Save Pasted Resume Text
+  const handleSavePastedResume = async () => {
+    if (!selectedCandidate?.id || !pastedResumeText.trim()) return;
+    setUploadingResume(true);
+    setResumeUploadError(null);
+    setResumeUploadSuccess(null);
+    try {
+      const res = await fetch('/api/candidates', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: selectedCandidate.id,
+          resumeText: pastedResumeText.trim()
+        })
+      });
+      const data = await res.json();
+      if (data.success && data.candidate) {
+        setSelectedCandidate(data.candidate);
+        setResumeUploadSuccess('Resume text saved successfully!');
+        setIsEditingResume(false);
+        setPastedResumeText('');
+        fetchCandidates();
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('candidateChanged', { detail: { candidate: data.candidate } }));
+        }
+      } else {
+        setResumeUploadError(data.error || 'Failed to save resume text');
+      }
+    } catch (err: any) {
+      setResumeUploadError(err.message || 'Error saving resume');
+    } finally {
+      setUploadingResume(false);
+    }
+  };
+
   // UNCONDITIONAL RESOLUTION FOR RULES OF HOOKS
   const layerId = selectedIds.length === 1 ? selectedIds[0] : null;
   const layer = layerId ? layers[layerId] : null;
   const nodeSpec: NodeDescription = getNodeSpec(layer?.agentRole);
 
-  // Incoming edges and upstream nodes (always called unconditionally)
+  const effectiveRole = dbRole || currentRole;
+
+  // Incoming edges and upstream nodes
   const incomingEdges = useMemo(() => {
     if (!layerId) return [];
     return Object.values(edges).filter(e => e.toNodeId === layerId);
@@ -125,16 +256,16 @@ export const InspectorPanel = ({ boardId }: { boardId?: string }) => {
   // Resolved candidate ID
   const activeCandidateId = selectedCandidate?.id || (typeof window !== 'undefined' ? window.localStorage.getItem('activeCandidateId') : null);
 
-  // Compile real input view data (always called unconditionally)
+  // Compile real input view data
   const consolidatedInputData = useMemo(() => {
     if (!layer) return {};
     if ((layer as any).inputData) return (layer as any).inputData;
     return {
-      role: currentRole ? {
-        id: currentRole.id,
-        title: currentRole.title,
-        location: currentRole.location,
-        description: currentRole.jobDescription
+      role: effectiveRole ? {
+        id: effectiveRole.id,
+        title: effectiveRole.title,
+        location: effectiveRole.location,
+        description: effectiveRole.jobDescription
       } : null,
       candidate: selectedCandidate ? {
         id: selectedCandidate.id,
@@ -149,7 +280,7 @@ export const InspectorPanel = ({ boardId }: { boardId?: string }) => {
       } : null,
       upstreamOutputs: clientUpstreamOutputs
     };
-  }, [layer, currentRole, selectedCandidate, clientUpstreamOutputs]);
+  }, [layer, effectiveRole, selectedCandidate, clientUpstreamOutputs]);
 
   const handleCopy = (text: string, key: string) => {
     navigator.clipboard.writeText(text);
@@ -189,7 +320,7 @@ export const InspectorPanel = ({ boardId }: { boardId?: string }) => {
       if (!response.ok || data.status === 'ERROR' || data.status === 'BLOCKED') {
         updateLayer(layerId, { 
           status: 'error', 
-          errorDetails: data.error || data.missingInputs?.join(', ') || 'Agent execution failed',
+          errorDetails: data.error || data.missingInputs?.join(', ') || 'Evaluation step failed',
           inputData: data.input,
           executionTimeMs: data.executionTimeMs
         });
@@ -208,7 +339,7 @@ export const InspectorPanel = ({ boardId }: { boardId?: string }) => {
     }
   };
 
-  // NOW safe to return null if no node is inspected (all hooks have been executed in identical order)
+  // Safe to return null if no node is inspected
   if (!layerId || !layer) return null;
 
   const executionOutput = (layer as any).outputData || (layer as any).executionOutput;
@@ -227,7 +358,7 @@ export const InspectorPanel = ({ boardId }: { boardId?: string }) => {
         <div className="w-1 h-10 rounded-full bg-slate-300 group-hover:bg-indigo-500 transition-colors" />
       </div>
 
-      {/* Header (n8n node modal top bar) */}
+      {/* Header */}
       <div className="px-5 py-3.5 border-b border-slate-100 flex items-center justify-between bg-slate-50/70">
         <div className="flex items-center gap-3">
           <div className={`p-2 rounded-xl border ${nodeSpec.bg} ${nodeSpec.color} flex items-center justify-center shadow-xs`}>
@@ -255,17 +386,17 @@ export const InspectorPanel = ({ boardId }: { boardId?: string }) => {
               onClick={handleRunAgent}
               disabled={layer.status === 'running'}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 text-white text-xs font-bold rounded-lg shadow-sm transition-colors cursor-pointer"
-              title="Test Step / Execute with Current Inputs"
+              title="Evaluate active candidate with current step"
             >
               {layer.status === 'running' ? (
                 <>
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  Testing...
+                  Evaluating...
                 </>
               ) : (
                 <>
                   <Play className="w-3.5 h-3.5 fill-current" />
-                  Test step
+                  Evaluate Candidate
                 </>
               )}
             </button>
@@ -280,7 +411,7 @@ export const InspectorPanel = ({ boardId }: { boardId?: string }) => {
         </div>
       </div>
 
-      {/* n8n 3-Tab Navigator */}
+      {/* Recruiter 3-Tab Navigator */}
       <div className="flex items-center border-b border-slate-200/70 bg-white px-5 gap-6 text-[13px] font-semibold">
         <button
           onClick={() => setActiveTab('input')}
@@ -291,9 +422,9 @@ export const InspectorPanel = ({ boardId }: { boardId?: string }) => {
           }`}
         >
           <ArrowDownRight className="w-4 h-4" />
-          Input
+          Inputs
           <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-slate-100 text-slate-600">
-            {incomingEdges.length > 0 || selectedCandidate ? '1 item' : '0'}
+            {incomingEdges.length > 0 || selectedCandidate ? 'Ready' : '0'}
           </span>
         </button>
 
@@ -306,7 +437,7 @@ export const InspectorPanel = ({ boardId }: { boardId?: string }) => {
           }`}
         >
           <Sliders className="w-4 h-4" />
-          Parameters
+          AI Settings
         </button>
 
         <button
@@ -318,7 +449,7 @@ export const InspectorPanel = ({ boardId }: { boardId?: string }) => {
           }`}
         >
           <ArrowUpRight className="w-4 h-4" />
-          Output
+          Evaluation Results
           {layer.status === 'success' && (
             <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
           )}
@@ -331,15 +462,15 @@ export const InspectorPanel = ({ boardId }: { boardId?: string }) => {
       {/* Main Tab Content */}
       <div className="flex-1 overflow-y-auto p-5 bg-slate-50/40">
 
-        {/* ─────────── TAB 1: INPUT ─────────── */}
+        {/* ─────────── TAB 1: INPUTS ─────────── */}
         {activeTab === 'input' && (
           <div className="flex flex-col gap-4">
             {/* Top Toolbar */}
             <div className="flex items-center justify-between bg-white p-3 rounded-xl border border-slate-200/80 shadow-xs">
               <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-slate-700">Incoming Data</span>
+                <span className="text-xs font-bold text-slate-700">Connected Pipeline Steps</span>
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200">
-                  {incomingEdges.length} connected upstream
+                  {incomingEdges.length} connected input step(s)
                 </span>
               </div>
               <div className="flex items-center gap-1.5">
@@ -349,7 +480,7 @@ export const InspectorPanel = ({ boardId }: { boardId?: string }) => {
                     inputViewMode === 'formatted' ? 'bg-indigo-50 text-indigo-700 font-bold' : 'text-slate-500 hover:bg-slate-100'
                   }`}
                 >
-                  Formatted
+                  Recruiter View
                 </button>
                 <button
                   onClick={() => setInputViewMode('raw')}
@@ -357,24 +488,24 @@ export const InspectorPanel = ({ boardId }: { boardId?: string }) => {
                     inputViewMode === 'raw' ? 'bg-indigo-50 text-indigo-700 font-bold' : 'text-slate-500 hover:bg-slate-100'
                   }`}
                 >
-                  Raw JSON
+                  Debug JSON
                 </button>
                 <button
                   onClick={() => handleCopy(JSON.stringify(consolidatedInputData, null, 2), 'input-json')}
                   className="p-1.5 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors ml-1"
-                  title="Copy JSON"
+                  title="Copy Data"
                 >
                   {copiedKey === 'input-json' ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
                 </button>
               </div>
             </div>
 
-            {/* Candidate Selector / Context */}
+            {/* Candidate Selector */}
             {availableCandidates.length > 0 && (
               <div className="p-3.5 bg-white rounded-xl border border-slate-200/80 flex flex-col gap-2 shadow-xs">
                 <label className="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
                   <User className="w-3.5 h-3.5 text-indigo-500" />
-                  Target Candidate Record
+                  Active Candidate for Evaluation
                 </label>
                 <select
                   value={selectedCandidate?.id || ''}
@@ -384,6 +515,7 @@ export const InspectorPanel = ({ boardId }: { boardId?: string }) => {
                       setSelectedCandidate(found);
                       if (typeof window !== 'undefined') {
                         window.localStorage.setItem('activeCandidateId', found.id);
+                        window.dispatchEvent(new CustomEvent('candidateChanged', { detail: { candidate: found } }));
                       }
                     }
                   }}
@@ -391,7 +523,7 @@ export const InspectorPanel = ({ boardId }: { boardId?: string }) => {
                 >
                   {availableCandidates.map(c => (
                     <option key={c.id} value={c.id}>
-                      {c.firstName} {c.lastName} ({c.email}) - {c.stage || c.currentStage || 'APPLIED'}
+                      {c.firstName} {c.lastName} ({c.email}) - {c.stage || c.currentStage || 'APPLIED'} {c.resumeText ? '✓ Resume' : '⚠️ No Resume'}
                     </option>
                   ))}
                 </select>
@@ -400,39 +532,167 @@ export const InspectorPanel = ({ boardId }: { boardId?: string }) => {
 
             {inputViewMode === 'formatted' ? (
               <div className="flex flex-col gap-3">
-                {/* Role Block */}
-                <div className="p-4 bg-white rounded-xl border border-slate-200/80 shadow-xs flex flex-col gap-2">
+                {/* Job Requisition Block with Inline JD Editing */}
+                <div className="p-4 bg-white rounded-xl border border-slate-200/80 shadow-xs flex flex-col gap-2.5">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-slate-800 flex items-center gap-2">
-                      <FileText className="w-3.5 h-3.5 text-indigo-600" />
-                      Role Context
+                      <Briefcase className="w-3.5 h-3.5 text-indigo-600" />
+                      Job Requisition Profile
                     </span>
-                    <span className="text-[10px] font-semibold text-slate-400">{currentRole?.department || 'Engineering'}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-semibold text-slate-400">{effectiveRole?.department || 'Engineering'}</span>
+                      <button
+                        onClick={() => setIsEditingJd(!isEditingJd)}
+                        className="text-[11px] text-indigo-600 hover:text-indigo-800 font-semibold flex items-center gap-1 cursor-pointer"
+                      >
+                        <Edit3 className="w-3 h-3" />
+                        {isEditingJd ? 'Cancel' : (effectiveRole?.jobDescription ? 'Edit JD' : 'Add JD')}
+                      </button>
+                    </div>
                   </div>
-                  <p className="text-xs font-semibold text-slate-700">{currentRole?.title || 'Open Role'}</p>
-                  <p className="text-[11px] text-slate-500 line-clamp-3">
-                    {currentRole?.jobDescription || 'No job description provided.'}
-                  </p>
+
+                  <p className="text-xs font-bold text-slate-800">{effectiveRole?.title || 'Open Position'}</p>
+
+                  {/* Inline JD Editor */}
+                  {isEditingJd ? (
+                    <div className="flex flex-col gap-2 mt-1">
+                      <textarea
+                        value={jdText}
+                        onChange={(e) => setJdText(e.target.value)}
+                        placeholder="Paste or type the full job description, requirements, and responsibilities here..."
+                        className="w-full text-xs font-normal p-3 bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 min-h-[120px] text-slate-700"
+                      />
+                      <button
+                        onClick={handleSaveJd}
+                        disabled={savingJd}
+                        className="self-end px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
+                      >
+                        {savingJd ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
+                        Save Job Description
+                      </button>
+                    </div>
+                  ) : effectiveRole?.jobDescription ? (
+                    <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-100 text-[11px] text-slate-600 line-clamp-4 leading-relaxed">
+                      {effectiveRole.jobDescription}
+                    </div>
+                  ) : (
+                    <div className="p-3 bg-amber-50/80 border border-amber-200/80 rounded-lg flex items-start gap-2.5">
+                      <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                      <div className="flex flex-col gap-1 text-xs">
+                        <span className="font-bold text-amber-800">Job Description Missing</span>
+                        <p className="text-[11px] text-amber-700 leading-snug">
+                          The AI needs a job description to accurately evaluate candidate match. Click "Add JD" above to paste one.
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
-                {/* Candidate Block */}
-                <div className="p-4 bg-white rounded-xl border border-slate-200/80 shadow-xs flex flex-col gap-2">
+                {/* Candidate Block with Inline Resume Dropzone */}
+                <div className="p-4 bg-white rounded-xl border border-slate-200/80 shadow-xs flex flex-col gap-3">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-slate-800 flex items-center gap-2">
                       <User className="w-3.5 h-3.5 text-violet-600" />
-                      Candidate Credentials
+                      Candidate Profile & Resume
                     </span>
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                      selectedCandidate?.resumeText ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700'
-                    }`}>
-                      {selectedCandidate?.resumeText ? 'Resume Attached' : 'No Resume'}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                        selectedCandidate?.resumeText ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200'
+                      }`}>
+                        {selectedCandidate?.resumeText ? '✓ Resume Attached' : '⚠️ No Resume'}
+                      </span>
+                      <button
+                        onClick={() => setIsEditingResume(!isEditingResume)}
+                        className="text-[11px] text-indigo-600 hover:text-indigo-800 font-semibold flex items-center gap-1 cursor-pointer"
+                      >
+                        <Edit3 className="w-3 h-3" />
+                        {isEditingResume ? 'Cancel' : (selectedCandidate?.resumeText ? 'Replace' : 'Upload')}
+                      </button>
+                    </div>
                   </div>
-                  <div className="text-xs text-slate-700">
-                    <span className="font-bold">{selectedCandidate?.firstName} {selectedCandidate?.lastName}</span>
-                    <span className="text-slate-400"> • {selectedCandidate?.email}</span>
-                  </div>
-                  {selectedCandidate?.resumeText && (
+
+                  {selectedCandidate ? (
+                    <div className="text-xs text-slate-700 flex items-center justify-between">
+                      <div>
+                        <span className="font-bold text-slate-900">{selectedCandidate.firstName} {selectedCandidate.lastName}</span>
+                        <span className="text-slate-400"> • {selectedCandidate.email}</span>
+                      </div>
+                      <span className="text-[11px] font-semibold text-slate-500">{selectedCandidate.location || 'Remote'}</span>
+                    </div>
+                  ) : (
+                    <div className="text-xs text-slate-400 italic">No candidate selected.</div>
+                  )}
+
+                  {/* Feedback alerts */}
+                  {resumeUploadSuccess && (
+                    <div className="p-2 bg-emerald-50 border border-emerald-200 rounded-lg text-emerald-700 text-xs flex items-center gap-1.5">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                      <span>{resumeUploadSuccess}</span>
+                    </div>
+                  )}
+                  {resumeUploadError && (
+                    <div className="p-2 bg-rose-50 border border-rose-200 rounded-lg text-rose-700 text-xs flex items-center gap-1.5">
+                      <AlertCircle className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                      <span>{resumeUploadError}</span>
+                    </div>
+                  )}
+
+                  {/* Interactive Upload/Paste zone */}
+                  {(!selectedCandidate?.resumeText || isEditingResume) && selectedCandidate && (
+                    <div className="flex flex-col gap-2.5 p-3 bg-slate-50 rounded-xl border border-dashed border-slate-300 animate-in fade-in duration-150">
+                      <p className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">
+                        Attach Candidate Resume
+                      </p>
+
+                      {/* File Upload Zone */}
+                      <div className="border border-slate-200 bg-white p-3 rounded-lg text-center relative cursor-pointer hover:bg-indigo-50/30 hover:border-indigo-300 transition-colors">
+                        <input
+                          type="file"
+                          accept=".pdf,.txt,.docx,.doc"
+                          className="absolute inset-0 opacity-0 cursor-pointer"
+                          disabled={uploadingResume}
+                          onChange={(e) => {
+                            if (e.target.files?.[0]) {
+                              handleUploadResumeFile(e.target.files[0]);
+                            }
+                          }}
+                        />
+                        <div className="flex flex-col items-center justify-center gap-1">
+                          {uploadingResume ? (
+                            <Loader2 className="w-5 h-5 text-indigo-600 animate-spin" />
+                          ) : (
+                            <Upload className="w-5 h-5 text-indigo-600" />
+                          )}
+                          <span className="text-xs font-semibold text-slate-700">
+                            {uploadingResume ? 'Parsing resume text...' : 'Click or Drag Resume (PDF / DOCX / TXT)'}
+                          </span>
+                          <span className="text-[10px] text-slate-400">Text content will be extracted automatically</span>
+                        </div>
+                      </div>
+
+                      {/* Or Paste Text Option */}
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Or Paste Raw Resume Text / Bio</label>
+                        <textarea
+                          value={pastedResumeText}
+                          onChange={(e) => setPastedResumeText(e.target.value)}
+                          placeholder="Paste resume summary, work history, or LinkedIn profile here..."
+                          className="w-full text-xs p-2.5 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 min-h-[80px]"
+                        />
+                        <button
+                          onClick={handleSavePastedResume}
+                          disabled={uploadingResume || !pastedResumeText.trim()}
+                          className="self-end px-3 py-1.5 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold rounded-lg flex items-center gap-1 transition-colors disabled:opacity-50 cursor-pointer"
+                        >
+                          {uploadingResume ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
+                          Save Pasted Resume
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Existing Resume Preview */}
+                  {selectedCandidate?.resumeText && !isEditingResume && (
                     <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-100 text-[11px] text-slate-600 font-mono line-clamp-4 leading-relaxed">
                       {selectedCandidate.resumeText}
                     </div>
@@ -443,11 +703,11 @@ export const InspectorPanel = ({ boardId }: { boardId?: string }) => {
                 <div className="p-4 bg-white rounded-xl border border-slate-200/80 shadow-xs flex flex-col gap-2">
                   <span className="text-xs font-bold text-slate-800 flex items-center gap-2">
                     <Layers className="w-3.5 h-3.5 text-blue-600" />
-                    Upstream Node Outputs ({Object.keys(clientUpstreamOutputs).length})
+                    Previous Step Findings ({Object.keys(clientUpstreamOutputs).length})
                   </span>
                   {Object.keys(clientUpstreamOutputs).length === 0 ? (
                     <div className="text-xs text-slate-400 py-3 text-center border border-dashed border-slate-200 rounded-lg">
-                      No upstream agent outputs yet. Connect upstream nodes or run them first.
+                      No previous step outputs yet. Run upstream nodes to pass data here.
                     </div>
                   ) : (
                     Object.entries(clientUpstreamOutputs).map(([key, val]) => (
@@ -461,18 +721,18 @@ export const InspectorPanel = ({ boardId }: { boardId?: string }) => {
                   )}
                 </div>
 
-                {/* Port Contract Checklist */}
+                {/* Step Requirements Checklist */}
                 <div className="p-4 bg-white rounded-xl border border-slate-200/80 shadow-xs flex flex-col gap-2">
                   <span className="text-xs font-bold text-slate-700 flex items-center gap-2">
                     <Code2 className="w-3.5 h-3.5 text-slate-500" />
-                    Expected Input Ports
+                    Step Requirements Checklist
                   </span>
                   <div className="flex flex-col gap-1.5 mt-1">
                     {nodeSpec.inputs.map((input, idx) => {
                       const isSatisfied = 
                         (input.name === 'candidate' && !!selectedCandidate) ||
                         (input.name === 'resumeText' && !!selectedCandidate?.resumeText) ||
-                        (input.name === 'role' && !!currentRole) ||
+                        (input.name === 'role' && !!effectiveRole) ||
                         (!!clientUpstreamOutputs[input.name]);
                       return (
                         <div key={idx} className="flex items-center justify-between text-xs py-1 px-2 rounded-md bg-slate-50 border border-slate-100">
@@ -500,25 +760,25 @@ export const InspectorPanel = ({ boardId }: { boardId?: string }) => {
           </div>
         )}
 
-        {/* ─────────── TAB 2: PARAMETERS ─────────── */}
+        {/* ─────────── TAB 2: AI SETTINGS ─────────── */}
         {activeTab === 'parameters' && (
           <div className="flex flex-col gap-5">
             {/* Model & Agent Architecture */}
             <div className="flex flex-col gap-2">
               <label className="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
                 <Cpu className="w-3.5 h-3.5 text-indigo-500" />
-                LLM Execution Engine
+                AI Screening Model
               </label>
               <select
                 className="w-full px-3.5 py-2.5 text-xs font-semibold text-slate-900 bg-white border border-slate-200/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-xs"
                 value={(layer as any).config?.model || nodeSpec.defaultModel || 'openai/gpt-oss-120b'}
                 onChange={(e) => handleConfigChange('model', e.target.value)}
               >
-                <option value="openai/gpt-oss-120b">Groq: openai/gpt-oss-120b (Recommended - Strict Schema & Fast)</option>
-                <option value="openai/gpt-oss-20b">Groq: openai/gpt-oss-20b (Ultra Fast)</option>
-                <option value="qwen/qwen3.8-27b">Groq: qwen/qwen3.8-27b (Alternative)</option>
+                <option value="openai/gpt-oss-120b">Groq: openai/gpt-oss-120b (Recommended - Strict Structured Evaluation)</option>
+                <option value="openai/gpt-oss-20b">Groq: openai/gpt-oss-20b (Ultra Fast Screening)</option>
+                <option value="qwen/qwen3.8-27b">Groq: qwen/qwen3.8-27b (Alternative Model)</option>
               </select>
-              <p className="text-[11px] text-slate-400">Strict JSON structured output mode enabled.</p>
+              <p className="text-[11px] text-slate-400">Strict structured evaluation with Zod schema verification enabled.</p>
             </div>
 
             {/* System Prompt & Instructions */}
@@ -526,7 +786,7 @@ export const InspectorPanel = ({ boardId }: { boardId?: string }) => {
               <div className="flex items-center justify-between">
                 <label className="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
                   <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
-                  Agent System Instructions
+                  AI Evaluation Instructions
                 </label>
                 <button
                   onClick={() => handleConfigChange('prompt', nodeSpec.defaultPrompt || '')}
@@ -540,7 +800,7 @@ export const InspectorPanel = ({ boardId }: { boardId?: string }) => {
                 className="w-full px-3.5 py-3 text-xs leading-relaxed text-slate-700 bg-white border border-slate-200/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-xs resize-none min-h-[140px]"
                 value={(layer as any).config?.prompt ?? (nodeSpec.defaultPrompt || '')}
                 onChange={(e) => handleConfigChange('prompt', e.target.value)}
-                placeholder="Custom agent prompt instructions..."
+                placeholder="Custom evaluation guidelines for this step..."
               />
             </div>
 
@@ -548,12 +808,12 @@ export const InspectorPanel = ({ boardId }: { boardId?: string }) => {
             <div className="p-4 bg-white rounded-xl border border-slate-200/80 shadow-xs flex flex-col gap-2.5">
               <div className="flex items-center gap-2">
                 <Info className="w-3.5 h-3.5 text-indigo-600" />
-                <span className="text-xs font-bold text-slate-800">Node Capabilities</span>
+                <span className="text-xs font-bold text-slate-800">Step Objective & Guidelines</span>
               </div>
               <p className="text-xs text-slate-600 leading-relaxed">{nodeSpec.description}</p>
               
               <div className="pt-2 border-t border-slate-100 flex flex-col gap-1.5">
-                <span className="text-[11px] font-bold text-slate-500">Produces Output Schema:</span>
+                <span className="text-[11px] font-bold text-slate-500">Outputs Produced by this Step:</span>
                 <div className="flex flex-wrap gap-1.5">
                   {nodeSpec.outputs.map((out, i) => (
                     <span key={i} className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-200">
@@ -567,9 +827,9 @@ export const InspectorPanel = ({ boardId }: { boardId?: string }) => {
             {/* Custom parameters depending on agent type */}
             {layer.agentRole === 'agent-concierge' && (
               <div className="p-4 bg-indigo-50/60 rounded-xl border border-indigo-100 flex flex-col gap-3">
-                <span className="text-xs font-bold text-indigo-900">Ophelia Concierge Configuration</span>
+                <span className="text-xs font-bold text-indigo-900">Ophelia Travel Concierge Parameters</span>
                 <div className="flex flex-col gap-1">
-                  <label className="text-[11px] font-semibold text-slate-600">Travel City / Hub</label>
+                  <label className="text-[11px] font-semibold text-slate-600">Onsite Office Hub / City</label>
                   <input
                     type="text"
                     className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-lg text-slate-800"
@@ -583,7 +843,7 @@ export const InspectorPanel = ({ boardId }: { boardId?: string }) => {
           </div>
         )}
 
-        {/* ─────────── TAB 3: OUTPUT ─────────── */}
+        {/* ─────────── TAB 3: EVALUATION RESULTS ─────────── */}
         {activeTab === 'output' && (
           <div className="flex flex-col gap-4">
             {/* Status Bar */}
@@ -595,9 +855,9 @@ export const InspectorPanel = ({ boardId }: { boardId?: string }) => {
                   layer.status === 'error' ? 'bg-rose-500' : 'bg-slate-300'
                 }`} />
                 <span className="text-xs font-extrabold uppercase tracking-wider text-slate-800">
-                  {layer.status === 'success' ? 'Success' :
-                   layer.status === 'running' ? 'Executing Node...' :
-                   layer.status === 'error' ? 'Execution Error' : 'Idle / Not Run'}
+                  {layer.status === 'success' ? 'Evaluation Complete' :
+                   layer.status === 'running' ? 'Evaluating Step...' :
+                   layer.status === 'error' ? 'Evaluation Failed' : 'Idle / Ready'}
                 </span>
                 {executionTimeSec && (
                   <span className="text-[11px] font-mono font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
@@ -614,7 +874,7 @@ export const InspectorPanel = ({ boardId }: { boardId?: string }) => {
                       outputViewMode === 'formatted' ? 'bg-indigo-50 text-indigo-700 font-bold' : 'text-slate-500 hover:bg-slate-100'
                     }`}
                   >
-                    Visual
+                    Recruiter View
                   </button>
                   <button
                     onClick={() => setOutputViewMode('raw')}
@@ -622,7 +882,7 @@ export const InspectorPanel = ({ boardId }: { boardId?: string }) => {
                       outputViewMode === 'raw' ? 'bg-indigo-50 text-indigo-700 font-bold' : 'text-slate-500 hover:bg-slate-100'
                     }`}
                   >
-                    Raw JSON
+                    Debug JSON
                   </button>
                   <button
                     onClick={() => handleCopy(JSON.stringify(executionOutput, null, 2), 'output-json')}
@@ -640,16 +900,16 @@ export const InspectorPanel = ({ boardId }: { boardId?: string }) => {
               <div className="p-4 bg-rose-50 border border-rose-200 rounded-xl flex flex-col gap-2">
                 <div className="flex items-center gap-2 text-rose-800 font-bold text-xs">
                   <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
-                  Execution Failed
+                  Evaluation Incomplete
                 </div>
-                <p className="text-xs text-rose-700 font-mono leading-relaxed bg-white/70 p-3 rounded-lg border border-rose-100">
-                  {(layer as any).errorDetails || 'Unknown error occurred during agent execution.'}
+                <p className="text-xs text-rose-700 font-sans leading-relaxed bg-white/70 p-3 rounded-lg border border-rose-100">
+                  {(layer as any).errorDetails || 'An error occurred during evaluation.'}
                 </p>
                 <button
                   onClick={handleRunAgent}
                   className="self-start mt-1 text-xs font-bold text-rose-800 hover:text-rose-950 flex items-center gap-1"
                 >
-                  <RefreshCw className="w-3 h-3" /> Retry execution
+                  <RefreshCw className="w-3 h-3" /> Retry Evaluation
                 </button>
               </div>
             )}
@@ -658,7 +918,7 @@ export const InspectorPanel = ({ boardId }: { boardId?: string }) => {
             {executionOutput ? (
               outputViewMode === 'formatted' ? (
                 <div className="flex flex-col gap-3">
-                  {/* Domain-specific visual summary */}
+                  {/* RESUME VERIFIER VISUAL */}
                   {layer.agentRole === 'agent-resume' && (
                     <div className="flex flex-col gap-3">
                       {/* Match Score Card */}
@@ -667,7 +927,7 @@ export const InspectorPanel = ({ boardId }: { boardId?: string }) => {
                           <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Candidate Match Score</p>
                           <p className="text-3xl font-black text-indigo-600">{executionOutput.overallMatch}%</p>
                         </div>
-                        <div className="w-24 bg-slate-100 h-3 rounded-full overflow-hidden">
+                        <div className="w-28 bg-slate-100 h-3.5 rounded-full overflow-hidden border border-slate-200">
                           <div 
                             className="bg-indigo-600 h-full rounded-full transition-all"
                             style={{ width: `${executionOutput.overallMatch}%` }}
@@ -718,13 +978,13 @@ export const InspectorPanel = ({ boardId }: { boardId?: string }) => {
                     </div>
                   )}
 
-                  {/* Interview Plan Visual */}
+                  {/* INTERVIEW PLAN VISUAL */}
                   {layer.agentRole === 'agent-interview-plan' && (
                     <div className="flex flex-col gap-3">
                       <div className="p-4 bg-white rounded-xl border border-slate-200/80 shadow-xs flex flex-col gap-2">
                         <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Plan Objective</p>
                         <p className="text-xs text-slate-700 leading-relaxed">{executionOutput.objective}</p>
-                        <p className="text-xs font-bold text-indigo-600 mt-1">Duration: {executionOutput.durationMinutes || 60} mins</p>
+                        <p className="text-xs font-bold text-indigo-600 mt-1">Total Duration: {executionOutput.durationMinutes || 60} mins</p>
                       </div>
 
                       {executionOutput.sections && (
@@ -732,10 +992,10 @@ export const InspectorPanel = ({ boardId }: { boardId?: string }) => {
                           <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Agenda Breakdown</p>
                           <div className="space-y-2">
                             {executionOutput.sections.map((sec: any, i: number) => (
-                              <div key={i} className="p-2.5 bg-slate-50 rounded-lg border border-slate-100 text-xs">
+                              <div key={i} className="p-3 bg-slate-50 rounded-xl border border-slate-100 text-xs">
                                 <div className="flex justify-between font-bold text-slate-800">
                                   <span>{sec.title}</span>
-                                  <span className="text-indigo-600">{sec.duration}m</span>
+                                  <span className="text-indigo-600 font-mono">{sec.duration}m</span>
                                 </div>
                                 <p className="text-[11px] text-slate-500 mt-1">{sec.focus}</p>
                               </div>
@@ -746,8 +1006,136 @@ export const InspectorPanel = ({ boardId }: { boardId?: string }) => {
                     </div>
                   )}
 
+                  {/* INTERVIEW ANALYSIS VISUAL */}
+                  {layer.agentRole === 'agent-interview-analysis' && (
+                    <div className="flex flex-col gap-3">
+                      {/* Overall recommendation badge */}
+                      <div className="p-4 bg-white rounded-xl border border-slate-200/80 shadow-xs flex items-center justify-between">
+                        <div>
+                          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Interviewer Recommendation</p>
+                          <p className="text-xl font-black text-slate-800">{executionOutput.recommendation || 'ADVANCE'}</p>
+                        </div>
+                        <span className={`px-3 py-1.5 rounded-xl font-bold text-xs ${
+                          executionOutput.recommendation === 'REJECT' ? 'bg-rose-50 text-rose-700 border border-rose-200' :
+                          executionOutput.recommendation === 'HOLD' ? 'bg-amber-50 text-amber-700 border border-amber-200' :
+                          'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                        }`}>
+                          {executionOutput.recommendation || 'ADVANCE TO NEXT ROUND'}
+                        </span>
+                      </div>
+
+                      {/* Candidate Score breakdown */}
+                      <div className="p-4 bg-white rounded-xl border border-slate-200/80 shadow-xs flex flex-col gap-2.5">
+                        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Competency Scores</p>
+                        <div className="grid grid-cols-2 gap-2 text-xs">
+                          {executionOutput.scores && Object.entries(executionOutput.scores).map(([k, v]: any) => (
+                            <div key={k} className="p-2.5 bg-slate-50 rounded-lg border border-slate-100 flex flex-col">
+                              <span className="text-[10px] uppercase font-bold text-slate-500">{k}</span>
+                              <span className="text-lg font-black text-slate-800">{v}/10</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Strengths */}
+                      {executionOutput.strengths && (
+                        <div className="p-4 bg-white rounded-xl border border-slate-200/80 shadow-xs flex flex-col gap-1.5">
+                          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5 text-emerald-700">
+                            <ThumbsUp className="w-3.5 h-3.5" /> Key Candidate Strengths
+                          </p>
+                          <ul className="list-disc pl-4 text-xs text-slate-700 space-y-1">
+                            {executionOutput.strengths.map((s: string, idx: number) => (
+                              <li key={idx}>{s}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {/* Red Flags / Concerns */}
+                      {executionOutput.concerns && (
+                        <div className="p-4 bg-white rounded-xl border border-slate-200/80 shadow-xs flex flex-col gap-1.5">
+                          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5 text-amber-700">
+                            <AlertCircle className="w-3.5 h-3.5" /> Identified Concerns / Probes
+                          </p>
+                          <ul className="list-disc pl-4 text-xs text-slate-700 space-y-1">
+                            {executionOutput.concerns.map((c: string, idx: number) => (
+                              <li key={idx}>{c}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* CANDIDATE DECISION VISUAL */}
+                  {layer.agentRole === 'agent-decision' && (
+                    <div className="flex flex-col gap-3">
+                      <div className="p-5 bg-white rounded-xl border border-slate-200/80 shadow-xs flex flex-col gap-3">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Hiring Committee Verdict</p>
+                            <h3 className="text-2xl font-black text-slate-900 mt-0.5">
+                              {executionOutput.decision || executionOutput.finalDecision || 'HIRE'}
+                            </h3>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-[10px] font-bold text-slate-400 uppercase">Confidence</p>
+                            <p className="text-xl font-black text-indigo-600">{executionOutput.confidence || '92'}%</p>
+                          </div>
+                        </div>
+
+                        {executionOutput.justification && (
+                          <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 text-xs text-slate-700 leading-relaxed">
+                            {executionOutput.justification}
+                          </div>
+                        )}
+
+                        {executionOutput.nextSteps && (
+                          <div className="flex flex-col gap-1">
+                            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Recommended Next Action</p>
+                            <p className="text-xs font-semibold text-slate-800">{executionOutput.nextSteps}</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* CONCIERGE TRAVEL ITINERARY VISUAL */}
+                  {layer.agentRole === 'agent-concierge' && (
+                    <div className="flex flex-col gap-3">
+                      <div className="p-4 bg-white rounded-xl border border-slate-200/80 shadow-xs flex flex-col gap-2">
+                        <div className="flex items-center justify-between">
+                          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Ophelia Onsite Travel Plan</p>
+                          <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                            Bookings Ready
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-700 leading-relaxed">
+                          {executionOutput.summary || 'Travel itinerary prepared for candidate onsite interview.'}
+                        </p>
+                      </div>
+
+                      {executionOutput.hotels && (
+                        <div className="p-4 bg-white rounded-xl border border-slate-200/80 shadow-xs flex flex-col gap-2">
+                          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Selected Accommodations</p>
+                          <div className="space-y-2">
+                            {executionOutput.hotels.map((h: any, idx: number) => (
+                              <div key={idx} className="p-3 bg-slate-50 rounded-xl border border-slate-100 text-xs flex justify-between items-center">
+                                <div>
+                                  <p className="font-bold text-slate-800">{h.name}</p>
+                                  <p className="text-[11px] text-slate-500">{h.location || 'Near Office'}</p>
+                                </div>
+                                <span className="font-bold text-indigo-700">{h.price || '$220/night'}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   {/* Fallback structured display */}
-                  {layer.agentRole !== 'agent-resume' && layer.agentRole !== 'agent-interview-plan' && (
+                  {!['agent-resume', 'agent-interview-plan', 'agent-interview-analysis', 'agent-decision', 'agent-concierge'].includes(layer.agentRole || '') && (
                     <div className="bg-slate-900 rounded-xl p-4 text-emerald-400 font-mono text-xs overflow-x-auto shadow-inner max-h-[500px]">
                       <pre>{JSON.stringify(executionOutput, null, 2)}</pre>
                     </div>
@@ -761,9 +1149,9 @@ export const InspectorPanel = ({ boardId }: { boardId?: string }) => {
             ) : layer.status !== 'error' && (
               <div className="p-8 text-center bg-white rounded-xl border border-dashed border-slate-200 flex flex-col items-center justify-center gap-2">
                 <Sparkles className="w-8 h-8 text-slate-300" />
-                <p className="text-xs font-bold text-slate-700">No output yet</p>
+                <p className="text-xs font-bold text-slate-700">No evaluation results yet</p>
                 <p className="text-[11px] text-slate-400 max-w-xs">
-                  Click "Test step" to execute this node and view structured outputs and performance metrics.
+                  Click "Evaluate Candidate" to run this AI screening step and view structured recruiter results.
                 </p>
               </div>
             )}
@@ -782,11 +1170,11 @@ export const InspectorPanel = ({ boardId }: { boardId?: string }) => {
           className="flex items-center gap-1.5 px-3 py-2 text-rose-600 hover:bg-rose-50 rounded-lg text-xs font-semibold transition-colors border border-rose-100 cursor-pointer"
         >
           <Trash2 className="w-3.5 h-3.5" />
-          Delete Node
+          Delete Step
         </button>
 
         <span className="text-[10px] font-mono text-slate-400">
-          ID: {layerId}
+          Step ID: {layerId}
         </span>
       </div>
     </div>
